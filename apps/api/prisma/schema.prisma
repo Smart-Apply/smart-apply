@@ -1,0 +1,190 @@
+// Prisma schema for Smart Apply MVP
+// Database: PostgreSQL (Docker locally, Azure Database for PostgreSQL in prod)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id    String @id @default(cuid())
+  email String @unique
+  password String?
+  fullName String? // User's full name
+  
+  // OAuth fields (for future Microsoft Entra integration)
+  provider   String? // e.g., "microsoft", "google"
+  providerId String? // External OAuth ID
+  
+  profile   Profile?
+  applications Application[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@map("users")
+}
+
+model Profile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Core info
+  summary       String?
+  phone         String?
+  location      String?
+  linkedinUrl   String?
+  githubUrl     String?
+  portfolioUrl  String?
+  
+  // Skills
+  skills        Skill[]
+  
+  // Certificates
+  certificates  Certificate[]
+  
+  // Work experiences
+  experiences   Experience[]
+  
+  // Projects
+  projects      Project[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("profiles")
+}
+
+model Skill {
+  id        String  @id @default(cuid())
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  
+  name      String
+  category  String? // e.g., "Programming Language", "Framework", "Tool"
+  level     String? // e.g., "Beginner", "Intermediate", "Advanced", "Expert"
+  
+  @@index([profileId])
+  @@map("skills")
+}
+
+model Certificate {
+  id        String  @id @default(cuid())
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  
+  name      String
+  issuer    String
+  issueDate DateTime?
+  expiryDate DateTime?
+  credentialId String?
+  credentialUrl String?
+  
+  @@index([profileId])
+  @@map("certificates")
+}
+
+model Experience {
+  id        String  @id @default(cuid())
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  
+  title       String
+  company     String
+  location    String?
+  startDate   DateTime
+  endDate     DateTime?
+  isCurrent   Boolean @default(false)
+  description String? // Rich text / markdown
+  
+  achievements String[] // Bullet points of achievements
+  
+  @@index([profileId])
+  @@map("experiences")
+}
+
+model Project {
+  id        String  @id @default(cuid())
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  
+  name        String
+  description String?
+  url         String?
+  startDate   DateTime?
+  endDate     DateTime?
+  technologies String[] // Array of tech used
+  highlights   String[] // Key accomplishments
+  
+  @@index([profileId])
+  @@map("projects")
+}
+
+model JobPosting {
+  id          String @id @default(cuid())
+  
+  // Raw input
+  rawText     String?
+  sourceUrl   String?
+  fileId      String? // Reference to uploaded file in storage
+  
+  // Normalized fields
+  title       String
+  company     String
+  location    String?
+  description String?
+  
+  requirements     String[] // Parsed requirements
+  responsibilities String[] // Parsed responsibilities
+  niceToHave       String[] // Optional qualifications
+  
+  applications Application[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([company])
+  @@map("job_postings")
+}
+
+model Application {
+  id            String @id @default(cuid())
+  userId        String
+  user          User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobPostingId  String
+  jobPosting    JobPosting @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+  
+  // Generation status
+  status        ApplicationStatus @default(PENDING)
+  
+  // Generated content (Markdown/HTML before PDF)
+  coverLetterText String?
+  resumeText      String?
+  
+  // File references in Azure Blob Storage (or disk in dev)
+  coverLetterFileKey String?
+  resumeFileKey      String?
+  
+  // Metadata
+  errorMessage  String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@map("applications")
+}
+
+enum ApplicationStatus {
+  PENDING      // Submitted, not yet started
+  GENERATING   // LLM is generating content
+  READY        // PDFs generated and stored
+  FAILED       // Generation failed
+}

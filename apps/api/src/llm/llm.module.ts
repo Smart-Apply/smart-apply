@@ -1,0 +1,26 @@
+import { Module } from '@nestjs/common';
+import { HttpModule, HttpService } from '@nestjs/axios';
+import { LLMService } from './llm.service';
+import { AzureOpenAIProvider } from './providers/azure-openai.provider';
+import { MockLLMProvider } from './providers/mock.provider';
+import { ConfigService } from '../config/config.service';
+
+@Module({
+  imports: [HttpModule],
+  providers: [
+    {
+      provide: 'LLM_PROVIDER',
+      useFactory: (configService: ConfigService, httpService: HttpService) => {
+        const provider = configService.llmProvider;
+        if (provider === 'azure-openai') {
+          return new AzureOpenAIProvider(httpService, configService);
+        }
+        return new MockLLMProvider();
+      },
+      inject: [ConfigService, HttpService],
+    },
+    LLMService,
+  ],
+  exports: [LLMService],
+})
+export class LLMModule {}

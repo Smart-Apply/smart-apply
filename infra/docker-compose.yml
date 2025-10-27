@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: smartapply-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: smartapply
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: infra/Dockerfile
+      target: development
+    container_name: smartapply-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/smartapply
+      JWT_SECRET: dev_secret_key_change_in_production_minimum_32_chars
+      NODE_ENV: development
+      PORT: 3000
+      STORAGE_DRIVER: disk
+      LLM_PROVIDER: mock
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps:/app/apps
+      - ./prompts:/app/prompts
+      - ./storage:/app/storage
+      - /app/node_modules
+      - /app/apps/api/node_modules
+    command: npm run start:dev
+
+volumes:
+  postgres_data:
