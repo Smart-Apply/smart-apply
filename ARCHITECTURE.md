@@ -89,7 +89,7 @@ apps/api/src/
 │   │   └── mock.provider.ts          # Testing mock
 │   └── llm.module.ts
 │
-├── profile/                   # ⏳ TODO
+├── profile/                   # ✅ IMPLEMENTED
 │   ├── profile.controller.ts  # GET/PUT /profile
 │   ├── profile.service.ts     # CRUD + aggregation
 │   ├── dto/                   # Update profile DTOs
