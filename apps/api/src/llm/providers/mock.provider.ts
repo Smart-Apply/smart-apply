@@ -5,7 +5,7 @@ import { LLMProvider, GenerateOptions } from '../llm.interface';
 export class MockLLMProvider implements LLMProvider {
   private readonly logger = new Logger(MockLLMProvider.name);
 
-  async generateText(prompt: string, options?: GenerateOptions): Promise<string> {
+  async generateText(prompt: string, _options?: GenerateOptions): Promise<string> {
     this.logger.log('Using mock LLM provider for testing');
 
     // Check if it's a cover letter or resume based on prompt content

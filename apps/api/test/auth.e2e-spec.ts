@@ -94,12 +94,10 @@ describe('AuthController (e2e)', () => {
 
     beforeAll(async () => {
       // Create test user
-      await request(app.getHttpServer())
-        .post('/api/v1/auth/register')
-        .send({
-          email: testEmail,
-          password: testPassword,
-        });
+      await request(app.getHttpServer()).post('/api/v1/auth/register').send({
+        email: testEmail,
+        password: testPassword,
+      });
     });
 
     it('should login with valid credentials', () => {
@@ -142,15 +140,13 @@ describe('AuthController (e2e)', () => {
 
     beforeAll(async () => {
       const email = `me-test-${Date.now()}@example.com`;
-      
-      const response = await request(app.getHttpServer())
-        .post('/api/v1/auth/register')
-        .send({
-          email,
-          password: 'Test123!',
-          firstName: 'John',
-          lastName: 'Doe',
-        });
+
+      const response = await request(app.getHttpServer()).post('/api/v1/auth/register').send({
+        email,
+        password: 'Test123!',
+        firstName: 'John',
+        lastName: 'Doe',
+      });
 
       accessToken = response.body.accessToken;
     });
@@ -167,9 +163,7 @@ describe('AuthController (e2e)', () => {
     });
 
     it('should reject without token', () => {
-      return request(app.getHttpServer())
-        .get('/api/v1/auth/me')
-        .expect(401);
+      return request(app.getHttpServer()).get('/api/v1/auth/me').expect(401);
     });
 
     it('should reject with invalid token', () => {

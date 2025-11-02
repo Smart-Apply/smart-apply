@@ -31,9 +31,11 @@ Thumbs.db
 *.db
 *.db-journal
 
-# Storage
-storage/
-!storage/.gitkeep
+# Storage (data directories at root, not source code)
+/storage/
+!/storage/.gitkeep
+/uploads/
+!/uploads/.gitkeep
 
 # Logs
 logs/

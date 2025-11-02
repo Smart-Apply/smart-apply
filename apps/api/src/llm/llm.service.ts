@@ -19,7 +19,8 @@ export class LLMService {
     return this.provider.generateText(prompt, {
       temperature: 0.7,
       maxTokens: 1500,
-      systemMessage: 'You are a professional career coach helping candidates write compelling cover letters.',
+      systemMessage:
+        'You are a professional career coach helping candidates write compelling cover letters.',
     });
   }
 
@@ -30,7 +31,8 @@ export class LLMService {
     return this.provider.generateText(prompt, {
       temperature: 0.6,
       maxTokens: 2500,
-      systemMessage: 'You are an expert resume writer creating ATS-optimized, professional resumes.',
+      systemMessage:
+        'You are an expert resume writer creating ATS-optimized, professional resumes.',
     });
   }
 

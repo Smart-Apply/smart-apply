@@ -58,9 +58,7 @@ describe('ProfileController (e2e)', () => {
     });
 
     it('should return 401 without auth token', async () => {
-      await request(app.getHttpServer())
-        .get('/api/v1/profile')
-        .expect(401);
+      await request(app.getHttpServer()).get('/api/v1/profile').expect(401);
     });
   });
 
