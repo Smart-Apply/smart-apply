@@ -113,4 +113,27 @@ export class AzureBlobStorageProvider implements StorageProvider {
       return false;
     }
   }
+
+  async healthCheck(): Promise<boolean> {
+    try {
+      // Check if we can access the container
+      const containerClient = this.blobServiceClient.getContainerClient(this.containerName);
+      const exists = await containerClient.exists();
+      if (!exists) {
+        this.logger.warn(`Container ${this.containerName} does not exist`);
+        return false;
+      }
+
+      // Try to upload and delete a test blob
+      const testKey = `.health-check-${Date.now()}`;
+      const testContent = Buffer.from('health-check');
+      const blockBlobClient = containerClient.getBlockBlobClient(testKey);
+      await blockBlobClient.upload(testContent, testContent.length);
+      await blockBlobClient.delete();
+      return true;
+    } catch (error) {
+      this.logger.error('Azure Blob Storage health check failed', error);
+      return false;
+    }
+  }
 }

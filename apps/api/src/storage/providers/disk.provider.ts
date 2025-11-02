@@ -20,7 +20,7 @@ export class DiskStorageProvider implements StorageProvider {
     }
   }
 
-  async upload(fileName: string, content: Buffer, mimeType: string): Promise<string> {
+  async upload(fileName: string, content: Buffer, _mimeType: string): Promise<string> {
     const key = `${Date.now()}-${fileName}`;
     const filePath = path.join(this.storagePath, key);
 
@@ -35,7 +35,7 @@ export class DiskStorageProvider implements StorageProvider {
     return await fs.readFile(filePath);
   }
 
-  async getSignedUrl(key: string, expiresIn: number = 3600): Promise<string> {
+  async getSignedUrl(key: string, _expiresIn: number = 3600): Promise<string> {
     // For local development, return a simple file path
     // In production with a real web server, you'd generate a proper signed URL
     return `/api/v1/storage/${key}`;
@@ -53,6 +53,22 @@ export class DiskStorageProvider implements StorageProvider {
       await fs.access(filePath);
       return true;
     } catch {
+      return false;
+    }
+  }
+
+  async healthCheck(): Promise<boolean> {
+    try {
+      // Check if storage directory is accessible
+      await fs.access(this.storagePath);
+      // Try to write and delete a test file
+      const testKey = '.health-check';
+      const testPath = path.join(this.storagePath, testKey);
+      await fs.writeFile(testPath, 'health-check');
+      await fs.unlink(testPath);
+      return true;
+    } catch (error) {
+      this.logger.error('Storage health check failed', error);
       return false;
     }
   }
