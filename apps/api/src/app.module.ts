@@ -11,6 +11,7 @@ import { UploadsModule } from './uploads/uploads.module';
 import { JobPostingsModule } from './job-postings/job-postings.module';
 import { PdfModule } from './pdf/pdf.module';
 import { JobsModule } from './jobs/jobs.module';
+import { ApplicationsModule } from './applications/applications.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
 import { ConfigService } from './config/config.service';
@@ -36,7 +37,7 @@ import { ConfigService } from './config/config.service';
     JobPostingsModule,
     PdfModule,
     JobsModule,
-    // TODO: Add ApplicationsModule
+    ApplicationsModule,
   ],
   providers: [
     {

@@ -119,9 +119,7 @@ export class AzureServiceBusProvider implements QueueProvider, OnModuleDestroy {
     try {
       // Check if client is initialized and connection is healthy
       // For a more comprehensive check, we verify we can create a test sender
-      const testSender = this.client.createSender(
-        this.getQueueName(JobType.APPLICATION_GENERATE),
-      );
+      const testSender = this.client.createSender(this.getQueueName(JobType.APPLICATION_GENERATE));
       await testSender.close();
       return true;
     } catch (error) {

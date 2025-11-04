@@ -172,6 +172,7 @@ model Application {
   resumeFileKey      String?
   
   // Metadata
+  notes         String?
   errorMessage  String?
   
   createdAt DateTime @default(now())
