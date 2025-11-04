@@ -24,9 +24,6 @@ describe('PdfService', () => {
     }).compile();
 
     service = module.get<PdfService>(PdfService);
-
-    // Initialize the browser
-    await service.onModuleInit();
   }, 30000);
 
   afterAll(async () => {

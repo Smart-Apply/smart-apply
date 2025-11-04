@@ -24,7 +24,6 @@ describe('PDF Generation Integration', () => {
     }).compile();
 
     service = module.get<PdfService>(PdfService);
-    await service.onModuleInit();
   }, 30000);
 
   afterAll(async () => {
