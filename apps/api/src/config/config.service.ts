@@ -92,6 +92,11 @@ export class ConfigService {
     return this.nestConfig.get('LLM_PROVIDER', { infer: true });
   }
 
+  // Jobs
+  get jobsDriver(): 'in-memory' | 'service-bus' {
+    return this.nestConfig.get('JOBS_DRIVER', { infer: true });
+  }
+
   // PDF
   get puppeteerExecutablePath(): string | undefined {
     return this.nestConfig.get('PUPPETEER_EXECUTABLE_PATH', { infer: true });

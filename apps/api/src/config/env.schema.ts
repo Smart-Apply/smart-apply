@@ -18,6 +18,9 @@ const envSchema = z.object({
   AZURE_STORAGE_CONTAINER: z.string().default('smartapply'),
   AZURE_STORAGE_CONNECTION_STRING: z.string().optional(),
 
+  // Jobs / Queue
+  JOBS_DRIVER: z.enum(['in-memory', 'service-bus']).default('in-memory'),
+
   // Azure Service Bus
   SERVICE_BUS_CONNECTION_STRING: z.string().optional(),
   SERVICE_BUS_QUEUE_NAME: z.string().default('application-jobs'),
