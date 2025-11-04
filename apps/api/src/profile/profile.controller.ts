@@ -1,6 +1,7 @@
-import { Controller, Get, Put, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Put, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { ProfileService } from './profile.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ProfileResponseDto } from './dto/profile-response.dto';
@@ -20,8 +21,8 @@ export class ProfileController {
     type: ProfileResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Profile not found' })
-  async getProfile(@Request() req): Promise<ProfileResponseDto> {
-    return this.profileService.getProfile(req.user.userId);
+  async getProfile(@CurrentUser('id') userId: string): Promise<ProfileResponseDto> {
+    return this.profileService.getProfile(userId);
   }
 
   @Put()
@@ -32,7 +33,10 @@ export class ProfileController {
     type: ProfileResponseDto,
   })
   @ApiResponse({ status: 400, description: 'Invalid input' })
-  async updateProfile(@Request() req, @Body() dto: UpdateProfileDto): Promise<ProfileResponseDto> {
-    return this.profileService.updateProfile(req.user.userId, dto);
+  async updateProfile(
+    @CurrentUser('id') userId: string,
+    @Body() dto: UpdateProfileDto,
+  ): Promise<ProfileResponseDto> {
+    return this.profileService.updateProfile(userId, dto);
   }
 }

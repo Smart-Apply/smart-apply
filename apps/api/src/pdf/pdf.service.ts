@@ -37,17 +37,7 @@ export class PdfService implements OnModuleDestroy {
       return this.browserInitPromise;
     }
 
-    this.browserInitPromise = puppeteer.launch({
-      headless: true,
-      executablePath: this.configService.puppeteerExecutablePath || undefined,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-web-security',
-        '--disable-features=VizDisplayCompositor',
-      ],
-    });
+    this.browserInitPromise = this.launchBrowserWithRetry();
 
     try {
       this.browser = await this.browserInitPromise;
@@ -58,6 +48,68 @@ export class PdfService implements OnModuleDestroy {
       this.browserInitPromise = null;
       throw new Error(`Puppeteer initialization failed: ${error.message}`);
     }
+  }
+
+  private async launchBrowserWithRetry(): Promise<puppeteer.Browser> {
+    const configs = [
+      // Primary config with user-specified executable
+      {
+        headless: 'new' as const,
+        executablePath: this.configService.puppeteerExecutablePath || undefined,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-web-security',
+          '--disable-features=VizDisplayCompositor',
+          '--disable-gpu',
+          '--single-process', // Better for development
+        ],
+        timeout: 10000,
+      },
+      // Fallback config without custom executable (use bundled Chromium)
+      {
+        headless: 'new' as const,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-web-security',
+          '--disable-features=VizDisplayCompositor',
+          '--disable-gpu',
+          '--single-process',
+        ],
+        timeout: 10000,
+      },
+      // Legacy fallback for older systems
+      {
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-web-security',
+          '--single-process',
+        ],
+        timeout: 15000,
+      },
+    ];
+
+    for (let i = 0; i < configs.length; i++) {
+      try {
+        this.logger.log(`Attempting browser launch with config ${i + 1}/${configs.length}`);
+        const browser = await puppeteer.launch(configs[i]);
+        this.logger.log(`Successfully launched browser with config ${i + 1}`);
+        return browser;
+      } catch (error) {
+        this.logger.warn(`Browser launch config ${i + 1} failed: ${error.message}`);
+        if (i === configs.length - 1) {
+          throw error; // Last attempt failed
+        }
+      }
+    }
+
+    throw new Error('All browser launch configurations failed');
   }
 
   async generatePDF(html: string, options: PdfGenerationOptions = {}): Promise<Buffer> {

@@ -74,6 +74,7 @@ export class ProfileService {
               data: dto.skills.map((skill) => ({
                 profileId: profile.id,
                 name: skill.name,
+                category: 'General', // Default category since DTO doesn't have category
                 level: skill.level,
               })),
             });
@@ -89,8 +90,8 @@ export class ProfileService {
                 profileId: profile.id,
                 name: cert.name,
                 issuer: cert.issuer,
-                dateObtained: cert.dateObtained ? new Date(cert.dateObtained) : null,
-                url: cert.url,
+                issueDate: cert.dateObtained ? new Date(cert.dateObtained) : null,
+                credentialUrl: cert.url,
               })),
             });
           }
@@ -176,8 +177,8 @@ export class ProfileService {
         id: c.id,
         name: c.name,
         issuer: c.issuer,
-        dateObtained: c.dateObtained?.toISOString(),
-        url: c.url,
+        dateObtained: c.issueDate?.toISOString(),
+        url: c.credentialUrl,
       })),
       experiences: profile.experiences.map((e: any) => ({
         id: e.id,
