@@ -41,29 +41,30 @@ export class HuggingFaceLLMProvider implements LLMProvider {
 
       const generatedText = response.generated_text;
 
-      if (!generatedText) {
+      if (!generatedText || generatedText.trim() === '') {
         throw new Error('No text generated from Hugging Face');
       }
 
       this.logger.log('Successfully generated text with Hugging Face');
       return generatedText.trim();
-    } catch (error: any) {
-      this.logger.error('Hugging Face generation failed', error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error('Hugging Face generation failed', errorMessage);
 
       // Provide helpful error messages
-      if (error.message?.includes('rate limit')) {
+      if (errorMessage.includes('rate limit')) {
         throw new Error(
           'Hugging Face rate limit exceeded. Please try again later or upgrade your API plan.',
         );
       }
 
-      if (error.message?.includes('Model')) {
+      if (errorMessage.includes('Model')) {
         throw new Error(
-          `Hugging Face model error: ${error.message}. Check if model ${this.model} is available.`,
+          `Hugging Face model error: ${errorMessage}. Check if model ${this.model} is available.`,
         );
       }
 
-      throw new Error(`LLM generation failed: ${error.message}`);
+      throw new Error(`LLM generation failed: ${errorMessage}`);
     }
   }
 

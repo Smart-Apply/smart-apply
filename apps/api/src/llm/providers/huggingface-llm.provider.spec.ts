@@ -2,27 +2,24 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { HuggingFaceLLMProvider } from './huggingface-llm.provider';
 import { ConfigService } from '../../config/config.service';
 
+// Create a mock instance object that will be returned by HfInference constructor
+const mockTextGeneration = jest.fn();
+
 // Mock the @huggingface/inference module
 jest.mock('@huggingface/inference', () => {
   return {
     HfInference: jest.fn().mockImplementation(() => ({
-      textGeneration: jest.fn(),
+      textGeneration: mockTextGeneration,
     })),
   };
 });
 
 describe('HuggingFaceLLMProvider', () => {
   let provider: HuggingFaceLLMProvider;
-  let mockHfInference: any;
 
   beforeEach(async () => {
-    // Reset the mock
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { HfInference } = require('@huggingface/inference');
-    mockHfInference = {
-      textGeneration: jest.fn(),
-    };
-    HfInference.mockImplementation(() => mockHfInference);
+    // Clear all mocks before each test
+    jest.clearAllMocks();
 
     const mockConfigService = {
       huggingFaceApiKey: 'test-api-key',
@@ -40,10 +37,6 @@ describe('HuggingFaceLLMProvider', () => {
     }).compile();
 
     provider = module.get<HuggingFaceLLMProvider>(HuggingFaceLLMProvider);
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
   });
 
   describe('constructor', () => {
@@ -69,12 +62,12 @@ describe('HuggingFaceLLMProvider', () => {
         generated_text: 'This is a generated response',
       };
 
-      mockHfInference.textGeneration.mockResolvedValue(mockResponse);
+      mockTextGeneration.mockResolvedValue(mockResponse);
 
       const result = await provider.generateText('Test prompt');
 
       expect(result).toBe('This is a generated response');
-      expect(mockHfInference.textGeneration).toHaveBeenCalledWith({
+      expect(mockTextGeneration).toHaveBeenCalledWith({
         model: 'meta-llama/Llama-2-7b-chat-hf',
         inputs: expect.any(String),
         parameters: {
@@ -90,14 +83,14 @@ describe('HuggingFaceLLMProvider', () => {
         generated_text: 'Generated text',
       };
 
-      mockHfInference.textGeneration.mockResolvedValue(mockResponse);
+      mockTextGeneration.mockResolvedValue(mockResponse);
 
       await provider.generateText('Test prompt', {
         temperature: 0.9,
         maxTokens: 1000,
       });
 
-      expect(mockHfInference.textGeneration).toHaveBeenCalledWith({
+      expect(mockTextGeneration).toHaveBeenCalledWith({
         model: expect.any(String),
         inputs: expect.any(String),
         parameters: {
@@ -113,13 +106,13 @@ describe('HuggingFaceLLMProvider', () => {
         generated_text: 'Generated text',
       };
 
-      mockHfInference.textGeneration.mockResolvedValue(mockResponse);
+      mockTextGeneration.mockResolvedValue(mockResponse);
 
       await provider.generateText('User prompt', {
         systemMessage: 'You are a helpful assistant',
       });
 
-      const callArgs = mockHfInference.textGeneration.mock.calls[0][0];
+      const callArgs = mockTextGeneration.mock.calls[0][0];
       expect(callArgs.inputs).toContain('You are a helpful assistant');
       expect(callArgs.inputs).toContain('User prompt');
     });
@@ -129,7 +122,7 @@ describe('HuggingFaceLLMProvider', () => {
         generated_text: '  Generated text with spaces  ',
       };
 
-      mockHfInference.textGeneration.mockResolvedValue(mockResponse);
+      mockTextGeneration.mockResolvedValue(mockResponse);
 
       const result = await provider.generateText('Test prompt');
 
@@ -137,7 +130,7 @@ describe('HuggingFaceLLMProvider', () => {
     });
 
     it('should throw error if no text is generated', async () => {
-      mockHfInference.textGeneration.mockResolvedValue({
+      mockTextGeneration.mockResolvedValue({
         generated_text: '',
       });
 
@@ -147,7 +140,7 @@ describe('HuggingFaceLLMProvider', () => {
     });
 
     it('should handle rate limit errors', async () => {
-      mockHfInference.textGeneration.mockRejectedValue(new Error('rate limit exceeded'));
+      mockTextGeneration.mockRejectedValue(new Error('rate limit exceeded'));
 
       await expect(provider.generateText('Test prompt')).rejects.toThrow(
         'Hugging Face rate limit exceeded',
@@ -155,7 +148,7 @@ describe('HuggingFaceLLMProvider', () => {
     });
 
     it('should handle model errors', async () => {
-      mockHfInference.textGeneration.mockRejectedValue(new Error('Model not found'));
+      mockTextGeneration.mockRejectedValue(new Error('Model not found'));
 
       await expect(provider.generateText('Test prompt')).rejects.toThrow(
         'Hugging Face model error',
@@ -163,7 +156,7 @@ describe('HuggingFaceLLMProvider', () => {
     });
 
     it('should handle generic errors', async () => {
-      mockHfInference.textGeneration.mockRejectedValue(new Error('Network error'));
+      mockTextGeneration.mockRejectedValue(new Error('Network error'));
 
       await expect(provider.generateText('Test prompt')).rejects.toThrow(
         'LLM generation failed: Network error',
@@ -173,7 +166,7 @@ describe('HuggingFaceLLMProvider', () => {
 
   describe('prompt formatting', () => {
     beforeEach(() => {
-      mockHfInference.textGeneration.mockResolvedValue({
+      mockTextGeneration.mockResolvedValue({
         generated_text: 'Response',
       });
     });
@@ -191,7 +184,7 @@ describe('HuggingFaceLLMProvider', () => {
         systemMessage: 'You are helpful',
       });
 
-      const callArgs = mockHfInference.textGeneration.mock.calls[0][0];
+      const callArgs = mockTextGeneration.mock.calls[0][0];
       expect(callArgs.inputs).toContain('[INST]');
       expect(callArgs.inputs).toContain('<<SYS>>');
     });
@@ -206,7 +199,7 @@ describe('HuggingFaceLLMProvider', () => {
 
       await testProvider.generateText('Hello');
 
-      const callArgs = mockHfInference.textGeneration.mock.calls[0][0];
+      const callArgs = mockTextGeneration.mock.calls[0][0];
       expect(callArgs.inputs).toContain('<s>[INST]');
       expect(callArgs.inputs).toContain('[/INST]');
     });
@@ -223,7 +216,7 @@ describe('HuggingFaceLLMProvider', () => {
         systemMessage: 'System message',
       });
 
-      const callArgs = mockHfInference.textGeneration.mock.calls[0][0];
+      const callArgs = mockTextGeneration.mock.calls[0][0];
       expect(callArgs.inputs).toContain('System:');
       expect(callArgs.inputs).toContain('User:');
     });
