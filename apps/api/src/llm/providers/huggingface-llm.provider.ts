@@ -1,12 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { HfInference } from '@huggingface/inference';
+import { InferenceClient } from '@huggingface/inference';
 import { ConfigService } from '../../config/config.service';
 import { LLMProvider, GenerateOptions } from '../llm.interface';
 
 @Injectable()
 export class HuggingFaceLLMProvider implements LLMProvider {
   private readonly logger = new Logger(HuggingFaceLLMProvider.name);
-  private readonly client: HfInference;
+  private readonly client: InferenceClient;
   private readonly model: string;
 
   constructor(private configService: ConfigService) {
@@ -16,7 +16,7 @@ export class HuggingFaceLLMProvider implements LLMProvider {
       throw new Error('HUGGINGFACE_API_KEY is required for Hugging Face provider');
     }
 
-    this.client = new HfInference(apiKey);
+    this.client = new InferenceClient(apiKey);
     this.model = this.configService.huggingFaceModel;
 
     this.logger.log(`Initialized Hugging Face provider with model: ${this.model}`);
@@ -74,6 +74,12 @@ export class HuggingFaceLLMProvider implements LLMProvider {
    */
   private formatPrompt(userPrompt: string, systemMessage?: string): string {
     const modelLower = this.model.toLowerCase();
+
+    // Zephyr format (ChatML-style)
+    if (modelLower.includes('zephyr')) {
+      const system = systemMessage || 'You are a helpful assistant.';
+      return `<|system|>\n${system}</s>\n<|user|>\n${userPrompt}</s>\n<|assistant|>\n`;
+    }
 
     // Llama 2 format
     if (modelLower.includes('llama-2')) {
