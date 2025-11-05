@@ -88,8 +88,16 @@ export class ConfigService {
     return this.nestConfig.get('AZURE_OPENAI_API_VERSION', { infer: true });
   }
 
-  get llmProvider(): 'azure-openai' | 'mock' {
+  get llmProvider(): 'azure-openai' | 'mock' | 'huggingface' {
     return this.nestConfig.get('LLM_PROVIDER', { infer: true });
+  }
+
+  get huggingFaceApiKey(): string | undefined {
+    return this.nestConfig.get('HUGGINGFACE_API_KEY', { infer: true });
+  }
+
+  get huggingFaceModel(): string {
+    return this.nestConfig.get('HUGGINGFACE_MODEL', { infer: true });
   }
 
   // Jobs

@@ -33,7 +33,11 @@ const envSchema = z.object({
   AZURE_OPENAI_API_KEY: z.string().optional(),
   AZURE_OPENAI_DEPLOYMENT_NAME: z.string().default('gpt-4o'),
   AZURE_OPENAI_API_VERSION: z.string().default('2024-02-15-preview'),
-  LLM_PROVIDER: z.enum(['azure-openai', 'mock']).default('mock'),
+  LLM_PROVIDER: z.enum(['azure-openai', 'mock', 'huggingface']).default('mock'),
+
+  // Hugging Face
+  HUGGINGFACE_API_KEY: z.string().optional(),
+  HUGGINGFACE_MODEL: z.string().default('meta-llama/Llama-2-7b-chat-hf'),
 
   // PDF Generation
   PUPPETEER_EXECUTABLE_PATH: z.string().optional(),

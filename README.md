@@ -19,7 +19,7 @@ Smart Apply is an intelligent job application assistant that:
 - **ORM**: Prisma
 - **Storage**: Azure Blob Storage (disk in dev)
 - **Queue/Jobs**: Azure Service Bus
-- **LLM**: Azure OpenAI (with mock provider for tests)
+- **LLM**: Azure OpenAI, Hugging Face (with mock provider for tests)
 - **PDF**: Puppeteer (Chromium)
 - **Auth**: JWT + optional OAuth (Microsoft Entra ID, Google)
 - **Secrets**: Azure Key Vault (dev via `.env`)
@@ -37,7 +37,7 @@ smart-apply/
 │       │   ├── common/            # Guards, filters, interceptors
 │       │   ├── prisma/            # Database client
 │       │   ├── storage/           # Disk + Azure Blob providers
-│       │   ├── llm/               # Azure OpenAI + Mock providers
+│       │   ├── llm/               # Azure OpenAI + Hugging Face + Mock providers
 │       │   ├── pdf/               # PDF generation (TODO)
 │       │   ├── jobs/              # Service Bus integration (TODO)
 │       │   ├── profile/           # Profile CRUD (TODO)
@@ -451,10 +451,64 @@ See `apps/api/prisma/schema.prisma` for complete schema.
 
 ## 🤖 LLM Integration
 
-- **Provider Interface**: Pluggable design
-- **Azure OpenAI**: Production provider
-- **Mock Provider**: For testing without API calls
-- **Prompt Templates**: Markdown-based in `/prompts`
+Smart Apply supports multiple LLM providers through a pluggable interface:
+
+### Available Providers
+
+#### 1. **Mock Provider** (Default)
+For testing without API calls. Returns placeholder content.
+
+```bash
+LLM_PROVIDER=mock
+```
+
+#### 2. **Azure OpenAI Provider**
+Production-grade provider using Azure OpenAI Service.
+
+```bash
+LLM_PROVIDER=azure-openai
+AZURE_OPENAI_ENDPOINT=https://your-instance.openai.azure.com/
+AZURE_OPENAI_API_KEY=your_api_key
+AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4o
+AZURE_OPENAI_API_VERSION=2024-02-15-preview
+```
+
+#### 3. **Hugging Face Provider** 🆕
+For local development with open-source models via Hugging Face Inference API.
+
+```bash
+LLM_PROVIDER=huggingface
+HUGGINGFACE_API_KEY=hf_your_api_key_here
+HUGGINGFACE_MODEL=meta-llama/Llama-2-7b-chat-hf
+```
+
+**Supported Models:**
+- `meta-llama/Llama-2-7b-chat-hf` (Default, recommended)
+- `meta-llama/Llama-2-13b-chat-hf` (Better quality, slower)
+- `mistralai/Mistral-7B-Instruct-v0.1` (Fast, good quality)
+- `tiiuae/falcon-7b-instruct` (Alternative option)
+
+**Setup:**
+1. Get a free API key from [Hugging Face](https://huggingface.co/settings/tokens)
+2. Add to `.env`:
+   ```bash
+   LLM_PROVIDER=huggingface
+   HUGGINGFACE_API_KEY=hf_xxxxxxxxxxxxx
+   HUGGINGFACE_MODEL=meta-llama/Llama-2-7b-chat-hf
+   ```
+3. Restart the server
+
+**Notes:**
+- Free tier has rate limits (check [Hugging Face pricing](https://huggingface.co/pricing))
+- First request may be slow (model cold start)
+- Supports custom temperature and max_tokens options
+- Automatic prompt formatting for different model types
+
+### Prompt Templates
+
+All providers use Markdown-based templates in `/prompts`:
+- `cover-letter.md` - Cover letter generation template
+- `resume.md` - Resume generation template
 
 ## 🔄 Background Jobs
 
