@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { HuggingFaceLLMProvider } from './huggingface-llm.provider';
-import { ConfigService } from '../../config/config.service';
+import { HuggingFaceLLMProvider } from '../src/llm/providers/huggingface-llm.provider';
+import { ConfigService } from '../src/config/config.service';
 
 // Create a mock instance object that will be returned by HfInference constructor
 const mockTextGeneration = jest.fn();
