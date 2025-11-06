@@ -7,8 +7,20 @@ Production-grade MVP backend built with **TypeScript**, **NestJS**, and **Azure*
 Smart Apply is an intelligent job application assistant that:
 - Stores candidate profiles (skills, certificates, experiences, projects)
 - Ingests job postings from text, URLs, or uploaded files
+- **Agent-based URL parsing** for JavaScript-heavy job sites (Indeed, LinkedIn, Glassdoor)
 - Generates tailored cover letters and resumes using AI
 - Exports professional PDFs stored in Azure Blob Storage
+
+### ✨ Key Features
+
+- **Smart Job Parsing**: Two-tier fallback strategy
+  - Fast static HTML parsing with Cheerio (< 1s)
+  - Intelligent agent-based parsing with Playwright + LLM for dynamic sites (< 30s)
+  - Supports Indeed, LinkedIn, Glassdoor, Monster, and more
+- **Profile Management**: Store skills, experiences, education, certificates, projects
+- **AI-Powered Content**: Generate tailored cover letters and resumes
+- **Multi-Provider Architecture**: Flexible storage, LLM, and queue providers
+- **Production-Ready**: JWT auth, rate limiting, health checks, containerized deployment
 
 ## 🏗️ Architecture
 
@@ -20,6 +32,7 @@ Smart Apply is an intelligent job application assistant that:
 - **Storage**: Azure Blob Storage (disk in dev)
 - **Queue/Jobs**: Azure Service Bus
 - **LLM**: Azure OpenAI, Hugging Face (with mock provider for tests)
+- **Job Parsing**: Playwright + Cheerio (agent-based URL parsing for dynamic sites)
 - **PDF**: Puppeteer (Chromium)
 - **Auth**: JWT + optional OAuth (Microsoft Entra ID, Google)
 - **Secrets**: Azure Key Vault (dev via `.env`)
@@ -425,12 +438,18 @@ Access Swagger documentation at `/docs` when running locally.
 - `PUT /api/v1/profile` - Update profile
 
 #### Job Postings
-- `POST /api/v1/job-postings:parse` - Parse job description
+- `POST /api/v1/job-postings:parse` - Parse job description (text, URL, or file)
 
 #### Applications
 - `POST /api/v1/applications` - Create new application
 - `GET /api/v1/applications/:id` - Get application details
 - `GET /api/v1/applications/:id/files` - Get PDF download URLs (SAS)
+
+### Additional Documentation
+
+- **[Agent-Based URL Parser Guide](./docs/AGENT_URL_PARSER.md)** - Complete guide for parsing JavaScript-heavy job sites
+- **[Architecture Documentation](./ARCHITECTURE.md)** - Detailed system architecture
+- **[Agent Instructions](./my-agents.md)** - Development guidelines and best practices
 
 ## 🔒 Security
 

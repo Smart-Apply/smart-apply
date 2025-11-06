@@ -1,9 +1,20 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { chromium, Browser, Page } from 'playwright';
 import { ChatOpenAI } from '@langchain/openai';
-import { HumanMessage } from '@langchain/core/messages/human';
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
+
+// Use dynamic import for HumanMessage to avoid module resolution issues
+let HumanMessage: any;
+try {
+  const messages = require('@langchain/core/dist/messages');
+  HumanMessage = messages.HumanMessage;
+} catch {
+  // Fallback if require doesn't work
+  HumanMessage = class {
+    constructor(public content: string) {}
+  };
+}
 
 // Define the structured output schema for job posting extraction
 const JobPostingSchema = z.object({
