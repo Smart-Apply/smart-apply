@@ -1,7 +1,7 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { load } from 'cheerio';
 import axios from 'axios';
-import { AgentUrlParser } from '../agents/agent-url.parser';
+import { AgentUrlParser, type JobPostingExtraction } from '../agents/agent-url.parser';
 
 interface ParsedJobData {
   title: string;
@@ -204,7 +204,7 @@ export class UrlParser {
   /**
    * Convert agent result to raw text format
    */
-  private convertToRawText(agentResult: any): string {
+  private convertToRawText(agentResult: JobPostingExtraction): string {
     const parts: string[] = [];
 
     parts.push(`Job Title: ${agentResult.title}`);

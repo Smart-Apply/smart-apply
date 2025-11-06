@@ -4,17 +4,9 @@ import { ChatOpenAI } from '@langchain/openai';
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
-// Use dynamic import for HumanMessage to avoid module resolution issues
-let HumanMessage: any;
-try {
-  const messages = require('@langchain/core/dist/messages');
-  HumanMessage = messages.HumanMessage;
-} catch {
-  // Fallback if require doesn't work
-  HumanMessage = class {
-    constructor(public content: string) {}
-  };
-}
+// Import HumanMessage - use require to avoid TypeScript module resolution issues with @langchain/core
+// This works at runtime but TypeScript can't resolve the path properly in some configurations
+const { HumanMessage } = require('@langchain/core/messages');
 
 // Define the structured output schema for job posting extraction
 const JobPostingSchema = z.object({
@@ -29,7 +21,10 @@ const JobPostingSchema = z.object({
   applicationDeadline: z.string().optional().describe('Application deadline if available'),
 });
 
-type JobPostingExtraction = z.infer<typeof JobPostingSchema>;
+export type JobPostingExtraction = z.infer<typeof JobPostingSchema>;
+
+// Constants
+const MAX_CONTENT_LENGTH = 12000; // Character limit for LLM processing (GPT-4o-mini context window optimization)
 
 @Injectable()
 export class AgentUrlParser {
@@ -292,7 +287,7 @@ Important:
 - Be thorough and accurate
 
 Job Posting Content:
-${content.substring(0, 12000)}
+${content.substring(0, MAX_CONTENT_LENGTH)}
 
 Respond with a valid JSON object matching this schema:
 ${JSON.stringify(schema, null, 2)}`;
