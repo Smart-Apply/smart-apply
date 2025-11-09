@@ -18,7 +18,7 @@
 | Bewerbung & Tracking | Bewerbungsagent (Auto-Apply) | ❌ | ❌ | ✅ | 🔴 future | Vollautomatisierte Bewerbung | Hoch | Hoch |
 | Dokumente & PDF | PDF-Export | ❌ | ✅ | ✅ | 🟢 live | Professionelle Dokumente | Mittel | Mittel |
 | Dokumente & PDF | Automatische Formatierung (ATS-konform) | ❌ | ✅ | ✅ | 🟡 geplant | Garantierte Lesbarkeit | Hoch | Hoch |
-| Analytics & Feedback | Keyword Score / ATS-Score | ❌ | ✅ | ✅ | 🟢 live | Bewerbungen optimieren | Mittel | Hoch |
+| Analytics & Feedback | Keyword Score / ATS-Score | ❌ | ✅ | ✅ | 🟡 geplant | Bewerbungen optimieren | Mittel | Hoch |
 | Analytics & Feedback | Feedback zur Bewerbung (KI-basiert) | ❌ | ✅ | ✅ | 🟡 geplant | Verbesserungsvorschläge | Hoch | Hoch |
 | Integrationen | LinkedIn-Import | ❌ | ✅ | ✅ | 🟡 geplant | Spart Zeit | Mittel | Mittel |
 | Integrationen | Gmail-Integration | ❌ | ❌ | ✅ | 🟡 geplant | Automatische Updates | Hoch | Mittel |
