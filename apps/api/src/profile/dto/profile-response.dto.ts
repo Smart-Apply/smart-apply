@@ -65,6 +65,32 @@ export class ProjectResponseDto {
   url?: string;
 }
 
+export class EducationResponseDto {
+  @ApiProperty()
+  id: string;
+
+  @ApiProperty()
+  degree: string;
+
+  @ApiProperty()
+  institution: string;
+
+  @ApiProperty({ required: false })
+  fieldOfStudy?: string;
+
+  @ApiProperty({ required: false })
+  startYear?: string;
+
+  @ApiProperty({ required: false })
+  endYear?: string;
+
+  @ApiProperty({ required: false })
+  gpa?: string;
+
+  @ApiProperty({ required: false })
+  description?: string;
+}
+
 export class ProfileResponseDto {
   @ApiProperty()
   id: string;
@@ -104,6 +130,9 @@ export class ProfileResponseDto {
 
   @ApiProperty({ type: [ProjectResponseDto] })
   projects: ProjectResponseDto[];
+
+  @ApiProperty({ type: [EducationResponseDto] })
+  education: EducationResponseDto[];
 
   @ApiProperty()
   createdAt: Date;

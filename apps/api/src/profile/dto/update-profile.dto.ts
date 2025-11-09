@@ -95,6 +95,44 @@ export class ProjectDto {
   url?: string;
 }
 
+export class EducationDto {
+  @ApiProperty({ example: 'Bachelor of Science in Computer Science' })
+  @IsString()
+  degree: string;
+
+  @ApiProperty({ example: 'Stanford University' })
+  @IsString()
+  institution: string;
+
+  @ApiProperty({ example: 'Computer Science', required: false })
+  @IsOptional()
+  @IsString()
+  fieldOfStudy?: string;
+
+  @ApiProperty({ example: '2018-09-01', required: false })
+  @IsOptional()
+  @IsDateString()
+  startYear?: string;
+
+  @ApiProperty({ example: '2022-06-15', required: false })
+  @IsOptional()
+  @IsDateString()
+  endYear?: string;
+
+  @ApiProperty({ example: '3.8/4.0', required: false })
+  @IsOptional()
+  @IsString()
+  gpa?: string;
+
+  @ApiProperty({
+    example: "Focus on Software Engineering and Distributed Systems. Dean's List 2020-2022.",
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  description?: string;
+}
+
 export class UpdateProfileDto {
   @ApiProperty({ example: 'John Doe', required: false })
   @IsOptional()
@@ -161,4 +199,26 @@ export class UpdateProfileDto {
   @ValidateNested({ each: true })
   @Type(() => ProjectDto)
   projects?: ProjectDto[];
+
+  @ApiProperty({
+    type: [EducationDto],
+    required: false,
+    example: [
+      {
+        degree: 'Bachelor of Science in Computer Science',
+        institution: 'Stanford University',
+        fieldOfStudy: 'Computer Science',
+        startYear: '2018-09-01',
+        endYear: '2022-06-15',
+        gpa: '3.8/4.0',
+        description:
+          "Focus on Software Engineering and Distributed Systems. Dean's List 2020-2022.",
+      },
+    ],
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => EducationDto)
+  education?: EducationDto[];
 }

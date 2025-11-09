@@ -22,6 +22,9 @@ export class ProfileService {
           orderBy: { startDate: 'desc' },
         },
         projects: true,
+        education: {
+          orderBy: { startYear: 'desc' },
+        },
       },
     });
 
@@ -130,6 +133,25 @@ export class ProfileService {
           }
         }
 
+        // Update education
+        if (dto.education !== undefined) {
+          await tx.education.deleteMany({ where: { profileId: profile.id } });
+          if (dto.education.length > 0) {
+            await tx.education.createMany({
+              data: dto.education.map((edu) => ({
+                profileId: profile.id,
+                degree: edu.degree,
+                institution: edu.institution,
+                fieldOfStudy: edu.fieldOfStudy,
+                startYear: edu.startYear ? new Date(edu.startYear) : null,
+                endYear: edu.endYear ? new Date(edu.endYear) : null,
+                gpa: edu.gpa,
+                description: edu.description,
+              })),
+            });
+          }
+        }
+
         // Fetch updated profile with all relations
         return tx.profile.findUnique({
           where: { id: profile.id },
@@ -140,6 +162,9 @@ export class ProfileService {
               orderBy: { startDate: 'desc' },
             },
             projects: true,
+            education: {
+              orderBy: { startYear: 'desc' },
+            },
           },
         });
       });
@@ -195,6 +220,17 @@ export class ProfileService {
         technologies: p.technologies,
         url: p.url,
       })),
+      education:
+        profile.education?.map((e: any) => ({
+          id: e.id,
+          degree: e.degree,
+          institution: e.institution,
+          fieldOfStudy: e.fieldOfStudy,
+          startYear: e.startYear?.toISOString(),
+          endYear: e.endYear?.toISOString(),
+          gpa: e.gpa,
+          description: e.description,
+        })) || [],
       createdAt: profile.createdAt,
       updatedAt: profile.updatedAt,
     };

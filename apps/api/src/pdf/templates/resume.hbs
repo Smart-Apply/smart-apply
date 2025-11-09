@@ -116,8 +116,14 @@
     {{#each education}}
     <div class="education-item no-break">
       <div class="education-content">
-        <div class="education-degree">{{degree}}</div>
+        <div class="education-degree">{{degree}}{{#if fieldOfStudy}} - {{fieldOfStudy}}{{/if}}</div>
         <div class="education-institution">{{institution}}</div>
+        {{#if gpa}}
+        <div class="education-gpa">GPA: {{gpa}}</div>
+        {{/if}}
+        {{#if description}}
+        <div class="education-description">{{description}}</div>
+        {{/if}}
       </div>
       <div class="education-date">{{year}}</div>
     </div>

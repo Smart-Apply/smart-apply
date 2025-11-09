@@ -59,6 +59,9 @@ export interface Education {
   degree: string;
   institution: string;
   year: string;
+  fieldOfStudy?: string;
+  gpa?: string;
+  description?: string;
 }
 
 export interface Certification {

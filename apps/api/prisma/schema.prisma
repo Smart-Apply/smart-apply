@@ -49,14 +49,14 @@ model Profile {
   // Certificates
   certificates  Certificate[]
   
+  // Education
+  education     Education[]
+  
   // Work experiences
   experiences   Experience[]
   
   // Projects
   projects      Project[]
-  
-  // Education
-  education     Education[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -93,6 +93,23 @@ model Certificate {
   @@map("certificates")
 }
 
+model Education {
+  id           String  @id @default(cuid())
+  profileId    String
+  profile      Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  
+  degree       String
+  institution  String
+  fieldOfStudy String?
+  startYear    DateTime?
+  endYear      DateTime?
+  gpa          String?
+  description  String?
+  
+  @@index([profileId])
+  @@map("education")
+}
+
 model Experience {
   id        String  @id @default(cuid())
   profileId String
@@ -127,23 +144,6 @@ model Project {
   
   @@index([profileId])
   @@map("projects")
-}
-
-model Education {
-  id           String   @id @default(cuid())
-  profileId    String
-  profile      Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  
-  degree       String
-  institution  String
-  fieldOfStudy String?
-  startYear    Int
-  endYear      Int?     // null = currently enrolled
-  gpa          String?
-  description  String?
-  
-  @@index([profileId])
-  @@map("education")
 }
 
 model JobPosting {

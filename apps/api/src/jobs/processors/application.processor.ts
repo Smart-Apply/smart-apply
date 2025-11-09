@@ -66,11 +66,27 @@ export class ApplicationProcessor {
         .join('\n');
       const certificates = profile.certificates.map((c) => `${c.name} by ${c.issuer}`).join(', ');
       const projects = profile.projects.map((p) => `${p.name}: ${p.description || ''}`).join('\n');
+
+      // Format education entries with proper date handling
       const education = profile.education
-        .map(
-          (e) =>
-            `${e.degree} at ${e.institution} (${e.startYear} - ${e.endYear ? e.endYear : 'Present'})`,
-        )
+        .map((e) => {
+          const startYear = e.startYear ? new Date(e.startYear).getFullYear() : '';
+          const endYear = e.endYear ? new Date(e.endYear).getFullYear() : 'Present';
+          const yearRange = startYear ? `${startYear} - ${endYear}` : '';
+
+          let educationLine = `${e.degree} at ${e.institution}`;
+          if (e.fieldOfStudy) {
+            educationLine += ` (${e.fieldOfStudy})`;
+          }
+          if (yearRange) {
+            educationLine += ` - ${yearRange}`;
+          }
+          if (e.gpa) {
+            educationLine += ` | GPA: ${e.gpa}`;
+          }
+
+          return educationLine;
+        })
         .join('\n');
 
       // 4. Generate Cover Letter
@@ -117,6 +133,23 @@ export class ApplicationProcessor {
       try {
         // Try to parse as JSON first
         const resumeJson = JSON.parse(resumeContent);
+
+        // Format education data for template
+        const educationData = profile.education.map((e) => {
+          const startYear = e.startYear ? new Date(e.startYear).getFullYear() : '';
+          const endYear = e.endYear ? new Date(e.endYear).getFullYear() : 'Present';
+          const yearRange = startYear ? `${startYear} - ${endYear}` : '';
+
+          return {
+            degree: e.degree,
+            institution: e.institution,
+            year: yearRange,
+            fieldOfStudy: e.fieldOfStudy,
+            gpa: e.gpa,
+            description: e.description,
+          };
+        });
+
         resumeData = {
           candidateName,
           email: profile.user.email,
@@ -124,6 +157,7 @@ export class ApplicationProcessor {
           linkedin: profile.linkedinUrl || undefined,
           github: profile.githubUrl || undefined,
           location: profile.location || undefined,
+          education: educationData, // Add structured education data
           ...resumeJson,
         };
       } catch (parseError) {
