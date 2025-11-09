@@ -68,7 +68,7 @@ export class ApplicationProcessor {
 
       // 4. Generate Cover Letter
       this.logger.log('Generating cover letter...');
-      const coverLetterText = await this.llmService.generateCoverLetter({
+      const coverLetterContent = await this.llmService.generateCoverLetter({
         candidateName,
         jobTitle: jobPosting.title,
         companyName: jobPosting.company,
@@ -79,7 +79,7 @@ export class ApplicationProcessor {
 
       // 5. Generate Resume
       this.logger.log('Generating resume...');
-      const resumeText = await this.llmService.generateResume({
+      const resumeContent = await this.llmService.generateResume({
         candidateName,
         contactInfo: `${profile.phone || ''} | ${profile.location || ''} | ${profile.linkedinUrl || ''}`,
         summary: profile.summary || '',
@@ -90,14 +90,52 @@ export class ApplicationProcessor {
         projects,
       });
 
-      // 6. Convert to PDFs
+      // 6. Prepare structured data for PDF templates
+      this.logger.log('Preparing structured data for PDFs...');
+      
+      // Cover letter template data
+      const coverLetterData = {
+        candidateName,
+        email: profile.user.email,
+        phone: profile.phone || undefined,
+        linkedin: profile.linkedinUrl || undefined,
+        github: profile.githubUrl || undefined,
+        location: profile.location || undefined,
+        companyName: jobPosting.company,
+        content: coverLetterContent, // HTML from LLM
+      };
+
+      // Parse resume JSON from LLM (with fallback to plain text)
+      let resumeData;
+      try {
+        // Try to parse as JSON first
+        const resumeJson = JSON.parse(resumeContent);
+        resumeData = {
+          candidateName,
+          email: profile.user.email,
+          phone: profile.phone || undefined,
+          linkedin: profile.linkedinUrl || undefined,
+          github: profile.githubUrl || undefined,
+          location: profile.location || undefined,
+          ...resumeJson,
+        };
+      } catch (parseError) {
+        // Fallback: treat as plain text/HTML and use legacy method
+        this.logger.warn('Resume content is not JSON, falling back to legacy HTML rendering');
+        resumeData = null;
+      }
+
+      // 7. Convert to PDFs
       this.logger.log('Converting to PDFs...');
-      const coverLetterPdf = await this.pdfService.generatePDF(coverLetterText, {
-        template: 'cover-letter',
-      });
-      const resumePdf = await this.pdfService.generatePDF(resumeText, {
-        template: 'resume',
-      });
+      const coverLetterPdf = await this.pdfService.generateCoverLetterPDF(coverLetterData);
+      
+      const resumePdf = resumeData
+        ? await this.pdfService.generateResumePDF(resumeData)
+        : await this.pdfService.generatePDF(resumeContent, { template: 'resume' });
+
+      // Store the generated text for reference
+      const coverLetterText = coverLetterContent;
+      const resumeText = resumeData ? JSON.stringify(resumeData) : resumeContent;
 
       // 7. Upload to Storage
       this.logger.log('Uploading to storage...');

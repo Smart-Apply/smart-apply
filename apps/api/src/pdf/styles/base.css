@@ -1,0 +1,115 @@
+/* Base CSS for Professional PDF Generation */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Professional Font Stack - system fonts similar to Calibri/Open Sans */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 11pt;
+  line-height: 1.5;
+  color: #2c3e50;
+  background: white;
+}
+
+/* Typography Hierarchy */
+h1 {
+  font-size: 26pt;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 8pt;
+  letter-spacing: -0.5pt;
+}
+
+h2 {
+  font-size: 16pt;
+  font-weight: 600;
+  color: #0066cc;
+  margin-top: 16pt;
+  margin-bottom: 8pt;
+  padding-bottom: 4pt;
+  border-bottom: 2pt solid #0066cc;
+  letter-spacing: -0.3pt;
+}
+
+h3 {
+  font-size: 13pt;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-top: 10pt;
+  margin-bottom: 6pt;
+}
+
+h4 {
+  font-size: 11pt;
+  font-weight: 600;
+  color: #4a5568;
+  margin-top: 8pt;
+  margin-bottom: 4pt;
+}
+
+/* Paragraphs */
+p {
+  margin-bottom: 8pt;
+  text-align: justify;
+}
+
+/* Lists */
+ul {
+  margin-left: 18pt;
+  margin-bottom: 10pt;
+}
+
+li {
+  margin-bottom: 4pt;
+  padding-left: 4pt;
+}
+
+/* Strong emphasis */
+strong {
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+/* Links */
+a {
+  color: #0066cc;
+  text-decoration: none;
+}
+
+/* Utility Classes */
+.text-muted {
+  color: #6c757d;
+}
+
+.text-small {
+  font-size: 9pt;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.mb-small {
+  margin-bottom: 6pt;
+}
+
+.mb-medium {
+  margin-bottom: 12pt;
+}
+
+.mb-large {
+  margin-bottom: 20pt;
+}
+
+/* Page break control */
+.page-break {
+  page-break-after: always;
+}
+
+.no-break {
+  page-break-inside: avoid;
+}

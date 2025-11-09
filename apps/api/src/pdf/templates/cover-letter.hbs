@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cover Letter - {{candidateName}}</title>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <h1>{{candidateName}}</h1>
+    <div class="contact-info">
+      {{#if email}}
+        <a href="mailto:{{email}}">{{email}}</a>
+      {{/if}}
+      {{#if phone}}
+        <span class="separator">|</span>
+        {{phone}}
+      {{/if}}
+      {{#if linkedin}}
+        <span class="separator">|</span>
+        <a href="{{linkedin}}">LinkedIn</a>
+      {{/if}}
+      {{#if github}}
+        <span class="separator">|</span>
+        <a href="{{github}}">GitHub</a>
+      {{/if}}
+      {{#if location}}
+        <span class="separator">|</span>
+        {{location}}
+      {{/if}}
+    </div>
+  </div>
+
+  <!-- Date -->
+  <div class="date-section">
+    {{date}}
+  </div>
+
+  <!-- Recipient -->
+  {{#if recipientName}}
+  <div class="recipient-section">
+    <strong>{{recipientName}}</strong>
+    {{#if companyName}}
+    {{companyName}}
+    {{/if}}
+    {{#if companyAddress}}
+    <br>{{companyAddress}}
+    {{/if}}
+  </div>
+  {{/if}}
+
+  <!-- Salutation -->
+  <div class="salutation">
+    Dear {{#if recipientName}}{{recipientName}}{{else}}Hiring Manager{{/if}},
+  </div>
+
+  <!-- Body Content -->
+  <div class="body-content">
+    {{{content}}}
+  </div>
+
+  <!-- Closing -->
+  <div class="closing">
+    <p>{{closingPhrase}}</p>
+    <div class="signature">
+      <strong>{{candidateName}}</strong>
+    </div>
+  </div>
+
+  {{#if footer}}
+  <!-- Optional Footer -->
+  <div class="footer">
+    {{{footer}}}
+  </div>
+  {{/if}}
+</body>
+</html>

@@ -1,6 +1,11 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import * as puppeteer from 'puppeteer';
 import { ConfigService } from '../config/config.service';
+import {
+  TemplateRendererService,
+  CoverLetterTemplateData,
+  ResumeTemplateData,
+} from './template-renderer.service';
 
 export interface PdfGenerationOptions {
   template?: 'cover-letter' | 'resume';
@@ -18,8 +23,11 @@ export class PdfService implements OnModuleDestroy {
   private readonly logger = new Logger(PdfService.name);
   private browser: puppeteer.Browser | null = null;
   private browserInitPromise: Promise<puppeteer.Browser> | null = null;
+  private templateRenderer: TemplateRendererService;
 
-  constructor(private configService: ConfigService) {}
+  constructor(private configService: ConfigService) {
+    this.templateRenderer = new TemplateRendererService();
+  }
 
   async onModuleDestroy() {
     if (this.browser) {
@@ -112,6 +120,9 @@ export class PdfService implements OnModuleDestroy {
     throw new Error('All browser launch configurations failed');
   }
 
+  /**
+   * Generate PDF from HTML string (legacy method - still supported)
+   */
   async generatePDF(html: string, options: PdfGenerationOptions = {}): Promise<Buffer> {
     const browser = await this.initializeBrowser();
     const page = await browser.newPage();
@@ -122,7 +133,7 @@ export class PdfService implements OnModuleDestroy {
         waitUntil: 'networkidle0',
       });
 
-      // Add CSS based on template
+      // Add CSS based on template (legacy behavior)
       if (options.template) {
         const css = this.getTemplateCSS(options.template);
         await page.addStyleTag({ content: css });
@@ -144,6 +155,84 @@ export class PdfService implements OnModuleDestroy {
       return Buffer.from(pdf);
     } catch (error) {
       this.logger.error('Failed to generate PDF', error);
+      throw new Error(`PDF generation failed: ${error.message}`);
+    } finally {
+      await page.close();
+    }
+  }
+
+  /**
+   * Generate professional cover letter PDF from structured data
+   */
+  async generateCoverLetterPDF(data: CoverLetterTemplateData): Promise<Buffer> {
+    try {
+      const html = await this.templateRenderer.renderCoverLetter(data);
+      return this.generatePDFFromRenderedHTML(html, {
+        margin: {
+          top: '20mm',
+          right: '25mm',
+          bottom: '20mm',
+          left: '25mm',
+        },
+      });
+    } catch (error) {
+      this.logger.error('Failed to generate cover letter PDF', error);
+      throw new Error(`Cover letter PDF generation failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Generate professional resume PDF from structured data
+   */
+  async generateResumePDF(data: ResumeTemplateData): Promise<Buffer> {
+    try {
+      const html = await this.templateRenderer.renderResume(data);
+      return this.generatePDFFromRenderedHTML(html, {
+        margin: {
+          top: '15mm',
+          right: '20mm',
+          bottom: '15mm',
+          left: '20mm',
+        },
+      });
+    } catch (error) {
+      this.logger.error('Failed to generate resume PDF', error);
+      throw new Error(`Resume PDF generation failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Internal method to generate PDF from pre-rendered HTML with styles
+   */
+  private async generatePDFFromRenderedHTML(
+    html: string,
+    options: PdfGenerationOptions = {},
+  ): Promise<Buffer> {
+    const browser = await this.initializeBrowser();
+    const page = await browser.newPage();
+
+    try {
+      // Set HTML content (already includes styles)
+      await page.setContent(html, {
+        waitUntil: 'networkidle0',
+      });
+
+      // Generate PDF
+      const pdf = await page.pdf({
+        format: options.format || 'A4',
+        margin: options.margin || {
+          top: '20mm',
+          right: '20mm',
+          bottom: '20mm',
+          left: '20mm',
+        },
+        printBackground: true,
+      });
+
+      this.logger.log(`PDF generated successfully (${pdf.length} bytes)`);
+      return Buffer.from(pdf);
+    } catch (error) {
+      this.logger.error('Failed to generate PDF from rendered HTML', error);
       throw new Error(`PDF generation failed: ${error.message}`);
     } finally {
       await page.close();

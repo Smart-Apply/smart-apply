@@ -1,0 +1,152 @@
+/* Professional Cover Letter Styling */
+
+/* Header Section */
+.header {
+  text-align: center;
+  margin-bottom: 24pt;
+  padding-bottom: 12pt;
+  border-bottom: 3pt solid #0066cc;
+}
+
+.header h1 {
+  font-size: 28pt;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 8pt;
+  letter-spacing: -0.5pt;
+}
+
+.contact-info {
+  font-size: 10pt;
+  color: #4a5568;
+  line-height: 1.4;
+}
+
+.contact-info a {
+  color: #0066cc;
+  text-decoration: none;
+  margin: 0 8pt;
+}
+
+.contact-info .separator {
+  color: #cbd5e0;
+  margin: 0 4pt;
+}
+
+/* Date and Recipient */
+.date-section {
+  margin-bottom: 16pt;
+  font-size: 10pt;
+  color: #4a5568;
+}
+
+.recipient-section {
+  margin-bottom: 20pt;
+  line-height: 1.4;
+}
+
+.recipient-section strong {
+  display: block;
+  color: #1a1a1a;
+  font-size: 11pt;
+  margin-bottom: 2pt;
+}
+
+/* Salutation */
+.salutation {
+  margin-bottom: 16pt;
+  font-weight: 500;
+  color: #1a1a1a;
+}
+
+/* Body Content */
+.body-content {
+  margin-bottom: 20pt;
+}
+
+.body-content p {
+  text-align: justify;
+  margin-bottom: 12pt;
+  line-height: 1.6;
+}
+
+/* Key Qualifications Section */
+.key-qualifications {
+  margin: 16pt 0;
+  padding: 12pt;
+  background: #f7fafc;
+  border-left: 4pt solid #0066cc;
+}
+
+.key-qualifications h3 {
+  font-size: 12pt;
+  color: #0066cc;
+  margin-top: 0;
+  margin-bottom: 10pt;
+}
+
+.key-qualifications ul {
+  margin-left: 20pt;
+  margin-bottom: 0;
+}
+
+.key-qualifications li {
+  margin-bottom: 6pt;
+  line-height: 1.5;
+}
+
+.key-qualifications li::marker {
+  color: #0066cc;
+  font-weight: bold;
+}
+
+/* Highlight important achievements with icons */
+.achievement::before {
+  content: "🎯 ";
+  margin-right: 4pt;
+}
+
+.metric::before {
+  content: "📊 ";
+  margin-right: 4pt;
+}
+
+/* Motivation Section */
+.motivation-section {
+  margin: 16pt 0;
+  padding-left: 12pt;
+  border-left: 3pt solid #e2e8f0;
+}
+
+/* Closing */
+.closing {
+  margin-top: 24pt;
+  margin-bottom: 12pt;
+}
+
+.closing p {
+  margin-bottom: 6pt;
+  text-align: left;
+}
+
+.signature {
+  margin-top: 20pt;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+/* Footer */
+.footer {
+  margin-top: 32pt;
+  padding-top: 12pt;
+  border-top: 1pt solid #e2e8f0;
+  font-size: 9pt;
+  color: #6c757d;
+  text-align: center;
+}
+
+/* Call to Action */
+.cta {
+  font-weight: 500;
+  color: #0066cc;
+}

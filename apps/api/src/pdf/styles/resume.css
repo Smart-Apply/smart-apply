@@ -1,0 +1,372 @@
+/* Professional Resume Styling */
+
+/* Header Section */
+.resume-header {
+  text-align: center;
+  margin-bottom: 20pt;
+  padding-bottom: 12pt;
+  border-bottom: 3pt solid #0066cc;
+}
+
+.resume-header h1 {
+  font-size: 28pt;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 6pt;
+  letter-spacing: -0.5pt;
+}
+
+.resume-header .contact-info {
+  font-size: 10pt;
+  color: #4a5568;
+  line-height: 1.4;
+}
+
+.resume-header .contact-info a {
+  color: #0066cc;
+  margin: 0 6pt;
+}
+
+.resume-header .contact-info .separator {
+  color: #cbd5e0;
+  margin: 0 4pt;
+}
+
+/* Professional Summary */
+.summary-section {
+  margin-bottom: 20pt;
+  padding: 14pt;
+  background: linear-gradient(to right, #f7fafc, #ffffff);
+  border-left: 4pt solid #0066cc;
+  page-break-inside: avoid;
+}
+
+.summary-section h2 {
+  font-size: 14pt;
+  color: #0066cc;
+  margin-top: 0;
+  margin-bottom: 10pt;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.summary-section p {
+  margin-bottom: 0;
+  line-height: 1.6;
+  text-align: left;
+  font-size: 10.5pt;
+}
+
+/* Section Styling */
+.section {
+  margin-bottom: 18pt;
+  page-break-inside: avoid;
+}
+
+.section-title {
+  font-size: 15pt;
+  font-weight: 600;
+  color: #0066cc;
+  margin-bottom: 12pt;
+  padding-bottom: 4pt;
+  border-bottom: 2pt solid #0066cc;
+  text-transform: uppercase;
+  letter-spacing: 0.5pt;
+}
+
+/* Skills Section */
+.skills-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12pt;
+  margin-bottom: 10pt;
+}
+
+.skill-category {
+  margin-bottom: 10pt;
+  page-break-inside: avoid;
+}
+
+.skill-category-title {
+  font-weight: 600;
+  color: #1a1a1a;
+  font-size: 11pt;
+  margin-bottom: 6pt;
+  display: block;
+}
+
+/* Skill category icons using Unicode */
+.skill-category-title.languages::before {
+  content: "💻 ";
+  margin-right: 6pt;
+}
+
+.skill-category-title.frameworks::before {
+  content: "⚙️ ";
+  margin-right: 6pt;
+}
+
+.skill-category-title.cloud::before {
+  content: "☁️ ";
+  margin-right: 6pt;
+}
+
+.skill-category-title.databases::before {
+  content: "🗄️ ";
+  margin-right: 6pt;
+}
+
+.skill-category-title.tools::before {
+  content: "🔧 ";
+  margin-right: 6pt;
+}
+
+.skill-category-title.other::before {
+  content: "📦 ";
+  margin-right: 6pt;
+}
+
+.skill-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6pt;
+}
+
+.skill-tag {
+  display: inline-block;
+  padding: 3pt 8pt;
+  background: #e6f2ff;
+  color: #0066cc;
+  border-radius: 3pt;
+  font-size: 9.5pt;
+  font-weight: 500;
+  border: 1pt solid #b3d9ff;
+}
+
+/* Experience Section */
+.experience-item {
+  margin-bottom: 16pt;
+  page-break-inside: avoid;
+  position: relative;
+  padding-left: 16pt;
+}
+
+/* Timeline indicator */
+.experience-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 4pt;
+  width: 8pt;
+  height: 8pt;
+  background: #0066cc;
+  border-radius: 50%;
+  border: 2pt solid #b3d9ff;
+}
+
+.experience-header {
+  margin-bottom: 6pt;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.experience-title {
+  font-weight: 600;
+  font-size: 12pt;
+  color: #1a1a1a;
+}
+
+.experience-date {
+  font-size: 9.5pt;
+  color: #6c757d;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.experience-company {
+  font-style: italic;
+  color: #4a5568;
+  margin-bottom: 8pt;
+  font-size: 10.5pt;
+}
+
+.experience-company::before {
+  content: "📍 ";
+  margin-right: 4pt;
+}
+
+.experience-item ul {
+  margin-left: 18pt;
+  margin-bottom: 0;
+}
+
+.experience-item li {
+  margin-bottom: 5pt;
+  line-height: 1.5;
+}
+
+/* Highlight achievements */
+.experience-item li::marker {
+  color: #0066cc;
+  font-weight: bold;
+}
+
+/* Projects Section */
+.project-item {
+  margin-bottom: 14pt;
+  page-break-inside: avoid;
+  padding: 10pt;
+  background: #f7fafc;
+  border-radius: 4pt;
+  border-left: 3pt solid #0066cc;
+}
+
+.project-header {
+  margin-bottom: 6pt;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.project-title {
+  font-weight: 600;
+  font-size: 11.5pt;
+  color: #1a1a1a;
+}
+
+.project-title::before {
+  content: "🚀 ";
+  margin-right: 4pt;
+}
+
+.project-date {
+  font-size: 9pt;
+  color: #6c757d;
+}
+
+.project-description {
+  margin-bottom: 6pt;
+  font-size: 10pt;
+  color: #4a5568;
+  font-style: italic;
+}
+
+.project-item ul {
+  margin-left: 18pt;
+  margin-bottom: 0;
+}
+
+.project-item li {
+  margin-bottom: 4pt;
+  font-size: 10pt;
+}
+
+/* Education Section */
+.education-item {
+  margin-bottom: 12pt;
+  page-break-inside: avoid;
+  display: flex;
+  justify-content: space-between;
+  padding: 10pt;
+  background: #f7fafc;
+  border-radius: 4pt;
+}
+
+.education-content {
+  flex: 1;
+}
+
+.education-degree {
+  font-weight: 600;
+  font-size: 11.5pt;
+  color: #1a1a1a;
+  margin-bottom: 4pt;
+}
+
+.education-degree::before {
+  content: "🎓 ";
+  margin-right: 4pt;
+}
+
+.education-institution {
+  color: #4a5568;
+  font-size: 10.5pt;
+}
+
+.education-date {
+  font-size: 9.5pt;
+  color: #6c757d;
+  white-space: nowrap;
+  align-self: flex-start;
+}
+
+/* Certifications Section */
+.certification-item {
+  margin-bottom: 10pt;
+  page-break-inside: avoid;
+  padding: 8pt 10pt;
+  background: #fff5e6;
+  border-left: 3pt solid #ff9900;
+  border-radius: 3pt;
+}
+
+.certification-name {
+  font-weight: 600;
+  font-size: 11pt;
+  color: #1a1a1a;
+  margin-bottom: 3pt;
+}
+
+.certification-name::before {
+  content: "🏆 ";
+  margin-right: 4pt;
+}
+
+.certification-issuer {
+  font-size: 10pt;
+  color: #4a5568;
+}
+
+.certification-date {
+  font-size: 9pt;
+  color: #6c757d;
+  margin-left: 8pt;
+}
+
+/* Two-column layout support (optional) */
+.two-column-layout {
+  display: flex;
+  gap: 20pt;
+}
+
+.sidebar {
+  width: 35%;
+  padding-right: 16pt;
+  border-right: 2pt solid #e2e8f0;
+}
+
+.main-content {
+  width: 65%;
+}
+
+/* Metrics highlighting */
+.metric {
+  font-weight: 600;
+  color: #0066cc;
+}
+
+/* Page breaks */
+.section {
+  page-break-inside: avoid;
+}
+
+@media print {
+  .resume-header,
+  .section,
+  .experience-item,
+  .project-item,
+  .education-item {
+    page-break-inside: avoid;
+  }
+}

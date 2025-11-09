@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resume - {{candidateName}}</title>
+</head>
+<body>
+  <!-- Header -->
+  <div class="resume-header">
+    <h1>{{candidateName}}</h1>
+    <div class="contact-info">
+      {{#if email}}
+        <a href="mailto:{{email}}">{{email}}</a>
+      {{/if}}
+      {{#if phone}}
+        <span class="separator">|</span>
+        {{phone}}
+      {{/if}}
+      {{#if linkedin}}
+        <span class="separator">|</span>
+        <a href="{{linkedin}}">LinkedIn</a>
+      {{/if}}
+      {{#if github}}
+        <span class="separator">|</span>
+        <a href="{{github}}">GitHub</a>
+      {{/if}}
+      {{#if location}}
+        <span class="separator">|</span>
+        {{location}}
+      {{/if}}
+    </div>
+  </div>
+
+  <!-- Professional Summary -->
+  {{#if summary}}
+  <div class="summary-section no-break">
+    <h2>Professional Summary</h2>
+    <p>{{{summary}}}</p>
+  </div>
+  {{/if}}
+
+  <!-- Skills -->
+  {{#if skillCategories}}
+  <div class="section no-break">
+    <div class="section-title">Technical Skills</div>
+    <div class="skills-container">
+      {{#each skillCategories}}
+      <div class="skill-category">
+        <span class="skill-category-title {{toLowerCase type}}">{{type}}</span>
+        <div class="skill-tags">
+          {{#each skills}}
+          <span class="skill-tag">{{this}}</span>
+          {{/each}}
+        </div>
+      </div>
+      {{/each}}
+    </div>
+  </div>
+  {{/if}}
+
+  <!-- Experience -->
+  {{#if experiences}}
+  <div class="section">
+    <div class="section-title">Professional Experience</div>
+    {{#each experiences}}
+    <div class="experience-item no-break">
+      <div class="experience-header">
+        <div class="experience-title">{{title}}</div>
+        <div class="experience-date">{{dateRange}}</div>
+      </div>
+      <div class="experience-company">{{company}}{{#if location}}, {{location}}{{/if}}</div>
+      {{#if achievements}}
+      <ul>
+        {{#each achievements}}
+        <li>{{{this}}}</li>
+        {{/each}}
+      </ul>
+      {{/if}}
+    </div>
+    {{/each}}
+  </div>
+  {{/if}}
+
+  <!-- Projects -->
+  {{#if projects}}
+  <div class="section">
+    <div class="section-title">Key Projects</div>
+    {{#each projects}}
+    <div class="project-item no-break">
+      <div class="project-header">
+        <div class="project-title">{{name}}</div>
+        {{#if date}}
+        <div class="project-date">{{date}}</div>
+        {{/if}}
+      </div>
+      {{#if description}}
+      <div class="project-description">{{description}}</div>
+      {{/if}}
+      {{#if highlights}}
+      <ul>
+        {{#each highlights}}
+        <li>{{{this}}}</li>
+        {{/each}}
+      </ul>
+      {{/if}}
+    </div>
+    {{/each}}
+  </div>
+  {{/if}}
+
+  <!-- Education -->
+  {{#if education}}
+  <div class="section">
+    <div class="section-title">Education</div>
+    {{#each education}}
+    <div class="education-item no-break">
+      <div class="education-content">
+        <div class="education-degree">{{degree}}</div>
+        <div class="education-institution">{{institution}}</div>
+      </div>
+      <div class="education-date">{{year}}</div>
+    </div>
+    {{/each}}
+  </div>
+  {{/if}}
+
+  <!-- Certifications -->
+  {{#if certifications}}
+  <div class="section">
+    <div class="section-title">Certifications</div>
+    {{#each certifications}}
+    <div class="certification-item no-break">
+      <div class="certification-name">{{name}}</div>
+      <span class="certification-issuer">{{issuer}}</span>
+      {{#if date}}
+      <span class="certification-date">• {{date}}</span>
+      {{/if}}
+    </div>
+    {{/each}}
+  </div>
+  {{/if}}
+</body>
+</html>
