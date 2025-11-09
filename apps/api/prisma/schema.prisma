@@ -55,6 +55,9 @@ model Profile {
   // Projects
   projects      Project[]
   
+  // Education
+  education     Education[]
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -124,6 +127,23 @@ model Project {
   
   @@index([profileId])
   @@map("projects")
+}
+
+model Education {
+  id           String   @id @default(cuid())
+  profileId    String
+  profile      Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  
+  degree       String
+  institution  String
+  fieldOfStudy String?
+  startYear    Int
+  endYear      Int?     // null = currently enrolled
+  gpa          String?
+  description  String?
+  
+  @@index([profileId])
+  @@map("education")
 }
 
 model JobPosting {

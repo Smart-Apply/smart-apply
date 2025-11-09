@@ -43,6 +43,7 @@ export class ApplicationProcessor {
           certificates: true,
           experiences: true,
           projects: true,
+          education: true,
         },
       });
 
@@ -65,6 +66,12 @@ export class ApplicationProcessor {
         .join('\n');
       const certificates = profile.certificates.map((c) => `${c.name} by ${c.issuer}`).join(', ');
       const projects = profile.projects.map((p) => `${p.name}: ${p.description || ''}`).join('\n');
+      const education = profile.education
+        .map(
+          (e) =>
+            `${e.degree} at ${e.institution} (${e.startYear} - ${e.endYear ? e.endYear : 'Present'})`,
+        )
+        .join('\n');
 
       // 4. Generate Cover Letter
       this.logger.log('Generating cover letter...');
@@ -85,7 +92,7 @@ export class ApplicationProcessor {
         summary: profile.summary || '',
         skills,
         experiences,
-        education: '', // TODO: Add education model
+        education,
         certificates,
         projects,
       });
