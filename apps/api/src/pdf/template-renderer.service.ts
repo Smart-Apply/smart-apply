@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as Handlebars from 'handlebars';
 import * as fs from 'fs/promises';
+import * as fsSync from 'fs';
 import * as path from 'path';
 
 export interface CoverLetterTemplateData {
@@ -69,12 +70,33 @@ export interface Certification {
 @Injectable()
 export class TemplateRendererService {
   private readonly logger = new Logger(TemplateRendererService.name);
-  private readonly templatesDir: string;
-  private readonly stylesDir: string;
+  private templatesDir: string;
+  private stylesDir: string;
+
 
   constructor() {
-    this.templatesDir = path.join(__dirname, 'templates');
-    this.stylesDir = path.join(__dirname, 'styles');
+    // Use process.cwd() which always points to the project root where npm start was run
+    const projectRoot = process.cwd();
+
+    // Check if source templates exist (development mode)
+    const sourceTemplatesDir = path.join(projectRoot, 'apps', 'api', 'src', 'pdf', 'templates');
+
+    // For production, templates are in dist/templates
+    const distTemplatesDir = path.join(projectRoot, 'dist', 'templates');
+    try {
+      fsSync.accessSync(path.join(sourceTemplatesDir, 'cover-letter.hbs'));
+      this.templatesDir = sourceTemplatesDir;
+      this.stylesDir = path.join(projectRoot, 'apps', 'api', 'src', 'pdf', 'styles');
+      this.logger.log('Running in DEVELOPMENT mode');
+    } catch {
+      this.templatesDir = distTemplatesDir;
+      this.stylesDir = path.join(projectRoot, 'dist', 'styles');
+      this.logger.log('Running in PRODUCTION mode');
+    }
+
+    this.logger.log(`Templates directory: ${this.templatesDir}`);
+    this.logger.log(`Styles directory: ${this.stylesDir}`);
+
     this.registerHelpers();
   }
 
