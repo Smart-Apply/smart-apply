@@ -6,7 +6,8 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "build": "nest build",
+    "build": "nest build && npm run copy:assets",
+    "copy:assets": "mkdir -p dist/templates dist/styles && cp -r apps/api/src/pdf/templates/*.hbs dist/templates/ && cp -r apps/api/src/pdf/styles/*.css dist/styles/ 2>/dev/null || true",
     "format": "prettier --write \"apps/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "node -r dotenv/config node_modules/.bin/nest start --watch",
