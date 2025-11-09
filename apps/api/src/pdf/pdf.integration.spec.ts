@@ -1,9 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PdfService } from './pdf.service';
+import { TemplateRendererService } from './template-renderer.service';
 import { ConfigService } from '../config/config.service';
 
 describe('PDF Generation Integration', () => {
   let service: PdfService;
+  let templateRenderer: TemplateRendererService;
 
   const mockConfigService = {
     puppeteerExecutablePath: undefined,
@@ -16,6 +18,7 @@ describe('PDF Generation Integration', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PdfService,
+        TemplateRendererService,
         {
           provide: ConfigService,
           useValue: mockConfigService,
@@ -24,6 +27,7 @@ describe('PDF Generation Integration', () => {
     }).compile();
 
     service = module.get<PdfService>(PdfService);
+    templateRenderer = module.get<TemplateRendererService>(TemplateRendererService);
   }, 30000);
 
   afterAll(async () => {
@@ -207,4 +211,184 @@ describe('PDF Generation Integration', () => {
     expect(pdf.toString('utf8', 0, 4)).toBe('%PDF');
     expect(pdf.length).toBeGreaterThan(1000);
   }, 30000);
+
+  it('should generate professional cover letter PDF from structured data', async () => {
+    const coverLetterData = {
+      candidateName: 'Jane Smith',
+      email: 'jane.smith@email.com',
+      phone: '+1 555-0123',
+      linkedin: 'https://linkedin.com/in/janesmith',
+      location: 'San Francisco, CA',
+      companyName: 'Tech Company Inc.',
+      recipientName: 'Hiring Manager',
+      content: `
+        <p>I am writing to express my strong interest in the Senior Software Engineer position at Tech Company Inc. With over 8 years of experience in full-stack development, I am confident that my skills and experience make me an ideal candidate for this role.</p>
+        
+        <div class="key-qualifications">
+          <h3>Why I'm an Excellent Fit</h3>
+          <ul>
+            <li class="achievement">Built and scaled microservices architecture serving <span class="metric">1M+ daily users</span></li>
+            <li class="achievement">Led cross-functional teams of 5+ engineers in Agile environments</li>
+            <li class="metric">Implemented CI/CD pipelines, improving deployment efficiency by <span class="metric">40%</span></li>
+            <li>Mentored junior developers and established code review best practices</li>
+            <li class="metric">Optimized database performance, reducing query times by <span class="metric">60%</span></li>
+          </ul>
+        </div>
+        
+        <div class="motivation-section">
+          <p>I am particularly excited about Tech Company Inc.'s innovative approach to cloud-native applications and your commitment to engineering excellence. I believe my experience with Azure, containerization, and modern JavaScript frameworks aligns perfectly with your team's needs.</p>
+        </div>
+        
+        <p>I would welcome the opportunity to discuss how my experience and skills can contribute to your team's success. Thank you for considering my application.</p>
+      `,
+    };
+
+    const pdf = await service.generateCoverLetterPDF(coverLetterData);
+
+    expect(pdf.toString('utf8', 0, 4)).toBe('%PDF');
+    expect(pdf.length).toBeGreaterThan(10000); // Should be substantial with styling
+
+    // Optional: Write to file for manual inspection
+    // const fs = require('fs');
+    // fs.writeFileSync('/tmp/professional-cover-letter.pdf', pdf);
+  }, 30000);
+
+  it('should generate professional resume PDF from structured data', async () => {
+    const resumeData = {
+      candidateName: 'John Developer',
+      email: 'john.dev@email.com',
+      phone: '+1 555-9876',
+      github: 'https://github.com/johndev',
+      linkedin: 'https://linkedin.com/in/johndev',
+      location: 'San Francisco, CA',
+      summary:
+        'Full-stack software engineer with 8+ years of experience building scalable web applications. Specialized in cloud-native architectures, microservices, and modern JavaScript frameworks. Proven track record of leading teams and delivering high-impact projects.',
+      skillCategories: [
+        {
+          type: 'Languages',
+          skills: ['TypeScript', 'Python', 'Java', 'Go'],
+        },
+        {
+          type: 'Frameworks',
+          skills: ['NestJS', 'React', 'Spring Boot', 'FastAPI'],
+        },
+        {
+          type: 'Cloud',
+          skills: ['Azure', 'AWS', 'Docker', 'Kubernetes'],
+        },
+        {
+          type: 'Databases',
+          skills: ['PostgreSQL', 'MongoDB', 'Redis', 'Elasticsearch'],
+        },
+        {
+          type: 'Tools',
+          skills: ['Git', 'CI/CD', 'Terraform', 'Jenkins'],
+        },
+      ],
+      experiences: [
+        {
+          title: 'Senior Software Engineer',
+          company: 'Tech Corp',
+          location: 'San Francisco, CA',
+          dateRange: 'Jan 2020 - Present',
+          achievements: [
+            'Led development of microservices architecture serving <span class="metric">1M+ daily users</span>',
+            'Improved API performance by <span class="metric">40%</span> through optimization and caching strategies',
+            'Mentored team of 5 junior developers and conducted technical interviews',
+            'Implemented CI/CD pipeline reducing deployment time from 2 hours to <span class="metric">15 minutes</span>',
+          ],
+        },
+        {
+          title: 'Software Engineer',
+          company: 'StartUp Inc',
+          location: 'Palo Alto, CA',
+          dateRange: 'Jun 2017 - Dec 2019',
+          achievements: [
+            'Built REST APIs using Node.js and Express serving <span class="metric">100K+ requests/day</span>',
+            'Developed React frontend components with TypeScript',
+            'Collaborated with product team to define technical requirements',
+          ],
+        },
+      ],
+      projects: [
+        {
+          name: 'Smart Apply - AI Job Application Assistant',
+          date: '2025',
+          description: 'NestJS backend with Azure integration for AI-powered job applications',
+          highlights: [
+            'Developed backend API with Azure OpenAI integration',
+            'Implemented PDF generation using Puppeteer for dynamic documents',
+            'Integrated Azure Blob Storage for file management',
+          ],
+        },
+      ],
+      education: [
+        {
+          degree: 'Bachelor of Science in Computer Science',
+          institution: 'Stanford University',
+          year: '2017',
+        },
+      ],
+      certifications: [
+        {
+          name: 'Azure Solutions Architect Expert',
+          issuer: 'Microsoft',
+          date: '2024',
+        },
+        {
+          name: 'AWS Certified Developer',
+          issuer: 'Amazon',
+          date: '2023',
+        },
+      ],
+    };
+
+    const pdf = await service.generateResumePDF(resumeData);
+
+    expect(pdf.toString('utf8', 0, 4)).toBe('%PDF');
+    expect(pdf.length).toBeGreaterThan(15000); // Should be substantial with all sections
+
+    // Optional: Write to file for manual inspection
+    // const fs = require('fs');
+    // fs.writeFileSync('/tmp/professional-resume.pdf', pdf);
+  }, 30000);
+
+  it('should render cover letter template correctly', async () => {
+    const data = {
+      candidateName: 'Test Candidate',
+      email: 'test@example.com',
+      companyName: 'Test Company',
+      content: '<p>Test content</p>',
+    };
+
+    const html = await templateRenderer.renderCoverLetter(data);
+
+    expect(html).toContain('Test Candidate');
+    expect(html).toContain('test@example.com');
+    expect(html).toContain('Test Company');
+    expect(html).toContain('<p>Test content</p>');
+    expect(html).toContain('<style>');
+  });
+
+  it('should render resume template correctly', async () => {
+    const data = {
+      candidateName: 'Test Developer',
+      email: 'dev@example.com',
+      summary: 'Experienced developer',
+      skillCategories: [
+        {
+          type: 'Languages',
+          skills: ['TypeScript', 'Python'],
+        },
+      ],
+    };
+
+    const html = await templateRenderer.renderResume(data);
+
+    expect(html).toContain('Test Developer');
+    expect(html).toContain('dev@example.com');
+    expect(html).toContain('Experienced developer');
+    expect(html).toContain('TypeScript');
+    expect(html).toContain('<style>');
+  });
 });
