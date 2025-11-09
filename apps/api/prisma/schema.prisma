@@ -139,6 +139,7 @@ model JobPosting {
   company     String
   location    String?
   description String?
+  language    String? // Detected language (e.g., "de", "en", "fr")
   
   requirements     String[] // Parsed requirements
   responsibilities String[] // Parsed responsibilities

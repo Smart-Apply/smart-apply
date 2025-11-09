@@ -77,6 +77,7 @@ describe('ApplicationsService', () => {
         sourceUrl: null,
         fileId: null,
         requirements: [],
+        language: 'en',
         responsibilities: [],
         niceToHave: [],
         createdAt: new Date(),

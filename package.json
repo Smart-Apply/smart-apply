@@ -29,6 +29,9 @@
     "@azure/service-bus": "^7.9.4",
     "@azure/storage-blob": "^12.17.0",
     "@huggingface/inference": "^4.13.0",
+    "@langchain/core": "^1.0.3",
+    "@langchain/langgraph": "^1.0.1",
+    "@langchain/openai": "^1.0.0",
     "@nestjs/axios": "^3.0.1",
     "@nestjs/common": "^10.3.0",
     "@nestjs/config": "^3.1.1",
@@ -46,6 +49,8 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "helmet": "^7.1.0",
+    "langchain": "^1.0.3",
+    "langchain-core": "^0.0.4",
     "mammoth": "^1.6.0",
     "passport": "^0.7.0",
     "passport-azure-ad": "^4.3.5",
@@ -55,10 +60,12 @@
     "pino": "^8.17.2",
     "pino-http": "^9.0.0",
     "pino-pretty": "^10.3.1",
+    "playwright": "^1.56.1",
     "puppeteer": "^21.7.0",
     "reflect-metadata": "^0.2.1",
     "rxjs": "^7.8.1",
-    "zod": "^3.22.4"
+    "zod": "^3.22.4",
+    "zod-to-json-schema": "^3.24.6"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.2.1",
