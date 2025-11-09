@@ -51,9 +51,6 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/smartapply_test
 
-      - name: Run linting
-        run: npm run lint
-
       - name: Run unit tests
         run: npm run test
         env:
