@@ -27,7 +27,9 @@ Smart Apply is an intelligent job application assistant that:
 
 ### Tech Stack
 
-- **Backend**: NestJS (TypeScript)
+#### Backend (apps/api - Port 3000)
+
+- **Framework**: NestJS (TypeScript)
 - **Database**: PostgreSQL (Docker for dev, Azure Database for PostgreSQL in prod)
 - **ORM**: Prisma
 - **Storage**: Azure Blob Storage (disk in dev)
@@ -39,31 +41,67 @@ Smart Apply is an intelligent job application assistant that:
 - **Secrets**: Azure Key Vault (dev via `.env`)
 - **Container Runtime**: Docker, Azure Container Apps (or App Service)
 
+#### Frontend (apps/web - Port 3001)
+
+- **Framework**: Next.js 14 with App Router
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS v4
+- **UI Library**: shadcn/ui (Radix UI primitives)
+- **State Management**: Zustand (auth) + React Query (server state)
+- **Forms**: React Hook Form + Zod validation
+- **PDF Handling**: react-pdf + pdfjs-dist
+- **Rich Text**: Tiptap editor
+- **Icons**: Lucide React
+- **Notifications**: Sonner toasts
+
 ### Project Structure
 
 ```
 smart-apply/
 ├── apps/
-│   └── api/
+│   ├── api/                       # Backend (Port 3000)
+│   │   ├── src/
+│   │   │   ├── auth/              # JWT authentication
+│   │   │   ├── config/            # Environment configuration (Zod validation)
+│   │   │   ├── common/            # Guards, filters, interceptors
+│   │   │   ├── prisma/            # Database client
+│   │   │   ├── storage/           # Disk + Azure Blob providers
+│   │   │   ├── llm/               # Azure OpenAI + Hugging Face + Mock providers
+│   │   │   ├── pdf/               # PDF generation (TODO)
+│   │   │   ├── jobs/              # Service Bus integration (TODO)
+│   │   │   ├── profile/           # Profile CRUD
+│   │   │   ├── uploads/           # File uploads (TODO)
+│   │   │   ├── job-postings/      # Job parsing (TODO)
+│   │   │   ├── applications/      # Application pipeline (TODO)
+│   │   │   ├── app.module.ts
+│   │   │   └── main.ts
+│   │   ├── prisma/
+│   │   │   ├── schema.prisma      # Database schema
+│   │   │   └── seed.ts            # Sample data
+│   │   └── test/                  # E2E tests
+│   │
+│   └── web/                       # Frontend (Port 3001)
 │       ├── src/
-│       │   ├── auth/              # JWT authentication
-│       │   ├── config/            # Environment configuration (Zod validation)
-│       │   ├── common/            # Guards, filters, interceptors
-│       │   ├── prisma/            # Database client
-│       │   ├── storage/           # Disk + Azure Blob providers
-│       │   ├── llm/               # Azure OpenAI + Hugging Face + Mock providers
-│       │   ├── pdf/               # PDF generation (TODO)
-│       │   ├── jobs/              # Service Bus integration (TODO)
-│       │   ├── profile/           # Profile CRUD (TODO)
-│       │   ├── uploads/           # File uploads (TODO)
-│       │   ├── job-postings/      # Job parsing (TODO)
-│       │   ├── applications/      # Application pipeline (TODO)
-│       │   ├── app.module.ts
-│       │   └── main.ts
-│       ├── prisma/
-│       │   ├── schema.prisma      # Database schema
-│       │   └── seed.ts            # Sample data
-│       └── test/                  # E2E tests (TODO)
+│       │   ├── app/
+│       │   │   ├── (auth)/        # Login, Register pages
+│       │   │   ├── (dashboard)/   # Dashboard layout + pages
+│       │   │   ├── layout.tsx     # Root layout with Providers
+│       │   │   └── page.tsx       # Landing page
+│       │   ├── components/
+│       │   │   ├── ui/            # shadcn/ui components (13)
+│       │   │   ├── forms/         # Form components (TODO)
+│       │   │   ├── pdf/           # PDF preview/editing (TODO)
+│       │   │   └── shared/        # Shared components (TODO)
+│       │   ├── hooks/             # Custom hooks (useProfile, useApplications)
+│       │   ├── stores/            # Zustand stores (auth)
+│       │   ├── lib/
+│       │   │   ├── api-client.ts  # Typed API client
+│       │   │   ├── providers.tsx  # React Query provider
+│       │   │   └── utils.ts       # Helper functions
+│       │   └── types/             # TypeScript types
+│       ├── .env.local             # Frontend environment variables
+│       └── package.json           # Frontend dependencies (450 pkgs)
+│
 ├── infra/
 │   ├── docker-compose.yml         # Local development
 │   └── Dockerfile                 # Multi-stage build
@@ -71,10 +109,13 @@ smart-apply/
 │   ├── cover-letter.md            # Cover letter template
 │   └── resume.md                  # Resume template
 ├── .github/
+│   ├── copilot-instructions.md    # Copilot instructions
+│   ├── agents/
+│   │   └── my-agents.md           # Agent documentation
 │   └── workflows/
 │       └── azure-deploy.yml       # CI/CD pipeline
 ├── .env.example                   # Environment template
-└── package.json
+└── package.json                   # Root workspace
 ```
 
 ## 🚀 Local Development
@@ -86,6 +127,8 @@ smart-apply/
 - npm or yarn
 
 ### Quick Start
+
+#### Backend Setup
 
 1. **Clone and install dependencies**
 
@@ -116,20 +159,53 @@ npm run prisma:seed
 5. **Start the API**
 
 ```bash
+cd apps/api
 npm run start:dev
 ```
 
-6. **Access the application**
+#### Frontend Setup
 
-- API: <http://localhost:3000/api/v1>
-- Swagger Docs: <http://localhost:3000/docs>
-- Health Check: <http://localhost:3000/api/v1/health>
+1. **Navigate to frontend directory**
+
+```bash
+cd apps/web
+```
+
+2. **Install dependencies** (if not already done)
+
+```bash
+npm install
+```
+
+3. **Configure environment variables**
+
+```bash
+# Create .env.local file
+echo "NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1" > .env.local
+```
+
+4. **Start the frontend**
+
+```bash
+npm run dev
+```
+
+#### Access the Application
+
+- **Frontend**: <http://localhost:3001>
+- **Backend API**: <http://localhost:3000/api/v1>
+- **Swagger Docs**: <http://localhost:3000/docs>
+- **Health Check**: <http://localhost:3000/api/v1/health>
 
 ### Development Commands
 
+#### Backend (apps/api)
+
 ```bash
+cd apps/api
+
 # Development
-npm run start:dev          # Start with hot reload
+npm run start:dev          # Start with hot reload (Port 3000)
 npm run prisma:studio      # Open Prisma Studio (DB GUI)
 
 # Database
@@ -147,12 +223,63 @@ npm run build              # Production build
 npm run start:prod         # Start production server
 ```
 
+#### Frontend (apps/web)
+
+```bash
+cd apps/web
+
+# Development
+npm run dev                # Start with Turbopack (Port 3001)
+
+# Testing & Quality
+npm run lint               # ESLint check
+npm run build              # Production build (validates types)
+
+# UI Components
+npx shadcn@latest add [component]  # Add shadcn/ui component
+```
+
 ### Demo Credentials
 
 After seeding:
 
 - Email: `demo@smartapply.com`
 - Password: `Demo123!`
+
+## 🎨 Frontend Features
+
+### Implemented ✅
+
+- **Landing Page**: Hero section, features showcase, call-to-action
+- **Authentication**: 
+  - Login & Registration forms with validation
+  - JWT token management (persisted in localStorage)
+  - Protected routes with auto-redirect
+- **Dashboard Layout**: 
+  - Responsive sidebar navigation
+  - Mobile-friendly hamburger menu
+  - User profile dropdown with logout
+- **Dashboard**: 
+  - Statistics cards (Applications, Profile completion)
+  - Recent applications list
+  - Profile completion prompts
+- **API Integration**: 
+  - Fully typed API client (`lib/api-client.ts`)
+  - React Query for server state management
+  - Custom hooks for Profile & Applications
+- **UI Components**: 13 shadcn/ui components (Button, Input, Card, Form, Dialog, etc.)
+
+### In Development ⏳
+
+See [GitHub Issues #42-#55](https://github.com/Ar1anit/smart-apply/issues) for detailed roadmap:
+
+- Profile Management (Edit forms for all sections)
+- Job Postings (Parser & List View)
+- Applications (Creation Wizard, List, Detail View)
+- PDF Preview & Editing (react-pdf + Tiptap)
+- Loading States & Error Handling
+
+**Estimated Time:** 50-65 hours
 
 ## ☁️ Azure Deployment
 
@@ -442,15 +569,19 @@ Access Swagger documentation at `/docs` when running locally.
 #### Profile
 
 - `GET /api/v1/profile` - Get user profile
-- `PUT /api/v1/profile` - Update profile
+- `PUT /api/v1/profile` - Update profile (Skills, Experiences, Education, Certificates, Projects)
 
 #### Job Postings
 
 - `POST /api/v1/job-postings:parse` - Parse job description (text, URL, or file)
+- `GET /api/v1/job-postings` - List job postings
+- `GET /api/v1/job-postings/:id` - Get job posting details
+- `DELETE /api/v1/job-postings/:id` - Delete job posting
 
 #### Applications
 
 - `POST /api/v1/applications` - Create new application
+- `GET /api/v1/applications` - List all applications
 - `GET /api/v1/applications/:id` - Get application details
 - `GET /api/v1/applications/:id/files` - Get PDF download URLs (SAS)
 

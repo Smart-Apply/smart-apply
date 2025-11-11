@@ -1,21 +1,38 @@
 ---
-name: Smart Apply Backend Agent
-description: AI-powered job application assistant API - NestJS backend with Azure integration for generating tailored cover letters and resumes
+name: Smart Apply Full-Stack Agent
+description: AI-powered job application assistant - NestJS backend + Next.js 14 frontend with Azure integration for generating tailored cover letters and resumes
 ---
 
-# Smart Apply Backend Agent
+# Smart Apply Full-Stack Agent
 
-This agent assists in building and maintaining the Smart Apply MVP backend - a production-grade NestJS REST API that manages candidate profiles, parses job postings, and generates tailored cover letters and resumes using Azure OpenAI. The application follows Azure-first architecture patterns with multi-provider abstractions for storage, LLM, and queue services.
+This agent assists in building and maintaining the Smart Apply MVP - a full-stack application consisting of:
+- **Backend:** Production-grade NestJS REST API with Azure OpenAI, Blob Storage, and Service Bus
+- **Frontend:** Next.js 14 with TypeScript, Tailwind CSS, shadcn/ui for user-facing features
+
+The application follows Azure-first architecture patterns with multi-provider abstractions for storage, LLM, and queue services.
 
 ## Tech Stack
 
+### Backend (apps/api)
 - **Framework:** NestJS v10 (TypeScript)
 - **Database:** PostgreSQL (Prisma ORM)
 - **Authentication:** JWT + argon2
 - **Cloud:** Azure (Container Apps, PostgreSQL Flexible Server, Blob Storage, Service Bus, OpenAI)
 - **PDF Generation:** Puppeteer/Chromium
 - **Testing:** Jest + supertest (E2E)
-- **Documentation:** Swagger/OpenAPI
+- **Documentation:** Swagger/OpenAPI (Port 3000)
+
+### Frontend (apps/web)
+- **Framework:** Next.js 14 with App Router
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS v4
+- **UI Library:** shadcn/ui (Radix UI)
+- **State Management:** Zustand + React Query
+- **Forms:** React Hook Form + Zod
+- **PDF Handling:** react-pdf + pdfjs-dist
+- **Rich Text:** Tiptap
+- **Icons:** Lucide React
+- **Notifications:** Sonner (Port 3001)
 
 ## Architecture Principles
 
@@ -75,53 +92,144 @@ npm run prisma:seed
 
 ```
 smart-apply/
-├── apps/api/
-│   ├── src/
-│   │   ├── main.ts                  # Entry point (Port 3000, Swagger /docs)
-│   │   ├── app.module.ts            # Root module
+├── apps/
+│   ├── api/                         # Backend (Port 3000)
+│   │   ├── src/
+│   │   │   ├── main.ts              # Entry point (Swagger /docs)
+│   │   │   ├── app.module.ts        # Root module
+│   │   │   │
+│   │   │   ├── config/              # ✅ Global config (Zod)
+│   │   │   ├── common/              # ✅ Guards, Decorators, Filters
+│   │   │   ├── prisma/              # ✅ DB service (Global)
+│   │   │   │
+│   │   │   ├── auth/                # ✅ JWT auth (Register, Login, /me)
+│   │   │   ├── profile/             # ✅ User profile CRUD with Education
+│   │   │   ├── storage/             # ✅ Storage abstraction
+│   │   │   ├── llm/                 # ✅ LLM abstraction
+│   │   │   │
+│   │   │   ├── uploads/             # ⏳ File upload (PDF/DOCX)
+│   │   │   ├── job-postings/        # ⏳ Job posting parser
+│   │   │   ├── pdf/                 # ⏳ Puppeteer PDF service
+│   │   │   ├── jobs/                # ⏳ Queue abstraction (Service Bus)
+│   │   │   ├── applications/        # ⏳ Main pipeline
+│   │   │   └── health/              # ⏳ Health checks (Terminus)
 │   │   │
-│   │   ├── config/                  # ✅ Global config (Zod)
-│   │   ├── common/                  # ✅ Guards, Decorators, Filters
-│   │   ├── prisma/                  # ✅ DB service (Global)
+│   │   ├── prisma/
+│   │   │   ├── schema.prisma        # Database schema
+│   │   │   ├── migrations/          # Prisma migrations
+│   │   │   └── seed.ts              # Demo data
 │   │   │
-│   │   ├── auth/                    # ✅ JWT auth (Register, Login, /me)
-│   │   ├── profile/                 # ✅ User profile CRUD
-│   │   ├── storage/                 # ✅ Storage abstraction
-│   │   ├── llm/                     # ✅ LLM abstraction
-│   │   │
-│   │   ├── uploads/                 # ⏳ File upload (PDF/DOCX)
-│   │   ├── job-postings/            # ⏳ Job posting parser
-│   │   ├── pdf/                     # ⏳ Puppeteer PDF service
-│   │   ├── jobs/                    # ⏳ Queue abstraction (Service Bus)
-│   │   ├── applications/            # ⏳ Main pipeline
-│   │   └── health/                  # ⏳ Health checks (Terminus)
+│   │   └── test/                    # E2E tests
 │   │
-│   ├── prisma/
-│   │   ├── schema.prisma            # Database schema
-│   │   ├── migrations/              # Prisma migrations
-│   │   └── seed.ts                  # Demo data (demo@smartapply.com)
-│   │
-│   └── test/
-│       ├── profile.e2e-spec.ts      # ✅ Profile E2E (has Guard issues)
-│       └── ...                      # ⏳ Additional E2E tests
+│   └── web/                         # Frontend (Port 3001)
+│       ├── src/
+│       │   ├── app/
+│       │   │   ├── (auth)/          # ✅ Login, Register pages
+│       │   │   ├── (dashboard)/     # ✅ Dashboard layout + pages
+│       │   │   ├── layout.tsx       # ✅ Root layout with Providers
+│       │   │   └── page.tsx         # ✅ Landing page
+│       │   │
+│       │   ├── components/
+│       │   │   ├── ui/              # ✅ shadcn/ui (13 components)
+│       │   │   ├── forms/           # ⏳ Form components
+│       │   │   ├── pdf/             # ⏳ PDF preview/editing
+│       │   │   └── shared/          # ⏳ Shared components
+│       │   │
+│       │   ├── hooks/               # ✅ useProfile, useApplications
+│       │   ├── stores/              # ✅ Zustand auth store
+│       │   ├── lib/
+│       │   │   ├── api-client.ts    # ✅ Typed API client
+│       │   │   ├── providers.tsx    # ✅ React Query provider
+│       │   │   └── utils.ts         # ✅ Helper functions
+│       │   │
+│       │   └── types/               # ✅ TypeScript types
+│       │
+│       ├── .env.local               # ✅ NEXT_PUBLIC_API_URL
+│       ├── README.md                # ✅ Frontend docs
+│       └── package.json             # ✅ Dependencies (450 pkgs)
 │
 ├── prompts/                         # ⏳ LLM template files
 │   ├── cover-letter.md              # Cover letter prompt
 │   └── resume.md                    # Resume prompt
 │
 ├── .github/
-│   └── copilot-instructions.md      # General Copilot instructions
+│   ├── copilot-instructions.md      # General Copilot instructions
+│   └── agents/
+│       └── my-agents.md             # ← This file
 │
-├── ARCHITECTURE.md                  # Complete architecture docs
-├── my-agents.md                     # ← This file
 ├── docker-compose.yml               # Local PostgreSQL setup
-├── .env                             # Environment variables (not in Git!)
-└── package.json                     # Dependencies + scripts
+└── package.json                     # Root workspace
+```
+
+## Frontend-Backend Integration
+
+### Connection Setup
+
+**Backend:** `http://localhost:3000/api/v1`
+**Frontend:** `http://localhost:3001`
+
+The frontend connects to the backend via:
+- **API Client:** `apps/web/src/lib/api-client.ts` (Typed fetch wrapper)
+- **Auth Store:** `apps/web/src/stores/auth-store.ts` (Zustand with persistence)
+- **React Query:** Server state management with caching
+- **Environment:** `NEXT_PUBLIC_API_URL` in `.env.local`
+
+### Starting Both Apps
+
+**Terminal 1 - Backend:**
+```bash
+cd apps/api
+npm run start:dev
+```
+
+**Terminal 2 - Frontend:**
+```bash
+cd apps/web
+npm run dev
+```
+
+### API Endpoints (Backend)
+
+All endpoints return JSON and require JWT Bearer token (except `/auth/*`):
+
+```
+POST   /api/v1/auth/register      # Create account
+POST   /api/v1/auth/login         # Get JWT token
+GET    /api/v1/auth/me            # Current user
+
+GET    /api/v1/profile            # Get profile
+PUT    /api/v1/profile            # Update profile (Skills, Experience, Education, etc.)
+
+POST   /api/v1/job-postings:parse # Parse job posting
+GET    /api/v1/job-postings       # List job postings
+GET    /api/v1/job-postings/:id   # Get job posting
+DELETE /api/v1/job-postings/:id   # Delete job posting
+
+POST   /api/v1/applications       # Create application
+GET    /api/v1/applications       # List applications
+GET    /api/v1/applications/:id   # Get application
+GET    /api/v1/applications/:id/files  # Get PDF URLs (SAS)
+```
+
+### Frontend Pages (Implemented)
+
+```
+/                    # Landing page (Hero + Features)
+/login               # Login form
+/register            # Registration form
+/dashboard           # Dashboard with stats
+/profile             # Profile view (⏳ Edit forms pending)
+/applications        # Applications list (⏳ Pending)
+/applications/new    # Create application (⏳ Pending)
+/applications/:id    # Application detail (⏳ Pending)
+/jobs                # Job postings (⏳ Pending)
 ```
 
 ## Current TODOs (Priority Order)
 
-### 1. ⏳ UploadsModule (GitHub Issue #2)
+### Backend TODOs
+
+#### 1. ⏳ UploadsModule (GitHub Issue #2)
 
 **Goal:** File upload for resumes/certificates with validation.
 
@@ -431,13 +539,26 @@ export class MyFeatureService {
 
 ## Agent Behavior: Important Rules
 
-### When Generating Code
+### When Generating Backend Code
 
 1. **Always** create DTOs with validation decorators
 2. **Always** use Swagger decorators (`@ApiTags`, `@ApiBearerAuth`)
 3. **Always** implement error handling (try/catch + meaningful exceptions)
 4. **Always** respect TypeScript strict mode (no `any` without reason)
 5. **Follow provider pattern** (see Storage/LLM as reference)
+
+### When Generating Frontend Code
+
+1. **Always** use TypeScript (no `any` types without reason)
+2. **Always** create proper types in `src/types/index.ts`
+3. **Always** use shadcn/ui components (not custom unstyled components)
+4. **Always** use React Hook Form + Zod for forms
+5. **Always** use React Query for data fetching
+6. **Always** protect routes (check auth in layout or middleware)
+7. **Always** handle loading/error states
+8. **Always** use toast notifications (sonner) for user feedback
+9. **Server Components:** Use by default (no 'use client' unless needed)
+10. **Client Components:** Only when using hooks, events, or browser APIs
 
 ### When Writing Tests
 
@@ -465,11 +586,37 @@ export class MyFeatureService {
 2. **Never** hardcode Azure credentials
 3. **Always** use environment variables (`STORAGE_DRIVER`, `LLM_PROVIDER`)
 
+## Frontend TODOs (GitHub Issues #39-#55)
+
+### Implemented (✅)
+- **#39:** Authentication (Login, Register, Protected Routes)
+- **#40:** Layout (App Shell, Sidebar Navigation, Mobile Menu)
+- **#41:** Dashboard (Stats, Recent Applications - partial)
+
+### Pending (⏳)
+- **#42:** Profile Edit - Basic Info Form
+- **#43:** Profile - Skills Management (chips, add/remove)
+- **#44:** Profile - Experience Management (CRUD)
+- **#45:** Profile - Education Management (CRUD)
+- **#46:** Profile - Certificates Management (CRUD)
+- **#47:** Profile - Projects Management (CRUD)
+- **#48:** Job Postings - Input & Parser (Text/URL/File)
+- **#49:** Job Postings - List View
+- **#50:** Applications - Creation Wizard (3 steps)
+- **#51:** Applications - Dashboard & List
+- **#52:** Applications - Detail View
+- **#53:** Applications - PDF Download & Preview (react-pdf)
+- **#54:** Shared - Loading States & Skeletons
+- **#55:** Shared - Error Handling & Toasts
+
+**Estimated:** 50-65 hours total
+
 ## Important Commands
 
+### Backend (apps/api)
 ```bash
 # Development
-npm run start:dev              # Dev server with watch mode
+npm run start:dev              # Dev server with watch mode (Port 3000)
 npm run prisma:studio          # Prisma DB UI
 
 # Database
@@ -491,10 +638,36 @@ npm run build                  # Build for prod
 npm run start:prod             # Start production server
 ```
 
+### Frontend (apps/web)
+```bash
+# Development
+npm run dev                    # Dev server with Turbopack (Port 3001)
+
+# Testing
+npm run lint                   # ESLint check
+npm run build                  # Production build (validates types)
+
+# UI Components
+npx shadcn@latest add [name]   # Add new shadcn/ui component
+```
+
+### Both Apps
+```bash
+# Start Backend
+cd apps/api && npm run start:dev
+
+# Start Frontend (new terminal)
+cd apps/web && npm run dev
+
+# Visit:
+# - Frontend: http://localhost:3001
+# - Backend API: http://localhost:3000/api/v1
+# - Swagger Docs: http://localhost:3000/docs
+```
+
 ## Reference Files
 
-When unsure, check these files:
-
+### Backend
 - **Architecture:** `ARCHITECTURE.md`
 - **Copilot Instructions:** `.github/copilot-instructions.md`
 - **Prisma Schema:** `apps/api/prisma/schema.prisma`
@@ -503,6 +676,17 @@ When unsure, check these files:
 - **Profile Example:** `apps/api/src/profile/` (fully implemented)
 - **Storage Example:** `apps/api/src/storage/` (provider pattern reference)
 - **LLM Example:** `apps/api/src/llm/` (provider pattern reference)
+
+### Frontend
+- **README:** `apps/web/README.md` (setup & features)
+- **API Client:** `apps/web/src/lib/api-client.ts` (typed endpoints)
+- **Types:** `apps/web/src/types/index.ts` (shared types)
+- **Auth Store:** `apps/web/src/stores/auth-store.ts` (Zustand)
+- **Providers:** `apps/web/src/lib/providers.tsx` (React Query)
+- **Hooks:** `apps/web/src/hooks/` (useProfile, useApplications)
+- **UI Components:** `apps/web/src/components/ui/` (shadcn/ui)
+- **Auth Pages:** `apps/web/src/app/(auth)/` (login, register)
+- **Dashboard:** `apps/web/src/app/(dashboard)/` (layout, pages)
 
 ## Known Issues
 
