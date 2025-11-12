@@ -13,9 +13,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { SkillsManager } from '@/components/forms/skills-manager';
+import { ExperienceManager } from '@/components/forms/experience-manager';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import type { Skill } from '@/types';
+import type { Skill, Experience } from '@/types';
 
 // Validation schema for basic profile info
 const profileFormSchema = z.object({
@@ -36,8 +37,9 @@ export default function ProfileEditPage() {
   const user = useAuthStore((state) => state.user);
   const updateProfile = useUpdateProfile();
   
-  // State for skills management
+  // State for skills and experiences management
   const [skills, setSkills] = useState<Skill[]>([]);
+  const [experiences, setExperiences] = useState<Experience[]>([]);
   const prevProfileRef = useRef<number | undefined>(undefined);
 
   const form = useForm<ProfileFormValues>({
@@ -66,11 +68,12 @@ export default function ProfileEditPage() {
         summary: profile.summary || '',
       });
       
-      // Only update skills if profile has changed (not on every render)
+      // Only update skills and experiences if profile has changed (not on every render)
       // Use startTransition to avoid cascading render warnings
       if (prevProfileRef.current !== profile.id) {
         startTransition(() => {
           setSkills(profile.skills || []);
+          setExperiences(profile.experiences || []);
         });
         prevProfileRef.current = profile.id;
       }
@@ -92,6 +95,7 @@ export default function ProfileEditPage() {
         portfolioUrl: data.website?.trim() || undefined,
         summary: data.summary?.trim() || undefined,
         skills: skills.length > 0 ? skillsWithoutIds : undefined,
+        experiences: experiences.length > 0 ? experiences : undefined,
       });
       
       // Navigate back to profile page on success
@@ -315,6 +319,13 @@ export default function ProfileEditPage() {
               <SkillsManager
                 skills={skills}
                 onSkillsChange={setSkills}
+                disabled={updateProfile.isPending}
+              />
+
+              {/* Experience Manager */}
+              <ExperienceManager
+                experiences={experiences}
+                onExperiencesChange={setExperiences}
                 disabled={updateProfile.isPending}
               />
 
