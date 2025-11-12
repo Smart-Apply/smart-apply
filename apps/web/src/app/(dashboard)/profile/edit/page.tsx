@@ -96,10 +96,10 @@ export default function ProfileEditPage() {
         ...(id && { id }), // Include ID if exists
         title,
         company,
-        location,
+        location, // Keep null as-is for explicit clearing
         startDate,
-        endDate,
-        description,
+        endDate, // Keep null as-is for "current" jobs
+        description, // Keep null as-is to allow clearing descriptions
         current,
       }));
       

@@ -18,10 +18,10 @@ export interface Experience {
   id?: string; // Optional: present for existing experiences, absent for new ones
   title: string;
   company: string;
-  location?: string;
+  location?: string | null;
   startDate: string;
   endDate?: string | null;
-  description?: string;
+  description?: string | null;
   current?: boolean;
 }
 
