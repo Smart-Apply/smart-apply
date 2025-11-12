@@ -14,9 +14,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { SkillsManager } from '@/components/forms/skills-manager';
 import { ExperienceManager } from '@/components/forms/experience-manager';
+import { EducationManager } from '@/components/forms/education-manager';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import type { Skill, Experience } from '@/types';
+import type { Skill, Experience, Education } from '@/types';
 
 // Validation schema for basic profile info
 const profileFormSchema = z.object({
@@ -37,9 +38,10 @@ export default function ProfileEditPage() {
   const user = useAuthStore((state) => state.user);
   const updateProfile = useUpdateProfile();
   
-  // State for skills and experiences management
+  // State for skills, experiences, and education management
   const [skills, setSkills] = useState<Skill[]>([]);
   const [experiences, setExperiences] = useState<Experience[]>([]);
+  const [education, setEducation] = useState<Education[]>([]);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -69,18 +71,19 @@ export default function ProfileEditPage() {
     }
   }, [user, profile, form]);
 
-  // Sync skills and experiences from profile (separate effect to track changes properly)
+  // Sync skills, experiences, and education from profile (separate effect to track changes properly)
   useEffect(() => {
     if (profile) {
       // Update state when profile data changes (after successful mutation)
       startTransition(() => {
         setSkills(profile.skills || []);
         setExperiences(profile.experiences || []);
+        setEducation(profile.education || []);
       });
     }
-    // Only re-run when skills or experiences arrays change
+    // Only re-run when skills, experiences, or education arrays change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile?.skills, profile?.experiences]);
+  }, [profile?.skills, profile?.experiences, profile?.education]);
 
   const onSubmit = async (data: ProfileFormValues) => {
     try {
@@ -103,6 +106,17 @@ export default function ProfileEditPage() {
         current,
       }));
       
+      const educationForUpdate = education.map(({ id, degree, institution, fieldOfStudy, startYear, endYear, gpa, description }) => ({
+        ...(id && { id }), // Include ID if exists (for update), omit if new (for create)
+        degree,
+        institution,
+        fieldOfStudy,
+        startYear,
+        endYear,
+        gpa,
+        description,
+      }));
+      
       await updateProfile.mutateAsync({
         fullName: data.name || undefined,
         phone: data.phone?.trim() || undefined,
@@ -112,6 +126,7 @@ export default function ProfileEditPage() {
         summary: data.summary?.trim() || undefined,
         skills: skills.length > 0 ? skillsForUpdate : undefined,
         experiences: experiences.length > 0 ? experiencesForUpdate : undefined,
+        education: education.length > 0 ? educationForUpdate : undefined,
       });
       
       // Stay on edit page after save (data will refresh via React Query)
@@ -342,6 +357,13 @@ export default function ProfileEditPage() {
               <ExperienceManager
                 experiences={experiences}
                 onExperiencesChange={setExperiences}
+                disabled={updateProfile.isPending}
+              />
+
+              {/* Education Manager */}
+              <EducationManager
+                education={education}
+                onEducationChange={setEducation}
                 disabled={updateProfile.isPending}
               />
 
