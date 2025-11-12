@@ -126,10 +126,10 @@ export function ExperienceManager({
     const newExperience: Experience = {
       title: data.title,
       company: data.company,
-      location: data.location || undefined,
+      location: data.location?.trim() || undefined,
       startDate: new Date(data.startDate).toISOString(),
       endDate: data.current || !data.endDate ? null : new Date(data.endDate).toISOString(),
-      description: data.description || undefined,
+      description: data.description?.trim() || null, // Use null instead of undefined for empty descriptions
       current: data.current,
     };
 
