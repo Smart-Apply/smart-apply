@@ -74,6 +74,18 @@ export interface Profile {
   updatedAt: string;
 }
 
+// DTO types for backend API (dates as strings for API transport)
+export interface EducationDto {
+  id?: string;
+  degree: string;
+  institution: string;
+  fieldOfStudy?: string;
+  startYear?: string; // ISO date string for backend
+  endYear?: string; // ISO date string for backend
+  gpa?: string;
+  description?: string;
+}
+
 // DTO for updating profile (matches backend UpdateProfileDto)
 export interface UpdateProfileDto {
   fullName?: string;
@@ -85,7 +97,7 @@ export interface UpdateProfileDto {
   summary?: string;
   skills?: Skill[];
   experiences?: Experience[];
-  education?: Education[];
+  education?: EducationDto[]; // Use DTO type with string dates
   certificates?: Certificate[];
   projects?: Project[];
 }

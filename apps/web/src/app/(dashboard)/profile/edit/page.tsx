@@ -78,7 +78,14 @@ export default function ProfileEditPage() {
       startTransition(() => {
         setSkills(profile.skills || []);
         setExperiences(profile.experiences || []);
-        setEducation(profile.education || []);
+        
+        // Convert education date strings (ISO format from backend) to year numbers for frontend
+        const educationWithYears = (profile.education || []).map(edu => ({
+          ...edu,
+          startYear: edu.startYear ? new Date(edu.startYear).getFullYear() : undefined,
+          endYear: edu.endYear ? new Date(edu.endYear).getFullYear() : null,
+        }));
+        setEducation(educationWithYears);
       });
     }
     // Only re-run when skills, experiences, or education arrays change
@@ -111,8 +118,9 @@ export default function ProfileEditPage() {
         degree,
         institution,
         fieldOfStudy,
-        startYear,
-        endYear,
+        // Convert year numbers to ISO date strings (YYYY-01-01) for backend DateTime fields
+        startYear: startYear ? `${startYear}-01-01` : undefined,
+        endYear: endYear ? `${endYear}-01-01` : undefined,
         gpa,
         description,
       }));
