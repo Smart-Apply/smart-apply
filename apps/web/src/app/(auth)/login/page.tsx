@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,14 +23,21 @@ import Link from 'next/link';
 
 const loginSchema = z.object({
   email: z.string().email('Ungültige E-Mail-Adresse'),
-  password: z.string().min(6, 'Passwort muss mindestens 6 Zeichen lang sein'),
+  password: z.string().min(8, 'Passwort muss mindestens 8 Zeichen lang sein'),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
-  const setAuth = useAuthStore((state) => state.setAuth);
+  const { setAuth, isAuthenticated } = useAuthStore();
+
+  // Redirect to dashboard if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/dashboard');
+    }
+  }, [isAuthenticated, router]);
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -45,8 +53,20 @@ export default function LoginPage() {
       setAuth(response.user, response.accessToken);
       toast.success('Erfolgreich angemeldet!');
       router.push('/dashboard');
-    } catch {
-      toast.error('Anmeldung fehlgeschlagen. Bitte überprüfe deine Zugangsdaten.');
+    } catch (error: unknown) {
+      // Handle specific error cases
+      if (error instanceof Error && 'status' in error) {
+        const apiError = error as { status: number; data?: { message?: string } };
+        if (apiError.status === 401) {
+          toast.error('Ungültige E-Mail oder Passwort.');
+        } else if (apiError.status === 403) {
+          toast.error('Zugriff verweigert. Bitte versuche es erneut.');
+        } else {
+          toast.error(apiError.data?.message || 'Anmeldung fehlgeschlagen. Bitte versuche es erneut.');
+        }
+      } else {
+        toast.error('Anmeldung fehlgeschlagen. Bitte überprüfe deine Zugangsdaten.');
+      }
     }
   };
 
