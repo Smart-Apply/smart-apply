@@ -388,12 +388,12 @@ export default function ProfilePage() {
                   <h3 className="font-semibold text-gray-900">{cert.name}</h3>
                   <p className="text-sm text-gray-700">{cert.issuer}</p>
                   <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-gray-500">
-                    {cert.issueDate && (
+                    {cert.dateObtained && (
                       <div className="flex items-center gap-1">
                         <Calendar className="h-4 w-4" />
                         <span>
                           Ausgestellt:{' '}
-                          {new Date(cert.issueDate).toLocaleDateString('de-DE', {
+                          {new Date(cert.dateObtained).toLocaleDateString('de-DE', {
                             month: 'short',
                             year: 'numeric',
                           })}
