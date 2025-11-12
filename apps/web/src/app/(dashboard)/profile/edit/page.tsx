@@ -15,9 +15,10 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { SkillsManager } from '@/components/forms/skills-manager';
 import { ExperienceManager } from '@/components/forms/experience-manager';
 import { EducationManager } from '@/components/forms/education-manager';
+import { CertificatesManager } from '@/components/forms/certificates-manager';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import type { Skill, Experience, Education } from '@/types';
+import type { Skill, Experience, Education, Certificate } from '@/types';
 
 // Validation schema for basic profile info
 const profileFormSchema = z.object({
@@ -38,10 +39,11 @@ export default function ProfileEditPage() {
   const user = useAuthStore((state) => state.user);
   const updateProfile = useUpdateProfile();
   
-  // State for skills, experiences, and education management
+  // State for skills, experiences, education, and certificates management
   const [skills, setSkills] = useState<Skill[]>([]);
   const [experiences, setExperiences] = useState<Experience[]>([]);
   const [education, setEducation] = useState<Education[]>([]);
+  const [certificates, setCertificates] = useState<Certificate[]>([]);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -71,13 +73,14 @@ export default function ProfileEditPage() {
     }
   }, [user, profile, form]);
 
-  // Sync skills, experiences, and education from profile (separate effect to track changes properly)
+  // Sync skills, experiences, education, and certificates from profile (separate effect to track changes properly)
   useEffect(() => {
     if (profile) {
       // Update state when profile data changes (after successful mutation)
       startTransition(() => {
         setSkills(profile.skills || []);
         setExperiences(profile.experiences || []);
+        setCertificates(profile.certificates || []);
         
         // Convert education date strings (ISO format from backend) to year numbers for frontend
         const educationWithYears = (profile.education || []).map(edu => ({
@@ -88,9 +91,9 @@ export default function ProfileEditPage() {
         setEducation(educationWithYears);
       });
     }
-    // Only re-run when skills, experiences, or education arrays change
+    // Only re-run when skills, experiences, education, or certificates arrays change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile?.skills, profile?.experiences, profile?.education]);
+  }, [profile?.skills, profile?.experiences, profile?.education, profile?.certificates]);
 
   const onSubmit = async (data: ProfileFormValues) => {
     try {
@@ -125,6 +128,18 @@ export default function ProfileEditPage() {
         description,
       }));
       
+      // Map frontend certificate fields to backend DTO fields
+      // Backend uses: dateObtained (for issueDate), url (for credentialUrl)
+      // Note: Backend doesn't currently support expiryDate and credentialId
+      const certificatesForUpdate = certificates.map(({ id, name, issuer, dateObtained, url }) => ({
+        ...(id && { id }), // Include ID if exists
+        name,
+        issuer,
+        dateObtained: dateObtained || undefined, // Backend expects dateObtained
+        url: url || undefined, // Backend maps this to credentialUrl
+        // expiryDate and credentialId are not yet supported by backend
+      }));
+      
       await updateProfile.mutateAsync({
         fullName: data.name || undefined,
         phone: data.phone?.trim() || undefined,
@@ -135,6 +150,7 @@ export default function ProfileEditPage() {
         skills: skills.length > 0 ? skillsForUpdate : undefined,
         experiences: experiences.length > 0 ? experiencesForUpdate : undefined,
         education: education.length > 0 ? educationForUpdate : undefined,
+        certificates: certificates.length > 0 ? certificatesForUpdate : undefined,
       });
       
       // Stay on edit page after save (data will refresh via React Query)
@@ -372,6 +388,13 @@ export default function ProfileEditPage() {
               <EducationManager
                 education={education}
                 onEducationChange={setEducation}
+                disabled={updateProfile.isPending}
+              />
+
+              {/* Certificates Manager */}
+              <CertificatesManager
+                certificates={certificates}
+                onCertificatesChange={setCertificates}
                 disabled={updateProfile.isPending}
               />
 

@@ -40,10 +40,12 @@ export interface Certificate {
   id?: string; // Optional: present for existing certificates, absent for new ones
   name: string;
   issuer: string;
-  issueDate?: string;
+  dateObtained?: string; // Backend uses dateObtained instead of issueDate (maps to issueDate in DB)
+  url?: string; // Backend uses url (maps to credentialUrl in DB)
+  // Note: Backend doesn't currently support expiryDate and credentialId
+  // These fields are for future compatibility
   expiryDate?: string | null;
   credentialId?: string;
-  url?: string;
 }
 
 export interface Project {
