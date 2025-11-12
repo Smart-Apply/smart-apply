@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,8 +12,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { SkillsManager } from '@/components/forms/skills-manager';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import type { Skill } from '@/types';
 
 // Validation schema for basic profile info
 const profileFormSchema = z.object({
@@ -33,6 +35,9 @@ export default function ProfileEditPage() {
   const { data: profile, isLoading } = useProfile();
   const user = useAuthStore((state) => state.user);
   const updateProfile = useUpdateProfile();
+
+  // State for skills management
+  const [skills, setSkills] = useState<Skill[]>([]);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -59,6 +64,9 @@ export default function ProfileEditPage() {
         website: profile.portfolioUrl || '',
         summary: profile.summary || '',
       });
+      
+      // Initialize skills state
+      setSkills(profile.skills || []);
     }
   }, [user, profile, form]);
 
@@ -72,6 +80,7 @@ export default function ProfileEditPage() {
         linkedinUrl: data.linkedIn || undefined,
         portfolioUrl: data.website || undefined,
         summary: data.summary || undefined,
+        skills: skills.length > 0 ? skills : undefined,
       });
       
       // Navigate back to profile page on success
@@ -289,6 +298,13 @@ export default function ProfileEditPage() {
                     <FormMessage />
                   </FormItem>
                 )}
+              />
+
+              {/* Skills Manager */}
+              <SkillsManager
+                skills={skills}
+                onSkillsChange={setSkills}
+                disabled={updateProfile.isPending}
               />
 
               {/* Action Buttons */}
