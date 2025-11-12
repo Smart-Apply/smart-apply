@@ -3,7 +3,7 @@
  * Base URL: http://localhost:3000/api/v1
  */
 
-import type { User, Profile, JobPosting, Application } from '@/types';
+import type { User, Profile, JobPosting, Application, UpdateProfileDto } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
 
@@ -87,7 +87,7 @@ export const api = {
     get: (token: string) =>
       apiRequest<Profile>('/profile', { token }),
 
-    update: (token: string, data: Partial<Profile>) =>
+    update: (token: string, data: UpdateProfileDto) =>
       apiRequest<Profile>('/profile', {
         method: 'PUT',
         token,

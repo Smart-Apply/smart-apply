@@ -76,7 +76,7 @@ export default function ProfilePage() {
     );
   }
 
-  const hasBasicInfo = profile?.phone || profile?.location || profile?.linkedIn || profile?.website;
+  const hasBasicInfo = profile?.phone || profile?.location || profile?.linkedinUrl || profile?.portfolioUrl;
   const hasSkills = profile?.skills && profile.skills.length > 0;
   const hasExperiences = profile?.experiences && profile.experiences.length > 0;
   const hasEducation = profile?.education && profile.education.length > 0;
@@ -141,13 +141,13 @@ export default function ProfilePage() {
                 </div>
               </div>
             )}
-            {profile?.linkedIn && (
+            {profile?.linkedinUrl && (
               <div className="flex items-start gap-3">
                 <Linkedin className="mt-0.5 h-5 w-5 text-gray-500" />
                 <div>
                   <p className="text-sm font-medium text-gray-500">LinkedIn</p>
                   <a
-                    href={profile.linkedIn}
+                    href={profile.linkedinUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-base text-blue-600 hover:underline"
@@ -157,18 +157,18 @@ export default function ProfilePage() {
                 </div>
               </div>
             )}
-            {profile?.website && (
+            {profile?.portfolioUrl && (
               <div className="flex items-start gap-3">
                 <Globe className="mt-0.5 h-5 w-5 text-gray-500" />
                 <div>
                   <p className="text-sm font-medium text-gray-500">Website</p>
                   <a
-                    href={profile.website}
+                    href={profile.portfolioUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-base text-blue-600 hover:underline"
                   >
-                    {profile.website}
+                    {profile.portfolioUrl}
                   </a>
                 </div>
               </div>

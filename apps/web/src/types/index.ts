@@ -57,9 +57,9 @@ export interface Profile {
   summary?: string;
   phone?: string;
   location?: string;
-  website?: string;
-  linkedIn?: string;
-  github?: string;
+  portfolioUrl?: string;
+  linkedinUrl?: string;
+  githubUrl?: string;
   skills: Skill[];
   experiences: Experience[];
   education: Education[];
@@ -67,6 +67,17 @@ export interface Profile {
   projects: Project[];
   createdAt: string;
   updatedAt: string;
+}
+
+// DTO for updating profile (matches backend UpdateProfileDto)
+export interface UpdateProfileDto {
+  fullName?: string;
+  phone?: string;
+  location?: string;
+  linkedinUrl?: string;
+  githubUrl?: string;
+  portfolioUrl?: string;
+  summary?: string;
 }
 
 // Job Posting Types
