@@ -20,7 +20,7 @@ export function useApplications() {
 /**
  * Hook to fetch single application
  */
-export function useApplication(id: number) {
+export function useApplication(id: string) {
   const token = useAuthStore((state) => state.token);
 
   return useQuery<Application>({
@@ -38,7 +38,7 @@ export function useCreateApplication() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: { jobPostingId: number }) =>
+    mutationFn: (data: { jobPostingId: string }) =>
       api.applications.create(token!, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['applications'] });
@@ -53,7 +53,7 @@ export function useCreateApplication() {
 /**
  * Hook to fetch application files (PDF URLs)
  */
-export function useApplicationFiles(id: number) {
+export function useApplicationFiles(id: string) {
   const token = useAuthStore((state) => state.token);
 
   return useQuery({

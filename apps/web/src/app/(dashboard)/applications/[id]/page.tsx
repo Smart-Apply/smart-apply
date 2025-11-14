@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/auth-store';
 import { api } from '@/lib/api-client';
+import { useCreateApplication } from '@/hooks/use-applications';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -18,9 +19,11 @@ import {
   AlertCircle,
   Briefcase,
   MapPin,
+  RefreshCw,
 } from 'lucide-react';
 import Link from 'next/link';
 import type { ApplicationStatus } from '@/types';
+import { toast } from 'sonner';
 
 function getStatusInfo(status: ApplicationStatus) {
   switch (status) {
@@ -72,6 +75,7 @@ export default function ApplicationDetailPage() {
   const router = useRouter();
   const token = useAuthStore((state) => state.token);
   const applicationId = params.id as string;
+  const createApplication = useCreateApplication();
 
   const { data: application, isLoading, error } = useQuery({
     queryKey: ['applications', applicationId],
@@ -88,6 +92,23 @@ export default function ApplicationDetailPage() {
     queryFn: () => api.applications.getFiles(token!, applicationId),
     enabled: !!token && !!applicationId && application?.status === 'READY',
   });
+
+  const handleGenerateAgain = async () => {
+    if (!application?.jobPostingId) {
+      toast.error('Job-Posting-ID nicht gefunden');
+      return;
+    }
+
+    try {
+      const newApplication = await createApplication.mutateAsync({
+        jobPostingId: application.jobPostingId,
+      });
+      toast.success('Neue Bewerbung wird erstellt...');
+      router.push(`/applications/${newApplication.id}`);
+    } catch {
+      toast.error('Fehler beim Erstellen der neuen Bewerbung');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -164,10 +185,16 @@ export default function ApplicationDetailPage() {
               </p>
             )}
             {application.status === 'FAILED' && (
-              <p className="text-sm text-gray-600 mt-1">
-                Bei der Erstellung ist ein Fehler aufgetreten.
-                {application.error && ` Fehler: ${application.error}`}
-              </p>
+              <div className="space-y-2">
+                <p className="text-sm text-gray-600">
+                  Bei der Erstellung ist ein Fehler aufgetreten.
+                  {application.error && (
+                    <span className="block mt-1 font-mono text-xs text-red-700 bg-red-50 p-2 rounded">
+                      {application.error}
+                    </span>
+                  )}
+                </p>
+              </div>
             )}
           </div>
           {application.status === 'READY' && (
@@ -175,6 +202,18 @@ export default function ApplicationDetailPage() {
               <CheckCircle className="mr-1 h-3 w-3" />
               Fertig
             </Badge>
+          )}
+          {application.status === 'FAILED' && (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleGenerateAgain}
+              disabled={createApplication.isPending}
+              className="flex-shrink-0"
+            >
+              <RefreshCw className={`mr-2 h-4 w-4 ${createApplication.isPending ? 'animate-spin' : ''}`} />
+              Erneut generieren
+            </Button>
           )}
         </div>
       </div>
