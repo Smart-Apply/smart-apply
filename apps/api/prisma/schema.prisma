@@ -21,6 +21,7 @@ model User {
   providerId String? // External OAuth ID
   
   profile   Profile?
+  jobPostings JobPosting[]
   applications Application[]
   
   createdAt DateTime @default(now())
@@ -148,6 +149,8 @@ model Project {
 
 model JobPosting {
   id          String @id @default(cuid())
+  userId      String
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   // Raw input
   rawText     String?
@@ -170,6 +173,7 @@ model JobPosting {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([userId])
   @@index([company])
   @@map("job_postings")
 }

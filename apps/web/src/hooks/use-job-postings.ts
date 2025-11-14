@@ -20,7 +20,7 @@ export function useJobPostings() {
 /**
  * Hook to fetch single job posting
  */
-export function useJobPosting(id: number) {
+export function useJobPosting(id: string) {
   const token = useAuthStore((state) => state.token);
 
   return useQuery<JobPosting>({
@@ -56,7 +56,7 @@ export function useDeleteJobPosting() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: number) => api.jobPostings.delete(token!, id),
+    mutationFn: (id: string) => api.jobPostings.delete(token!, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['job-postings'] });
       toast.success('Stellenanzeige erfolgreich gelöscht');

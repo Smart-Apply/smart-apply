@@ -156,6 +156,7 @@ async function main() {
   // Create sample job posting
   const jobPosting = await prisma.jobPosting.create({
     data: {
+      userId: demoUser.id,
       title: 'Senior TypeScript Developer',
       company: 'Azure Solutions Corp',
       location: 'Seattle, WA (Hybrid)',

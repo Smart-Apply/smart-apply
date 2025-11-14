@@ -107,10 +107,10 @@ export const api = {
     list: (token: string) =>
       apiRequest<JobPosting[]>('/job-postings', { token }),
 
-    getById: (token: string, id: number) =>
+    getById: (token: string, id: string) =>
       apiRequest<JobPosting>(`/job-postings/${id}`, { token }),
 
-    delete: (token: string, id: number) =>
+    delete: (token: string, id: string) =>
       apiRequest<void>(`/job-postings/${id}`, {
         method: 'DELETE',
         token,
@@ -119,7 +119,7 @@ export const api = {
 
   // Applications
   applications: {
-    create: (token: string, data: { jobPostingId: number }) =>
+    create: (token: string, data: { jobPostingId: string }) =>
       apiRequest<Application>('/applications', {
         method: 'POST',
         token,
@@ -129,10 +129,10 @@ export const api = {
     list: (token: string) =>
       apiRequest<Application[]>('/applications', { token }),
 
-    getById: (token: string, id: number) =>
+    getById: (token: string, id: string) =>
       apiRequest<Application>(`/applications/${id}`, { token }),
 
-    getFiles: (token: string, id: number) =>
+    getFiles: (token: string, id: string) =>
       apiRequest<{ coverLetter: string; resume: string }>(`/applications/${id}/files`, {
         token,
       }),

@@ -25,7 +25,7 @@ export default function JobsPage() {
     window.location.reload();
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (confirm('Möchtest du diese Stellenanzeige wirklich löschen?')) {
       await deleteJobPosting.mutateAsync(id);
     }
@@ -83,21 +83,9 @@ export default function JobsPage() {
                         )}
                       </CardDescription>
                     </div>
-                    <Badge
-                      variant={job.status === 'ACTIVE' ? 'default' : 'secondary'}
-                    >
-                      {job.status === 'ACTIVE' ? 'Aktiv' : 'Archiviert'}
-                    </Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {job.salary && (
-                    <div>
-                      <p className="text-sm text-gray-500">Gehalt</p>
-                      <p className="text-sm font-medium">{job.salary}</p>
-                    </div>
-                  )}
-
                   {job.description && (
                     <div>
                       <p className="text-sm text-gray-500 mb-1">Beschreibung</p>
@@ -107,17 +95,22 @@ export default function JobsPage() {
                     </div>
                   )}
 
-                  {job.requirements && (
+                  {job.requirements && job.requirements.length > 0 && (
                     <div>
                       <p className="text-sm text-gray-500 mb-1">Anforderungen</p>
-                      <p className="text-sm text-gray-700 line-clamp-2">
-                        {job.requirements}
-                      </p>
+                      <ul className="text-sm text-gray-700 list-disc list-inside space-y-1">
+                        {job.requirements.slice(0, 3).map((req, idx) => (
+                          <li key={idx} className="line-clamp-1">{req}</li>
+                        ))}
+                        {job.requirements.length > 3 && (
+                          <li className="text-gray-500">+{job.requirements.length - 3} weitere</li>
+                        )}
+                      </ul>
                     </div>
                   )}
 
                   <div className="flex items-center gap-3 pt-4 border-t">
-                    {job.url && (
+                    {job.sourceUrl && (
                       <Button
                         asChild
                         variant="outline"
@@ -125,7 +118,7 @@ export default function JobsPage() {
                         className="flex-1"
                       >
                         <a
-                          href={job.url}
+                          href={job.sourceUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                         >

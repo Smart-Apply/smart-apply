@@ -69,6 +69,7 @@ describe('ApplicationsService', () => {
 
       jest.spyOn(prisma.jobPosting, 'findUnique').mockResolvedValue({
         id: 'job-123',
+        userId: 'user-123',
         title: 'Test Job',
         company: 'Test Co',
         location: null,

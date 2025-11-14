@@ -34,10 +34,11 @@ export class JobPostingsService {
 
   /**
    * Parse job posting from various sources and store in database
+   * @param userId User ID from JWT token
    * @param dto Parse job posting DTO
    * @returns Job posting response DTO
    */
-  async parseJobPosting(dto: ParseJobPostingDto): Promise<JobPostingResponseDto> {
+  async parseJobPosting(userId: string, dto: ParseJobPostingDto): Promise<JobPostingResponseDto> {
     let rawText: string;
     let parsed: ParsedJobData;
 
@@ -74,6 +75,7 @@ export class JobPostingsService {
     // 2. Persist in DB
     const jobPosting = await this.prisma.jobPosting.create({
       data: {
+        userId,
         rawText,
         sourceUrl: dto.url,
         fileId: dto.fileId,
@@ -337,6 +339,59 @@ export class JobPostingsService {
 
     // Limit to reasonable number of items
     return items.slice(0, 20);
+  }
+
+  /**
+   * List all job postings for a user
+   * @param userId User ID from JWT token
+   * @returns Array of job posting response DTOs
+   */
+  async listJobPostings(userId: string): Promise<JobPostingResponseDto[]> {
+    const jobPostings = await this.prisma.jobPosting.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return jobPostings.map((jp) => this.mapToResponseDto(jp));
+  }
+
+  /**
+   * Get single job posting by ID
+   * @param userId User ID from JWT token
+   * @param id Job posting ID
+   * @returns Job posting response DTO
+   */
+  async getJobPostingById(userId: string, id: string): Promise<JobPostingResponseDto> {
+    const jobPosting = await this.prisma.jobPosting.findFirst({
+      where: { id, userId },
+    });
+
+    if (!jobPosting) {
+      throw new BadRequestException('Job posting not found');
+    }
+
+    return this.mapToResponseDto(jobPosting);
+  }
+
+  /**
+   * Delete job posting
+   * @param userId User ID from JWT token
+   * @param id Job posting ID
+   */
+  async deleteJobPosting(userId: string, id: string): Promise<void> {
+    const jobPosting = await this.prisma.jobPosting.findFirst({
+      where: { id, userId },
+    });
+
+    if (!jobPosting) {
+      throw new BadRequestException('Job posting not found');
+    }
+
+    await this.prisma.jobPosting.delete({
+      where: { id },
+    });
+
+    this.logger.log(`Deleted job posting: ${id}`);
   }
 
   /**

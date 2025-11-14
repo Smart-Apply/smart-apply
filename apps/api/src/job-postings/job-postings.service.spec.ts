@@ -29,6 +29,7 @@ describe('JobPostingsService', () => {
 
   const mockJobPostingData = {
     id: 'test-id',
+    userId: 'user-123',
     title: 'Senior Software Engineer',
     company: 'Google',
     location: 'Remote, USA',
@@ -39,6 +40,7 @@ describe('JobPostingsService', () => {
     rawText: 'Full job posting text',
     sourceUrl: null,
     fileId: null,
+    language: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -92,7 +94,7 @@ Nice to Have:
 
       mockPrismaService.jobPosting.create.mockResolvedValue(mockJobPostingData);
 
-      const result = await service.parseJobPosting({ text: textInput });
+      const result = await service.parseJobPosting('user-123', { text: textInput });
 
       expect(result).toBeDefined();
       expect(result.title).toBe('Senior Software Engineer');
@@ -110,8 +112,8 @@ Nice to Have:
     });
 
     it('should throw error if no input source provided', async () => {
-      await expect(service.parseJobPosting({})).rejects.toThrow(BadRequestException);
-      await expect(service.parseJobPosting({})).rejects.toThrow('At least one input source');
+      await expect(service.parseJobPosting('user-123', {})).rejects.toThrow(BadRequestException);
+      await expect(service.parseJobPosting('user-123', {})).rejects.toThrow('At least one input source');
     });
 
     it('should use fallback values if title cannot be extracted', async () => {
@@ -123,7 +125,7 @@ Nice to Have:
         company: 'Unknown Company',
       });
 
-      const result = await service.parseJobPosting({ text: textInput });
+      const result = await service.parseJobPosting('user-123', { text: textInput });
 
       // Service should use fallback values
       expect(result.title).toBeDefined();
@@ -150,7 +152,7 @@ Responsibilities:
         sourceUrl: dto.url,
       });
 
-      const result = await service.parseJobPosting(dto);
+      const result = await service.parseJobPosting('user-123', dto);
 
       expect(result).toBeDefined();
       expect(result.sourceUrl).toBe(dto.url);
@@ -178,7 +180,7 @@ Responsibilities:
         fileId,
       });
 
-      const result = await service.parseJobPosting(dto);
+      const result = await service.parseJobPosting('user-123', dto);
 
       expect(result).toBeDefined();
       expect(result.fileId).toBe(fileId);
@@ -207,7 +209,7 @@ Responsibilities:
         fileId,
       });
 
-      const result = await service.parseJobPosting(dto);
+      const result = await service.parseJobPosting('user-123', dto);
 
       expect(result).toBeDefined();
       expect(result.fileId).toBe(fileId);
@@ -221,8 +223,8 @@ Responsibilities:
 
       mockStorageService.download.mockResolvedValue(Buffer.from('mock txt content'));
 
-      await expect(service.parseJobPosting(dto)).rejects.toThrow(BadRequestException);
-      await expect(service.parseJobPosting(dto)).rejects.toThrow('Unsupported file type');
+      await expect(service.parseJobPosting('user-123', dto)).rejects.toThrow(BadRequestException);
+      await expect(service.parseJobPosting('user-123', dto)).rejects.toThrow('Unsupported file type');
     });
 
     it('should extract requirements from text', async () => {
@@ -238,7 +240,7 @@ Requirements:
 
       mockPrismaService.jobPosting.create.mockResolvedValue(mockJobPostingData);
 
-      const result = await service.parseJobPosting({ text: textInput });
+      const result = await service.parseJobPosting('user-123', { text: textInput });
 
       expect(result.requirements.length).toBeGreaterThan(0);
       // Should extract at least one requirement
@@ -256,7 +258,7 @@ Responsibilities:
 
       mockPrismaService.jobPosting.create.mockResolvedValue(mockJobPostingData);
 
-      const result = await service.parseJobPosting({ text: textInput });
+      const result = await service.parseJobPosting('user-123', { text: textInput });
 
       expect(result.responsibilities.length).toBeGreaterThan(0);
     });
@@ -273,7 +275,7 @@ Nice to Have:
 
       mockPrismaService.jobPosting.create.mockResolvedValue(mockJobPostingData);
 
-      const result = await service.parseJobPosting({ text: textInput });
+      const result = await service.parseJobPosting('user-123', { text: textInput });
 
       expect(result.niceToHave).toBeDefined();
       expect(Array.isArray(result.niceToHave)).toBe(true);

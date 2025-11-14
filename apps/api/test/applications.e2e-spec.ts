@@ -42,15 +42,19 @@ describe('ApplicationsController (e2e)', () => {
     userId = loginResponse.body.user.id;
 
     // Get or create a job posting
-    const existingJobPosting = await prisma.jobPosting.findFirst();
+    const existingJobPosting = await prisma.jobPosting.findFirst({ where: { userId } });
     if (existingJobPosting) {
       jobPostingId = existingJobPosting.id;
     } else {
       const newJobPosting = await prisma.jobPosting.create({
         data: {
+          userId,
           title: 'Software Engineer',
           company: 'Test Company',
           description: 'Test description for E2E tests',
+          requirements: [],
+          responsibilities: [],
+          niceToHave: [],
         },
       });
       jobPostingId = newJobPosting.id;

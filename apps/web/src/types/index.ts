@@ -106,16 +106,17 @@ export interface UpdateProfileDto {
 
 // Job Posting Types
 export interface JobPosting {
-  id: number;
-  userId: number;
+  id: string;
   title: string;
   company: string;
   location?: string;
   description?: string;
-  requirements?: string;
-  salary?: string;
-  url?: string;
-  status: 'ACTIVE' | 'ARCHIVED';
+  requirements?: string[];
+  responsibilities?: string[];
+  niceToHave?: string[];
+  rawText?: string;
+  sourceUrl?: string;
+  fileId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -124,9 +125,9 @@ export interface JobPosting {
 export type ApplicationStatus = 'PENDING' | 'GENERATING' | 'READY' | 'FAILED';
 
 export interface Application {
-  id: number;
-  userId: number;
-  jobPostingId: number;
+  id: string;
+  userId: string;
+  jobPostingId: string;
   status: ApplicationStatus;
   coverLetterBlobKey?: string;
   resumeBlobKey?: string;
