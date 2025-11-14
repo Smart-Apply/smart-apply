@@ -7,9 +7,18 @@ import { toast } from 'sonner';
 /**
  * Download a file from a URL with a custom filename
  */
-export async function downloadFile(url: string, filename: string): Promise<void> {
+export async function downloadFile(
+  url: string, 
+  filename: string, 
+  token?: string
+): Promise<void> {
   try {
-    const response = await fetch(url);
+    const headers: HeadersInit = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await fetch(url, { headers });
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -115,12 +124,13 @@ export function generateFilename(
 export async function handleDownload(
   url: string,
   filename: string,
-  onExpired?: () => void
+  onExpired?: () => void,
+  token?: string
 ): Promise<void> {
   const loadingToast = toast.loading('Download wird vorbereitet...');
   
   try {
-    await downloadFile(url, filename);
+    await downloadFile(url, filename, token);
     toast.success('Download erfolgreich!', { id: loadingToast });
   } catch (error) {
     toast.dismiss(loadingToast);

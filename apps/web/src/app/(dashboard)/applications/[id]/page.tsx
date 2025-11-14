@@ -116,7 +116,7 @@ export default function ApplicationDetailPage() {
   };
 
   const handleDownloadCoverLetter = async () => {
-    if (!files?.coverLetter) return;
+    if (!application || !token) return;
     
     setIsDownloading((prev) => ({ ...prev, coverLetter: true }));
     try {
@@ -125,14 +125,15 @@ export default function ApplicationDetailPage() {
         application?.jobPosting?.company,
         application?.jobPosting?.title
       );
-      await handleDownload(files.coverLetter.url, filename, handleExpiredUrl);
+      const url = `${process.env.NEXT_PUBLIC_API_URL}/applications/${application.id}/download/cover-letter`;
+      await handleDownload(url, filename, handleExpiredUrl, token);
     } finally {
       setIsDownloading((prev) => ({ ...prev, coverLetter: false }));
     }
   };
 
   const handleDownloadResume = async () => {
-    if (!files?.resume) return;
+    if (!application || !token) return;
     
     setIsDownloading((prev) => ({ ...prev, resume: true }));
     try {
@@ -141,7 +142,8 @@ export default function ApplicationDetailPage() {
         application?.jobPosting?.company,
         application?.jobPosting?.title
       );
-      await handleDownload(files.resume.url, filename, handleExpiredUrl);
+      const url = `${process.env.NEXT_PUBLIC_API_URL}/applications/${application.id}/download/resume`;
+      await handleDownload(url, filename, handleExpiredUrl, token);
     } finally {
       setIsDownloading((prev) => ({ ...prev, resume: false }));
     }
@@ -179,32 +181,70 @@ export default function ApplicationDetailPage() {
     }
   };
 
-  const handlePreviewCoverLetter = () => {
-    if (!files?.coverLetter) return;
-    
-    setPreviewFile({
-      url: files.coverLetter.url,
-      filename: generateFilename(
-        'cover-letter',
-        application?.jobPosting?.company,
-        application?.jobPosting?.title
-      ),
-      title: 'Anschreiben',
-    });
+  const handlePreviewCoverLetter = async () => {
+    if (!application?.id || !token) return;
+
+    try {
+      const url = `${process.env.NEXT_PUBLIC_API_URL}/applications/${application.id}/download/cover-letter`;
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch PDF');
+      }
+
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      setPreviewFile({
+        url: blobUrl,
+        filename: generateFilename(
+          'cover-letter',
+          application?.jobPosting?.company,
+          application?.jobPosting?.title
+        ),
+        title: 'Anschreiben',
+      });
+    } catch (error) {
+      console.error('Preview error:', error);
+      toast.error('Fehler beim Laden der Vorschau');
+    }
   };
 
-  const handlePreviewResume = () => {
-    if (!files?.resume) return;
-    
-    setPreviewFile({
-      url: files.resume.url,
-      filename: generateFilename(
-        'resume',
-        application?.jobPosting?.company,
-        application?.jobPosting?.title
-      ),
-      title: 'Lebenslauf',
-    });
+  const handlePreviewResume = async () => {
+    if (!application?.id || !token) return;
+
+    try {
+      const url = `${process.env.NEXT_PUBLIC_API_URL}/applications/${application.id}/download/resume`;
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch PDF');
+      }
+
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      setPreviewFile({
+        url: blobUrl,
+        filename: generateFilename(
+          'resume',
+          application?.jobPosting?.company,
+          application?.jobPosting?.title
+        ),
+        title: 'Lebenslauf',
+      });
+    } catch (error) {
+      console.error('Preview error:', error);
+      toast.error('Fehler beim Laden der Vorschau');
+    }
   };
 
   const handleGenerateAgain = async () => {
@@ -522,7 +562,13 @@ export default function ApplicationDetailPage() {
       {previewFile && (
         <PDFPreviewModal
           isOpen={!!previewFile}
-          onClose={() => setPreviewFile(null)}
+          onClose={() => {
+            // Cleanup blob URL if it was created
+            if (previewFile.url.startsWith('blob:')) {
+              URL.revokeObjectURL(previewFile.url);
+            }
+            setPreviewFile(null);
+          }}
           url={previewFile.url}
           filename={previewFile.filename}
           title={previewFile.title}

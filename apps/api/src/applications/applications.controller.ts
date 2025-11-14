@@ -7,7 +7,10 @@ import {
   Body,
   UseGuards,
   ParseBoolPipe,
+  Res,
+  StreamableFile,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -116,5 +119,61 @@ export class ApplicationsController {
     @Param('id') id: string,
   ): Promise<ApplicationFilesResponseDto> {
     return this.applicationsService.getFiles(user.id, id);
+  }
+
+  @Get(':id/download/cover-letter')
+  @ApiOperation({
+    summary: 'Download cover letter PDF',
+    description: 'Streams the cover letter PDF file for download',
+  })
+  @ApiResponse({ status: 200, description: 'PDF file stream' })
+  @ApiResponse({ status: 400, description: 'Application not ready or file not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Application not found' })
+  async downloadCoverLetter(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<StreamableFile> {
+    const file = await this.applicationsService.getFileStream(
+      user.id,
+      id,
+      'cover-letter',
+    );
+    
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="cover-letter-${id}.pdf"`,
+    });
+    
+    return new StreamableFile(file);
+  }
+
+  @Get(':id/download/resume')
+  @ApiOperation({
+    summary: 'Download resume PDF',
+    description: 'Streams the resume PDF file for download',
+  })
+  @ApiResponse({ status: 200, description: 'PDF file stream' })
+  @ApiResponse({ status: 400, description: 'Application not ready or file not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Application not found' })
+  async downloadResume(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<StreamableFile> {
+    const file = await this.applicationsService.getFileStream(
+      user.id,
+      id,
+      'resume',
+    );
+    
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="resume-${id}.pdf"`,
+    });
+    
+    return new StreamableFile(file);
   }
 }
