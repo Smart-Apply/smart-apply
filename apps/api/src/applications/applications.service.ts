@@ -182,6 +182,42 @@ export class ApplicationsService {
   }
 
   /**
+   * Get file stream for download
+   */
+  async getFileStream(
+    userId: string,
+    applicationId: string,
+    fileType: 'cover-letter' | 'resume',
+  ): Promise<Buffer> {
+    const application = await this.prisma.application.findFirst({
+      where: {
+        id: applicationId,
+        userId,
+      },
+    });
+
+    if (!application) {
+      throw new NotFoundException(`Application with ID ${applicationId} not found`);
+    }
+
+    if (application.status !== 'READY') {
+      throw new BadRequestException(
+        `Application is not ready. Current status: ${application.status}`,
+      );
+    }
+
+    const fileKey =
+      fileType === 'cover-letter' ? application.coverLetterFileKey : application.resumeFileKey;
+
+    if (!fileKey) {
+      throw new BadRequestException(`${fileType} file not found`);
+    }
+
+    // Get file from storage
+    return this.storageService.getFile(fileKey);
+  }
+
+  /**
    * Map Prisma model to DTO
    */
   private mapToResponseDto(application: any): ApplicationResponseDto {

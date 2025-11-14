@@ -3,7 +3,7 @@
  * Base URL: http://localhost:3000/api/v1
  */
 
-import type { User, Profile, JobPosting, Application, UpdateProfileDto } from '@/types';
+import type { User, Profile, JobPosting, Application, UpdateProfileDto, ApplicationFilesResponse } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
 
@@ -133,7 +133,7 @@ export const api = {
       apiRequest<Application>(`/applications/${id}`, { token }),
 
     getFiles: (token: string, id: string) =>
-      apiRequest<{ coverLetter: string; resume: string }>(`/applications/${id}/files`, {
+      apiRequest<ApplicationFilesResponse>(`/applications/${id}/files`, {
         token,
       }),
   },

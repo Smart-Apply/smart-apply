@@ -139,6 +139,21 @@ export interface Application {
   jobPosting?: JobPosting;
 }
 
+// Application Files Types
+export interface ApplicationFile {
+  key: string;
+  filename: string;
+  mimeType: string;
+  url: string;
+  expiresAt: string;
+}
+
+export interface ApplicationFilesResponse {
+  applicationId: string;
+  coverLetter?: ApplicationFile;
+  resume?: ApplicationFile;
+}
+
 // API Response Types
 export interface AuthResponse {
   accessToken: string;

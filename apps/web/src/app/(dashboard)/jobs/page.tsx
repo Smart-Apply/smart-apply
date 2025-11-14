@@ -181,7 +181,7 @@ export default function JobsPage() {
           <CardContent className="pt-6">
             <div className="space-y-2">
               <p className="text-sm font-medium text-blue-900">
-                So funktioniert's:
+                So funktioniert&apos;s:
               </p>
               <ul className="text-sm text-blue-700 space-y-1 list-disc list-inside">
                 <li>Füge eine Stellenanzeigen-URL ein (z.B. von LinkedIn oder Indeed)</li>

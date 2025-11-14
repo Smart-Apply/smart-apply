@@ -20,6 +20,11 @@ export class StorageService {
     return this.provider.download(key);
   }
 
+  async getFile(key: string): Promise<Buffer> {
+    this.logger.log(`Getting file: ${key}`);
+    return this.provider.download(key);
+  }
+
   async delete(key: string): Promise<void> {
     this.logger.log(`Deleting file: ${key}`);
     return this.provider.delete(key);
