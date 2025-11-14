@@ -97,23 +97,12 @@ export const api = {
 
   // Job Postings
   jobPostings: {
-    parse: (token: string, data: { text?: string; url?: string; file?: File }) => {
-      const formData = new FormData();
-      if (data.text) formData.append('text', data.text);
-      if (data.url) formData.append('url', data.url);
-      if (data.file) formData.append('file', data.file);
-
-      return fetch(`${API_BASE_URL}/job-postings/parse`, {
+    parse: (token: string, data: { text?: string; url?: string; fileId?: string }) =>
+      apiRequest<JobPosting>('/job-postings/parse', {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      }).then(async (res) => {
-        if (!res.ok) throw new ApiError(res.status, res.statusText);
-        return res.json() as Promise<JobPosting>;
-      });
-    },
+        token,
+        body: JSON.stringify(data),
+      }),
 
     list: (token: string) =>
       apiRequest<JobPosting[]>('/job-postings', { token }),
