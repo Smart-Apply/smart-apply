@@ -1,7 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/auth-store';
 import { api } from '@/lib/api-client';
 import { useCreateApplication } from '@/hooks/use-applications';
@@ -20,10 +21,14 @@ import {
   Briefcase,
   MapPin,
   RefreshCw,
+  Eye,
+  Package,
 } from 'lucide-react';
 import Link from 'next/link';
 import type { ApplicationStatus } from '@/types';
 import { toast } from 'sonner';
+import { PDFPreviewModal } from '@/components/pdf/pdf-preview-modal';
+import { handleDownload, handleZipDownload, generateFilename } from '@/lib/pdf-utils';
 
 function getStatusInfo(status: ApplicationStatus) {
   switch (status) {
@@ -73,9 +78,20 @@ function getStatusInfo(status: ApplicationStatus) {
 export default function ApplicationDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const token = useAuthStore((state) => state.token);
   const applicationId = params.id as string;
   const createApplication = useCreateApplication();
+  const [previewFile, setPreviewFile] = useState<{
+    url: string;
+    filename: string;
+    title: string;
+  } | null>(null);
+  const [isDownloading, setIsDownloading] = useState<{
+    coverLetter?: boolean;
+    resume?: boolean;
+    both?: boolean;
+  }>({});
 
   const { data: application, isLoading, error } = useQuery({
     queryKey: ['applications', applicationId],
@@ -87,11 +103,109 @@ export default function ApplicationDetailPage() {
     },
   });
 
-  const { data: files } = useQuery({
+  const { data: files, refetch: refetchFiles } = useQuery({
     queryKey: ['applications', applicationId, 'files'],
     queryFn: () => api.applications.getFiles(token!, applicationId),
     enabled: !!token && !!applicationId && application?.status === 'READY',
   });
+
+  const handleExpiredUrl = () => {
+    // Refetch files when URL has expired
+    queryClient.invalidateQueries({ queryKey: ['applications', applicationId, 'files'] });
+    refetchFiles();
+  };
+
+  const handleDownloadCoverLetter = async () => {
+    if (!files?.coverLetter) return;
+    
+    setIsDownloading((prev) => ({ ...prev, coverLetter: true }));
+    try {
+      const filename = generateFilename(
+        'cover-letter',
+        application?.jobPosting?.company,
+        application?.jobPosting?.title
+      );
+      await handleDownload(files.coverLetter.url, filename, handleExpiredUrl);
+    } finally {
+      setIsDownloading((prev) => ({ ...prev, coverLetter: false }));
+    }
+  };
+
+  const handleDownloadResume = async () => {
+    if (!files?.resume) return;
+    
+    setIsDownloading((prev) => ({ ...prev, resume: true }));
+    try {
+      const filename = generateFilename(
+        'resume',
+        application?.jobPosting?.company,
+        application?.jobPosting?.title
+      );
+      await handleDownload(files.resume.url, filename, handleExpiredUrl);
+    } finally {
+      setIsDownloading((prev) => ({ ...prev, resume: false }));
+    }
+  };
+
+  const handleDownloadBoth = async () => {
+    if (!files?.coverLetter || !files?.resume) return;
+    
+    setIsDownloading((prev) => ({ ...prev, both: true }));
+    try {
+      const coverLetterFilename = generateFilename(
+        'cover-letter',
+        application?.jobPosting?.company,
+        application?.jobPosting?.title
+      );
+      const resumeFilename = generateFilename(
+        'resume',
+        application?.jobPosting?.company,
+        application?.jobPosting?.title
+      );
+      
+      const company = application?.jobPosting?.company || 'company';
+      const zipFilename = `${company.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-bewerbung.zip`;
+      
+      await handleZipDownload(
+        [
+          { url: files.coverLetter.url, filename: coverLetterFilename },
+          { url: files.resume.url, filename: resumeFilename },
+        ],
+        zipFilename,
+        handleExpiredUrl
+      );
+    } finally {
+      setIsDownloading((prev) => ({ ...prev, both: false }));
+    }
+  };
+
+  const handlePreviewCoverLetter = () => {
+    if (!files?.coverLetter) return;
+    
+    setPreviewFile({
+      url: files.coverLetter.url,
+      filename: generateFilename(
+        'cover-letter',
+        application?.jobPosting?.company,
+        application?.jobPosting?.title
+      ),
+      title: 'Anschreiben',
+    });
+  };
+
+  const handlePreviewResume = () => {
+    if (!files?.resume) return;
+    
+    setPreviewFile({
+      url: files.resume.url,
+      filename: generateFilename(
+        'resume',
+        application?.jobPosting?.company,
+        application?.jobPosting?.title
+      ),
+      title: 'Lebenslauf',
+    });
+  };
 
   const handleGenerateAgain = async () => {
     if (!application?.jobPostingId) {
@@ -275,54 +389,145 @@ export default function ApplicationDetailPage() {
       {application.status === 'READY' && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Bewerbungsunterlagen
-            </CardTitle>
-            <CardDescription>
-              Deine generierten Bewerbungsunterlagen sind bereit zum Download
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Bewerbungsunterlagen
+                </CardTitle>
+                <CardDescription>
+                  Deine generierten Bewerbungsunterlagen sind bereit zum Download
+                </CardDescription>
+              </div>
+              {files?.coverLetter && files?.resume && (
+                <Button
+                  variant="outline"
+                  onClick={handleDownloadBoth}
+                  disabled={isDownloading.both}
+                >
+                  {isDownloading.both ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2" />
+                      Lädt...
+                    </>
+                  ) : (
+                    <>
+                      <Package className="mr-2 h-4 w-4" />
+                      Beide als ZIP
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2">
               {files?.coverLetter && (
-                <a
-                  href={files.coverLetter}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 rounded-lg border p-4 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex-shrink-0">
-                    <FileText className="h-8 w-8 text-blue-600" />
+                <div className="rounded-lg border p-4 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0">
+                      <FileText className="h-8 w-8 text-blue-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium">Anschreiben</p>
+                      <p className="text-sm text-gray-500">PDF-Dokument</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Link läuft ab: {new Date(files.coverLetter.expiresAt).toLocaleTimeString('de-DE')}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium">Anschreiben</p>
-                    <p className="text-sm text-gray-500">PDF-Dokument</p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={handlePreviewCoverLetter}
+                    >
+                      <Eye className="mr-2 h-4 w-4" />
+                      Vorschau
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="flex-1"
+                      onClick={handleDownloadCoverLetter}
+                      disabled={isDownloading.coverLetter}
+                    >
+                      {isDownloading.coverLetter ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                          Lädt...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="mr-2 h-4 w-4" />
+                          Download
+                        </>
+                      )}
+                    </Button>
                   </div>
-                  <Download className="h-5 w-5 text-gray-400" />
-                </a>
+                </div>
               )}
 
               {files?.resume && (
-                <a
-                  href={files.resume}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 rounded-lg border p-4 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex-shrink-0">
-                    <FileText className="h-8 w-8 text-blue-600" />
+                <div className="rounded-lg border p-4 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0">
+                      <FileText className="h-8 w-8 text-blue-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium">Lebenslauf</p>
+                      <p className="text-sm text-gray-500">PDF-Dokument</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Link läuft ab: {new Date(files.resume.expiresAt).toLocaleTimeString('de-DE')}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium">Lebenslauf</p>
-                    <p className="text-sm text-gray-500">PDF-Dokument</p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={handlePreviewResume}
+                    >
+                      <Eye className="mr-2 h-4 w-4" />
+                      Vorschau
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="flex-1"
+                      onClick={handleDownloadResume}
+                      disabled={isDownloading.resume}
+                    >
+                      {isDownloading.resume ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                          Lädt...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="mr-2 h-4 w-4" />
+                          Download
+                        </>
+                      )}
+                    </Button>
                   </div>
-                  <Download className="h-5 w-5 text-gray-400" />
-                </a>
+                </div>
               )}
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* PDF Preview Modal */}
+      {previewFile && (
+        <PDFPreviewModal
+          isOpen={!!previewFile}
+          onClose={() => setPreviewFile(null)}
+          url={previewFile.url}
+          filename={previewFile.filename}
+          title={previewFile.title}
+          onExpired={handleExpiredUrl}
+        />
       )}
 
       {/* Application Info */}
