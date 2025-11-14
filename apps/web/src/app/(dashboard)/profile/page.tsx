@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { ProfileSkeleton } from '@/components/shared/skeletons';
 import {
   User,
   Mail,
@@ -28,31 +29,7 @@ export default function ProfilePage() {
   const user = useAuthStore((state) => state.user);
 
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Profil</h1>
-            <p className="mt-1 text-gray-500">Lädt dein Profil...</p>
-          </div>
-        </div>
-        <div className="space-y-4">
-          {[1, 2, 3].map((i) => (
-            <Card key={i}>
-              <CardHeader>
-                <div className="h-6 w-48 animate-pulse rounded bg-gray-200" />
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="h-4 w-full animate-pulse rounded bg-gray-200" />
-                  <div className="h-4 w-3/4 animate-pulse rounded bg-gray-200" />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
+    return <ProfileSkeleton />;
   }
 
   if (error) {

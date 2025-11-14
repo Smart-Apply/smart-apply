@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { CenteredLoader } from '@/components/shared/loading';
 import {
   ArrowLeft,
   FileText,
@@ -265,14 +266,7 @@ export default function ApplicationDetailPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-500">Lädt Bewerbung...</p>
-        </div>
-      </div>
-    );
+    return <CenteredLoader message="Lädt Bewerbung..." />;
   }
 
   if (error || !application) {
@@ -362,10 +356,9 @@ export default function ApplicationDetailPage() {
               variant="default"
               size="sm"
               onClick={handleGenerateAgain}
-              disabled={createApplication.isPending}
+              loading={createApplication.isPending}
               className="flex-shrink-0"
             >
-              <RefreshCw className={`mr-2 h-4 w-4 ${createApplication.isPending ? 'animate-spin' : ''}`} />
               Erneut generieren
             </Button>
           )}
@@ -443,19 +436,10 @@ export default function ApplicationDetailPage() {
                 <Button
                   variant="outline"
                   onClick={handleDownloadBoth}
-                  disabled={isDownloading.both}
+                  loading={isDownloading.both}
                 >
-                  {isDownloading.both ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2" />
-                      Lädt...
-                    </>
-                  ) : (
-                    <>
-                      <Package className="mr-2 h-4 w-4" />
-                      Beide als ZIP
-                    </>
-                  )}
+                  <Package className="mr-2 h-4 w-4" />
+                  Beide als ZIP
                 </Button>
               )}
             </div>
@@ -490,19 +474,10 @@ export default function ApplicationDetailPage() {
                       size="sm"
                       className="flex-1"
                       onClick={handleDownloadCoverLetter}
-                      disabled={isDownloading.coverLetter}
+                      loading={isDownloading.coverLetter}
                     >
-                      {isDownloading.coverLetter ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                          Lädt...
-                        </>
-                      ) : (
-                        <>
-                          <Download className="mr-2 h-4 w-4" />
-                          Download
-                        </>
-                      )}
+                      <Download className="mr-2 h-4 w-4" />
+                      Download
                     </Button>
                   </div>
                 </div>
@@ -536,19 +511,10 @@ export default function ApplicationDetailPage() {
                       size="sm"
                       className="flex-1"
                       onClick={handleDownloadResume}
-                      disabled={isDownloading.resume}
+                      loading={isDownloading.resume}
                     >
-                      {isDownloading.resume ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                          Lädt...
-                        </>
-                      ) : (
-                        <>
-                          <Download className="mr-2 h-4 w-4" />
-                          Download
-                        </>
-                      )}
+                      <Download className="mr-2 h-4 w-4" />
+                      Download
                     </Button>
                   </div>
                 </div>

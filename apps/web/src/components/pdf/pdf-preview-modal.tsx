@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { CenteredLoader } from '@/components/shared/loading';
 import { ChevronLeft, ChevronRight, Download, ZoomIn, ZoomOut } from 'lucide-react';
 import { handleDownload } from '@/lib/pdf-utils';
 
@@ -122,14 +123,7 @@ export function PDFPreviewModal({
             file={url}
             onLoadSuccess={onDocumentLoadSuccess}
             onLoadError={onDocumentLoadError}
-            loading={
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-gray-500">Lädt PDF...</p>
-                </div>
-              </div>
-            }
+            loading={<CenteredLoader message="Lädt PDF..." />}
             error={
               <div className="text-center p-8">
                 <p className="text-red-600 mb-2">PDF konnte nicht geladen werden</p>

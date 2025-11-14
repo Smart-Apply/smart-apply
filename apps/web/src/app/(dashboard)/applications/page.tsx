@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { CenteredLoader } from '@/components/shared/loading';
+import { ApplicationCardSkeleton } from '@/components/shared/skeletons';
 import { Plus, FileText, Clock, CheckCircle, XCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import type { ApplicationStatus } from '@/types';
@@ -130,11 +132,10 @@ export default function ApplicationsPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-500">Lädt Bewerbungen...</p>
-          </div>
+        <div className="space-y-4">
+          <ApplicationCardSkeleton />
+          <ApplicationCardSkeleton />
+          <ApplicationCardSkeleton />
         </div>
       ) : applications && applications.length > 0 ? (
         <Tabs defaultValue="all" value={selectedFilter} onValueChange={(value) => setSelectedFilter(value as FilterStatus)}>

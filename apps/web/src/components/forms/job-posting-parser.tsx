@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Link as LinkIcon, FileText, Check, AlertCircle } from 'lucide-react';
+import { Link as LinkIcon, FileText, Check, AlertCircle } from 'lucide-react';
 import { useParseJobPosting } from '@/hooks/use-job-postings';
 import { toast } from 'sonner';
 import type { JobPosting } from '@/types';
@@ -205,17 +205,10 @@ export function JobPostingParser({ onSave }: JobPostingParserProps) {
                   </div>
                   <Button
                     type="submit"
-                    disabled={parseJobPosting.isPending}
+                    loading={parseJobPosting.isPending}
                     className="w-full"
                   >
-                    {parseJobPosting.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Wird geparst...
-                      </>
-                    ) : (
-                      'Stellenanzeige parsen'
-                    )}
+                    Stellenanzeige parsen
                   </Button>
                 </form>
               </TabsContent>
@@ -243,17 +236,10 @@ export function JobPostingParser({ onSave }: JobPostingParserProps) {
                   </div>
                   <Button
                     type="submit"
-                    disabled={parseJobPosting.isPending}
+                    loading={parseJobPosting.isPending}
                     className="w-full"
                   >
-                    {parseJobPosting.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Wird geparst...
-                      </>
-                    ) : (
-                      'Stellenanzeige parsen'
-                    )}
+                    Stellenanzeige parsen
                   </Button>
                 </form>
               </TabsContent>

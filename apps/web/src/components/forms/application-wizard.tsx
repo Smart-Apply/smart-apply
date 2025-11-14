@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { CenteredLoader } from '@/components/shared/loading';
 import { useProfile } from '@/hooks/use-profile';
 import { useJobPostings } from '@/hooks/use-job-postings';
 import { useCreateApplication } from '@/hooks/use-applications';
@@ -108,14 +109,7 @@ export function ApplicationWizard() {
   };
 
   if (profileLoading || jobPostingsLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-500">Lädt...</p>
-        </div>
-      </div>
-    );
+    return <CenteredLoader message="Lädt..." />;
   }
 
   return (
@@ -224,19 +218,10 @@ export function ApplicationWizard() {
           {currentStep === 'review' ? (
             <Button
               onClick={handleSubmit}
-              disabled={createApplication.isPending}
+              loading={createApplication.isPending}
             >
-              {createApplication.isPending ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                  Erstelle...
-                </>
-              ) : (
-                <>
-                  Bewerbung erstellen
-                  <ChevronRight className="ml-2 h-4 w-4" />
-                </>
-              )}
+              Bewerbung erstellen
+              <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
           ) : (
             <Button onClick={handleNext}>
