@@ -472,8 +472,8 @@ KEY_VAULT="kv-smartapply-prod"
 DATABASE_URL="postgresql://smartapplyadmin:ChangeMe123!@psql-smartapply-prod.postgres.database.azure.com:5432/smartapply?sslmode=require"
 az keyvault secret set --vault-name $KEY_VAULT --name "database-url" --value "$DATABASE_URL"
 
-# JWT secret
-az keyvault secret set --vault-name $KEY_VAULT --name "jwt-secret" --value "$(openssl rand -base64 32)"
+# JWT secret (CRITICAL: Must be 64+ characters for security)
+az keyvault secret set --vault-name $KEY_VAULT --name "jwt-secret" --value "$(openssl rand -base64 64)"
 
 # Storage connection string
 STORAGE_CONN=$(az storage account show-connection-string --name stsmartapplyprod --query connectionString -o tsv)
@@ -597,10 +597,16 @@ Access Swagger documentation at `/docs` when running locally.
 - **CORS**: Configurable origins
 - **Rate Limiting**: Throttling via @nestjs/throttler
 - **Password Hashing**: argon2
-- **JWT**: Secure token-based authentication
+- **JWT**: Secure token-based authentication (64+ character secrets enforced)
 - **Secrets Management**: Azure Key Vault in production
 - **SAS Tokens**: Time-limited blob access
 - **Input Validation**: class-validator with strict DTOs
+
+### Security Documentation
+
+For detailed security procedures including JWT secret rotation, incident response, and production deployment checklist, see **[docs/SECURITY.md](./docs/SECURITY.md)**.
+
+**Current Security Score: 6/10** - See [MVP_FEATURES.md](./MVP_FEATURES.md) for critical security todos before production deployment.
 
 ## 📦 Database Schema
 

@@ -182,7 +182,7 @@ See `MVP_FEATURES.md` for detailed security tasks with priorities and estimates.
 ### Backend (apps/api/.env)
 ```bash
 DATABASE_URL=postgresql://postgres:postgres@db:5432/smartapply
-JWT_SECRET=change_me_to_a_strong_secret_minimum_32_characters_long
+JWT_SECRET=REPLACE_WITH_SECURE_RANDOM_SECRET_MINIMUM_64_CHARACTERS_USE_OPENSSL_RAND_BASE64_64
 STORAGE_DRIVER=disk # or azure
 AZURE_STORAGE_ACCOUNT=<dev-account>
 AZURE_STORAGE_CONTAINER=smartapply

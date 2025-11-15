@@ -31,7 +31,7 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/smartapply
-      JWT_SECRET: dev_secret_key_change_in_production_minimum_32_chars
+      JWT_SECRET: DOCKER_DEV_SECRET_NOT_FOR_PRODUCTION_GENERATE_WITH_OPENSSL_RAND_BASE64_64_FOR_REAL_USE
       NODE_ENV: development
       PORT: 3000
       STORAGE_DRIVER: disk
