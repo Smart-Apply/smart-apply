@@ -180,9 +180,18 @@ If validation fails, the application will **not start** and display a clear erro
 - Consider **2FA** for high-value accounts (post-MVP)
 
 ### CORS & Headers
-- Restrict **CORS origins** to known frontend domains only
-- Enable **security headers** (CSP, X-Frame-Options, HSTS)
+- ✅ **CORS origins restricted** to specified domains (see [CORS_SECURITY.md](./CORS_SECURITY.md))
+- Configuration: `CORS_ORIGINS` environment variable with comma-separated list
+- Allowed methods: GET, POST, PUT, DELETE, PATCH
+- Allowed headers: Content-Type, Authorization
+- Enable **security headers** (CSP, X-Frame-Options, HSTS) via Helmet
 - Use **HTTPS** only in production (enforce via headers)
+
+**Production Checklist:**
+- [ ] Set `CORS_ORIGINS` to production frontend URLs (no localhost)
+- [ ] Verify all origins use HTTPS
+- [ ] Test CORS preflight requests
+- [ ] Document all allowed origins
 
 ### Monitoring & Logging
 - Log **authentication failures** and suspicious patterns
