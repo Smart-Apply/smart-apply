@@ -54,18 +54,13 @@ export default function LoginPage() {
       toast.success('Erfolgreich angemeldet!');
       router.push('/dashboard');
     } catch (error: unknown) {
-      // Handle specific error cases
-      if (error instanceof Error && 'status' in error) {
-        const apiError = error as { status: number; data?: { message?: string } };
-        if (apiError.status === 401) {
-          toast.error('Ungültige E-Mail oder Passwort.');
-        } else if (apiError.status === 403) {
-          toast.error('Zugriff verweigert. Bitte versuche es erneut.');
-        } else {
-          toast.error(apiError.data?.message || 'Anmeldung fehlgeschlagen. Bitte versuche es erneut.');
-        }
+      // Use centralized error handling
+      const { ApiError, getErrorMessage } = await import('@/lib/errors');
+      
+      if (ApiError.isApiError(error) && error.status === 401) {
+        toast.error('Ungültige E-Mail oder Passwort.');
       } else {
-        toast.error('Anmeldung fehlgeschlagen. Bitte überprüfe deine Zugangsdaten.');
+        toast.error(getErrorMessage(error));
       }
     }
   };

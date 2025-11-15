@@ -4,58 +4,76 @@
  */
 
 import type { User, Profile, JobPosting, Application, UpdateProfileDto, ApplicationFilesResponse } from '@/types';
+import { ApiError, NetworkError, shouldRetry, getRetryDelay } from './errors';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
 
-export class ApiError extends Error {
-  constructor(
-    public status: number,
-    public statusText: string,
-    public data?: unknown
-  ) {
-    super(`API Error: ${status} ${statusText}`);
-    this.name = 'ApiError';
-  }
-}
-
 interface RequestOptions extends RequestInit {
   token?: string;
+  retry?: boolean;
+  maxRetries?: number;
 }
 
 /**
- * Generic fetch wrapper with error handling
+ * Generic fetch wrapper with error handling and retry logic
  */
 async function apiRequest<T>(
   endpoint: string,
   options: RequestOptions = {}
 ): Promise<T> {
-  const { token, ...fetchOptions } = options;
+  const { token, retry = true, maxRetries = 3, ...fetchOptions } = options;
+  let retryCount = 0;
 
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(fetchOptions.headers as Record<string, string>),
+  const makeRequest = async (): Promise<T> => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(fetchOptions.headers as Record<string, string>),
+    };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        ...fetchOptions,
+        headers,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new ApiError(response.status, response.statusText, errorData);
+      }
+
+      // Handle 204 No Content
+      if (response.status === 204) {
+        return {} as T;
+      }
+
+      return response.json();
+    } catch (error) {
+      // Convert network errors to NetworkError
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        throw new NetworkError();
+      }
+      throw error;
+    }
   };
 
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+  // Retry logic
+  while (true) {
+    try {
+      return await makeRequest();
+    } catch (error) {
+      if (retry && shouldRetry(error, retryCount, maxRetries)) {
+        retryCount++;
+        const delay = getRetryDelay(retryCount);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+      throw error;
+    }
   }
-
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...fetchOptions,
-    headers,
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
-    throw new ApiError(response.status, response.statusText, errorData);
-  }
-
-  // Handle 204 No Content
-  if (response.status === 204) {
-    return {} as T;
-  }
-
-  return response.json();
 }
 
 /**

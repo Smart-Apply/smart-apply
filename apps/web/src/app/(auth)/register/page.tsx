@@ -63,15 +63,14 @@ export default function RegisterPage() {
       toast.success('Account erfolgreich erstellt!');
       router.push('/dashboard');
     } catch (error: unknown) {
-      // Handle specific error cases
-      if (error instanceof Error && 'status' in error) {
-        const apiError = error as { status: number; data?: { message?: string } };
-        if (apiError.status === 400) {
-          toast.error('E-Mail-Adresse bereits registriert oder ungültige Eingabe.');
-        } else if (apiError.status === 409) {
+      // Use centralized error handling
+      const { ApiError, getErrorMessage } = await import('@/lib/errors');
+      
+      if (ApiError.isApiError(error)) {
+        if (error.status === 400 || error.status === 409) {
           toast.error('Diese E-Mail-Adresse ist bereits registriert.');
         } else {
-          toast.error(apiError.data?.message || 'Registrierung fehlgeschlagen. Bitte versuche es erneut.');
+          toast.error(getErrorMessage(error));
         }
       } else {
         toast.error('Registrierung fehlgeschlagen. Bitte versuche es erneut.');

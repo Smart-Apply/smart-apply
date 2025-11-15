@@ -1,7 +1,7 @@
 import { useAuthStore } from '@/stores/auth-store';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
-import { toast } from 'sonner';
+import { toastSuccess, toastError } from '@/lib/toast';
 import type { Profile, UpdateProfileDto } from '@/types';
 
 /**
@@ -36,10 +36,10 @@ export function useUpdateProfile() {
         updateUser({ name: variables.fullName });
       }
       
-      toast.success('Profil erfolgreich aktualisiert');
+      toastSuccess('Profil erfolgreich aktualisiert');
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Fehler beim Aktualisieren des Profils');
+    onError: (error: unknown) => {
+      toastError(error, 'Fehler beim Aktualisieren des Profils');
     },
   });
 }
