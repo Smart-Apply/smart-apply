@@ -1,7 +1,7 @@
 import { useAuthStore } from '@/stores/auth-store';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
-import { toast } from 'sonner';
+import { toastSuccess, toastError } from '@/lib/toast';
 import type { Application } from '@/types';
 
 /**
@@ -42,10 +42,10 @@ export function useCreateApplication() {
       api.applications.create(token!, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['applications'] });
-      toast.success('Bewerbung wird erstellt...');
+      toastSuccess('Bewerbung wird erstellt...');
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Fehler beim Erstellen der Bewerbung');
+    onError: (error: unknown) => {
+      toastError(error, 'Fehler beim Erstellen der Bewerbung');
     },
   });
 }

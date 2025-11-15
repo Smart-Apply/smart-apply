@@ -1,7 +1,7 @@
 import { useAuthStore } from '@/stores/auth-store';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
-import { toast } from 'sonner';
+import { toastSuccess, toastError } from '@/lib/toast';
 import type { JobPosting } from '@/types';
 
 /**
@@ -40,10 +40,10 @@ export function useParseJobPosting() {
     mutationFn: (data: { text?: string; url?: string; fileId?: string }) =>
       api.jobPostings.parse(token!, data),
     onSuccess: () => {
-      toast.success('Stellenanzeige erfolgreich geparst');
+      toastSuccess('Stellenanzeige erfolgreich geparst');
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Fehler beim Parsen der Stellenanzeige');
+    onError: (error: unknown) => {
+      toastError(error, 'Fehler beim Parsen der Stellenanzeige');
     },
   });
 }
@@ -59,10 +59,10 @@ export function useDeleteJobPosting() {
     mutationFn: (id: string) => api.jobPostings.delete(token!, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['job-postings'] });
-      toast.success('Stellenanzeige erfolgreich gelöscht');
+      toastSuccess('Stellenanzeige erfolgreich gelöscht');
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Fehler beim Löschen der Stellenanzeige');
+    onError: (error: unknown) => {
+      toastError(error, 'Fehler beim Löschen der Stellenanzeige');
     },
   });
 }
