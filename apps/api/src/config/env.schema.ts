@@ -14,7 +14,7 @@ const envSchema = z.object({
     .min(64, 'JWT_SECRET must be at least 64 characters for security')
     .refine(
       (val) => !val.includes('change') && !val.includes('REPLACE') && !val.includes('example'),
-      'JWT_SECRET cannot contain placeholder text - generate with: openssl rand -base64 64'
+      'JWT_SECRET cannot contain placeholder text - generate with: openssl rand -base64 64',
     ),
   JWT_EXPIRES_IN: z.string().default('7d'),
 

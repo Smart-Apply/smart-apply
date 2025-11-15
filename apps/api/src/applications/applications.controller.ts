@@ -135,17 +135,13 @@ export class ApplicationsController {
     @Param('id') id: string,
     @Res({ passthrough: true }) res: Response,
   ): Promise<StreamableFile> {
-    const file = await this.applicationsService.getFileStream(
-      user.id,
-      id,
-      'cover-letter',
-    );
-    
+    const file = await this.applicationsService.getFileStream(user.id, id, 'cover-letter');
+
     res.set({
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="cover-letter-${id}.pdf"`,
     });
-    
+
     return new StreamableFile(file);
   }
 
@@ -163,17 +159,13 @@ export class ApplicationsController {
     @Param('id') id: string,
     @Res({ passthrough: true }) res: Response,
   ): Promise<StreamableFile> {
-    const file = await this.applicationsService.getFileStream(
-      user.id,
-      id,
-      'resume',
-    );
-    
+    const file = await this.applicationsService.getFileStream(user.id, id, 'resume');
+
     res.set({
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="resume-${id}.pdf"`,
     });
-    
+
     return new StreamableFile(file);
   }
 }

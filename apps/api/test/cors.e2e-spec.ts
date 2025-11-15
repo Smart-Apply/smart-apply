@@ -48,7 +48,7 @@ describe('CORS Security (e2e)', () => {
     it('should allow requests from configured origins', async () => {
       const origin = allowedOrigins[0];
 
-      const response = await request(app.getHttpServer())
+      await request(app.getHttpServer())
         .get('/api/v1/auth/me')
         .set('Origin', origin)
         .expect((res) => {
@@ -65,9 +65,7 @@ describe('CORS Security (e2e)', () => {
         .set('Origin', unauthorizedOrigin);
 
       // Should not have CORS headers for unauthorized origin
-      expect(response.headers['access-control-allow-origin']).not.toBe(
-        unauthorizedOrigin,
-      );
+      expect(response.headers['access-control-allow-origin']).not.toBe(unauthorizedOrigin);
     });
 
     it('should allow credentials', async () => {
@@ -152,7 +150,7 @@ describe('CORS Security (e2e)', () => {
     it('should document production origin requirements', () => {
       // This test serves as documentation that production must set CORS_ORIGINS
       const isProduction = configService.isProduction;
-      
+
       if (isProduction) {
         // In production, ensure no localhost origins are allowed
         allowedOrigins.forEach((origin) => {

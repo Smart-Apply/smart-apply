@@ -113,7 +113,9 @@ Nice to Have:
 
     it('should throw error if no input source provided', async () => {
       await expect(service.parseJobPosting('user-123', {})).rejects.toThrow(BadRequestException);
-      await expect(service.parseJobPosting('user-123', {})).rejects.toThrow('At least one input source');
+      await expect(service.parseJobPosting('user-123', {})).rejects.toThrow(
+        'At least one input source',
+      );
     });
 
     it('should use fallback values if title cannot be extracted', async () => {
@@ -224,7 +226,9 @@ Responsibilities:
       mockStorageService.download.mockResolvedValue(Buffer.from('mock txt content'));
 
       await expect(service.parseJobPosting('user-123', dto)).rejects.toThrow(BadRequestException);
-      await expect(service.parseJobPosting('user-123', dto)).rejects.toThrow('Unsupported file type');
+      await expect(service.parseJobPosting('user-123', dto)).rejects.toThrow(
+        'Unsupported file type',
+      );
     });
 
     it('should extract requirements from text', async () => {

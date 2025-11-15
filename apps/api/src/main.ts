@@ -21,7 +21,7 @@ async function bootstrap() {
 
   // Security
   app.use(helmet());
-  
+
   // CORS configuration with restrictive policy
   // Only allows specified origins from CORS_ORIGINS environment variable
   // For production, set CORS_ORIGINS to your deployed frontend URLs
