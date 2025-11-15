@@ -1,16 +1,17 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { JobPostingParser } from '@/components/forms/job-posting-parser';
 import { useJobPostings, useDeleteJobPosting } from '@/hooks/use-job-postings';
 import { Plus, Briefcase, Trash2, ExternalLink, Loader2 } from 'lucide-react';
-import Link from 'next/link';
 import type { JobPosting } from '@/types';
 
 export default function JobsPage() {
+  const router = useRouter();
   const [showParser, setShowParser] = useState(false);
   const { data: jobPostings, isLoading } = useJobPostings();
   const deleteJobPosting = useDeleteJobPosting();
@@ -112,31 +113,23 @@ export default function JobsPage() {
                   <div className="flex items-center gap-3 pt-4 border-t">
                     {job.sourceUrl && (
                       <Button
-                        asChild
                         variant="outline"
                         size="sm"
                         className="flex-1"
+                        onClick={() => window.open(job.sourceUrl, '_blank')}
                       >
-                        <a
-                          href={job.sourceUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <ExternalLink className="mr-2 h-4 w-4" />
-                          Original ansehen
-                        </a>
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        Original ansehen
                       </Button>
                     )}
                     <Button
-                      asChild
                       variant="default"
                       size="sm"
                       className="flex-1"
+                      onClick={() => router.push(`/applications/new?jobId=${job.id}`)}
                     >
-                      <Link href={`/applications/new?jobId=${job.id}`}>
-                        <Briefcase className="mr-2 h-4 w-4" />
-                        Bewerbung erstellen
-                      </Link>
+                      <Briefcase className="mr-2 h-4 w-4" />
+                      Bewerbung erstellen
                     </Button>
                     <Button
                       onClick={() => handleDelete(job.id)}

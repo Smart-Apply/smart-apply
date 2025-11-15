@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Link as LinkIcon, FileText, Check, AlertCircle } from 'lucide-react';
+import { Link as LinkIcon, FileText, Check, AlertCircle } from 'lucide-react';
 import { useParseJobPosting } from '@/hooks/use-job-postings';
 import { toast } from 'sonner';
 import type { JobPosting } from '@/types';
@@ -33,7 +33,6 @@ const editSchema = z.object({
   location: z.string().optional(),
   description: z.string().optional(),
   requirements: z.string().optional(),
-  salary: z.string().optional(),
 });
 
 type UrlFormData = z.infer<typeof urlSchema>;
@@ -95,8 +94,7 @@ export function JobPostingParser({ onSave }: JobPostingParserProps) {
         company: result.company,
         location: result.location || '',
         description: result.description || '',
-        requirements: result.requirements || '',
-        salary: result.salary || '',
+        requirements: Array.isArray(result.requirements) ? result.requirements.join('\n') : (result.requirements || ''),
       });
     } catch (error) {
       // Error toast is handled by the hook
@@ -117,8 +115,7 @@ export function JobPostingParser({ onSave }: JobPostingParserProps) {
         company: result.company,
         location: result.location || '',
         description: result.description || '',
-        requirements: result.requirements || '',
-        salary: result.salary || '',
+        requirements: Array.isArray(result.requirements) ? result.requirements.join('\n') : (result.requirements || ''),
       });
     } catch (error) {
       // Error toast is handled by the hook
@@ -136,8 +133,7 @@ export function JobPostingParser({ onSave }: JobPostingParserProps) {
       company: data.company,
       location: data.location,
       description: data.description,
-      requirements: data.requirements,
-      salary: data.salary,
+      requirements: data.requirements ? [data.requirements] : undefined,
     };
 
     setParsedData(updatedJobPosting);
@@ -205,17 +201,10 @@ export function JobPostingParser({ onSave }: JobPostingParserProps) {
                   </div>
                   <Button
                     type="submit"
-                    disabled={parseJobPosting.isPending}
+                    loading={parseJobPosting.isPending}
                     className="w-full"
                   >
-                    {parseJobPosting.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Wird geparst...
-                      </>
-                    ) : (
-                      'Stellenanzeige parsen'
-                    )}
+                    Stellenanzeige parsen
                   </Button>
                 </form>
               </TabsContent>
@@ -243,17 +232,10 @@ export function JobPostingParser({ onSave }: JobPostingParserProps) {
                   </div>
                   <Button
                     type="submit"
-                    disabled={parseJobPosting.isPending}
+                    loading={parseJobPosting.isPending}
                     className="w-full"
                   >
-                    {parseJobPosting.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Wird geparst...
-                      </>
-                    ) : (
-                      'Stellenanzeige parsen'
-                    )}
+                    Stellenanzeige parsen
                   </Button>
                 </form>
               </TabsContent>
@@ -298,13 +280,6 @@ export function JobPostingParser({ onSave }: JobPostingParserProps) {
                 </div>
               )}
 
-              {parsedData.salary && (
-                <div>
-                  <Label className="text-xs text-gray-500">Gehalt</Label>
-                  <p className="text-base">{parsedData.salary}</p>
-                </div>
-              )}
-
               {parsedData.description && (
                 <div>
                   <Label className="text-xs text-gray-500">Beschreibung</Label>
@@ -316,27 +291,27 @@ export function JobPostingParser({ onSave }: JobPostingParserProps) {
                 </div>
               )}
 
-              {parsedData.requirements && (
+              {parsedData.requirements && parsedData.requirements.length > 0 && (
                 <div>
                   <Label className="text-xs text-gray-500">Anforderungen</Label>
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                    {parsedData.requirements.length > 200
-                      ? `${parsedData.requirements.substring(0, 200)}...`
-                      : parsedData.requirements}
-                  </p>
+                  <ul className="text-sm text-gray-700 list-disc list-inside space-y-1">
+                    {parsedData.requirements.map((req, index) => (
+                      <li key={index}>{req}</li>
+                    ))}
+                  </ul>
                 </div>
               )}
 
-              {parsedData.url && (
+              {parsedData.sourceUrl && (
                 <div>
                   <Label className="text-xs text-gray-500">Original-URL</Label>
                   <a
-                    href={parsedData.url}
+                    href={parsedData.sourceUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm text-blue-600 hover:underline break-all"
                   >
-                    {parsedData.url}
+                    {parsedData.sourceUrl}
                   </a>
                 </div>
               )}
@@ -407,16 +382,6 @@ export function JobPostingParser({ onSave }: JobPostingParserProps) {
                   id="edit-location"
                   type="text"
                   {...editForm.register('location')}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="edit-salary">Gehalt</Label>
-                <Input
-                  id="edit-salary"
-                  type="text"
-                  placeholder="z.B. 60.000 - 80.000 €"
-                  {...editForm.register('salary')}
                 />
               </div>
 

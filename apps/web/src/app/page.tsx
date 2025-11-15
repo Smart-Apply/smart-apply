@@ -1,9 +1,13 @@
+'use client';
+
 import { Button } from '@/components/ui/button';
 import { FileText, Sparkles, Zap, ArrowRight, Shield, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
+  const router = useRouter();
   const features = [
     {
       icon: Sparkles,
@@ -37,11 +41,11 @@ export default function Home() {
             <span className="text-xl font-bold text-gray-900">Smart Apply</span>
           </Link>
           <nav className="flex items-center space-x-4">
-            <Button asChild variant="ghost">
-              <Link href="/login">Anmelden</Link>
+            <Button variant="ghost" onClick={() => router.push('/login')}>
+              Anmelden
             </Button>
-            <Button asChild>
-              <Link href="/register">Registrieren</Link>
+            <Button onClick={() => router.push('/register')}>
+              Registrieren
             </Button>
           </nav>
         </div>
@@ -65,14 +69,12 @@ export default function Home() {
               jeweilige Stellenanzeige zugeschnitten sind.
             </p>
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Button asChild size="lg" className="w-full sm:w-auto">
-                <Link href="/register">
-                  Jetzt starten
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
+              <Button size="lg" className="w-full sm:w-auto" onClick={() => router.push('/register')}>
+                Jetzt starten
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
-              <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
-                <Link href="/login">Anmelden</Link>
+              <Button variant="outline" size="lg" className="w-full sm:w-auto" onClick={() => router.push('/login')}>
+                Anmelden
               </Button>
             </div>
           </div>
@@ -113,11 +115,9 @@ export default function Home() {
               Erstelle noch heute deinen kostenlosen Account und starte mit
               KI-gestützten Bewerbungen.
             </p>
-            <Button asChild size="lg">
-              <Link href="/register">
-                Kostenlos registrieren
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
+            <Button size="lg" onClick={() => router.push('/register')}>
+              Kostenlos registrieren
+              <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
         </section>

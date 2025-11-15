@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { ProfileSkeleton } from '@/components/shared/skeletons';
 import {
   User,
   Mail,
@@ -21,38 +22,15 @@ import {
   Edit,
   Plus,
 } from 'lucide-react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function ProfilePage() {
+  const router = useRouter();
   const { data: profile, isLoading, error } = useProfile();
   const user = useAuthStore((state) => state.user);
 
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Profil</h1>
-            <p className="mt-1 text-gray-500">Lädt dein Profil...</p>
-          </div>
-        </div>
-        <div className="space-y-4">
-          {[1, 2, 3].map((i) => (
-            <Card key={i}>
-              <CardHeader>
-                <div className="h-6 w-48 animate-pulse rounded bg-gray-200" />
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="h-4 w-full animate-pulse rounded bg-gray-200" />
-                  <div className="h-4 w-3/4 animate-pulse rounded bg-gray-200" />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
+    return <ProfileSkeleton />;
   }
 
   if (error) {
@@ -91,11 +69,9 @@ export default function ProfilePage() {
           <h1 className="text-3xl font-bold text-gray-900">Profil</h1>
           <p className="mt-1 text-gray-500">Dein persönliches Profil</p>
         </div>
-        <Button asChild>
-          <Link href="/profile/edit">
-            <Edit className="mr-2 h-4 w-4" />
-            Profil bearbeiten
-          </Link>
+        <Button onClick={() => router.push('/profile/edit')}>
+          <Edit className="mr-2 h-4 w-4" />
+          Profil bearbeiten
         </Button>
       </div>
 
@@ -231,11 +207,9 @@ export default function ProfilePage() {
               <p className="text-sm text-blue-800">
                 Noch keine Fähigkeiten hinzugefügt. Füge deine Skills hinzu, um bessere Bewerbungen zu erstellen.
               </p>
-              <Button asChild variant="outline" size="sm" className="mt-3">
-                <Link href="/profile/edit">
-                  <Plus className="mr-2 h-3 w-3" />
-                  Skills hinzufügen
-                </Link>
+              <Button variant="outline" size="sm" className="mt-3" onClick={() => router.push('/profile/edit')}>
+                <Plus className="mr-2 h-3 w-3" />
+                Skills hinzufügen
               </Button>
             </div>
           )}
@@ -299,11 +273,9 @@ export default function ProfilePage() {
               <p className="text-sm text-blue-800">
                 Noch keine Berufserfahrung hinzugefügt. Füge deine Arbeitsstellen hinzu.
               </p>
-              <Button asChild variant="outline" size="sm" className="mt-3">
-                <Link href="/profile/edit">
-                  <Plus className="mr-2 h-3 w-3" />
-                  Erfahrung hinzufügen
-                </Link>
+              <Button variant="outline" size="sm" className="mt-3" onClick={() => router.push('/profile/edit')}>
+                <Plus className="mr-2 h-3 w-3" />
+                Erfahrung hinzufügen
               </Button>
             </div>
           )}
@@ -360,11 +332,9 @@ export default function ProfilePage() {
               <p className="text-sm text-blue-800">
                 Noch keine Bildung hinzugefügt. Füge deine akademische Ausbildung hinzu.
               </p>
-              <Button asChild variant="outline" size="sm" className="mt-3">
-                <Link href="/profile/edit">
-                  <Plus className="mr-2 h-3 w-3" />
-                  Bildung hinzufügen
-                </Link>
+              <Button variant="outline" size="sm" className="mt-3" onClick={() => router.push('/profile/edit')}>
+                <Plus className="mr-2 h-3 w-3" />
+                Bildung hinzufügen
               </Button>
             </div>
           )}
@@ -434,11 +404,9 @@ export default function ProfilePage() {
               <p className="text-sm text-blue-800">
                 Noch keine Zertifikate hinzugefügt. Füge deine professionellen Zertifizierungen hinzu.
               </p>
-              <Button asChild variant="outline" size="sm" className="mt-3">
-                <Link href="/profile/edit">
-                  <Plus className="mr-2 h-3 w-3" />
-                  Zertifikat hinzufügen
-                </Link>
+              <Button variant="outline" size="sm" className="mt-3" onClick={() => router.push('/profile/edit')}>
+                <Plus className="mr-2 h-3 w-3" />
+                Zertifikat hinzufügen
               </Button>
             </div>
           )}
@@ -513,11 +481,9 @@ export default function ProfilePage() {
               <p className="text-sm text-blue-800">
                 Noch keine Projekte hinzugefügt. Zeige deine relevanten Arbeiten und Projekte.
               </p>
-              <Button asChild variant="outline" size="sm" className="mt-3">
-                <Link href="/profile/edit">
-                  <Plus className="mr-2 h-3 w-3" />
-                  Projekt hinzufügen
-                </Link>
+              <Button variant="outline" size="sm" className="mt-3" onClick={() => router.push('/profile/edit')}>
+                <Plus className="mr-2 h-3 w-3" />
+                Projekt hinzufügen
               </Button>
             </div>
           )}

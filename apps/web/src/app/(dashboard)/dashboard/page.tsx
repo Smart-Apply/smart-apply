@@ -5,9 +5,10 @@ import { Button } from '@/components/ui/button';
 import { useApplications } from '@/hooks/use-applications';
 import { useProfile } from '@/hooks/use-profile';
 import { FileText, Briefcase, User, Plus } from 'lucide-react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { data: applications, isLoading: applicationsLoading } = useApplications();
 
@@ -41,11 +42,9 @@ export default function DashboardPage() {
             Willkommen zurück! Hier ist eine Übersicht deiner Bewerbungen.
           </p>
         </div>
-        <Button asChild>
-          <Link href="/applications/new">
-            <Plus className="mr-2 h-4 w-4" />
-            Neue Bewerbung
-          </Link>
+        <Button onClick={() => router.push('/applications/new')}>
+          <Plus className="mr-2 h-4 w-4" />
+          Neue Bewerbung
         </Button>
       </div>
 
@@ -63,12 +62,12 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stat.value}</div>
-                <Link
-                  href={stat.href}
+                <button
+                  onClick={() => router.push(stat.href)}
                   className="mt-1 text-xs text-blue-600 hover:underline"
                 >
                   Details anzeigen
-                </Link>
+                </button>
               </CardContent>
             </Card>
           );
@@ -99,8 +98,8 @@ export default function DashboardPage() {
                       Status: {app.status}
                     </p>
                   </div>
-                  <Button asChild variant="ghost" size="sm">
-                    <Link href={`/applications/${app.id}`}>Details</Link>
+                  <Button variant="ghost" size="sm" onClick={() => router.push(`/applications/${app.id}`)}>
+                    Details
                   </Button>
                 </div>
               ))}
@@ -108,11 +107,9 @@ export default function DashboardPage() {
           ) : (
             <div className="text-center text-gray-500">
               <p>Noch keine Bewerbungen erstellt.</p>
-              <Button asChild className="mt-4" variant="outline">
-                <Link href="/applications/new">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Erste Bewerbung erstellen
-                </Link>
+              <Button className="mt-4" variant="outline" onClick={() => router.push('/applications/new')}>
+                <Plus className="mr-2 h-4 w-4" />
+                Erste Bewerbung erstellen
               </Button>
             </div>
           )}
@@ -132,11 +129,9 @@ export default function DashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button asChild variant="default">
-              <Link href="/profile">
-                <User className="mr-2 h-4 w-4" />
-                Profil bearbeiten
-              </Link>
+            <Button variant="default" onClick={() => router.push('/profile')}>
+              <User className="mr-2 h-4 w-4" />
+              Profil bearbeiten
             </Button>
           </CardContent>
         </Card>

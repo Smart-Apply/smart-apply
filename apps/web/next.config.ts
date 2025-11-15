@@ -6,9 +6,7 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
   
   // Set workspace root for file tracing (monorepo setup)
-  experimental: {
-    outputFileTracingRoot: path.join(__dirname, "../../"),
-  },
+  outputFileTracingRoot: path.join(__dirname, "../../"),
 };
 
 export default nextConfig;
