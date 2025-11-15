@@ -9,16 +9,12 @@ import { toast } from 'sonner';
  */
 export async function downloadFile(
   url: string, 
-  filename: string, 
-  token?: string
+  filename: string
 ): Promise<void> {
   try {
-    const headers: HeadersInit = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    
-    const response = await fetch(url, { headers });
+    const response = await fetch(url, { 
+      credentials: 'include' // Send cookies with request
+    });
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -56,7 +52,7 @@ export async function downloadAsZip(
     
     // Download all files in parallel
     const downloadPromises = files.map(async ({ url, filename }) => {
-      const response = await fetch(url);
+      const response = await fetch(url, { credentials: 'include' });
       if (!response.ok) {
         throw new Error(`Failed to download ${filename}`);
       }
@@ -124,13 +120,12 @@ export function generateFilename(
 export async function handleDownload(
   url: string,
   filename: string,
-  onExpired?: () => void,
-  token?: string
+  onExpired?: () => void
 ): Promise<void> {
   const loadingToast = toast.loading('Download wird vorbereitet...');
   
   try {
-    await downloadFile(url, filename, token);
+    await downloadFile(url, filename);
     toast.success('Download erfolgreich!', { id: loadingToast });
   } catch (error) {
     toast.dismiss(loadingToast);

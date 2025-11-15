@@ -8,12 +8,12 @@ import type { JobPosting } from '@/types';
  * Hook to fetch all job postings
  */
 export function useJobPostings() {
-  const token = useAuthStore((state) => state.token);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   return useQuery<JobPosting[]>({
     queryKey: ['job-postings'],
-    queryFn: () => api.jobPostings.list(token!),
-    enabled: !!token,
+    queryFn: () => api.jobPostings.list(),
+    enabled: isAuthenticated,
   });
 }
 
@@ -21,12 +21,12 @@ export function useJobPostings() {
  * Hook to fetch single job posting
  */
 export function useJobPosting(id: string) {
-  const token = useAuthStore((state) => state.token);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   return useQuery<JobPosting>({
     queryKey: ['job-postings', id],
-    queryFn: () => api.jobPostings.getById(token!, id),
-    enabled: !!token && !!id,
+    queryFn: () => api.jobPostings.getById(id),
+    enabled: isAuthenticated && !!id,
   });
 }
 
@@ -34,11 +34,9 @@ export function useJobPosting(id: string) {
  * Hook to parse job posting from URL or text
  */
 export function useParseJobPosting() {
-  const token = useAuthStore((state) => state.token);
-
   return useMutation({
     mutationFn: (data: { text?: string; url?: string; fileId?: string }) =>
-      api.jobPostings.parse(token!, data),
+      api.jobPostings.parse(data),
     onSuccess: () => {
       toastSuccess('Stellenanzeige erfolgreich geparst');
     },
@@ -52,11 +50,10 @@ export function useParseJobPosting() {
  * Hook to delete job posting
  */
 export function useDeleteJobPosting() {
-  const token = useAuthStore((state) => state.token);
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => api.jobPostings.delete(token!, id),
+    mutationFn: (id: string) => api.jobPostings.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['job-postings'] });
       toastSuccess('Stellenanzeige erfolgreich gelöscht');

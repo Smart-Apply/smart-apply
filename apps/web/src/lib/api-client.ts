@@ -9,7 +9,6 @@ import { ApiError, NetworkError, shouldRetry, getRetryDelay } from './errors';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
 
 interface RequestOptions extends RequestInit {
-  token?: string;
   retry?: boolean;
   maxRetries?: number;
 }
@@ -21,7 +20,7 @@ async function apiRequest<T>(
   endpoint: string,
   options: RequestOptions = {}
 ): Promise<T> {
-  const { token, retry = true, maxRetries = 3, ...fetchOptions } = options;
+  const { retry = true, maxRetries = 3, ...fetchOptions } = options;
   let retryCount = 0;
 
   const makeRequest = async (): Promise<T> => {
@@ -30,14 +29,11 @@ async function apiRequest<T>(
       ...(fetchOptions.headers as Record<string, string>),
     };
 
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         ...fetchOptions,
         headers,
+        credentials: 'include', // Include cookies with requests
       });
 
       if (!response.ok) {
@@ -83,76 +79,73 @@ export const api = {
   // Auth
   auth: {
     register: (data: { email: string; password: string; name: string }) =>
-      apiRequest<{ accessToken: string; user: User }>('/auth/register', {
+      apiRequest<{ user: User }>('/auth/register', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
 
     login: (data: { email: string; password: string }) =>
-      apiRequest<{ accessToken: string; user: User }>('/auth/login', {
+      apiRequest<{ user: User }>('/auth/login', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
 
-    me: (token: string) =>
-      apiRequest<User>('/auth/me', {
-        token,
+    logout: () =>
+      apiRequest<{ message: string }>('/auth/logout', {
+        method: 'POST',
       }),
+
+    me: () =>
+      apiRequest<User>('/auth/me'),
   },
 
   // Profile
   profile: {
-    get: (token: string) =>
-      apiRequest<Profile>('/profile', { token }),
+    get: () =>
+      apiRequest<Profile>('/profile'),
 
-    update: (token: string, data: UpdateProfileDto) =>
+    update: (data: UpdateProfileDto) =>
       apiRequest<Profile>('/profile', {
         method: 'PUT',
-        token,
         body: JSON.stringify(data),
       }),
   },
 
   // Job Postings
   jobPostings: {
-    parse: (token: string, data: { text?: string; url?: string; fileId?: string }) =>
+    parse: (data: { text?: string; url?: string; fileId?: string }) =>
       apiRequest<JobPosting>('/job-postings/parse', {
         method: 'POST',
-        token,
         body: JSON.stringify(data),
       }),
 
-    list: (token: string) =>
-      apiRequest<JobPosting[]>('/job-postings', { token }),
+    list: () =>
+      apiRequest<JobPosting[]>('/job-postings'),
 
-    getById: (token: string, id: string) =>
-      apiRequest<JobPosting>(`/job-postings/${id}`, { token }),
+    getById: (id: string) =>
+      apiRequest<JobPosting>(`/job-postings/${id}`),
 
-    delete: (token: string, id: string) =>
+    delete: (id: string) =>
       apiRequest<void>(`/job-postings/${id}`, {
         method: 'DELETE',
-        token,
       }),
   },
 
   // Applications
   applications: {
-    create: (token: string, data: { jobPostingId: string }) =>
+    create: (data: { jobPostingId: string }) =>
       apiRequest<Application>('/applications', {
         method: 'POST',
-        token,
         body: JSON.stringify(data),
       }),
 
-    list: (token: string) =>
-      apiRequest<Application[]>('/applications', { token }),
+    list: () =>
+      apiRequest<Application[]>('/applications'),
 
-    getById: (token: string, id: string) =>
-      apiRequest<Application>(`/applications/${id}`, { token }),
+    getById: (id: string) =>
+      apiRequest<Application>(`/applications/${id}`),
 
-    getFiles: (token: string, id: string) =>
-      apiRequest<ApplicationFilesResponse>(`/applications/${id}/files`, {
-        token,
-      }),
+    getFiles: (id: string) =>
+      apiRequest<ApplicationFilesResponse>(`/applications/${id}/files`),
   },
 };

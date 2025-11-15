@@ -59,7 +59,7 @@ export default function RegisterPage() {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { confirmPassword, ...registerData } = data;
       const response = await api.auth.register(registerData);
-      setAuth(response.user, response.accessToken);
+      setAuth(response.user);
       toast.success('Account erfolgreich erstellt!');
       router.push('/dashboard');
     } catch (error: unknown) {

@@ -50,7 +50,7 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormData) => {
     try {
       const response = await api.auth.login(data);
-      setAuth(response.user, response.accessToken);
+      setAuth(response.user);
       toast.success('Erfolgreich angemeldet!');
       router.push('/dashboard');
     } catch (error: unknown) {

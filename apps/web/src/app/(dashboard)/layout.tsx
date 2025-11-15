@@ -37,7 +37,19 @@ export default function DashboardLayout({
     }
   }, [isAuthenticated, router]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      // Call backend to clear cookie
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Continue with logout even if backend call fails
+    }
+    
+    // Clear local auth state
     clearAuth();
     router.push('/login');
   };

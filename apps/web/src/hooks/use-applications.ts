@@ -8,12 +8,12 @@ import type { Application } from '@/types';
  * Hook to fetch all applications
  */
 export function useApplications() {
-  const token = useAuthStore((state) => state.token);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   return useQuery<Application[]>({
     queryKey: ['applications'],
-    queryFn: () => api.applications.list(token!),
-    enabled: !!token,
+    queryFn: () => api.applications.list(),
+    enabled: isAuthenticated,
   });
 }
 
@@ -21,12 +21,12 @@ export function useApplications() {
  * Hook to fetch single application
  */
 export function useApplication(id: string) {
-  const token = useAuthStore((state) => state.token);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   return useQuery<Application>({
     queryKey: ['applications', id],
-    queryFn: () => api.applications.getById(token!, id),
-    enabled: !!token && !!id,
+    queryFn: () => api.applications.getById(id),
+    enabled: isAuthenticated && !!id,
   });
 }
 
@@ -34,12 +34,11 @@ export function useApplication(id: string) {
  * Hook to create new application
  */
 export function useCreateApplication() {
-  const token = useAuthStore((state) => state.token);
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (data: { jobPostingId: string }) =>
-      api.applications.create(token!, data),
+      api.applications.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['applications'] });
       toastSuccess('Bewerbung wird erstellt...');
@@ -54,11 +53,11 @@ export function useCreateApplication() {
  * Hook to fetch application files (PDF URLs)
  */
 export function useApplicationFiles(id: string) {
-  const token = useAuthStore((state) => state.token);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   return useQuery({
     queryKey: ['applications', id, 'files'],
-    queryFn: () => api.applications.getFiles(token!, id),
-    enabled: !!token && !!id,
+    queryFn: () => api.applications.getFiles(id),
+    enabled: isAuthenticated && !!id,
   });
 }

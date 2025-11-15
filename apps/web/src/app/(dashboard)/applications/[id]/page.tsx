@@ -80,7 +80,7 @@ export default function ApplicationDetailPage() {
   const params = useParams();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const token = useAuthStore((state) => state.token);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const applicationId = params.id as string;
   const createApplication = useCreateApplication();
   const [previewFile, setPreviewFile] = useState<{
@@ -96,8 +96,8 @@ export default function ApplicationDetailPage() {
 
   const { data: application, isLoading, error } = useQuery({
     queryKey: ['applications', applicationId],
-    queryFn: () => api.applications.getById(token!, applicationId),
-    enabled: !!token && !!applicationId,
+    queryFn: () => api.applications.getById(applicationId),
+    enabled: isAuthenticated && !!applicationId,
     refetchInterval: (query) => {
       // Poll every 5 seconds if status is PENDING or GENERATING
       return query.state.data?.status === 'PENDING' || query.state.data?.status === 'GENERATING' ? 5000 : false;
@@ -106,8 +106,8 @@ export default function ApplicationDetailPage() {
 
   const { data: files, refetch: refetchFiles } = useQuery({
     queryKey: ['applications', applicationId, 'files'],
-    queryFn: () => api.applications.getFiles(token!, applicationId),
-    enabled: !!token && !!applicationId && application?.status === 'READY',
+    queryFn: () => api.applications.getFiles(applicationId),
+    enabled: isAuthenticated && !!applicationId && application?.status === 'READY',
   });
 
   const handleExpiredUrl = () => {
@@ -117,7 +117,7 @@ export default function ApplicationDetailPage() {
   };
 
   const handleDownloadCoverLetter = async () => {
-    if (!application || !token) return;
+    if (!application || !isAuthenticated) return;
     
     setIsDownloading((prev) => ({ ...prev, coverLetter: true }));
     try {
@@ -127,14 +127,14 @@ export default function ApplicationDetailPage() {
         application?.jobPosting?.title
       );
       const url = `${process.env.NEXT_PUBLIC_API_URL}/applications/${application.id}/download/cover-letter`;
-      await handleDownload(url, filename, handleExpiredUrl, token);
+      await handleDownload(url, filename, handleExpiredUrl);
     } finally {
       setIsDownloading((prev) => ({ ...prev, coverLetter: false }));
     }
   };
 
   const handleDownloadResume = async () => {
-    if (!application || !token) return;
+    if (!application || !isAuthenticated) return;
     
     setIsDownloading((prev) => ({ ...prev, resume: true }));
     try {
@@ -144,7 +144,7 @@ export default function ApplicationDetailPage() {
         application?.jobPosting?.title
       );
       const url = `${process.env.NEXT_PUBLIC_API_URL}/applications/${application.id}/download/resume`;
-      await handleDownload(url, filename, handleExpiredUrl, token);
+      await handleDownload(url, filename, handleExpiredUrl);
     } finally {
       setIsDownloading((prev) => ({ ...prev, resume: false }));
     }
@@ -183,14 +183,12 @@ export default function ApplicationDetailPage() {
   };
 
   const handlePreviewCoverLetter = async () => {
-    if (!application?.id || !token) return;
+    if (!application?.id || !isAuthenticated) return;
 
     try {
       const url = `${process.env.NEXT_PUBLIC_API_URL}/applications/${application.id}/download/cover-letter`;
       const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -216,14 +214,12 @@ export default function ApplicationDetailPage() {
   };
 
   const handlePreviewResume = async () => {
-    if (!application?.id || !token) return;
+    if (!application?.id || !isAuthenticated) return;
 
     try {
       const url = `${process.env.NEXT_PUBLIC_API_URL}/applications/${application.id}/download/resume`;
       const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: 'include',
       });
 
       if (!response.ok) {
