@@ -21,9 +21,16 @@ async function bootstrap() {
 
   // Security
   app.use(helmet());
+
+  // CORS configuration with restrictive policy
+  // Only allows specified origins from CORS_ORIGINS environment variable
+  // For production, set CORS_ORIGINS to your deployed frontend URLs
+  // Example: CORS_ORIGINS=https://smartapply.azurewebsites.net,https://www.smartapply.com
   app.enableCors({
     origin: configService.corsOrigins,
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
   // Validation

@@ -16,3 +16,6 @@ process.env.STORAGE_DRIVER = 'disk';
 process.env.LLM_PROVIDER = 'mock';
 process.env.JOBS_DRIVER = 'in-memory';
 process.env.NODE_ENV = 'test';
+
+// Set CORS origins for testing
+process.env.CORS_ORIGINS = 'http://localhost:3000,http://localhost:3001';
