@@ -13,13 +13,13 @@ describe('AuthController (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    
+
     // Add cookie parser middleware
     app.use(cookieParser());
-    
+
     // Set global prefix to match production setup
     app.setGlobalPrefix('api/v1');
-    
+
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
@@ -110,7 +110,9 @@ describe('AuthController (e2e)', () => {
         })
         .expect(400)
         .expect((res) => {
-          const message = Array.isArray(res.body.message) ? res.body.message.join(' ') : res.body.message;
+          const message = Array.isArray(res.body.message)
+            ? res.body.message.join(' ')
+            : res.body.message;
           expect(message).toContain('uppercase');
         });
     });
@@ -124,7 +126,9 @@ describe('AuthController (e2e)', () => {
         })
         .expect(400)
         .expect((res) => {
-          const message = Array.isArray(res.body.message) ? res.body.message.join(' ') : res.body.message;
+          const message = Array.isArray(res.body.message)
+            ? res.body.message.join(' ')
+            : res.body.message;
           expect(message).toContain('lowercase');
         });
     });
@@ -138,7 +142,9 @@ describe('AuthController (e2e)', () => {
         })
         .expect(400)
         .expect((res) => {
-          const message = Array.isArray(res.body.message) ? res.body.message.join(' ') : res.body.message;
+          const message = Array.isArray(res.body.message)
+            ? res.body.message.join(' ')
+            : res.body.message;
           expect(message).toContain('number');
         });
     });
@@ -152,7 +158,9 @@ describe('AuthController (e2e)', () => {
         })
         .expect(400)
         .expect((res) => {
-          const message = Array.isArray(res.body.message) ? res.body.message.join(' ') : res.body.message;
+          const message = Array.isArray(res.body.message)
+            ? res.body.message.join(' ')
+            : res.body.message;
           expect(message).toContain('special character');
         });
     });
@@ -294,9 +302,7 @@ describe('AuthController (e2e)', () => {
     });
 
     it('should require authentication', () => {
-      return request(app.getHttpServer())
-        .post('/api/v1/auth/logout')
-        .expect(401);
+      return request(app.getHttpServer()).post('/api/v1/auth/logout').expect(401);
     });
   });
 });

@@ -1,7 +1,6 @@
 import { Injectable, ExecutionContext } from '@nestjs/common';
 import { ThrottlerGuard, ThrottlerException } from '@nestjs/throttler';
 import { Reflector } from '@nestjs/core';
-import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { THROTTLER_NAME_KEY } from '../decorators/throttle.decorator';
 
 @Injectable()
@@ -50,16 +49,16 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
     try {
       // Get the throttlers that will be applied
       const throttlers = await this.getThrottlers(context);
-      
+
       // Call parent implementation
       const result = await super.canActivate(context);
-      
+
       // Add rate limit headers after successful check
       if (throttlers.length > 0) {
         const throttler = throttlers[0];
         const tracker = await this.getTracker(request);
         const key = this.generateKey(context, tracker, throttler.name || 'default');
-        
+
         // Get the current state from storage
         try {
           const record = await this.storageService.get(key);
@@ -67,13 +66,16 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
             const limit = throttler.limit;
             response.setHeader('X-RateLimit-Limit', limit);
             response.setHeader('X-RateLimit-Remaining', Math.max(0, limit - record.totalHits));
-            response.setHeader('X-RateLimit-Reset', new Date(Date.now() + record.timeToExpire).getTime());
+            response.setHeader(
+              'X-RateLimit-Reset',
+              new Date(Date.now() + record.timeToExpire).getTime(),
+            );
           }
         } catch (e) {
           // Ignore errors when getting storage state
         }
       }
-      
+
       return result;
     } catch (error) {
       // Add headers even on error
@@ -82,13 +84,13 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
         const throttler = throttlers[0];
         response.setHeader('X-RateLimit-Limit', throttler.limit);
         response.setHeader('X-RateLimit-Remaining', '0');
-        
+
         if (error instanceof ThrottlerException) {
           // Add Retry-After header
           response.setHeader('Retry-After', Math.ceil(throttler.ttl / 1000));
         }
       }
-      
+
       throw error;
     }
   }
@@ -101,7 +103,7 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
     if (req.user?.userId) {
       return `user:${req.user.userId}`;
     }
-    
+
     // For public requests (auth endpoints), use IP address
     return req.ip || req.connection?.remoteAddress || 'unknown';
   }

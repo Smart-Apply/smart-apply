@@ -1,7 +1,7 @@
-import { Controller, Post, Body, Get, UseGuards, Res, Req } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Res } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
-import { Response, Request } from 'express';
+import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto } from './dto';
 import { Public } from '../common/decorators/public.decorator';
@@ -23,10 +23,10 @@ export class AuthController {
   @ApiOperation({ summary: 'Register a new user' })
   async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: Response) {
     const result = await this.authService.register(dto);
-    
+
     // Set HttpOnly cookie
     this.setAuthCookie(res, result.accessToken);
-    
+
     // Return user info only (not the token)
     return { user: result.user };
   }
@@ -37,10 +37,10 @@ export class AuthController {
   @ApiOperation({ summary: 'Login user' })
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
     const result = await this.authService.login(dto);
-    
+
     // Set HttpOnly cookie
     this.setAuthCookie(res, result.accessToken);
-    
+
     // Return user info only (not the token)
     return { user: result.user };
   }
@@ -65,7 +65,7 @@ export class AuthController {
       sameSite: 'strict',
       path: '/',
     });
-    
+
     return { message: 'Logged out successfully' };
   }
 
@@ -74,13 +74,13 @@ export class AuthController {
    */
   private setAuthCookie(res: Response, token: string) {
     const isProduction = this.configService.isProduction;
-    
+
     res.cookie('access_token', token, {
-      httpOnly: true,           // Prevents JavaScript access (XSS protection)
-      secure: isProduction,     // HTTPS only in production
-      sameSite: 'strict',       // CSRF protection
+      httpOnly: true, // Prevents JavaScript access (XSS protection)
+      secure: isProduction, // HTTPS only in production
+      sameSite: 'strict', // CSRF protection
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days (matches JWT expiry)
-      path: '/',                // Available for all routes
+      path: '/', // Available for all routes
     });
   }
 }

@@ -22,7 +22,7 @@ async function bootstrap() {
 
   // Security
   app.use(helmet());
-  
+
   // Cookie parser - must be before routes
   app.use(cookieParser());
 

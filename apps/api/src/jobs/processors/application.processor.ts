@@ -56,9 +56,8 @@ export class ApplicationProcessor {
       }
 
       // 3. Prepare context for LLM
-      const candidateName = [profile.user.firstName, profile.user.lastName]
-        .filter(Boolean)
-        .join(' ') || 'Candidate';
+      const candidateName =
+        [profile.user.firstName, profile.user.lastName].filter(Boolean).join(' ') || 'Candidate';
       const skills = profile.skills.map((s) => s.name).join(', ');
       const experiences = profile.experiences
         .map(

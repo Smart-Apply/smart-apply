@@ -13,13 +13,13 @@ describe('Rate Limiting (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    
+
     // Add cookie parser middleware
     app.use(cookieParser());
-    
+
     // Set global prefix to match production setup
     app.setGlobalPrefix('api/v1');
-    
+
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
@@ -44,10 +44,10 @@ describe('Rate Limiting (e2e)', () => {
         const response = await request(app.getHttpServer())
           .post('/api/v1/auth/login')
           .send({ email, password });
-        
+
         // Should not be rate limited yet
         expect(response.status).not.toBe(429);
-        
+
         // Should have rate limit headers
         expect(response.headers['x-ratelimit-limit']).toBeDefined();
         expect(response.headers['x-ratelimit-remaining']).toBeDefined();
@@ -73,10 +73,10 @@ describe('Rate Limiting (e2e)', () => {
             password: 'Test123!',
             fullName: 'Rate Limit Test',
           });
-        
+
         // Should not be rate limited yet
         expect(response.status).not.toBe(429);
-        
+
         // Should have rate limit headers
         expect(response.headers['x-ratelimit-limit']).toBeDefined();
         expect(response.headers['x-ratelimit-remaining']).toBeDefined();
@@ -106,7 +106,7 @@ describe('Rate Limiting (e2e)', () => {
       expect(response.headers['x-ratelimit-limit']).toBe('5');
       expect(response.headers['x-ratelimit-remaining']).toBeDefined();
       expect(response.headers['x-ratelimit-reset']).toBeDefined();
-      
+
       const remaining = parseInt(response.headers['x-ratelimit-remaining']);
       expect(remaining).toBeGreaterThanOrEqual(0);
       expect(remaining).toBeLessThanOrEqual(5);
@@ -119,13 +119,11 @@ describe('Rate Limiting (e2e)', () => {
     beforeAll(async () => {
       // Create a test user and get auth cookie
       const email = `protected-ratelimit-${Date.now()}@example.com`;
-      const response = await request(app.getHttpServer())
-        .post('/api/v1/auth/register')
-        .send({
-          email,
-          password: 'Test123!',
-          fullName: 'Protected Rate Limit Test',
-        });
+      const response = await request(app.getHttpServer()).post('/api/v1/auth/register').send({
+        email,
+        password: 'Test123!',
+        fullName: 'Protected Rate Limit Test',
+      });
 
       const setCookie = response.headers['set-cookie'];
       cookies = Array.isArray(setCookie) ? setCookie : [setCookie];
@@ -137,7 +135,7 @@ describe('Rate Limiting (e2e)', () => {
         const response = await request(app.getHttpServer())
           .get('/api/v1/auth/me')
           .set('Cookie', cookies);
-        
+
         expect(response.status).toBe(200);
         expect(response.headers['x-ratelimit-limit']).toBe('100');
       }
@@ -147,19 +145,19 @@ describe('Rate Limiting (e2e)', () => {
   describe('Rate Limit by IP', () => {
     it('should rate limit based on IP address for auth endpoints', async () => {
       const email = `ip-ratelimit-${Date.now()}@example.com`;
-      
+
       // All requests from same IP should count towards the same limit
       const requests: Promise<any>[] = [];
       for (let i = 0; i < 6; i++) {
         requests.push(
           request(app.getHttpServer())
             .post('/api/v1/auth/login')
-            .send({ email, password: 'Test123!' })
+            .send({ email, password: 'Test123!' }),
         );
       }
 
       const responses = await Promise.all(requests);
-      
+
       // Last response should be rate limited
       const rateLimitedResponses = responses.filter((r: any) => r.status === 429);
       expect(rateLimitedResponses.length).toBeGreaterThan(0);
