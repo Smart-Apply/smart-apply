@@ -1,7 +1,7 @@
-import { Controller, Post, Body, Get, UseGuards, Res } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Res, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto } from './dto';
 import { Public } from '../common/decorators/public.decorator';
@@ -43,6 +43,21 @@ export class AuthController {
 
     // Return user info only (not the token)
     return { user: result.user };
+  }
+
+  @Public()
+  @Get('csrf-token')
+  @ApiOperation({ summary: 'Get CSRF token for form submissions' })
+  getCsrfToken(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    // Generate CSRF token using the csrf-csrf utility
+    // This is stored in the app instance during bootstrap
+    const generateToken = req.app.get('csrfGenerateToken');
+    const csrfToken = generateToken(req, res);
+    
+    return { 
+      csrfToken,
+      message: 'CSRF token generated successfully. Include this token in X-CSRF-Token header for state-changing requests.'
+    };
   }
 
   @Get('me')

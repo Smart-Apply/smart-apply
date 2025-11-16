@@ -5,6 +5,7 @@
 
 import type { User, Profile, JobPosting, Application, UpdateProfileDto, ApplicationFilesResponse } from '@/types';
 import { ApiError, NetworkError, shouldRetry, getRetryDelay } from './errors';
+import { getCsrfToken, refreshCsrfToken } from './csrf';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
 
@@ -29,6 +30,15 @@ async function apiRequest<T>(
       ...(fetchOptions.headers as Record<string, string>),
     };
 
+    // Include CSRF token for state-changing requests (POST, PUT, DELETE, PATCH)
+    const method = fetchOptions.method?.toUpperCase() || 'GET';
+    if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+      const csrfToken = getCsrfToken();
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+      }
+    }
+
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         ...fetchOptions,
@@ -38,6 +48,14 @@ async function apiRequest<T>(
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
+        
+        // Handle CSRF token errors (403 Forbidden with CSRF error)
+        if (response.status === 403 && errorData?.code === 'EBADCSRFTOKEN') {
+          // Refresh CSRF token and retry once
+          await refreshCsrfToken();
+          throw new ApiError(response.status, 'CSRF token invalid or expired. Please retry.', errorData);
+        }
+        
         throw new ApiError(response.status, response.statusText, errorData);
       }
 
@@ -97,6 +115,9 @@ export const api = {
 
     me: () =>
       apiRequest<User>('/auth/me'),
+
+    getCsrfToken: () =>
+      apiRequest<{ csrfToken: string; message: string }>('/auth/csrf-token'),
   },
 
   // Profile

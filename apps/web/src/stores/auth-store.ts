@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { clearCsrfToken } from '@/lib/csrf';
 
 interface User {
   id: number;
@@ -29,11 +30,13 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: true,
         }),
 
-      clearAuth: () =>
+      clearAuth: () => {
+        clearCsrfToken(); // Clear CSRF token on logout
         set({
           user: null,
           isAuthenticated: false,
-        }),
+        });
+      },
 
       updateUser: (userData) =>
         set((state) => ({
