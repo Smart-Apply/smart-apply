@@ -57,8 +57,14 @@ const envSchema = z.object({
 
   // Security
   CORS_ORIGINS: z.string().default('http://localhost:3000,http://localhost:3001'),
-  RATE_LIMIT_TTL: z.string().default('60'),
+
+  // Rate Limiting - Default (general API endpoints)
+  RATE_LIMIT_TTL: z.string().default('900'), // 15 minutes in seconds
   RATE_LIMIT_MAX: z.string().default('100'),
+
+  // Rate Limiting - Auth endpoints (stricter)
+  RATE_LIMIT_AUTH_TTL: z.string().default('900'), // 15 minutes in seconds
+  RATE_LIMIT_AUTH_MAX: z.string().default('5'),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

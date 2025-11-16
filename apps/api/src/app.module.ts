@@ -22,12 +22,20 @@ import { ConfigService } from './config/config.service';
     PrismaModule,
     ThrottlerModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => [
-        {
-          ttl: config.rateLimitTtl,
-          limit: config.rateLimitMax,
-        },
-      ],
+      useFactory: (config: ConfigService) => ({
+        throttlers: [
+          {
+            name: 'default',
+            ttl: config.rateLimitTtl,
+            limit: config.rateLimitMax,
+          },
+          {
+            name: 'auth',
+            ttl: config.rateLimitAuthTtl,
+            limit: config.rateLimitAuthMax,
+          },
+        ],
+      }),
     }),
     AuthModule,
     StorageModule,

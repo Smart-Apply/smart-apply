@@ -137,10 +137,18 @@ export class ConfigService {
   }
 
   get rateLimitTtl(): number {
-    return parseInt(this.nestConfig.get('RATE_LIMIT_TTL', { infer: true }), 10);
+    return parseInt(this.nestConfig.get('RATE_LIMIT_TTL', { infer: true }), 10) * 1000; // Convert to milliseconds
   }
 
   get rateLimitMax(): number {
     return parseInt(this.nestConfig.get('RATE_LIMIT_MAX', { infer: true }), 10);
+  }
+
+  get rateLimitAuthTtl(): number {
+    return parseInt(this.nestConfig.get('RATE_LIMIT_AUTH_TTL', { infer: true }), 10) * 1000; // Convert to milliseconds
+  }
+
+  get rateLimitAuthMax(): number {
+    return parseInt(this.nestConfig.get('RATE_LIMIT_AUTH_MAX', { infer: true }), 10);
   }
 }
