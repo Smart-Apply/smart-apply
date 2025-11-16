@@ -190,10 +190,15 @@ export class EducationDto {
 }
 
 export class UpdateProfileDto {
-  @ApiProperty({ example: 'John Doe', required: false })
+  @ApiProperty({ example: 'John', required: false })
   @IsOptional()
   @IsString()
-  fullName?: string;
+  firstName?: string;
+
+  @ApiProperty({ example: 'Doe', required: false })
+  @IsOptional()
+  @IsString()
+  lastName?: string;
 
   @ApiProperty({ example: '+1234567890', required: false })
   @IsOptional()

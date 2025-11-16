@@ -13,7 +13,8 @@ export class ProfileService {
       include: {
         user: {
           select: {
-            fullName: true,
+            firstName: true,
+            lastName: true,
           },
         },
         skills: true,
@@ -39,11 +40,14 @@ export class ProfileService {
     try {
       // Start transaction to update profile and nested relations
       const updatedProfile = await this.prisma.$transaction(async (tx) => {
-        // Update user fullName if provided
-        if (dto.fullName !== undefined) {
+        // Update user firstName/lastName if provided
+        if (dto.firstName !== undefined || dto.lastName !== undefined) {
           await tx.user.update({
             where: { id: userId },
-            data: { fullName: dto.fullName },
+            data: {
+              ...(dto.firstName !== undefined && { firstName: dto.firstName }),
+              ...(dto.lastName !== undefined && { lastName: dto.lastName }),
+            },
           });
         }
 
@@ -322,7 +326,8 @@ export class ProfileService {
     return {
       id: profile.id,
       userId: profile.userId,
-      fullName: profile.user?.fullName,
+      firstName: profile.user?.firstName,
+      lastName: profile.user?.lastName,
       phone: profile.phone,
       location: profile.location,
       linkedinUrl: profile.linkedinUrl,

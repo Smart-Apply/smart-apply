@@ -29,13 +29,15 @@ export class AuthService {
       data: {
         email: dto.email,
         password: hashedPassword,
-        fullName: dto.fullName,
+        firstName: dto.firstName,
+        lastName: dto.lastName,
         provider: 'local',
       },
       select: {
         id: true,
         email: true,
-        fullName: true,
+        firstName: true,
+        lastName: true,
         createdAt: true,
       },
     });
@@ -73,7 +75,8 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
-        fullName: user.fullName,
+        firstName: user.firstName,
+        lastName: user.lastName,
       },
       accessToken: token,
     };
@@ -85,7 +88,8 @@ export class AuthService {
       select: {
         id: true,
         email: true,
-        fullName: true,
+        firstName: true,
+        lastName: true,
         provider: true,
       },
     });

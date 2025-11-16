@@ -15,7 +15,8 @@ async function main() {
     create: {
       email: 'demo@smartapply.com',
       password: hashedPassword,
-      fullName: 'John Demo',
+      firstName: 'John',
+      lastName: 'Demo',
       provider: 'local',
     },
   });

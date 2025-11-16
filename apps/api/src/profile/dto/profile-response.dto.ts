@@ -99,7 +99,10 @@ export class ProfileResponseDto {
   userId: string;
 
   @ApiProperty({ required: false })
-  fullName?: string;
+  firstName?: string;
+
+  @ApiProperty({ required: false })
+  lastName?: string;
 
   @ApiProperty({ required: false })
   phone?: string;

@@ -88,14 +88,87 @@ describe('AuthController (e2e)', () => {
         .expect(400);
     });
 
-    it('should reject short password', () => {
+    it('should reject short password (less than 8 characters)', () => {
       return request(app.getHttpServer())
         .post('/api/v1/auth/register')
         .send({
           email: 'test@example.com',
-          password: 'short',
+          password: 'Short1!',
         })
-        .expect(400);
+        .expect(400)
+        .expect((res) => {
+          expect(res.body.message).toContain('Password must be at least 8 characters long');
+        });
+    });
+
+    it('should reject password without uppercase letter', () => {
+      return request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .send({
+          email: 'test@example.com',
+          password: 'lowercase123!',
+        })
+        .expect(400)
+        .expect((res) => {
+          const message = Array.isArray(res.body.message) ? res.body.message.join(' ') : res.body.message;
+          expect(message).toContain('uppercase');
+        });
+    });
+
+    it('should reject password without lowercase letter', () => {
+      return request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .send({
+          email: 'test@example.com',
+          password: 'UPPERCASE123!',
+        })
+        .expect(400)
+        .expect((res) => {
+          const message = Array.isArray(res.body.message) ? res.body.message.join(' ') : res.body.message;
+          expect(message).toContain('lowercase');
+        });
+    });
+
+    it('should reject password without number', () => {
+      return request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .send({
+          email: 'test@example.com',
+          password: 'NoNumber!',
+        })
+        .expect(400)
+        .expect((res) => {
+          const message = Array.isArray(res.body.message) ? res.body.message.join(' ') : res.body.message;
+          expect(message).toContain('number');
+        });
+    });
+
+    it('should reject password without special character', () => {
+      return request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .send({
+          email: 'test@example.com',
+          password: 'NoSpecial123',
+        })
+        .expect(400)
+        .expect((res) => {
+          const message = Array.isArray(res.body.message) ? res.body.message.join(' ') : res.body.message;
+          expect(message).toContain('special character');
+        });
+    });
+
+    it('should accept strong password with all requirements', () => {
+      const email = `strong-pass-${Date.now()}@example.com`;
+      return request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .send({
+          email,
+          password: 'StrongP@ss123',
+        })
+        .expect(201)
+        .expect((res) => {
+          expect(res.body.user).toHaveProperty('email', email);
+        });
     });
   });
 

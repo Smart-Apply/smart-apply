@@ -1,10 +1,11 @@
 // User Types
 export interface User {
-  id: number;
+  id: string;
   email: string;
-  name: string;
+  firstName?: string;
+  lastName?: string;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
 }
 
 // Profile Types
@@ -90,7 +91,8 @@ export interface EducationDto {
 
 // DTO for updating profile (matches backend UpdateProfileDto)
 export interface UpdateProfileDto {
-  fullName?: string;
+  firstName?: string;
+  lastName?: string;
   phone?: string;
   location?: string;
   linkedinUrl?: string;

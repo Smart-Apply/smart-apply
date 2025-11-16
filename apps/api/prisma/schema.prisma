@@ -14,7 +14,8 @@ model User {
   id    String @id @default(cuid())
   email String @unique
   password String?
-  fullName String? // User's full name
+  firstName String? // User's first name
+  lastName  String? // User's last name
   
   // OAuth fields (for future Microsoft Entra integration)
   provider   String? // e.g., "microsoft", "google"
