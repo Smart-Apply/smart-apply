@@ -57,6 +57,10 @@ const envSchema = z.object({
 
   // Security
   CORS_ORIGINS: z.string().default('http://localhost:3000,http://localhost:3001'),
+  ENABLE_CSRF: z
+    .string()
+    .default('false')
+    .transform((val) => val === 'true'),
 
   // Rate Limiting - Default (general API endpoints)
   RATE_LIMIT_TTL: z.string().default('900'), // 15 minutes in seconds

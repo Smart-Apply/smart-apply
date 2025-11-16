@@ -1,12 +1,13 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Toaster } from 'sonner';
 import { ApiError, ErrorType, shouldRetry } from './errors';
 import { toastError } from './toast';
 import { useAuthStore } from '@/stores/auth-store';
+import { fetchCsrfToken } from './csrf';
 
 /**
  * Global error handler for React Query
@@ -54,6 +55,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
         },
       })
   );
+
+  // Initialize CSRF token on app load
+  useEffect(() => {
+    fetchCsrfToken().catch((error) => {
+      console.error('Failed to initialize CSRF token:', error);
+    });
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

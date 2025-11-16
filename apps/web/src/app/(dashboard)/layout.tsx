@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth-store';
+import { api } from '@/lib/api-client';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -39,11 +40,8 @@ export default function DashboardLayout({
 
   const handleLogout = async () => {
     try {
-      // Call backend to clear cookie
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
-        method: 'POST',
-        credentials: 'include',
-      });
+      // Call backend to clear cookie (GET request, no CSRF required)
+      await api.auth.logout();
     } catch (error) {
       console.error('Logout error:', error);
       // Continue with logout even if backend call fails

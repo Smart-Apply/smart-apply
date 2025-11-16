@@ -17,11 +17,24 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    const status =
-      exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
+    // Handle CSRF errors (ForbiddenError from csrf-csrf package)
+    let status: number;
+    let exceptionResponse: any;
 
-    const exceptionResponse =
-      exception instanceof HttpException ? exception.getResponse() : 'Internal server error';
+    if (exception instanceof HttpException) {
+      status = exception.getStatus();
+      exceptionResponse = exception.getResponse();
+    } else if (exception instanceof Error && exception.name === 'ForbiddenError') {
+      // CSRF error from csrf-csrf middleware
+      status = HttpStatus.FORBIDDEN;
+      exceptionResponse = {
+        message: exception.message || 'Invalid or missing CSRF token',
+        code: 'EBADCSRFTOKEN',
+      };
+    } else {
+      status = HttpStatus.INTERNAL_SERVER_ERROR;
+      exceptionResponse = 'Internal server error';
+    }
 
     // Extract detailed validation errors if available
     let message: any;

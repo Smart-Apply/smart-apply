@@ -19,3 +19,9 @@ process.env.NODE_ENV = 'test';
 
 // Set CORS origins for testing
 process.env.CORS_ORIGINS = 'http://localhost:3000,http://localhost:3001';
+
+// Set high rate limits for testing (effectively disable)
+process.env.RATE_LIMIT_TTL = '900';
+process.env.RATE_LIMIT_MAX = '10000';
+process.env.RATE_LIMIT_AUTH_TTL = '900';
+process.env.RATE_LIMIT_AUTH_MAX = '10000';

@@ -136,6 +136,10 @@ export class ConfigService {
     return this.nestConfig.get('CORS_ORIGINS', { infer: true }).split(',');
   }
 
+  get enableCsrf(): boolean {
+    return this.nestConfig.get('ENABLE_CSRF', { infer: true });
+  }
+
   get rateLimitTtl(): number {
     return parseInt(this.nestConfig.get('RATE_LIMIT_TTL', { infer: true }), 10) * 1000; // Convert to milliseconds
   }

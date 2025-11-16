@@ -593,11 +593,15 @@ Access Swagger documentation at `/docs` when running locally.
 
 ## 🔒 Security
 
-- **Helmet**: Security headers
-- **CORS**: Configurable origins
-- **Rate Limiting**: Throttling via @nestjs/throttler
-- **Password Hashing**: argon2
+- **Helmet**: Security headers (XSS, clickjacking, MIME sniffing protection)
+- **CORS**: Restrictive whitelist with environment-based origins
+- **Rate Limiting**: Dual-tier throttling via @nestjs/throttler
+  - Auth endpoints: 5 attempts / 15 minutes (strict)
+  - Standard endpoints: 100 requests / 15 minutes
+- **Password Hashing**: argon2 (memory-hard, ASIC-resistant)
+- **Password Validation**: 8+ chars, mixed case, number, special character
 - **JWT**: Secure token-based authentication (64+ character secrets enforced)
+- **CSRF Protection**: Optional (disabled by default for MVP, set `ENABLE_CSRF=true` to enable)
 - **Secrets Management**: Azure Key Vault in production
 - **SAS Tokens**: Time-limited blob access
 - **Input Validation**: class-validator with strict DTOs
@@ -606,7 +610,7 @@ Access Swagger documentation at `/docs` when running locally.
 
 For detailed security procedures including JWT secret rotation, incident response, and production deployment checklist, see **[docs/SECURITY.md](./docs/SECURITY.md)**.
 
-**Current Security Score: 6/10** - See [MVP_FEATURES.md](./MVP_FEATURES.md) for critical security todos before production deployment.
+**Current Security Score: 7.5/10** - See [MVP_FEATURES.md](./MVP_FEATURES.md) for remaining security todos before production deployment.
 
 ## 📦 Database Schema
 
