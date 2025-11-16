@@ -45,6 +45,11 @@ async function bootstrap() {
     size: 64, // Token size in bytes
     ignoredMethods: ['GET', 'HEAD', 'OPTIONS'], // Don't require CSRF for read-only operations
     getCsrfTokenFromRequest: (req) => req.headers['x-csrf-token'] as string, // Read token from custom header
+    errorConfig: {
+      statusCode: 403, // Forbidden
+      message: 'Invalid or missing CSRF token',
+      code: 'EBADCSRFTOKEN',
+    },
   });
 
   // Store CSRF utilities in app instance for controllers to access
