@@ -9,6 +9,7 @@ import {
   IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { Sanitize, SanitizeArray } from '../../common/decorators/sanitize.decorator';
 
 export class SkillDto {
   @ApiProperty({
@@ -21,11 +22,13 @@ export class SkillDto {
   id?: string;
 
   @ApiProperty({ example: 'TypeScript' })
+  @Sanitize()
   @IsString()
   name: string;
 
   @ApiProperty({ example: 'Expert', required: false })
   @IsOptional()
+  @Sanitize()
   @IsString()
   level?: string;
 }
@@ -41,10 +44,12 @@ export class CertificateDto {
   id?: string;
 
   @ApiProperty({ example: 'AWS Certified Solutions Architect' })
+  @Sanitize()
   @IsString()
   name: string;
 
   @ApiProperty({ example: 'Amazon Web Services' })
+  @Sanitize()
   @IsString()
   issuer: string;
 
@@ -70,15 +75,18 @@ export class ExperienceDto {
   id?: string;
 
   @ApiProperty({ example: 'Senior Software Engineer' })
+  @Sanitize()
   @IsString()
   title: string;
 
   @ApiProperty({ example: 'TechCorp Inc.' })
+  @Sanitize()
   @IsString()
   company: string;
 
   @ApiProperty({ example: 'Berlin, Germany', required: false })
   @IsOptional()
+  @Sanitize()
   @IsString()
   location?: string;
 
@@ -96,6 +104,7 @@ export class ExperienceDto {
     required: false,
   })
   @IsOptional()
+  @Sanitize()
   @IsString()
   description?: string;
 
@@ -116,6 +125,7 @@ export class ProjectDto {
   id?: string;
 
   @ApiProperty({ example: 'E-Commerce Platform' })
+  @Sanitize()
   @IsString()
   name: string;
 
@@ -124,6 +134,7 @@ export class ProjectDto {
     required: false,
   })
   @IsOptional()
+  @Sanitize()
   @IsString()
   description?: string;
 
@@ -132,6 +143,7 @@ export class ProjectDto {
     required: false,
   })
   @IsOptional()
+  @SanitizeArray()
   @IsArray()
   @IsString({ each: true })
   technologies?: string[];
@@ -153,15 +165,18 @@ export class EducationDto {
   id?: string;
 
   @ApiProperty({ example: 'Bachelor of Science in Computer Science' })
+  @Sanitize()
   @IsString()
   degree: string;
 
   @ApiProperty({ example: 'Stanford University' })
+  @Sanitize()
   @IsString()
   institution: string;
 
   @ApiProperty({ example: 'Computer Science', required: false })
   @IsOptional()
+  @Sanitize()
   @IsString()
   fieldOfStudy?: string;
 
@@ -177,6 +192,7 @@ export class EducationDto {
 
   @ApiProperty({ example: '3.8/4.0', required: false })
   @IsOptional()
+  @Sanitize()
   @IsString()
   gpa?: string;
 
@@ -185,6 +201,7 @@ export class EducationDto {
     required: false,
   })
   @IsOptional()
+  @Sanitize()
   @IsString()
   description?: string;
 }
@@ -192,21 +209,25 @@ export class EducationDto {
 export class UpdateProfileDto {
   @ApiProperty({ example: 'John', required: false })
   @IsOptional()
+  @Sanitize()
   @IsString()
   firstName?: string;
 
   @ApiProperty({ example: 'Doe', required: false })
   @IsOptional()
+  @Sanitize()
   @IsString()
   lastName?: string;
 
   @ApiProperty({ example: '+1234567890', required: false })
   @IsOptional()
+  @Sanitize()
   @IsString()
   phone?: string;
 
   @ApiProperty({ example: 'San Francisco, CA', required: false })
   @IsOptional()
+  @Sanitize()
   @IsString()
   location?: string;
 
@@ -230,6 +251,7 @@ export class UpdateProfileDto {
     required: false,
   })
   @IsOptional()
+  @Sanitize()
   @IsString()
   summary?: string;
 

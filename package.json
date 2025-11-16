@@ -44,6 +44,7 @@
     "@nestjs/terminus": "^10.2.0",
     "@nestjs/throttler": "^5.1.1",
     "@prisma/client": "^5.8.0",
+    "@types/validator": "^13.15.9",
     "argon2": "^0.31.2",
     "axios": "^1.6.5",
     "cheerio": "^1.0.0-rc.12",
@@ -68,6 +69,7 @@
     "puppeteer": "^21.7.0",
     "reflect-metadata": "^0.2.1",
     "rxjs": "^7.8.1",
+    "validator": "^13.15.23",
     "zod": "^3.22.4",
     "zod-to-json-schema": "^3.24.6"
   },

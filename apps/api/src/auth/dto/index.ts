@@ -1,5 +1,6 @@
 import { IsEmail, IsString, MinLength, IsOptional, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Sanitize } from '../../common/decorators/sanitize.decorator';
 
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[\w@$!%*?&#]{8,}$/;
 
@@ -24,11 +25,13 @@ export class RegisterDto {
 
   @ApiProperty({ example: 'John', required: false })
   @IsOptional()
+  @Sanitize()
   @IsString()
   firstName?: string;
 
   @ApiProperty({ example: 'Doe', required: false })
   @IsOptional()
+  @Sanitize()
   @IsString()
   lastName?: string;
 }
@@ -41,4 +44,5 @@ export class LoginDto {
   @ApiProperty({ example: 'SecurePass123!' })
   @IsString()
   password: string;
+  // Note: Password is not sanitized to preserve special characters
 }

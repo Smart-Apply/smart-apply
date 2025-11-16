@@ -1,5 +1,6 @@
 import { IsOptional, IsString, IsUrl, ValidateBy, ValidationOptions } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Sanitize } from '../../common/decorators/sanitize.decorator';
 
 /**
  * Custom validator to ensure at least one input source is provided
@@ -23,6 +24,7 @@ function IsAtLeastOneSource(validationOptions?: ValidationOptions) {
 export class ParseJobPostingDto {
   @ApiPropertyOptional({ description: 'Raw job posting text' })
   @IsOptional()
+  @Sanitize()
   @IsString()
   @IsAtLeastOneSource()
   text?: string;
