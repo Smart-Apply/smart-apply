@@ -142,27 +142,33 @@ Use the previously defined Prisma models: **User**, **Profile**, **JobPosting**,
 
 ## Security & Compliance
 
-### Current Security (6/10 Score)
+### Current Security (7.5/10 Score)
 **Implemented ✅**
 - JWT authentication with JwtAuthGuard on all protected endpoints
 - Password hashing with argon2 (memory-hard, ASIC-resistant)
 - Helmet security headers (XSS, clickjacking, MIME sniffing protection)
-- CORS with configurable origins and credentials support
-- ThrottlerGuard rate limiting (global protection)
+- CORS with configurable origins (restrictive whitelist)
+- Dual-tier rate limiting:
+  - Auth endpoints: 5 attempts / 15 minutes (strict)
+  - Standard endpoints: 100 requests / 15 minutes
+- Password strength validation (8+ chars, mixed case, number, special character)
+- Strong JWT secret generation (64+ characters, cryptographically secure)
 - Input validation with class-validator DTOs (whitelist + forbidNonWhitelisted)
+- User-friendly rate limit error messages in frontend
 - No PII in logs
 
-**Critical Issues 🔴 (Must fix before production)**
-- JWT secret uses weak default in .env.example ("change_me...")
-- CORS allows all origins in dev (origin: true)
-- JWT token stored in localStorage (XSS vulnerable, should use HttpOnly cookies)
+**Recently Implemented 🆕 (Issues #91-#95)**
+- ✅ **#91:** Strong JWT secret generation (openssl rand -base64 64)
+- ✅ **#92:** Restrictive CORS policy with environment-based origins
+- ✅ **#94:** Password strength validation with regex enforcement
+- ✅ **#95:** Strict rate limiting on auth endpoints (5/15min)
+- 📝 **Security documentation:** CORS_SECURITY.md, SECURITY.md with rotation procedures
 
 **High Priority 🟡 (Should fix before launch)**
-- No password strength validation (regex for complexity)
-- Rate limiting too lenient on auth endpoints (should be 5 attempts/15min)
-- No CSRF protection on POST/PUT/DELETE endpoints
-- No input sanitization (should use DOMPurify frontend + validator backend)
-- No refresh token strategy (only access tokens)
+- JWT token stored in localStorage (XSS vulnerable, should use HttpOnly cookies) - Issue #93
+- No CSRF protection on POST/PUT/DELETE endpoints - Issue #96
+- No input sanitization (should use DOMPurify frontend + validator backend) - Issue #97
+- No refresh token strategy (only access tokens) - Issue #98
 
 **Medium/Low Priority 🟢 (Post-launch)**
 - Content Security Policy (CSP) headers
@@ -182,19 +188,40 @@ See `MVP_FEATURES.md` for detailed security tasks with priorities and estimates.
 ### Backend (apps/api/.env)
 ```bash
 DATABASE_URL=postgresql://postgres:postgres@db:5432/smartapply
-JWT_SECRET=REPLACE_WITH_SECURE_RANDOM_SECRET_MINIMUM_64_CHARACTERS_USE_OPENSSL_RAND_BASE64_64
+
+# Security - JWT (CRITICAL: Generate with: openssl rand -base64 64)
+JWT_SECRET=REPLACE_WITH_SECURE_RANDOM_SECRET_MINIMUM_64_CHARACTERS
+
+# Security - CORS (Production: Set to your frontend domain)
+CORS_ORIGINS=http://localhost:3000,http://localhost:3001
+
+# Security - Rate Limiting
+RATE_LIMIT_TTL=900           # 15 minutes in seconds
+RATE_LIMIT_MAX=100           # Standard endpoints: 100 requests per 15 min
+RATE_LIMIT_AUTH_TTL=900      # Auth endpoints: 15 minutes
+RATE_LIMIT_AUTH_MAX=5        # Auth endpoints: 5 attempts per 15 min (STRICT)
+
+# Storage
 STORAGE_DRIVER=disk # or azure
 AZURE_STORAGE_ACCOUNT=<dev-account>
 AZURE_STORAGE_CONTAINER=smartapply
 AZURE_STORAGE_CONNECTION_STRING=<dev-conn-string>
+
+# Jobs/Queue
 SERVICE_BUS_CONNECTION_STRING=<sb-conn-string>
+JOBS_PROVIDER=in-memory # or service-bus
+
+# Azure Services
 KEY_VAULT_URI=https://your-kv.vault.azure.net/
 AZURE_OPENAI_ENDPOINT=https://your-aoai.openai.azure.com/
 AZURE_OPENAI_API_KEY=<key>
 AZURE_OPENAI_DEPLOYMENT_NAME=<deployment>
+
+# PDF Generation
 PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+
+# LLM Provider
 LLM_PROVIDER=mock # or azure-openai or huggingface
-JOBS_PROVIDER=in-memory # or service-bus
 ```
 
 ### Frontend (apps/web/.env.local)

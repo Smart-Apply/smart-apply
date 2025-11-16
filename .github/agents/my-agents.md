@@ -107,12 +107,12 @@ smart-apply/
 │   │   │   ├── storage/             # ✅ Storage abstraction
 │   │   │   ├── llm/                 # ✅ LLM abstraction
 │   │   │   │
-│   │   │   ├── uploads/             # ⏳ File upload (PDF/DOCX)
-│   │   │   ├── job-postings/        # ⏳ Job posting parser
-│   │   │   ├── pdf/                 # ⏳ Puppeteer PDF service
-│   │   │   ├── jobs/                # ⏳ Queue abstraction (Service Bus)
-│   │   │   ├── applications/        # ⏳ Main pipeline
-│   │   │   └── health/              # ⏳ Health checks (Terminus)
+│   │   │   ├── uploads/             # ✅ File upload (PDF/DOCX)
+│   │   │   ├── job-postings/        # ✅ Job posting parser
+│   │   │   ├── pdf/                 # ✅ Puppeteer PDF service
+│   │   │   ├── jobs/                # ✅ Queue abstraction (Service Bus)
+│   │   │   ├── applications/        # ✅ Main pipeline
+│   │   │   └── health/              # ✅ Health checks (Terminus)
 │   │   │
 │   │   ├── prisma/
 │   │   │   ├── schema.prisma        # Database schema
@@ -131,9 +131,9 @@ smart-apply/
 │       │   │
 │       │   ├── components/
 │       │   │   ├── ui/              # ✅ shadcn/ui (13 components)
-│       │   │   ├── forms/           # ⏳ Form components
-│       │   │   ├── pdf/             # ⏳ PDF preview/editing
-│       │   │   └── shared/          # ⏳ Shared components
+│       │   │   ├── forms/           # ✅ Form components
+│       │   │   ├── pdf/             # ✅ PDF preview/editing
+│       │   │   └── shared/          # ✅ Shared components
 │       │   │
 │       │   ├── hooks/               # ✅ useProfile, useApplications
 │       │   ├── stores/              # ✅ Zustand auth store
@@ -148,7 +148,7 @@ smart-apply/
 │       ├── README.md                # ✅ Frontend docs
 │       └── package.json             # ✅ Dependencies (450 pkgs)
 │
-├── prompts/                         # ⏳ LLM template files
+├── prompts/                         # ✅ LLM template files
 │   ├── cover-letter.md              # Cover letter prompt
 │   └── resume.md                    # Resume prompt
 │
@@ -218,18 +218,18 @@ GET    /api/v1/applications/:id/files  # Get PDF URLs (SAS)
 /login               # Login form
 /register            # Registration form
 /dashboard           # Dashboard with stats
-/profile             # Profile view (⏳ Edit forms pending)
-/applications        # Applications list (⏳ Pending)
-/applications/new    # Create application (⏳ Pending)
-/applications/:id    # Application detail (⏳ Pending)
-/jobs                # Job postings (⏳ Pending)
+/profile             # Profile view (✅ Edit forms pending)
+/applications        # Applications list (✅ Pending)
+/applications/new    # Create application (✅ Pending)
+/applications/:id    # Application detail (✅ Pending)
+/jobs                # Job postings (✅ Pending)
 ```
 
 ## Current TODOs (Priority Order)
 
 ### Backend TODOs
 
-#### 1. ⏳ UploadsModule (GitHub Issue #2)
+#### 1. ✅ UploadsModule (GitHub Issue #2)
 
 **Goal:** File upload for resumes/certificates with validation.
 
@@ -251,7 +251,7 @@ GET    /api/v1/applications/:id/files  # Get PDF URLs (SAS)
 - DTOs: `UploadResponseDto`
 - E2E test: `test/uploads.e2e-spec.ts`
 
-### 2. ⏳ JobPostingsModule
+### 2. ✅ JobPostingsModule
 
 **Goal:** Parse job postings from text/URL/file → normalized in DB.
 
@@ -282,7 +282,7 @@ npm install -D @types/pdf-parse
 - Parsers: `src/job-postings/parsers/` (text, url, pdf, docx)
 - E2E test: `test/job-postings.e2e-spec.ts`
 
-### 3. ⏳ PDFModule
+### 3. ✅ PDFModule
 
 **Goal:** HTML → PDF rendering with Puppeteer.
 
@@ -312,7 +312,7 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 - Unit tests: Mock HTML → Buffer
 - Integration test: Generate real PDF + validate
 
-### 4. ⏳ JobsModule
+### 4. ✅ JobsModule
 
 **Goal:** Queue abstraction for background jobs (Application pipeline).
 
@@ -330,7 +330,7 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 - `processors/application.processor.ts` (contains pipeline logic)
 - Unit tests: Mock queue operations
 
-### 5. ⏳ ApplicationsModule (Main Pipeline)
+### 5. ✅ ApplicationsModule (Main Pipeline)
 
 **Goal:** Orchestrates entire generation workflow.
 
@@ -357,7 +357,7 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 - Processor: `src/jobs/processors/application.processor.ts` (pipeline logic)
 - E2E test: `test/applications.e2e-spec.ts` (with Mock LLM + In-Memory Queue)
 
-### 6. ⏳ HealthModule
+### 6. ✅ HealthModule
 
 **Goal:** Health checks for Container Apps probes.
 
@@ -382,7 +382,7 @@ npm install @nestjs/terminus
 - Custom health indicators: `StorageHealthIndicator`, `LLMHealthIndicator`
 - E2E test: Verify health endpoint
 
-### 7. ⏳ Complete E2E Tests
+### 7. ✅ Complete E2E Tests
 
 **Goal:** Complete test suite for all modules.
 
@@ -411,23 +411,41 @@ npm install @nestjs/terminus
 - **All endpoints** are JWT-protected (except `/auth/*` and `/health`)
 - Set `@Public()` decorator explicitly for open endpoints
 - Use `@CurrentUser()` decorator for user context in controllers
+- **JWT Secret:** Must be 64+ characters, generated with `openssl rand -base64 64`
+- **Password Requirements:** 8+ chars, mixed case, number, special character (`@$!%*?&#`)
 
 ### Input Validation
 
 - **Always** use DTOs with class-validator
+- **Password Validation:** Use regex pattern for strength enforcement
 - File uploads: Validate MIME-type + extension + size
 - SQL injection: Prisma protects automatically (prepared statements)
+- Sanitization: Validate all user inputs with strict DTOs
 
 ### Secrets Management
 
 - **Never** commit secrets in code
+- **Never** use default/weak secrets in production
 - Local: `.env` (in `.gitignore`)
 - Prod: Azure Key Vault (via `DefaultAzureCredential`)
+- **JWT Secret Rotation:** See `docs/SECURITY.md` for rotation procedures
 
 ### Rate Limiting
 
-- `@nestjs/throttler` already configured (global)
-- Critical endpoints: Custom throttler guards
+- `@nestjs/throttler` configured with dual-tier limits:
+  - **Auth endpoints:** 5 attempts / 15 minutes (strict protection)
+  - **Standard endpoints:** 100 requests / 15 minutes
+- Custom `CustomThrottlerGuard` respects `@Public()` decorator
+- Frontend displays user-friendly error messages on rate limit (429)
+- Test rate limits with provided test scripts
+
+### CORS Configuration
+
+- **Development:** `http://localhost:3000,http://localhost:3001`
+- **Production:** Whitelist only your frontend domain(s)
+- **Never** use `origin: true` in production
+- Credentials enabled for cookie-based auth (future HttpOnly cookies)
+- See `docs/CORS_SECURITY.md` for detailed configuration
 
 ## Testing Guidelines
 
@@ -552,13 +570,32 @@ export class MyFeatureService {
 1. **Always** use TypeScript (no `any` types without reason)
 2. **Always** create proper types in `src/types/index.ts`
 3. **Always** use shadcn/ui components (not custom unstyled components)
-4. **Always** use React Hook Form + Zod for forms
+4. **Always** use React Hook Form + Zod for forms with validation
 5. **Always** use React Query for data fetching
 6. **Always** protect routes (check auth in layout or middleware)
 7. **Always** handle loading/error states
 8. **Always** use toast notifications (sonner) for user feedback
-9. **Server Components:** Use by default (no 'use client' unless needed)
-10. **Client Components:** Only when using hooks, events, or browser APIs
+9. **Always** handle rate limit errors (429) with user-friendly messages
+10. **Always** validate password strength client-side (match backend regex)
+11. **Server Components:** Use by default (no 'use client' unless needed)
+12. **Client Components:** Only when using hooks, events, or browser APIs
+
+### Frontend Security Guidelines
+
+1. **Error Handling:**
+   - Detect HTTP 429 (rate limit) and show helpful messages
+   - Include duration (8 seconds) and description for critical errors
+   - Guide users on what to do (wait 15 minutes)
+
+2. **Form Validation:**
+   - Mirror backend validation rules (password regex, field lengths)
+   - Provide real-time feedback on password strength
+   - Show clear error messages for validation failures
+
+3. **API Client:**
+   - Use typed API client with proper error handling
+   - Include retry logic for transient errors
+   - Handle network errors gracefully
 
 ### When Writing Tests
 
@@ -593,7 +630,7 @@ export class MyFeatureService {
 - **#40:** Layout (App Shell, Sidebar Navigation, Mobile Menu)
 - **#41:** Dashboard (Stats, Recent Applications - partial)
 
-### Pending (⏳)
+### Pending (✅)
 - **#42:** Profile Edit - Basic Info Form
 - **#43:** Profile - Skills Management (chips, add/remove)
 - **#44:** Profile - Experience Management (CRUD)
