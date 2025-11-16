@@ -105,40 +105,56 @@ export class AuthService {
       throw new UnauthorizedException('Invalid token type');
     }
 
-    // Hash the token for database lookup
-    const hashedToken = await argon2.hash(refreshToken);
-
-    // Find refresh token in database
-    const storedToken = await this.prisma.refreshToken.findFirst({
+    // Find all non-revoked, non-expired refresh tokens for this user
+    const storedTokens = await this.prisma.refreshToken.findMany({
       where: {
         userId: payload.sub,
         isRevoked: false,
         expiresAt: { gt: new Date() },
       },
-      orderBy: { createdAt: 'desc' },
     });
 
-    if (!storedToken) {
+    if (storedTokens.length === 0) {
       throw new UnauthorizedException('Refresh token not found or revoked');
     }
 
-    // Verify the token matches (compare hashed versions)
-    // Note: For simplicity, we're checking if ANY valid non-revoked token exists
-    // In production, you might want to store the hash and compare it directly
+    // Verify the provided token matches one of the stored hashes
+    let matchingToken: typeof storedTokens[0] | null = null;
+    for (const storedToken of storedTokens) {
+      try {
+        const isMatch = await argon2.verify(storedToken.token, refreshToken);
+        if (isMatch) {
+          matchingToken = storedToken;
+          break;
+        }
+      } catch (error) {
+        // Skip invalid hashes
+        continue;
+      }
+    }
 
-    // Revoke old refresh token (rotation strategy)
+    if (!matchingToken) {
+      throw new UnauthorizedException('Refresh token not found or revoked');
+    }
+
+    // Revoke the specific refresh token (rotation strategy)
     await this.prisma.refreshToken.update({
-      where: { id: storedToken.id },
+      where: { id: matchingToken.id },
       data: { isRevoked: true },
     });
 
-    // Clean up old/expired tokens for this user (optional housekeeping)
+    // Clean up old/expired tokens for this user (but keep recently revoked for security audit)
     await this.prisma.refreshToken.deleteMany({
       where: {
         userId: payload.sub,
         OR: [
           { expiresAt: { lt: new Date() } },
-          { isRevoked: true },
+          { 
+            AND: [
+              { isRevoked: true },
+              { createdAt: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) } }, // Keep revoked tokens for 24h
+            ],
+          },
         ],
       },
     });
@@ -199,9 +215,14 @@ export class AuthService {
       { expiresIn: this.configService.jwtAccessExpiresIn },
     );
 
-    // Generate refresh token (long-lived)
+    // Generate refresh token (long-lived) with unique identifier
     const refreshToken = this.jwtService.sign(
-      { sub: userId, email, type: 'refresh' },
+      { 
+        sub: userId, 
+        email, 
+        type: 'refresh',
+        jti: `${Date.now()}-${Math.random().toString(36).substring(7)}`, // Unique token ID
+      },
       { expiresIn: this.configService.jwtRefreshExpiresIn },
     );
 

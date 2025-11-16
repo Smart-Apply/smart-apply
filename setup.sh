@@ -99,8 +99,25 @@ echo ""
 # Seed database
 echo "🌱 Seeding database with demo data..."
 npm run prisma:seed
-cd ../..
 echo "✅ Database seeded"
+echo ""
+
+# Setup test database
+echo "🧪 Setting up test database..."
+cd ../..
+
+# Create test database
+if docker exec smartapply-db psql -U postgres -lqt | cut -d \| -f 1 | grep -qw smartapply_test; then
+    echo "ℹ️  Test database already exists"
+else
+    docker exec smartapply-db psql -U postgres -c "CREATE DATABASE smartapply_test;"
+    echo "✅ Test database created"
+fi
+
+# Apply migrations to test database
+echo "🗄️  Running migrations on test database..."
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/smartapply_test" npx prisma migrate deploy --schema=./apps/api/prisma/schema.prisma
+echo "✅ Test database ready"
 echo ""
 
 echo "=================================="
@@ -123,8 +140,11 @@ echo "   Email: demo@smartapply.com"
 echo "   Password: Demo123!"
 echo ""
 echo "4. Run tests:"
-echo "   Backend: cd apps/api && npm run test:e2e"
-echo "   Frontend: cd apps/web && npm run lint"
+echo "   Backend E2E: cd apps/api && npm run test:e2e"
+echo "   Auth Refresh: cd apps/api && npm run test:e2e -- auth-refresh.e2e-spec.ts"
+echo "   Frontend Lint: cd apps/web && npm run lint"
+echo ""
+echo "   Note: E2E tests use separate 'smartapply_test' database"
 echo ""
 echo "📚 Documentation:"
 echo "   - README.md - Full documentation"

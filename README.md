@@ -246,6 +246,64 @@ After seeding:
 - Email: `demo@smartapply.com`
 - Password: `Demo123!`
 
+### Test Database Setup
+
+The project uses a separate database for E2E tests to avoid affecting development data.
+
+#### Automatic Setup (via setup.sh)
+
+The `setup.sh` script automatically creates and migrates the test database:
+
+```bash
+chmod +x setup.sh
+./setup.sh
+```
+
+#### Manual Setup
+
+If you need to manually create or reset the test database:
+
+```bash
+# Create test database
+docker exec smartapply-db psql -U postgres -c "CREATE DATABASE smartapply_test;"
+
+# Apply migrations
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/smartapply_test" \
+  npx prisma migrate deploy --schema=./apps/api/prisma/schema.prisma
+```
+
+#### Reset Test Database
+
+To reset the test database (useful after schema changes):
+
+```bash
+# Drop and recreate
+docker exec smartapply-db psql -U postgres -c "DROP DATABASE IF EXISTS smartapply_test;"
+docker exec smartapply-db psql -U postgres -c "CREATE DATABASE smartapply_test;"
+
+# Reapply migrations
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/smartapply_test" \
+  npx prisma migrate deploy --schema=./apps/api/prisma/schema.prisma
+```
+
+#### Running Tests
+
+```bash
+cd apps/api
+
+# Run all E2E tests
+npm run test:e2e
+
+# Run specific test suite
+npm run test:e2e -- auth-refresh.e2e-spec.ts
+npm run test:e2e -- xss-sanitization.e2e-spec.ts
+
+# Run with coverage
+npm run test:cov
+```
+
+**Note:** E2E tests automatically use the `smartapply_test` database configured in the test environment.
+
 ## 🎨 Frontend Features
 
 ### Implemented ✅
