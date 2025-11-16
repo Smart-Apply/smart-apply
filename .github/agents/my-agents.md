@@ -88,566 +88,100 @@ npm run prisma:seed
 - **Production:** Azure Key Vault + Container Apps Secrets
 - **Validation:** Zod schema in `src/config/env.schema.ts`
 
-## Project Structure
-
-```
-smart-apply/
-├── apps/
-│   ├── api/                         # Backend (Port 3000)
-│   │   ├── src/
-│   │   │   ├── main.ts              # Entry point (Swagger /docs)
-│   │   │   ├── app.module.ts        # Root module
-│   │   │   │
-│   │   │   ├── config/              # ✅ Global config (Zod)
-│   │   │   ├── common/              # ✅ Guards, Decorators, Filters
-│   │   │   ├── prisma/              # ✅ DB service (Global)
-│   │   │   │
-│   │   │   ├── auth/                # ✅ JWT auth (Register, Login, /me)
-│   │   │   ├── profile/             # ✅ User profile CRUD with Education
-│   │   │   ├── storage/             # ✅ Storage abstraction
-│   │   │   ├── llm/                 # ✅ LLM abstraction
-│   │   │   │
-│   │   │   ├── uploads/             # ✅ File upload (PDF/DOCX)
-│   │   │   ├── job-postings/        # ✅ Job posting parser
-│   │   │   ├── pdf/                 # ✅ Puppeteer PDF service
-│   │   │   ├── jobs/                # ✅ Queue abstraction (Service Bus)
-│   │   │   ├── applications/        # ✅ Main pipeline
-│   │   │   └── health/              # ✅ Health checks (Terminus)
-│   │   │
-│   │   ├── prisma/
-│   │   │   ├── schema.prisma        # Database schema
-│   │   │   ├── migrations/          # Prisma migrations
-│   │   │   └── seed.ts              # Demo data
-│   │   │
-│   │   └── test/                    # E2E tests
-│   │
-│   └── web/                         # Frontend (Port 3001)
-│       ├── src/
-│       │   ├── app/
-│       │   │   ├── (auth)/          # ✅ Login, Register pages
-│       │   │   ├── (dashboard)/     # ✅ Dashboard layout + pages
-│       │   │   ├── layout.tsx       # ✅ Root layout with Providers
-│       │   │   └── page.tsx         # ✅ Landing page
-│       │   │
-│       │   ├── components/
-│       │   │   ├── ui/              # ✅ shadcn/ui (13 components)
-│       │   │   ├── forms/           # ✅ Form components
-│       │   │   ├── pdf/             # ✅ PDF preview/editing
-│       │   │   └── shared/          # ✅ Shared components
-│       │   │
-│       │   ├── hooks/               # ✅ useProfile, useApplications
-│       │   ├── stores/              # ✅ Zustand auth store
-│       │   ├── lib/
-│       │   │   ├── api-client.ts    # ✅ Typed API client
-│       │   │   ├── providers.tsx    # ✅ React Query provider
-│       │   │   └── utils.ts         # ✅ Helper functions
-│       │   │
-│       │   └── types/               # ✅ TypeScript types
-│       │
-│       ├── .env.local               # ✅ NEXT_PUBLIC_API_URL
-│       ├── README.md                # ✅ Frontend docs
-│       └── package.json             # ✅ Dependencies (450 pkgs)
-│
-├── prompts/                         # ✅ LLM template files
-│   ├── cover-letter.md              # Cover letter prompt
-│   └── resume.md                    # Resume prompt
-│
-├── .github/
-│   ├── copilot-instructions.md      # General Copilot instructions
-│   └── agents/
-│       └── my-agents.md             # ← This file
-│
-├── docker-compose.yml               # Local PostgreSQL setup
-└── package.json                     # Root workspace
-```
-
-## Frontend-Backend Integration
-
-### Connection Setup
-
-**Backend:** `http://localhost:3000/api/v1`
-**Frontend:** `http://localhost:3001`
-
-The frontend connects to the backend via:
-- **API Client:** `apps/web/src/lib/api-client.ts` (Typed fetch wrapper)
-- **Auth Store:** `apps/web/src/stores/auth-store.ts` (Zustand with persistence)
-- **React Query:** Server state management with caching
-- **Environment:** `NEXT_PUBLIC_API_URL` in `.env.local`
-
-### Starting Both Apps
-
-**Terminal 1 - Backend:**
-```bash
-cd apps/api
-npm run start:dev
-```
-
-**Terminal 2 - Frontend:**
-```bash
-cd apps/web
-npm run dev
-```
-
-### API Endpoints (Backend)
-
-All endpoints return JSON and require JWT Bearer token (except `/auth/*`):
-
-```
-POST   /api/v1/auth/register      # Create account
-POST   /api/v1/auth/login         # Get JWT token
-GET    /api/v1/auth/me            # Current user
-
-GET    /api/v1/profile            # Get profile
-PUT    /api/v1/profile            # Update profile (Skills, Experience, Education, etc.)
-
-POST   /api/v1/job-postings:parse # Parse job posting
-GET    /api/v1/job-postings       # List job postings
-GET    /api/v1/job-postings/:id   # Get job posting
-DELETE /api/v1/job-postings/:id   # Delete job posting
-
-POST   /api/v1/applications       # Create application
-GET    /api/v1/applications       # List applications
-GET    /api/v1/applications/:id   # Get application
-GET    /api/v1/applications/:id/files  # Get PDF URLs (SAS)
-```
-
-### Frontend Pages (Implemented)
-
-```
-/                    # Landing page (Hero + Features)
-/login               # Login form
-/register            # Registration form
-/dashboard           # Dashboard with stats
-/profile             # Profile view (✅ Edit forms pending)
-/applications        # Applications list (✅ Pending)
-/applications/new    # Create application (✅ Pending)
-/applications/:id    # Application detail (✅ Pending)
-/jobs                # Job postings (✅ Pending)
-```
-
-## Current TODOs (Priority Order)
-
-### Backend TODOs
-
-#### 1. ✅ UploadsModule (GitHub Issue #2)
-
-**Goal:** File upload for resumes/certificates with validation.
-
-**Requirements:**
-
-- `POST /api/v1/uploads` (JWT-protected)
-- Multipart/Form-Data (PDF/DOCX, max 5 MB)
-- Storage via `StorageService` (works with both providers)
-- Response: Upload metadata with storage key
-
-**Dependencies:**
-
-- `StorageModule` (✅ already implemented)
-- `@nestjs/platform-express` + `multer` (✅ already installed)
-
-**Deliverables:**
-
-- `uploads.controller.ts`, `uploads.service.ts`, `uploads.module.ts`
-- DTOs: `UploadResponseDto`
-- E2E test: `test/uploads.e2e-spec.ts`
-
-### 2. ✅ JobPostingsModule
-
-**Goal:** Parse job postings from text/URL/file → normalized in DB.
-
-**Requirements:**
-
-- `POST /api/v1/job-postings:parse` (JWT-protected)
-- Input: `{ text?, url?, fileId? }`
-- Parsers for:
-  - Plain text (direct)
-  - URL (HTML via `cheerio`)
-  - PDF (via `pdf-parse`)
-  - DOCX (via `mammoth`)
-- Creates `JobPosting` entity with:
-  - `title`, `company`, `location`, `description`
-  - Arrays: `requirements[]`, `responsibilities[]`, `niceToHave[]`
-
-**Dependencies (install):**
-
-```bash
-npm install cheerio pdf-parse mammoth
-npm install -D @types/pdf-parse
-```
-
-**Deliverables:**
-
-- `job-postings.controller.ts`, `job-postings.service.ts`, `job-postings.module.ts`
-- DTOs: `ParseJobPostingDto`, `JobPostingResponseDto`
-- Parsers: `src/job-postings/parsers/` (text, url, pdf, docx)
-- E2E test: `test/job-postings.e2e-spec.ts`
-
-### 3. ✅ PDFModule
-
-**Goal:** HTML → PDF rendering with Puppeteer.
-
-**Requirements:**
-
-- `PDFService.generatePDF(html: string): Promise<Buffer>`
-- Puppeteer with Chromium (headless)
-- CSS styling for professional PDFs
-- Template support (Cover letter + Resume have different layouts)
-
-**Dependencies (install):**
-
-```bash
-npm install puppeteer
-```
-
-**Docker:** Chromium in container image (`Dockerfile` adjustment):
-
-```dockerfile
-RUN apt-get update && apt-get install -y chromium
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
-```
-
-**Deliverables:**
-
-- `pdf.service.ts`, `pdf.module.ts`
-- Unit tests: Mock HTML → Buffer
-- Integration test: Generate real PDF + validate
-
-### 4. ✅ JobsModule
-
-**Goal:** Queue abstraction for background jobs (Application pipeline).
-
-**Requirements:**
-
-- `JobsService` with producer/consumer pattern
-- `InMemoryQueueProvider` (dev) → Array-based, setTimeout
-- `AzureServiceBusProvider` (prod) → `@azure/service-bus`
-- Job types: `APPLICATION_GENERATE` (extensible for future jobs)
-
-**Deliverables:**
-
-- `jobs.service.ts`, `jobs.module.ts`
-- `providers/in-memory-queue.provider.ts`, `providers/azure-service-bus.provider.ts`
-- `processors/application.processor.ts` (contains pipeline logic)
-- Unit tests: Mock queue operations
-
-### 5. ✅ ApplicationsModule (Main Pipeline)
-
-**Goal:** Orchestrates entire generation workflow.
-
-**Requirements:**
-
-- `POST /api/v1/applications` → Creates application (status: PENDING), publishes job
-- `GET /api/v1/applications/:id` → Current status + metadata
-- `GET /api/v1/applications/:id/files` → SAS URLs for PDFs
-
-**Pipeline (in job processor):**
-
-1. Load Profile + JobPosting (Prisma)
-2. Render prompts (`prompts/cover-letter.md`, `prompts/resume.md`) with context
-3. Call `LLMService.generate()` → Markdown/HTML
-4. Call `PDFService.generatePDF()` → Buffer
-5. Upload PDFs via `StorageService` → Storage keys
-6. Update Application: `status = READY`, `coverLetterFileKey`, `resumeFileKey`
-7. On error: `status = FAILED`, `errorMessage`
-
-**Deliverables:**
-
-- `applications.controller.ts`, `applications.service.ts`, `applications.module.ts`
-- DTOs: `CreateApplicationDto`, `ApplicationResponseDto`, `ApplicationFilesDto`
-- Processor: `src/jobs/processors/application.processor.ts` (pipeline logic)
-- E2E test: `test/applications.e2e-spec.ts` (with Mock LLM + In-Memory Queue)
-
-### 6. ✅ HealthModule
-
-**Goal:** Health checks for Container Apps probes.
-
-**Requirements:**
-
-- `GET /api/v1/health` (Public, no JWT)
-- Checks:
-  - Database (Prisma ping)
-  - Storage (Provider `healthCheck()`)
-  - LLM (Provider `healthCheck()`)
-- Response: `{ status: "ok" | "error", info: {...} }`
-
-**Dependencies:**
-
-```bash
-npm install @nestjs/terminus
-```
-
-**Deliverables:**
-
-- `health.controller.ts`, `health.module.ts`
-- Custom health indicators: `StorageHealthIndicator`, `LLMHealthIndicator`
-- E2E test: Verify health endpoint
-
-### 7. ✅ Complete E2E Tests
-
-**Goal:** Complete test suite for all modules.
-
-**Requirements:**
-
-- Profile CRUD (✅ exists, but fix Guard issues)
-- Upload flow (Upload file → validate metadata)
-- JobPosting parsing (Text/URL/File → validate extraction)
-- Application pipeline end-to-end:
-  - Mock LLM provider
-  - In-memory queue
-  - Validate PDFs are created + stored
-  - Validate status transitions (PENDING → GENERATING → READY)
-
-**Deliverables:**
-
-- `test/uploads.e2e-spec.ts`
-- `test/job-postings.e2e-spec.ts`
-- `test/applications.e2e-spec.ts`
-- Fixtures: `test/fixtures/` (Sample PDFs, DOCX, HTML)
-
-## Security Best Practices
-
-### Authentication & Authorization
-
-- **All endpoints** are JWT-protected (except `/auth/*` and `/health`)
-- Set `@Public()` decorator explicitly for open endpoints
-- Use `@CurrentUser()` decorator for user context in controllers
-- **JWT Secret:** Must be 64+ characters, generated with `openssl rand -base64 64`
-- **Password Requirements:** 8+ chars, mixed case, number, special character (`@$!%*?&#`)
-
-### Input Validation
-
-- **Always** use DTOs with class-validator
-- **Password Validation:** Use regex pattern for strength enforcement
-- File uploads: Validate MIME-type + extension + size
-- SQL injection: Prisma protects automatically (prepared statements)
-- Sanitization: Validate all user inputs with strict DTOs
-
-### Secrets Management
-
-- **Never** commit secrets in code
-- **Never** use default/weak secrets in production
-- Local: `.env` (in `.gitignore`)
-- Prod: Azure Key Vault (via `DefaultAzureCredential`)
-- **JWT Secret Rotation:** See `docs/SECURITY.md` for rotation procedures
-
-### Rate Limiting
-
-- `@nestjs/throttler` configured with dual-tier limits:
-  - **Auth endpoints:** 5 attempts / 15 minutes (strict protection)
-  - **Standard endpoints:** 100 requests / 15 minutes
-- Custom `CustomThrottlerGuard` respects `@Public()` decorator
-- Frontend displays user-friendly error messages on rate limit (429)
-- Test rate limits with provided test scripts
-
-### CORS Configuration
-
-- **Development:** `http://localhost:3000,http://localhost:3001`
-- **Production:** Whitelist only your frontend domain(s)
-- **Never** use `origin: true` in production
-- Credentials enabled for cookie-based auth and CSRF tokens
-- **CSRF cookies:** Development uses `sameSite='lax'` for cross-port compatibility
-- See `docs/CORS_SECURITY.md` for detailed configuration
-
-## Testing Guidelines
-
-### Unit Tests
-
-```bash
-npm test -- profile.service.spec.ts
-```
-
-- Mock external dependencies (Prisma, Storage, LLM)
-- Test business logic in isolation
-
-### E2E Tests
-
-```bash
-npm run test:e2e
-```
-
-- Use in-memory providers (Mock LLM, Disk Storage, In-Memory Queue)
-- Create test DB (separate DATABASE_URL in `.env.test`)
-- After each test: Cleanup (Prisma `deleteMany`)
-
-### Local Test Workflow
-
-```bash
-# 1. Start DB
-docker compose up -d
-
-# 2. Run migrations
-npm run prisma:migrate
-
-# 3. Seed data
-npm run prisma:seed
-
-# 4. Start dev server
-npm run start:dev
-
-# 5. Open Swagger
-open http://localhost:3000/docs
-
-# 6. Test login
-curl -X POST http://localhost:3000/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"demo@smartapply.com","password":"Demo123!"}'
-```
-
-## Code Style & Conventions
-
-### Naming Conventions
-
-- **Files:** `kebab-case` (e.g., `profile.service.ts`)
-- **Classes:** `PascalCase` (e.g., `ProfileService`)
-- **Interfaces:** `PascalCase` with optional `I` prefix (e.g., `IStorageProvider`)
-- **DTOs:** `PascalCase` with suffix (e.g., `UpdateProfileDto`)
-- **Endpoints:** `kebab-case` (e.g., `/job-postings:parse`)
-
-### Module Structure Template
-
-```typescript
-// my-feature.module.ts
-import { Module } from '@nestjs/common';
-import { MyFeatureController } from './my-feature.controller';
-import { MyFeatureService } from './my-feature.service';
-
-@Module({
-  controllers: [MyFeatureController],
-  providers: [MyFeatureService],
-  exports: [MyFeatureService], // If other modules use it
-})
-export class MyFeatureModule {}
-```
-
-### Controller Template
-
-```typescript
-import { Controller, Get, Post, Body, UseGuards, Request } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-
-@ApiTags('my-feature')
-@Controller('my-feature')
-@UseGuards(JwtAuthGuard)
-@ApiBearerAuth()
-export class MyFeatureController {
-  constructor(private readonly myFeatureService: MyFeatureService) {}
-
-  @Get()
-  async getAll(@Request() req) {
-    return this.myFeatureService.findAll(req.user.userId);
-  }
-}
-```
-
-### Service Template
-
-```typescript
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-
-@Injectable()
-export class MyFeatureService {
-  constructor(private readonly prisma: PrismaService) {}
-
-  async findAll(userId: string) {
-    return this.prisma.myModel.findMany({ where: { userId } });
-  }
-}
-```
-
-## Agent Behavior: Important Rules
-
-### When Generating Backend Code
-
-1. **Always** create DTOs with validation decorators
-2. **Always** use Swagger decorators (`@ApiTags`, `@ApiBearerAuth`)
-3. **Always** implement error handling (try/catch + meaningful exceptions)
-4. **Always** respect TypeScript strict mode (no `any` without reason)
-5. **Follow provider pattern** (see Storage/LLM as reference)
-
-### When Generating Frontend Code
-
-1. **Always** use TypeScript (no `any` types without reason)
-2. **Always** create proper types in `src/types/index.ts`
-3. **Always** use shadcn/ui components (not custom unstyled components)
-4. **Always** use React Hook Form + Zod for forms with validation
-5. **Always** use React Query for data fetching
-6. **Always** protect routes (check auth in layout or middleware)
-7. **Always** handle loading/error states
-8. **Always** use toast notifications (sonner) for user feedback
-9. **Always** handle rate limit errors (429) with user-friendly messages
-10. **Always** validate password strength client-side (match backend regex)
-11. **Server Components:** Use by default (no 'use client' unless needed)
-12. **Client Components:** Only when using hooks, events, or browser APIs
-
-### Frontend Security Guidelines
-
-1. **Error Handling:**
-   - Detect HTTP 429 (rate limit) and show helpful messages
-   - Include duration (8 seconds) and description for critical errors
-   - Guide users on what to do (wait 15 minutes)
-
-2. **Form Validation:**
-   - Mirror backend validation rules (password regex, field lengths)
-   - Provide real-time feedback on password strength
-   - Show clear error messages for validation failures
-
-3. **API Client:**
-   - Use typed API client with proper error handling
-   - Include retry logic for transient errors
-   - Handle network errors gracefully
-
-### When Writing Tests
-
-1. **Unit tests:** Mock all dependencies (Prisma, external services)
-2. **E2E tests:** Use in-memory providers (no real Azure)
-3. **Fixtures:** Create sample data in `test/fixtures/`
-4. **Cleanup:** Clear DB after each E2E test
-
-### When Creating Migrations
-
-1. **Always** run `npm run prisma:migrate`
-2. **Always** update seed.ts if schema changes
-3. **Never** manual SQL edits (only via Prisma schema)
-
-### When Adding Modules
-
-1. **Always** import in `app.module.ts`
-2. **Always** declare dependencies (imports in module)
-3. **Always** create E2E test
-4. **Always** generate Swagger docs
-
-### When Working with Azure
-
-1. **Always** implement local fallback provider (dev)
-2. **Never** hardcode Azure credentials
-3. **Always** use environment variables (`STORAGE_DRIVER`, `LLM_PROVIDER`)
-
-## Frontend TODOs (GitHub Issues #39-#55)
-
-### Implemented (✅)
-- **#39:** Authentication (Login, Register, Protected Routes)
-- **#40:** Layout (App Shell, Sidebar Navigation, Mobile Menu)
-- **#41:** Dashboard (Stats, Recent Applications - partial)
-
-### Pending (✅)
-- **#42:** Profile Edit - Basic Info Form
-- **#43:** Profile - Skills Management (chips, add/remove)
-- **#44:** Profile - Experience Management (CRUD)
-- **#45:** Profile - Education Management (CRUD)
-- **#46:** Profile - Certificates Management (CRUD)
-- **#47:** Profile - Projects Management (CRUD)
-- **#48:** Job Postings - Input & Parser (Text/URL/File)
-- **#49:** Job Postings - List View
-- **#50:** Applications - Creation Wizard (3 steps)
-- **#51:** Applications - Dashboard & List
-- **#52:** Applications - Detail View
-- **#53:** Applications - PDF Download & Preview (react-pdf)
-- **#54:** Shared - Loading States & Skeletons
-- **#55:** Shared - Error Handling & Toasts
-
-**Estimated:** 50-65 hours total
+## Key Directories
+
+- `apps/api/src/` - Backend modules (auth, profile, applications, etc.)
+- `apps/api/prisma/` - Schema, migrations, seed
+- `apps/web/src/app/` - Next.js pages (auth, dashboard)
+- `apps/web/src/components/` - UI components (shadcn/ui)
+- `apps/web/src/lib/` - API client, utils
+- `prompts/` - LLM templates (cover-letter.md, resume.md)
+
+## Quick Start
+
+**Backend:** `cd apps/api && npm run start:dev` (Port 3000)
+**Frontend:** `cd apps/web && npm run dev` (Port 3001)
+**Swagger:** http://localhost:3000/docs
+
+**Connection:** Frontend uses `api-client.ts` with `credentials: 'include'` for HttpOnly cookies
+
+## Backend Status
+
+**All Core Modules Implemented ✅**
+- Auth (JWT + argon2, HttpOnly cookies)
+- Profile (differential updates for nested collections)
+- Job Postings (parse text/URL/file)
+- Applications (LLM → PDF → Storage pipeline)
+- Storage (Disk + Azure Blob providers)
+- LLM (Mock + Azure OpenAI providers)
+- Jobs (In-Memory + Service Bus providers)
+- PDF (Puppeteer)
+- Health (Terminus)
+
+**Testing:**
+- E2E tests for all modules
+- XSS sanitization tests (15 passing)
+- Auth tests (register, login, me)
+
+**See GitHub Issues for remaining frontend work (#42-#55)**
+
+## Security (8.0/10)
+
+**Implemented:**
+- JWT in HttpOnly cookies (XSS-protected)
+- argon2 password hashing
+- Input sanitization (@Sanitize() decorator)
+- CSRF protection (optional, ENABLE_CSRF=true)
+- Rate limiting: 5/15min (auth), 100/15min (other)
+- Strong password validation
+- Helmet security headers
+- CORS whitelist
+
+**Details:** See `docs/SECURITY.md` and `docs/CORS_SECURITY.md`
+
+## Testing
+
+**Unit:** `npm test` (mock dependencies)
+**E2E:** `npm run test:e2e` (in-memory providers, test DB)
+**Local:** Docker → migrate → seed → start:dev → Swagger at :3000/docs
+
+## Code Conventions
+
+- **Files:** `kebab-case` (profile.service.ts)
+- **Classes:** `PascalCase` (ProfileService)
+- **DTOs:** `PascalCase` + suffix (UpdateProfileDto)
+- **Endpoints:** `kebab-case` (/job-postings/parse)
+- **Reference:** See existing modules (auth, profile) for patterns
+
+## Development Rules
+
+**Backend:**
+- Use DTOs with validation + Swagger decorators
+- Follow provider pattern (see storage/llm)
+- TypeScript strict mode (no `any`)
+- JWT-protect endpoints (use `@Public()` for exceptions)
+
+**Frontend:**
+- shadcn/ui components only
+- React Hook Form + Zod validation
+- React Query for data fetching
+- Server Components by default
+- Handle 429 rate limit errors
+
+**Testing:**
+- Unit: Mock dependencies
+- E2E: In-memory providers
+- Always cleanup after tests
+
+**Azure:**
+- Use env vars (STORAGE_DRIVER, LLM_PROVIDER)
+- Local fallback providers for dev
+
+## Frontend Status
+
+**Done:** Auth (#39), Layout (#40), Dashboard (#41)
+**Pending:** Profile forms (#42-47), Job Postings (#48-49), Applications (#50-53), Shared components (#54-55)
+**Details:** See GitHub Issues
 
 ## Important Commands
 
@@ -941,30 +475,7 @@ Common status codes:
 - **Auth Pages:** `apps/web/src/app/(auth)/` (login, register)
 - **Dashboard:** `apps/web/src/app/(dashboard)/` (layout, pages)
 
-## Known Issues
 
-### Profile E2E Tests - Guard Issues
-
-**Problem:** Tests return `403 Forbidden` instead of `200 OK` or `401 Unauthorized`.
-
-**Cause:** Test setup has ThrottlerGuard or JWT configuration problem.
-
-**Workaround:** Business logic is correct (manually tested via Swagger). Test environment needs different guard configuration.
-
-**TODO:** Fix E2E test setup (separate app instance with `overrideGuard`).
-
-## Success Criteria for TODOs
-
-A TODO is considered **complete** when:
-
-- [ ] Controller, Service, Module implemented
-- [ ] DTOs with validation created
-- [ ] Swagger documentation generated
-- [ ] Unit tests present (min 80% coverage)
-- [ ] E2E test present (happy path + error cases)
-- [ ] Dev server starts without errors (`npm run start:dev`)
-- [ ] Swagger UI shows new endpoints (`http://localhost:3000/docs`)
-- [ ] Manual test via Swagger successful
 
 ## Next Steps (Post-MVP)
 
