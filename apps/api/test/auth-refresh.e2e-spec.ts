@@ -55,10 +55,10 @@ describe('Auth Refresh Token (e2e)', () => {
 
       // Extract cookies
       const setCookie = response.headers['set-cookie'];
-      const cookies = Array.isArray(setCookie) ? setCookie : [setCookie];
+      const cookies = Array.isArray(setCookie) ? setCookie : [setCookie].filter(Boolean);
       
       // Extract refresh token from cookie
-      const refreshCookie = cookies.find((c) => c.startsWith('refresh_token='));
+      const refreshCookie = cookies.find((c: string) => c.startsWith('refresh_token='));
       if (refreshCookie) {
         refreshToken = refreshCookie.split(';')[0].split('=')[1];
       }
@@ -76,7 +76,8 @@ describe('Auth Refresh Token (e2e)', () => {
       expect(response.headers['set-cookie']).toBeDefined();
       
       // Should set both new access and refresh tokens
-      const cookies = response.headers['set-cookie'];
+      const setCookie = response.headers['set-cookie'];
+      const cookies = Array.isArray(setCookie) ? setCookie : [setCookie].filter(Boolean);
       const hasAccessToken = cookies.some((c: string) => c.startsWith('access_token='));
       const hasRefreshToken = cookies.some((c: string) => c.startsWith('refresh_token='));
       
@@ -133,9 +134,10 @@ describe('Auth Refresh Token (e2e)', () => {
           password: 'Test123!',
         });
 
-      const cookies = loginResponse.headers['set-cookie'];
+      const setCookie = loginResponse.headers['set-cookie'];
+      const cookies = Array.isArray(setCookie) ? setCookie : [setCookie].filter(Boolean);
       const accessCookie = cookies.find((c: string) => c.startsWith('access_token='));
-      const accessToken = accessCookie.split(';')[0].split('=')[1];
+      const accessToken = accessCookie!.split(';')[0].split('=')[1];
 
       // Try to use access token as refresh token
       return request(app.getHttpServer())
@@ -159,9 +161,10 @@ describe('Auth Refresh Token (e2e)', () => {
           password: 'Test123!',
         });
 
-      const cookies = registerResponse.headers['set-cookie'];
+      const setCookie = registerResponse.headers['set-cookie'];
+      const cookies = Array.isArray(setCookie) ? setCookie : [setCookie].filter(Boolean);
       const refreshCookie = cookies.find((c: string) => c.startsWith('refresh_token='));
-      const firstRefreshToken = refreshCookie.split(';')[0].split('=')[1];
+      const firstRefreshToken = refreshCookie!.split(';')[0].split('=')[1];
 
       // Use refresh token to get new pair
       const refreshResponse = await request(app.getHttpServer())
@@ -233,7 +236,8 @@ describe('Auth Refresh Token (e2e)', () => {
           password: 'Test123!',
         });
 
-      const cookies = registerResponse.headers['set-cookie'];
+      const setCookie = registerResponse.headers['set-cookie'];
+      const cookies = Array.isArray(setCookie) ? setCookie : [setCookie].filter(Boolean);
       const accessCookie = cookies.find((c: string) => c.startsWith('access_token='));
       const refreshCookie = cookies.find((c: string) => c.startsWith('refresh_token='));
 
@@ -311,7 +315,8 @@ describe('Auth Refresh Token (e2e)', () => {
       });
 
       // Get refresh token
-      const cookies = response.headers['set-cookie'];
+      const setCookie = response.headers['set-cookie'];
+      const cookies = Array.isArray(setCookie) ? setCookie : [setCookie].filter(Boolean);
       const refreshCookie = cookies.find((c: string) => c.startsWith('refresh_token='));
       const refreshToken = refreshCookie!.split(';')[0].split('=')[1];
 
