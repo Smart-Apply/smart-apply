@@ -80,6 +80,14 @@ export default function RegisterPage() {
       if (ApiError.isApiError(error)) {
         if (error.status === 400 || error.status === 409) {
           toast.error('Diese E-Mail-Adresse ist bereits registriert.');
+        } else if (error.status === 429) {
+          toast.error(
+            'Zu viele Registrierungs-Versuche. Bitte warte 15 Minuten und versuche es erneut.',
+            {
+              duration: 8000,
+              description: 'Aus Sicherheitsgründen wurde dein Zugriff vorübergehend gesperrt.',
+            }
+          );
         } else {
           toast.error(getErrorMessage(error));
         }
