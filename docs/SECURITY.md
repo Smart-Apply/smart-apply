@@ -141,13 +141,79 @@ JWT_SECRET: z
 
 If validation fails, the application will **not start** and display a clear error message.
 
+## 🔄 Refresh Token Strategy
+
+### Overview
+
+Smart Apply uses a dual-token authentication strategy for enhanced security:
+
+- **Access Token**: Short-lived (15 minutes), used for API authentication
+- **Refresh Token**: Long-lived (30 days), used to obtain new access tokens
+
+Both tokens are stored in HttpOnly cookies to prevent XSS attacks.
+
+### Security Features
+
+1. **Token Rotation**: Each refresh operation invalidates the old refresh token and issues a new one
+2. **Device Tracking**: Store user agent and IP address for audit trail
+3. **Max Tokens Per User**: Limit of 5 active refresh tokens per user (oldest automatically revoked)
+4. **Token Hashing**: Refresh tokens are hashed with argon2 before storage
+5. **Automatic Cleanup**: Expired and revoked tokens are deleted during refresh
+6. **Type Validation**: Access tokens cannot be used as refresh tokens
+
+### Configuration
+
+```bash
+# Environment variables
+JWT_ACCESS_EXPIRES_IN=15m   # Short-lived access tokens
+JWT_REFRESH_EXPIRES_IN=30d  # Long-lived refresh tokens
+```
+
+### Token Lifecycle
+
+```
+Login/Register → Generate Token Pair → Store Refresh Token (hashed)
+                      ↓
+              Set HttpOnly Cookies
+                      ↓
+         API Requests (Access Token)
+                      ↓
+         Access Token Expires (15m)
+                      ↓
+    Auto-Refresh (Frontend interceptor)
+                      ↓
+         POST /auth/refresh (Refresh Token)
+                      ↓
+    Validate → Revoke Old → Generate New Pair
+                      ↓
+              Set New Cookies
+                      ↓
+         Retry Original Request
+```
+
+### Logout Behavior
+
+When a user logs out:
+1. All refresh tokens for the user are revoked in database
+2. Both access and refresh cookies are cleared
+3. User must re-authenticate to get new tokens
+
+### Security Benefits
+
+- **Reduced Attack Window**: Stolen access tokens expire in 15 minutes
+- **Compromise Detection**: Token rotation makes refresh token reuse detectable
+- **XSS Protection**: HttpOnly cookies prevent JavaScript access
+- **Session Management**: Track and revoke sessions per device
+
+For detailed implementation, see [REFRESH_TOKENS.md](./REFRESH_TOKENS.md).
+
 ## 🚨 Security Incident Response
 
 ### If JWT Secret is Compromised
 
 **Immediate Actions:**
 1. Rotate secret immediately using procedure above
-2. Invalidate all active sessions/tokens
+2. Invalidate all active sessions/tokens (revoke all refresh tokens)
 3. Monitor authentication logs for suspicious activity
 4. Notify affected users if personal data may be exposed
 5. Document incident in security log

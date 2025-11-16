@@ -14,7 +14,7 @@ import { ConfigService } from '../config/config.service';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.jwtSecret,
-        signOptions: { expiresIn: config.jwtExpiresIn },
+        signOptions: { expiresIn: config.jwtAccessExpiresIn },
       }),
     }),
   ],

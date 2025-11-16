@@ -40,6 +40,14 @@ export class ConfigService {
     return this.nestConfig.get('JWT_EXPIRES_IN', { infer: true });
   }
 
+  get jwtAccessExpiresIn(): string {
+    return this.nestConfig.get('JWT_ACCESS_EXPIRES_IN', { infer: true });
+  }
+
+  get jwtRefreshExpiresIn(): string {
+    return this.nestConfig.get('JWT_REFRESH_EXPIRES_IN', { infer: true });
+  }
+
   // Storage
   get storageDriver(): 'disk' | 'azure' {
     return this.nestConfig.get('STORAGE_DRIVER', { infer: true });

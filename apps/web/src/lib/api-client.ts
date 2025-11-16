@@ -15,7 +15,28 @@ interface RequestOptions extends RequestInit {
 }
 
 /**
- * Generic fetch wrapper with error handling and retry logic
+ * Refresh access token using refresh token
+ */
+async function refreshAccessToken(): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: 'POST',
+      credentials: 'include', // Send refresh token cookie
+    });
+
+    if (!response.ok) {
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Failed to refresh token:', error);
+    return false;
+  }
+}
+
+/**
+ * Generic fetch wrapper with error handling, retry logic, and automatic token refresh
  */
 async function apiRequest<T>(
   endpoint: string,
@@ -24,7 +45,7 @@ async function apiRequest<T>(
   const { retry = true, maxRetries = 3, ...fetchOptions } = options;
   let retryCount = 0;
 
-  const makeRequest = async (): Promise<T> => {
+  const makeRequest = async (isRetryAfterRefresh = false): Promise<T> => {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...(fetchOptions.headers as Record<string, string>),
@@ -54,6 +75,29 @@ async function apiRequest<T>(
           // Refresh CSRF token and retry once
           await refreshCsrfToken();
           throw new ApiError(response.status, 'CSRF token invalid or expired. Please retry.', errorData);
+        }
+
+        // Handle 401 Unauthorized - attempt token refresh
+        if (response.status === 401 && !isRetryAfterRefresh) {
+          // Don't try to refresh on auth endpoints or refresh endpoint itself
+          const isAuthEndpoint = endpoint.startsWith('/auth/login') || 
+                                 endpoint.startsWith('/auth/register') ||
+                                 endpoint.startsWith('/auth/refresh');
+          
+          if (!isAuthEndpoint) {
+            // Try to refresh the token
+            const refreshed = await refreshAccessToken();
+            
+            if (refreshed) {
+              // Retry the original request with new access token
+              return makeRequest(true);
+            } else {
+              // Refresh failed, redirect to login
+              if (typeof window !== 'undefined') {
+                window.location.href = '/login?session_expired=true';
+              }
+            }
+          }
         }
         
         throw new ApiError(response.status, response.statusText, errorData);
