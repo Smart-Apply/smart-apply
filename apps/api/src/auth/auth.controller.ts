@@ -5,6 +5,7 @@ import { Response, Request } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto } from './dto';
 import { Public } from '../common/decorators/public.decorator';
+import { UseThrottler } from '../common/decorators/throttle.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { ConfigService } from '../config/config.service';
 
@@ -17,6 +18,7 @@ export class AuthController {
   ) {}
 
   @Public()
+  @UseThrottler('auth')
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
   async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: Response) {
@@ -30,6 +32,7 @@ export class AuthController {
   }
 
   @Public()
+  @UseThrottler('auth')
   @Post('login')
   @ApiOperation({ summary: 'Login user' })
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
