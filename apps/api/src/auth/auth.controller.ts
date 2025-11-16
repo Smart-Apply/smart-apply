@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, UseGuards, Res, Req } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Res, Req, UnauthorizedException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { Request, Response } from 'express';
@@ -21,13 +21,20 @@ export class AuthController {
   @UseThrottler('auth')
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
-  async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: Response) {
-    const result = await this.authService.register(dto);
+  async register(
+    @Body() dto: RegisterDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const userAgent = req.headers['user-agent'];
+    const ipAddress = req.ip || req.socket.remoteAddress;
+    
+    const result = await this.authService.register(dto, userAgent, ipAddress);
 
-    // Set HttpOnly cookie
-    this.setAuthCookie(res, result.accessToken);
+    // Set HttpOnly cookies for both tokens
+    this.setAuthCookies(res, result.accessToken, result.refreshToken);
 
-    // Return user info only (not the token)
+    // Return user info only (not the tokens)
     return { user: result.user };
   }
 
@@ -35,14 +42,45 @@ export class AuthController {
   @UseThrottler('auth')
   @Post('login')
   @ApiOperation({ summary: 'Login user' })
-  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
-    const result = await this.authService.login(dto);
+  async login(
+    @Body() dto: LoginDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const userAgent = req.headers['user-agent'];
+    const ipAddress = req.ip || req.socket.remoteAddress;
+    
+    const result = await this.authService.login(dto, userAgent, ipAddress);
 
-    // Set HttpOnly cookie
-    this.setAuthCookie(res, result.accessToken);
+    // Set HttpOnly cookies for both tokens
+    this.setAuthCookies(res, result.accessToken, result.refreshToken);
 
-    // Return user info only (not the token)
+    // Return user info only (not the tokens)
     return { user: result.user };
+  }
+
+  @Public()
+  @Post('refresh')
+  @ApiOperation({ summary: 'Refresh access token using refresh token' })
+  async refresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const refreshToken = req.cookies?.refresh_token;
+
+    if (!refreshToken) {
+      throw new UnauthorizedException('Refresh token not found');
+    }
+
+    const userAgent = req.headers['user-agent'];
+    const ipAddress = req.ip || req.socket.remoteAddress;
+
+    const tokens = await this.authService.refresh(refreshToken, userAgent, ipAddress);
+
+    // Set new HttpOnly cookies for both tokens
+    this.setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
+
+    return { message: 'Tokens refreshed successfully' };
   }
 
   @Public()
@@ -86,15 +124,25 @@ export class AuthController {
   @Get('logout') // Changed to GET (no CSRF validation required for GET requests)
   @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Logout user (clear cookie)' })
-  async logout(@Res({ passthrough: true }) res: Response) {
+  @ApiOperation({ summary: 'Logout user (clear cookies and revoke refresh tokens)' })
+  async logout(@CurrentUser() user: any, @Res({ passthrough: true }) res: Response) {
+    // Revoke all refresh tokens for this user
+    await this.authService.revokeRefreshToken(user.id);
+
     // Force no-cache to prevent browser from caching this endpoint
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
 
-    // Clear the cookie
+    // Clear both cookies
     res.clearCookie('access_token', {
+      httpOnly: true,
+      secure: this.configService.isProduction,
+      sameSite: 'strict',
+      path: '/',
+    });
+
+    res.clearCookie('refresh_token', {
       httpOnly: true,
       secure: this.configService.isProduction,
       sameSite: 'strict',
@@ -105,16 +153,26 @@ export class AuthController {
   }
 
   /**
-   * Helper method to set authentication cookie with secure attributes
+   * Helper method to set authentication cookies with secure attributes
    */
-  private setAuthCookie(res: Response, token: string) {
+  private setAuthCookies(res: Response, accessToken: string, refreshToken: string) {
     const isProduction = this.configService.isProduction;
 
-    res.cookie('access_token', token, {
+    // Access token cookie (short-lived: 15 minutes)
+    res.cookie('access_token', accessToken, {
       httpOnly: true, // Prevents JavaScript access (XSS protection)
       secure: isProduction, // HTTPS only in production
       sameSite: 'strict', // CSRF protection
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days (matches JWT expiry)
+      maxAge: 15 * 60 * 1000, // 15 minutes (matches JWT expiry)
+      path: '/', // Available for all routes
+    });
+
+    // Refresh token cookie (long-lived: 30 days)
+    res.cookie('refresh_token', refreshToken, {
+      httpOnly: true, // Prevents JavaScript access (XSS protection)
+      secure: isProduction, // HTTPS only in production
+      sameSite: 'strict', // CSRF protection
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days (matches JWT expiry)
       path: '/', // Available for all routes
     });
   }

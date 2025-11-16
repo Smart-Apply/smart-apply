@@ -16,7 +16,10 @@ const envSchema = z.object({
       (val) => !val.includes('change') && !val.includes('REPLACE') && !val.includes('example'),
       'JWT_SECRET cannot contain placeholder text - generate with: openssl rand -base64 64',
     ),
-  JWT_EXPIRES_IN: z.string().default('7d'),
+  JWT_ACCESS_EXPIRES_IN: z.string().default('15m'), // Short-lived access tokens
+  JWT_REFRESH_EXPIRES_IN: z.string().default('30d'), // Long-lived refresh tokens
+  // Legacy support
+  JWT_EXPIRES_IN: z.string().default('15m'),
 
   // Storage
   STORAGE_DRIVER: z.enum(['disk', 'azure']).default('disk'),

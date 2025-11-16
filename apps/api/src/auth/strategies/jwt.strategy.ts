@@ -8,6 +8,7 @@ import { AuthService } from '../auth.service';
 interface JwtPayload {
   sub: string;
   email: string;
+  type?: string;
 }
 
 @Injectable()
@@ -31,6 +32,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
+    // Reject refresh tokens used as access tokens
+    if (payload.type === 'refresh') {
+      throw new UnauthorizedException('Invalid token type');
+    }
+
     const user = await this.authService.validateUser(payload.sub);
 
     if (!user) {

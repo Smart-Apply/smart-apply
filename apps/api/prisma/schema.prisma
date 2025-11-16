@@ -24,6 +24,7 @@ model User {
   profile   Profile?
   jobPostings JobPosting[]
   applications Application[]
+  refreshTokens RefreshToken[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -214,4 +215,22 @@ enum ApplicationStatus {
   GENERATING   // LLM is generating content
   READY        // PDFs generated and stored
   FAILED       // Generation failed
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique // Hashed token for security
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  isRevoked Boolean  @default(false)
+  
+  // Optional: Track device/IP for security
+  userAgent String?
+  ipAddress String?
+  
+  @@index([userId])
+  @@index([token])
+  @@map("refresh_tokens")
 }
