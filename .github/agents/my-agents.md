@@ -444,7 +444,8 @@ npm install @nestjs/terminus
 - **Development:** `http://localhost:3000,http://localhost:3001`
 - **Production:** Whitelist only your frontend domain(s)
 - **Never** use `origin: true` in production
-- Credentials enabled for cookie-based auth (future HttpOnly cookies)
+- Credentials enabled for cookie-based auth and CSRF tokens
+- **CSRF cookies:** Development uses `sameSite='lax'` for cross-port compatibility
 - See `docs/CORS_SECURITY.md` for detailed configuration
 
 ## Testing Guidelines

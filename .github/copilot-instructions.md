@@ -157,18 +157,34 @@ Use the previously defined Prisma models: **User**, **Profile**, **JobPosting**,
 - User-friendly rate limit error messages in frontend
 - No PII in logs
 
-**Recently Implemented 🆕 (Issues #91-#95)**
+**Recently Implemented 🆕 (Issues #91-#96)**
 - ✅ **#91:** Strong JWT secret generation (openssl rand -base64 64)
 - ✅ **#92:** Restrictive CORS policy with environment-based origins
 - ✅ **#94:** Password strength validation with regex enforcement
 - ✅ **#95:** Strict rate limiting on auth endpoints (5/15min)
+- ✅ **#96:** CSRF protection with csrf-csrf (optional, disabled by default)
 - 📝 **Security documentation:** CORS_SECURITY.md, SECURITY.md with rotation procedures
+
+**CSRF Protection Details (Issue #96):**
+- **Package:** csrf-csrf (Double Submit Cookie Pattern)
+- **Status:** Optional, disabled by default for MVP (`ENABLE_CSRF=false`)
+- **Configuration:**
+  - Development: `cookieName='csrf'`, `sameSite='lax'`, `secure=false` (HTTP localhost)
+  - Production: `cookieName='__Host-csrf'`, `sameSite='strict'`, `secure=true` (HTTPS)
+  - Ignored methods: GET, HEAD, OPTIONS
+  - Token header: X-CSRF-Token (64 bytes)
+- **Rate Limiting:** CSRF token endpoint uses default limit (100/15min), not strict auth limit
+- **Frontend:** Automatic token fetch, injection, and refresh in api-client.ts
+- **Logout:** Changed to GET method (no CSRF validation required)
+- **Important:** `__Host-` cookie prefix only works with HTTPS (production)
 
 **High Priority 🟡 (Should fix before launch)**
 - JWT token stored in localStorage (XSS vulnerable, should use HttpOnly cookies) - Issue #93
-- No CSRF protection on POST/PUT/DELETE endpoints - Issue #96
 - No input sanitization (should use DOMPurify frontend + validator backend) - Issue #97
 - No refresh token strategy (only access tokens) - Issue #98
+
+**Completed but Disabled by Default ✅**
+- CSRF protection implemented (Issue #96) - Set `ENABLE_CSRF=true` to enable for production
 
 **Medium/Low Priority 🟢 (Post-launch)**
 - Content Security Policy (CSP) headers
@@ -200,6 +216,12 @@ RATE_LIMIT_TTL=900           # 15 minutes in seconds
 RATE_LIMIT_MAX=100           # Standard endpoints: 100 requests per 15 min
 RATE_LIMIT_AUTH_TTL=900      # Auth endpoints: 15 minutes
 RATE_LIMIT_AUTH_MAX=5        # Auth endpoints: 5 attempts per 15 min (STRICT)
+
+# Security - CSRF Protection (Optional)
+ENABLE_CSRF=false            # Set to 'true' to enable CSRF protection (recommended for production)
+                              # When enabled, all POST/PUT/DELETE/PATCH requests require X-CSRF-Token header
+                              # GET requests are exempt (safe operations)
+                              # Frontend automatically handles token fetch and injection
 
 # Storage
 STORAGE_DRIVER=disk # or azure
