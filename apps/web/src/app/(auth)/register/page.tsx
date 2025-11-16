@@ -19,12 +19,21 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PasswordStrength } from '@/components/ui/password-strength';
 import Link from 'next/link';
+
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Name muss mindestens 2 Zeichen lang sein'),
   email: z.string().email('Ungültige E-Mail-Adresse'),
-  password: z.string().min(8, 'Passwort muss mindestens 8 Zeichen lang sein'),
+  password: z
+    .string()
+    .min(8, 'Passwort muss mindestens 8 Zeichen lang sein')
+    .regex(
+      PASSWORD_REGEX,
+      'Passwort muss einen Großbuchstaben, einen Kleinbuchstaben, eine Zahl und ein Sonderzeichen (@$!%*?&#) enthalten'
+    ),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'Passwörter stimmen nicht überein',
@@ -129,9 +138,10 @@ export default function RegisterPage() {
                   <FormItem>
                     <FormLabel>Passwort</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••" {...field} />
+                      <Input type="password" placeholder="••••••••" {...field} />
                     </FormControl>
                     <FormMessage />
+                    <PasswordStrength password={field.value} />
                   </FormItem>
                 )}
               />
