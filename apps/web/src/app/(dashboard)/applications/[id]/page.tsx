@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/auth-store';
@@ -93,16 +93,53 @@ export default function ApplicationDetailPage() {
     resume?: boolean;
     both?: boolean;
   }>({});
+  
+  // Track previous status to detect changes
+  const prevStatusRef = useRef<ApplicationStatus | null>(null);
 
   const { data: application, isLoading, error } = useQuery({
     queryKey: ['applications', applicationId],
     queryFn: () => api.applications.getById(applicationId),
     enabled: isAuthenticated && !!applicationId,
     refetchInterval: (query) => {
-      // Poll every 5 seconds if status is PENDING or GENERATING
-      return query.state.data?.status === 'PENDING' || query.state.data?.status === 'GENERATING' ? 5000 : false;
+      // Poll every 3 seconds if status is PENDING or GENERATING
+      const status = query.state.data?.status;
+      return status === 'PENDING' || status === 'GENERATING' ? 3000 : false;
     },
   });
+
+  // Detect status changes and show toast notifications
+  useEffect(() => {
+    if (!application) return;
+    
+    const prevStatus = prevStatusRef.current;
+    const currentStatus = application.status;
+    
+    // Only show toast if status actually changed
+    if (prevStatus && prevStatus !== currentStatus) {
+      const jobTitle = application.jobPosting?.title || 'Bewerbung';
+      
+      if (currentStatus === 'READY') {
+        toast.success('Bewerbung fertig! 🎉', {
+          description: `${jobTitle} ist bereit zum Download.`,
+          duration: 5000,
+        });
+      } else if (currentStatus === 'FAILED') {
+        toast.error('Generierung fehlgeschlagen', {
+          description: `${jobTitle} konnte nicht erstellt werden.`,
+          duration: 6000,
+        });
+      } else if (currentStatus === 'GENERATING') {
+        toast.info('Generierung gestartet', {
+          description: `${jobTitle} wird jetzt erstellt...`,
+          duration: 4000,
+        });
+      }
+    }
+    
+    // Update tracking
+    prevStatusRef.current = currentStatus;
+  }, [application]);
 
   const { data: files, refetch: refetchFiles } = useQuery({
     queryKey: ['applications', applicationId, 'files'],

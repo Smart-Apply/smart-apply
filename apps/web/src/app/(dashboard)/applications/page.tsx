@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useApplications } from '@/hooks/use-applications';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +10,7 @@ import { CenteredLoader } from '@/components/shared/loading';
 import { ApplicationCardSkeleton } from '@/components/shared/skeletons';
 import { Plus, FileText, Clock, CheckCircle, XCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import type { ApplicationStatus } from '@/types';
 
 function getStatusInfo(status: ApplicationStatus) {
@@ -56,26 +57,60 @@ type FilterStatus = 'all' | ApplicationStatus;
 
 export default function ApplicationsPage() {
   const router = useRouter();
-  const { data: applications, isLoading, refetch } = useApplications();
   const [selectedFilter, setSelectedFilter] = useState<FilterStatus>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  // Track previous application statuses to detect changes
+  const prevStatusesRef = useRef<Map<string, ApplicationStatus>>(new Map());
 
-  // Auto-refresh polling for applications with PENDING or GENERATING status
+  // Fetch applications with automatic polling
+  const { data: applications, isLoading, refetch } = useApplications({
+    refetchInterval: (query) => {
+      const apps = query.state.data;
+      if (!apps) return false;
+      
+      // Poll every 3 seconds if any application is PENDING or GENERATING
+      const hasActiveApplications = apps.some(
+        (app) => app.status === 'PENDING' || app.status === 'GENERATING'
+      );
+      
+      return hasActiveApplications ? 3000 : false;
+    },
+  });
+
+  // Detect status changes and show toast notifications
   useEffect(() => {
     if (!applications) return;
 
-    const hasActiveApplications = applications.some(
-      (app) => app.status === 'PENDING' || app.status === 'GENERATING'
-    );
-
-    if (hasActiveApplications) {
-      const interval = setInterval(() => {
-        refetch();
-      }, 10000); // Poll every 10 seconds
-
-      return () => clearInterval(interval);
-    }
-  }, [applications, refetch]);
+    applications.forEach((app) => {
+      const prevStatus = prevStatusesRef.current.get(app.id);
+      
+      // Only show toast if status actually changed
+      if (prevStatus && prevStatus !== app.status) {
+        const jobTitle = app.jobPosting?.title || 'Bewerbung';
+        
+        if (app.status === 'READY') {
+          toast.success('Bewerbung fertig! 🎉', {
+            description: `${jobTitle} ist bereit zum Download.`,
+            duration: 5000,
+          });
+        } else if (app.status === 'FAILED') {
+          toast.error('Generierung fehlgeschlagen', {
+            description: `${jobTitle} konnte nicht erstellt werden.`,
+            duration: 6000,
+          });
+        } else if (app.status === 'GENERATING') {
+          toast.info('Generierung gestartet', {
+            description: `${jobTitle} wird jetzt erstellt...`,
+            duration: 4000,
+          });
+        }
+      }
+      
+      // Update tracking
+      prevStatusesRef.current.set(app.id, app.status);
+    });
+  }, [applications]);
 
   // Filter applications by status
   const filteredApplications = applications?.filter((app) => {

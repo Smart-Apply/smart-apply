@@ -1,5 +1,5 @@
 import { useAuthStore } from '@/stores/auth-store';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, type UseQueryOptions } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
 import { toastSuccess, toastError } from '@/lib/toast';
 import type { Application } from '@/types';
@@ -7,13 +7,16 @@ import type { Application } from '@/types';
 /**
  * Hook to fetch all applications
  */
-export function useApplications() {
+export function useApplications(options?: {
+  refetchInterval?: UseQueryOptions<Application[]>['refetchInterval'];
+}) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   return useQuery<Application[]>({
     queryKey: ['applications'],
     queryFn: () => api.applications.list(),
     enabled: isAuthenticated,
+    refetchInterval: options?.refetchInterval,
   });
 }
 
