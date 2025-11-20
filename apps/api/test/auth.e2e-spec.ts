@@ -56,6 +56,38 @@ describe('AuthController (e2e)', () => {
         });
     });
 
+    it('should automatically create profile for new user', async () => {
+      const email = `profile-auto-${Date.now()}@example.com`;
+
+      // Register new user
+      const registerResponse = await request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .send({
+          email,
+          password: 'Test123!',
+          firstName: 'Test',
+          lastName: 'User',
+        })
+        .expect(201);
+
+      // Extract cookie from registration response
+      const setCookie = registerResponse.headers['set-cookie'];
+      const cookies = Array.isArray(setCookie) ? setCookie : [setCookie];
+
+      // Verify profile exists
+      const profileResponse = await request(app.getHttpServer())
+        .get('/api/v1/profile')
+        .set('Cookie', cookies)
+        .expect(200);
+
+      expect(profileResponse.body).toHaveProperty('id');
+      expect(profileResponse.body).toHaveProperty('userId', registerResponse.body.user.id);
+      expect(profileResponse.body).toHaveProperty('skills');
+      expect(profileResponse.body).toHaveProperty('certificates');
+      expect(profileResponse.body).toHaveProperty('experiences');
+      expect(profileResponse.body).toHaveProperty('projects');
+    });
+
     it('should reject duplicate email', async () => {
       const email = `duplicate-${Date.now()}@example.com`;
 

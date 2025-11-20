@@ -31,22 +31,33 @@ export class AuthService {
     // Hash password
     const hashedPassword = await argon2.hash(dto.password);
 
-    // Create user
-    const user = await this.prisma.user.create({
-      data: {
-        email: dto.email,
-        password: hashedPassword,
-        firstName: dto.firstName,
-        lastName: dto.lastName,
-        provider: 'local',
-      },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        createdAt: true,
-      },
+    // Create user and profile in a transaction
+    const user = await this.prisma.$transaction(async (tx) => {
+      const newUser = await tx.user.create({
+        data: {
+          email: dto.email,
+          password: hashedPassword,
+          firstName: dto.firstName,
+          lastName: dto.lastName,
+          provider: 'local',
+        },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          createdAt: true,
+        },
+      });
+
+      // Create empty profile for new user
+      await tx.profile.create({
+        data: {
+          userId: newUser.id,
+        },
+      });
+
+      return newUser;
     });
 
     // Generate tokens
