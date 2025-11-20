@@ -49,6 +49,13 @@ export class AuthService {
       },
     });
 
+    // Create empty profile for new user
+    await this.prisma.profile.create({
+      data: {
+        userId: user.id,
+      },
+    });
+
     // Generate tokens
     const tokens = await this.generateTokens(user.id, user.email, userAgent, ipAddress);
 
