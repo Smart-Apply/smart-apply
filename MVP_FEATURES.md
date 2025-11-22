@@ -24,10 +24,10 @@
 | **Storage** | File Retrieval | Return time-limited URLs for user download | ✅ Done | ✅ Done (download + ZIP) | MVP |
 | **Frontend / UX** | Dashboard | Overview of all applications | ✅ Done | ✅ Done (stats + recent apps) | MVP |
 | **Frontend / UX** | Form Wizard | Step 1: Profile → Step 2: Job → Step 3: Generate | ✅ Done | ✅ Done (ApplicationWizard) | MVP |
-| **Frontend / UX** | Loading & Error States | Indicate generation progress & errors | ✅ Done | 🔄 Real-time updates (polling/SSE) | MVP |
+| **Frontend / UX** | Loading & Error States | Indicate generation progress & errors | ✅ Done | ✅ Done (Real-time updates polling/SSE) | MVP |
 | **Frontend / UX** | Download PDFs | Buttons for CL/CV | ✅ Done | ✅ Done (+ PDF preview modal) | MVP |
 | **Frontend / UX** | PDF Preview | Preview PDFs before download | ✅ Done | ✅ Done (react-pdf modal) | MVP |
-| **Frontend / UX** | PDF Editing | Edit PDFs with Tiptap | ❌ Not yet | 🟢 Optional (Post-MVP) | Phase 2 |
+| **Frontend / UX** | PDF Editing | Edit PDFs with Tiptap | ✅ Done | 🟢 Optional (Post-MVP) | Phase 2 |
 | **System / DevOps** | Environment Config & Key Vault | Managed secrets for DB, LLM, Blob, Service Bus | ✅ Done | — | MVP |
 | **System / DevOps** | Rate Limiting | Prevent abuse of free tier | ✅ Done | — | MVP |
 | **System / DevOps** | Logging & Error Tracking | Centralized error filter + logs | ✅ Done | — | MVP |
