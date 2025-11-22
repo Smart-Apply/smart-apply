@@ -19,7 +19,11 @@ import { ApplicationCardSkeleton } from '@/components/shared/skeletons';
 import { Plus, FileText, Clock, CheckCircle, XCircle, AlertCircle, RefreshCw, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import type { ApplicationStatus } from '@/types';
+import type { ApplicationGenerationStatus } from '@/types';
+import { StatusDropdown } from '@/components/applications/status-dropdown';
+
+// Keep using ApplicationStatus locally for generation status
+type ApplicationStatus = ApplicationGenerationStatus;
 
 function getStatusInfo(status: ApplicationStatus) {
   switch (status) {
@@ -236,18 +240,27 @@ export default function ApplicationsPage() {
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <CardTitle className="text-xl">
-                              {application.jobPosting?.title || `Bewerbung #${application.id}`}
+                              {application.title || `Bewerbung #${application.id.substring(0, 8)}`}
                             </CardTitle>
-                            <CardDescription className="mt-1">
-                              {application.jobPosting?.company && (
-                                <span className="font-medium">{application.jobPosting.company}</span>
-                              )}
-                              {application.jobPosting?.location && (
-                                <span className="text-gray-500">
-                                  {' • '}
-                                  {application.jobPosting.location}
-                                </span>
-                              )}
+                            <CardDescription className="mt-1 space-y-1">
+                              <div>
+                                {application.jobPosting?.company && (
+                                  <span className="font-medium">{application.jobPosting.company}</span>
+                                )}
+                                {application.jobPosting?.location && (
+                                  <span className="text-gray-500">
+                                    {' • '}
+                                    {application.jobPosting.location}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <StatusDropdown
+                                  applicationId={application.id}
+                                  currentStatus={application.applicationStatus}
+                                  variant="badge"
+                                />
+                              </div>
                             </CardDescription>
                           </div>
                           <Badge variant={statusInfo.variant} className="ml-4">

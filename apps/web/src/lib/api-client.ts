@@ -304,5 +304,17 @@ export const api = {
       apiRequest<Application>(`/applications/${id}/export`, {
         method: 'POST',
       }),
+
+    updateStatus: (id: string, status: import('@/types').ApplicationTrackingStatus) =>
+      apiRequest<Application>(`/applications/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      }),
+
+    updateTitle: (id: string, title: string) =>
+      apiRequest<Application>(`/applications/${id}/title`, {
+        method: 'PATCH',
+        body: JSON.stringify({ title }),
+      }),
   },
 };

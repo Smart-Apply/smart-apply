@@ -183,13 +183,31 @@ export interface JobPosting {
 }
 
 // Application Types
-export type ApplicationStatus = 'PENDING' | 'GENERATING' | 'READY' | 'FAILED';
+
+// PDF Generation Status (system-facing)
+export type ApplicationGenerationStatus = 'PENDING' | 'GENERATING' | 'READY' | 'FAILED';
+
+// Application Tracking Status (user-facing)
+export type ApplicationTrackingStatus = 'APPLIED' | 'INTERVIEW' | 'ACCEPTED' | 'REJECTED';
+
+// Legacy alias for backward compatibility
+export type ApplicationStatus = ApplicationGenerationStatus;
 
 export interface Application {
   id: string;
   userId: string;
   jobPostingId: string;
-  status: ApplicationStatus;
+  
+  // Custom title (LLM-generated, user editable)
+  title?: string;
+  
+  // Application tracking status (user-facing)
+  applicationStatus: ApplicationTrackingStatus;
+  statusUpdatedAt?: string;
+  
+  // PDF generation status (system-facing)
+  status: ApplicationGenerationStatus;
+  
   notes?: string;
   coverLetterText?: string;
   resumeText?: string;
@@ -206,7 +224,7 @@ export interface Application {
 // Application Status Response (lightweight for polling)
 export interface ApplicationStatusResponse {
   id: string;
-  status: ApplicationStatus;
+  status: ApplicationGenerationStatus;
   errorMessage: string | null;
   updatedAt: string;
 }

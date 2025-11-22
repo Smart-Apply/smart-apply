@@ -26,10 +26,15 @@ import {
   Package,
 } from 'lucide-react';
 import Link from 'next/link';
-import type { ApplicationStatus } from '@/types';
+import type { ApplicationGenerationStatus } from '@/types';
 import { toast } from 'sonner';
 import { PDFPreviewModal } from '@/components/pdf/pdf-preview-modal';
 import { handleDownload, handleZipDownload, generateFilename } from '@/lib/pdf-utils';
+import { EditableTitle } from '@/components/applications/editable-title';
+import { StatusDropdown } from '@/components/applications/status-dropdown';
+
+// Local alias for generation status
+type ApplicationStatus = ApplicationGenerationStatus;
 
 function getStatusInfo(status: ApplicationStatus) {
   switch (status) {
@@ -355,6 +360,22 @@ export default function ApplicationDetailPage() {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Zurück zu Bewerbungen
         </Button>
+      </div>
+
+      {/* Application Header with Editable Title and Status */}
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1">
+          <EditableTitle
+            applicationId={applicationId}
+            initialTitle={application.title}
+            fallbackId={applicationId}
+          />
+        </div>
+        <StatusDropdown
+          applicationId={applicationId}
+          currentStatus={application.applicationStatus}
+          variant="dropdown"
+        />
       </div>
 
       {/* Status Banner */}
