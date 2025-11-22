@@ -15,10 +15,12 @@ const nextConfig: NextConfig = {
     // API endpoints for Content-Security-Policy connect-src
     // Development: Allow localhost for API and HMR WebSocket
     // Production: Use environment variable or default to same-origin
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
+    // Extract just the origin (protocol + host + port) for CSP
+    const apiOrigin = new URL(apiBaseUrl).origin;
     const connectSrc = isDevelopment 
-      ? `'self' ${apiUrl} ws://localhost:3001 ws://localhost:3000` 
-      : `'self' ${apiUrl}`;
+      ? `'self' ${apiOrigin} ws://localhost:3001 ws://localhost:3000` 
+      : `'self' ${apiOrigin}`;
 
     return [
       {
