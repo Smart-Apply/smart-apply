@@ -238,12 +238,12 @@ export class ApplicationsService {
     // Delete files from storage if they exist
     try {
       if (application.coverLetterFileKey) {
-        await this.storageService.deleteFile(application.coverLetterFileKey);
+        await this.storageService.delete(application.coverLetterFileKey);
         this.logger.log(`Deleted cover letter: ${application.coverLetterFileKey}`);
       }
 
       if (application.resumeFileKey) {
-        await this.storageService.deleteFile(application.resumeFileKey);
+        await this.storageService.delete(application.resumeFileKey);
         this.logger.log(`Deleted resume: ${application.resumeFileKey}`);
       }
     } catch (error) {
