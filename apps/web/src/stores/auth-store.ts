@@ -3,9 +3,12 @@ import { persist } from 'zustand/middleware';
 import { clearCsrfToken } from '@/lib/csrf';
 
 interface User {
-  id: number;
+  id: string;
   email: string;
-  name: string;
+  firstName?: string;
+  lastName?: string;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 interface AuthState {

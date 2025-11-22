@@ -23,7 +23,8 @@ import type { Skill, Experience, Education, Certificate, Project } from '@/types
 
 // Validation schema for basic profile info
 const profileFormSchema = z.object({
-  name: z.string().min(2, 'Name muss mindestens 2 Zeichen lang sein'),
+  firstName: z.string().min(2, 'Vorname muss mindestens 2 Zeichen lang sein'),
+  lastName: z.string().min(2, 'Nachname muss mindestens 2 Zeichen lang sein'),
   email: z.string().email('Ungültige E-Mail-Adresse'),
   phone: z.string().optional(),
   location: z.string().optional(),
@@ -50,7 +51,8 @@ export default function ProfileEditPage() {
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
-      name: '',
+      firstName: '',
+      lastName: '',
       email: '',
       phone: '',
       location: '',
@@ -64,7 +66,8 @@ export default function ProfileEditPage() {
   useEffect(() => {
     if (user && profile) {
       form.reset({
-        name: user.name || '',
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
         email: user.email || '',
         phone: profile.phone || '',
         location: profile.location || '',
@@ -154,7 +157,8 @@ export default function ProfileEditPage() {
       }));
       
       await updateProfile.mutateAsync({
-        fullName: data.name || undefined,
+        firstName: data.firstName || undefined,
+        lastName: data.lastName || undefined,
         phone: data.phone?.trim() || undefined,
         location: data.location?.trim() || undefined,
         linkedinUrl: data.linkedIn?.trim() || undefined,
@@ -235,16 +239,34 @@ export default function ProfileEditPage() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div className="grid gap-6 md:grid-cols-2">
-                {/* Name */}
+                {/* Vorname */}
                 <FormField
                   control={form.control}
-                  name="name"
+                  name="firstName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Name *</FormLabel>
+                      <FormLabel>Vorname *</FormLabel>
                       <FormControl>
                         <Input
                           placeholder="Max Mustermann"
+                          {...field}
+                          disabled={updateProfile.isPending}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                {/* Nachname */}
+                <FormField
+                  control={form.control}
+                  name="lastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nachname *</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Mustermann"
                           {...field}
                           disabled={updateProfile.isPending}
                         />

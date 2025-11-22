@@ -89,8 +89,10 @@ export default function ProfilePage() {
             <div className="flex items-start gap-3">
               <User className="mt-0.5 h-5 w-5 text-gray-500" />
               <div>
-                <p className="text-sm font-medium text-gray-500">Name</p>
-                <p className="text-base">{user?.name || 'Nicht angegeben'}</p>
+                <p className="text-sm font-medium text-gray-500">Vorname</p>
+                <p className="text-base">{user?.firstName || 'Nicht angegeben'}</p>
+                <p className="text-sm font-medium text-gray-500">Nachname</p>
+                <p className="text-base">{user?.lastName || 'Nicht angegeben'}</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
