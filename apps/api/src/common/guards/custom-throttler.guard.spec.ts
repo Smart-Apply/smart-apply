@@ -8,6 +8,7 @@ describe('CustomThrottlerGuard', () => {
   let reflector: Reflector;
   let mockStorageService: any;
   let mockOptions: any;
+  let mockAuditLogger: any;
 
   beforeEach(() => {
     mockStorageService = {
@@ -22,8 +23,12 @@ describe('CustomThrottlerGuard', () => {
       ],
     };
 
+    mockAuditLogger = {
+      logRateLimitViolation: jest.fn(),
+    };
+
     reflector = new Reflector();
-    guard = new CustomThrottlerGuard(mockOptions, mockStorageService, reflector);
+    guard = new CustomThrottlerGuard(mockOptions, mockStorageService, reflector, mockAuditLogger);
   });
 
   describe('getThrottlers', () => {

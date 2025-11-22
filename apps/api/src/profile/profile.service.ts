@@ -1,11 +1,16 @@
 import { Injectable, NotFoundException, InternalServerErrorException } from '@nestjs/common';
+import { Request } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ProfileResponseDto } from './dto/profile-response.dto';
+import { AuditLoggerService } from '../common/audit-logger';
 
 @Injectable()
 export class ProfileService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditLogger: AuditLoggerService,
+  ) {}
 
   async getProfile(userId: string): Promise<ProfileResponseDto> {
     const profile = await this.prisma.profile.findUnique({
@@ -36,7 +41,7 @@ export class ProfileService {
     return this.mapToResponseDto(profile);
   }
 
-  async updateProfile(userId: string, dto: UpdateProfileDto): Promise<ProfileResponseDto> {
+  async updateProfile(userId: string, dto: UpdateProfileDto, req?: Request): Promise<ProfileResponseDto> {
     try {
       // Start transaction to update profile and nested relations
       const updatedProfile = await this.prisma.$transaction(async (tx) => {
@@ -311,6 +316,19 @@ export class ProfileService {
 
       if (!updatedProfile) {
         throw new InternalServerErrorException('Failed to update profile');
+      }
+
+      // Log profile update event
+      if (req) {
+        const updatedFields = Object.keys(dto).filter(key => dto[key as keyof UpdateProfileDto] !== undefined);
+        this.auditLogger.logProfileUpdate(userId, req, {
+          updatedFields,
+          hasSkills: dto.skills !== undefined,
+          hasExperiences: dto.experiences !== undefined,
+          hasCertificates: dto.certificates !== undefined,
+          hasEducation: dto.education !== undefined,
+          hasProjects: dto.projects !== undefined,
+        });
       }
 
       return this.mapToResponseDto(updatedProfile);

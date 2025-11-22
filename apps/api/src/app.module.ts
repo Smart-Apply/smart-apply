@@ -15,11 +15,13 @@ import { ApplicationsModule } from './applications/applications.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
 import { ConfigService } from './config/config.service';
+import { AuditLoggerModule } from './common/audit-logger';
 
 @Module({
   imports: [
     ConfigModule,
     PrismaModule,
+    AuditLoggerModule,
     ThrottlerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({

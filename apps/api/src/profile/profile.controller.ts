@@ -1,5 +1,6 @@
-import { Controller, Get, Put, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Put, Body, UseGuards, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Request } from 'express';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { ProfileService } from './profile.service';
@@ -36,7 +37,8 @@ export class ProfileController {
   async updateProfile(
     @CurrentUser('id') userId: string,
     @Body() dto: UpdateProfileDto,
+    @Req() req: Request,
   ): Promise<ProfileResponseDto> {
-    return this.profileService.updateProfile(userId, dto);
+    return this.profileService.updateProfile(userId, dto, req);
   }
 }

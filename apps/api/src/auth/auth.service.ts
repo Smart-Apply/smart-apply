@@ -4,6 +4,8 @@ import * as argon2 from 'argon2';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto, LoginDto } from './dto';
 import { ConfigService } from '../config/config.service';
+import { AuditLoggerService } from '../common/audit-logger';
+import { Request } from 'express';
 
 interface TokenPair {
   accessToken: string;
@@ -16,9 +18,10 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private auditLogger: AuditLoggerService,
   ) {}
 
-  async register(dto: RegisterDto, userAgent?: string, ipAddress?: string) {
+  async register(dto: RegisterDto, userAgent?: string, ipAddress?: string, req?: Request) {
     // Check if user exists
     const existing = await this.prisma.user.findUnique({
       where: { email: dto.email },
@@ -60,6 +63,11 @@ export class AuthService {
       return newUser;
     });
 
+    // Log registration event
+    if (req) {
+      this.auditLogger.logRegistration(user.email, user.id, req);
+    }
+
     // Generate tokens
     const tokens = await this.generateTokens(user.id, user.email, userAgent, ipAddress);
 
@@ -69,13 +77,17 @@ export class AuthService {
     };
   }
 
-  async login(dto: LoginDto, userAgent?: string, ipAddress?: string) {
+  async login(dto: LoginDto, userAgent?: string, ipAddress?: string, req?: Request) {
     // Find user
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
 
     if (!user || !user.password) {
+      // Log failed login attempt
+      if (req) {
+        this.auditLogger.logLoginAttempt(dto.email, false, req);
+      }
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -83,7 +95,16 @@ export class AuthService {
     const valid = await argon2.verify(user.password, dto.password);
 
     if (!valid) {
+      // Log failed login attempt
+      if (req) {
+        this.auditLogger.logLoginAttempt(dto.email, false, req, user.id);
+      }
       throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // Log successful login
+    if (req) {
+      this.auditLogger.logLoginAttempt(dto.email, true, req, user.id);
     }
 
     // Generate tokens
@@ -100,7 +121,7 @@ export class AuthService {
     };
   }
 
-  async refresh(refreshToken: string, userAgent?: string, ipAddress?: string): Promise<TokenPair> {
+  async refresh(refreshToken: string, userAgent?: string, ipAddress?: string, req?: Request): Promise<TokenPair> {
     // Verify refresh token signature
     let payload: any;
     try {
@@ -148,6 +169,11 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token not found or revoked');
     }
 
+    // Log refresh token usage
+    if (req) {
+      this.auditLogger.logRefreshTokenUsed(payload.sub, payload.email, req);
+    }
+
     // Revoke the specific refresh token (rotation strategy)
     await this.prisma.refreshToken.update({
       where: { id: matchingToken.id },
@@ -174,6 +200,14 @@ export class AuthService {
     const tokens = await this.generateTokens(payload.sub, payload.email, userAgent, ipAddress);
 
     return tokens;
+  }
+
+  async logout(userId: string, req: Request): Promise<void> {
+    // Log logout event
+    this.auditLogger.logLogout(userId, req);
+    
+    // Revoke all refresh tokens for this user
+    await this.revokeRefreshToken(userId);
   }
 
   async revokeRefreshToken(userId: string, tokenId?: string): Promise<void> {

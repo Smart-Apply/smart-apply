@@ -29,7 +29,7 @@ export class AuthController {
     const userAgent = req.headers['user-agent'];
     const ipAddress = req.ip || req.socket.remoteAddress;
     
-    const result = await this.authService.register(dto, userAgent, ipAddress);
+    const result = await this.authService.register(dto, userAgent, ipAddress, req);
 
     // Set HttpOnly cookies for both tokens
     this.setAuthCookies(res, result.accessToken, result.refreshToken);
@@ -50,7 +50,7 @@ export class AuthController {
     const userAgent = req.headers['user-agent'];
     const ipAddress = req.ip || req.socket.remoteAddress;
     
-    const result = await this.authService.login(dto, userAgent, ipAddress);
+    const result = await this.authService.login(dto, userAgent, ipAddress, req);
 
     // Set HttpOnly cookies for both tokens
     this.setAuthCookies(res, result.accessToken, result.refreshToken);
@@ -75,7 +75,7 @@ export class AuthController {
     const userAgent = req.headers['user-agent'];
     const ipAddress = req.ip || req.socket.remoteAddress;
 
-    const tokens = await this.authService.refresh(refreshToken, userAgent, ipAddress);
+    const tokens = await this.authService.refresh(refreshToken, userAgent, ipAddress, req);
 
     // Set new HttpOnly cookies for both tokens
     this.setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
@@ -125,9 +125,9 @@ export class AuthController {
   @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Logout user (clear cookies and revoke refresh tokens)' })
-  async logout(@CurrentUser() user: any, @Res({ passthrough: true }) res: Response) {
-    // Revoke all refresh tokens for this user
-    await this.authService.revokeRefreshToken(user.id);
+  async logout(@CurrentUser() user: any, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    // Log logout event
+    await this.authService.logout(user.id, req);
 
     // Force no-cache to prevent browser from caching this endpoint
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');

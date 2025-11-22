@@ -1,7 +1,8 @@
-import { Injectable, ExecutionContext } from '@nestjs/common';
+import { Injectable, ExecutionContext, Inject } from '@nestjs/common';
 import { ThrottlerGuard, ThrottlerException } from '@nestjs/throttler';
 import { Reflector } from '@nestjs/core';
 import { THROTTLER_NAME_KEY } from '../decorators/throttle.decorator';
+import { AuditLoggerService } from '../audit-logger';
 
 @Injectable()
 export class CustomThrottlerGuard extends ThrottlerGuard {
@@ -9,6 +10,7 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
     protected readonly options: any,
     protected readonly storageService: any,
     protected readonly reflector: Reflector,
+    @Inject(AuditLoggerService) private readonly auditLogger: AuditLoggerService,
   ) {
     super(options, storageService, reflector);
   }
@@ -86,6 +88,10 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
         response.setHeader('X-RateLimit-Remaining', '0');
 
         if (error instanceof ThrottlerException) {
+          // Log rate limit violation
+          const user = request.user;
+          this.auditLogger.logRateLimitViolation(user?.id, request.url, request);
+          
           // Add Retry-After header
           response.setHeader('Retry-After', Math.ceil(throttler.ttl / 1000));
         }
