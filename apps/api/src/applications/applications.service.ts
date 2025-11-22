@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException, Logger, MessageEvent } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+  MessageEvent,
+} from '@nestjs/common';
 import type { Application } from '@prisma/client';
 import { Observable, interval } from 'rxjs';
 import { map, switchMap, takeWhile } from 'rxjs/operators';
