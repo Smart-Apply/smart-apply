@@ -257,11 +257,13 @@ For detailed implementation, see [REFRESH_TOKENS.md](./REFRESH_TOKENS.md).
 - Defense-in-depth: Backend + Frontend + React's built-in escaping
 
 ### CORS & Headers
+
+#### Backend (NestJS API)
 - ✅ **CORS origins restricted** to specified domains (see [CORS_SECURITY.md](./CORS_SECURITY.md))
 - Configuration: `CORS_ORIGINS` environment variable with comma-separated list
 - Allowed methods: GET, POST, PUT, DELETE, PATCH
 - Allowed headers: Content-Type, Authorization
-- Enable **security headers** (CSP, X-Frame-Options, HSTS) via Helmet
+- ✅ **Security headers** via Helmet middleware (X-Frame-Options, X-Content-Type-Options, etc.)
 - Use **HTTPS** only in production (enforce via headers)
 
 **Production Checklist:**
@@ -269,6 +271,63 @@ For detailed implementation, see [REFRESH_TOKENS.md](./REFRESH_TOKENS.md).
 - [ ] Verify all origins use HTTPS
 - [ ] Test CORS preflight requests
 - [ ] Document all allowed origins
+
+#### Frontend (Next.js)
+- ✅ **Content-Security-Policy (CSP)** - Controls which resources can be loaded
+  - `default-src 'self'` - Only allow same-origin resources by default
+  - `script-src` - Allows inline scripts for Next.js runtime (development includes `unsafe-eval` for HMR)
+  - `style-src 'self' 'unsafe-inline'` - Required for Tailwind CSS and styled-components
+  - `img-src 'self' data: https:` - Images from same origin, data URIs, and HTTPS sources
+  - `connect-src` - Environment-aware API connections (localhost in dev, production URL in prod)
+  - `frame-ancestors 'none'` - Prevent iframe embedding
+  - `form-action 'self'` - Restrict form submissions to same origin
+- ✅ **X-Frame-Options: DENY** - Additional clickjacking protection (defense in depth with CSP)
+- ✅ **X-Content-Type-Options: nosniff** - Prevent MIME type sniffing attacks
+- ✅ **Referrer-Policy: strict-origin-when-cross-origin** - Control referrer information leakage
+- ✅ **Permissions-Policy** - Disable sensitive browser features (camera, microphone, geolocation)
+- ✅ **Strict-Transport-Security (HSTS)** - Force HTTPS (production only, max-age=1 year)
+
+**Configuration:**
+```typescript
+// apps/web/next.config.ts
+async headers() {
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+  
+  // Environment-aware CSP
+  // Development: Allows localhost + HMR WebSocket + unsafe-eval
+  // Production: Strict CSP with production API URL
+  
+  return [{ source: '/:path*', headers: [...] }];
+}
+```
+
+**Testing Security Headers:**
+```bash
+# Local development
+npm run dev
+curl -I http://localhost:3001
+
+# Check CSP violations in browser DevTools Console
+# Network tab: Verify response headers
+
+# Online tools
+# https://securityheaders.com/ - Overall security posture
+# https://csp-evaluator.withgoogle.com/ - CSP-specific evaluation
+```
+
+**CSP Challenges with Next.js:**
+- Next.js requires `unsafe-eval` in development for Hot Module Replacement (HMR)
+- Inline styles from Tailwind CSS require `unsafe-inline` for `style-src`
+- Production build removes `unsafe-eval` for enhanced security
+- Consider using nonce-based CSP for stricter inline script control (post-MVP)
+
+**Production Checklist:**
+- [ ] Verify CSP headers are present in production deployment
+- [ ] Test application functionality with strict CSP (no console errors)
+- [ ] Confirm HSTS header is active (HTTPS only)
+- [ ] Validate no CSP violations in browser DevTools
+- [ ] Test iframe embedding is blocked (X-Frame-Options + frame-ancestors)
 
 ### Monitoring & Logging
 - Log **authentication failures** and suspicious patterns
@@ -280,6 +339,10 @@ For detailed implementation, see [REFRESH_TOKENS.md](./REFRESH_TOKENS.md).
 
 - [OWASP JWT Security Best Practices](https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html)
 - [OWASP XSS Prevention Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html)
+- [OWASP Clickjacking Defense](https://cheatsheetseries.owasp.org/cheatsheets/Clickjacking_Defense_Cheat_Sheet.html)
+- [Content Security Policy (CSP) Reference](https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP)
+- [Security Headers Checker](https://securityheaders.com/)
+- [CSP Evaluator](https://csp-evaluator.withgoogle.com/)
 - [RFC 7519: JWT Specification](https://tools.ietf.org/html/rfc7519#section-11.2)
 - [Azure Key Vault Best Practices](https://learn.microsoft.com/en-us/azure/key-vault/general/best-practices)
 - [NIST Password Guidelines](https://pages.nist.gov/800-63-3/sp800-63b.html)
@@ -298,7 +361,9 @@ Before deploying to production, verify:
 - [ ] Rate limiting enabled (especially on `/auth/*` endpoints)
 - [ ] Input sanitization applied to all user inputs (backend & frontend)
 - [ ] XSS protection tested with common attack vectors
-- [ ] Security headers configured (Helmet middleware active)
+- [ ] Backend security headers configured (Helmet middleware active)
+- [ ] Frontend security headers configured (CSP, X-Frame-Options, HSTS)
+- [ ] CSP violations tested (no errors in browser console)
 - [ ] Application Insights enabled for monitoring
 - [ ] Secret rotation procedure documented and tested
 - [ ] Incident response plan in place
@@ -306,6 +371,6 @@ Before deploying to production, verify:
 
 ---
 
-**Last Updated:** 2025-11-15  
+**Last Updated:** 2025-11-22  
 **Maintained By:** Security Team  
 **Review Frequency:** Quarterly or after security incidents
