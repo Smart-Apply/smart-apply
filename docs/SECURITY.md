@@ -241,6 +241,9 @@ For detailed implementation, see [REFRESH_TOKENS.md](./REFRESH_TOKENS.md).
 ### Authentication
 - ✅ **HttpOnly cookies** for JWT token storage (prevents XSS, implemented)
 - ✅ **CSRF protection** available (csrf-csrf package, optional with `ENABLE_CSRF=true`)
+  - **Exception:** `/auth/refresh` endpoint is excluded from CSRF validation
+  - Reason: Refresh endpoint is already protected by HttpOnly refresh_token cookie
+  - Prevents chicken-and-egg problem: User can't get CSRF token without valid access token
 - ✅ **Rate limiting** on authentication endpoints (5 attempts/15min, strict)
 - ✅ **Strong password policies** enforced (8+ chars, mixed case, numbers, symbols)
 - Consider **2FA** for high-value accounts (post-MVP)

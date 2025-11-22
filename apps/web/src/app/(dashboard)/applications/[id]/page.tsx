@@ -97,16 +97,32 @@ export default function ApplicationDetailPage() {
   // Track previous status to detect changes
   const prevStatusRef = useRef<ApplicationStatus | null>(null);
 
-  const { data: application, isLoading, error } = useQuery({
+  // Main query: Load full application details (no polling)
+  const { data: application, isLoading, error, refetch } = useQuery({
     queryKey: ['applications', applicationId],
     queryFn: () => api.applications.getById(applicationId),
     enabled: isAuthenticated && !!applicationId,
+  });
+
+  // Status polling: Lightweight status checks (600/min rate limit)
+  const { data: statusData } = useQuery({
+    queryKey: ['applications', applicationId, 'status'],
+    queryFn: () => api.applications.getStatus(applicationId),
+    enabled: isAuthenticated && !!applicationId && (application?.status === 'PENDING' || application?.status === 'GENERATING'),
     refetchInterval: (query) => {
-      // Poll every 3 seconds if status is PENDING or GENERATING
+      // Poll every 10 seconds if status is PENDING or GENERATING
       const status = query.state.data?.status;
-      return status === 'PENDING' || status === 'GENERATING' ? 3000 : false;
+      return status === 'PENDING' || status === 'GENERATING' ? 10000 : false;
     },
   });
+
+  // Update main application status when status poll detects change
+  useEffect(() => {
+    if (statusData && application && statusData.status !== application.status) {
+      // Status changed - refetch full application details
+      refetch();
+    }
+  }, [statusData, application, refetch]);
 
   // Detect status changes and show toast notifications
   useEffect(() => {
@@ -350,9 +366,19 @@ export default function ApplicationDetailPage() {
               Status: {statusInfo.label}
             </h3>
             {application.status === 'PENDING' && (
-              <p className="text-sm text-gray-600 mt-1">
-                Deine Bewerbung wird in die Warteschlange eingereiht...
-              </p>
+              <div className="space-y-2">
+                <p className="text-sm text-gray-600">
+                  Deine Bewerbung wurde erstellt. Passe nun deinen Lebenslauf und dein Anschreiben an.
+                </p>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => router.push(`/applications/${applicationId}/edit`)}
+                  className="mt-2"
+                >
+                  Unterlagen anpassen & Export starten
+                </Button>
+              </div>
             )}
             {application.status === 'GENERATING' && (
               <p className="text-sm text-gray-600 mt-1">

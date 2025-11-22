@@ -97,8 +97,20 @@ async function bootstrap() {
 
   // Apply CSRF protection globally if enabled (after API prefix)
   // This will validate CSRF tokens on all POST, PUT, DELETE, PATCH requests
+  // Exception: /auth/refresh is excluded because it's already protected by HttpOnly cookie
   if (configService.enableCsrf && doubleCsrfProtection) {
-    app.use(doubleCsrfProtection);
+    app.use((req, res, next) => {
+      // Skip CSRF validation for /auth/refresh endpoint
+      // The refresh endpoint is already protected by the HttpOnly refresh_token cookie
+      // Adding CSRF here would create a chicken-and-egg problem:
+      // - User needs valid access token to get CSRF token
+      // - But refresh endpoint is called when access token is expired
+      if (req.path === '/api/v1/auth/refresh') {
+        return next();
+      }
+      // Apply CSRF protection to all other routes
+      doubleCsrfProtection(req, res, next);
+    });
   }
 
   // Swagger documentation

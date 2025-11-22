@@ -67,7 +67,7 @@ const envSchema = z.object({
 
   // Rate Limiting - Default (general API endpoints)
   RATE_LIMIT_TTL: z.string().default('60'), // 1 minute in seconds (shorter window for development)
-  RATE_LIMIT_MAX: z.string().default('1000'), // Much higher for development (can be lowered in production)
+  RATE_LIMIT_MAX: z.string().default('5000'), // Very high for development to avoid blocking during testing (lower in production)
 
   // Rate Limiting - Auth endpoints (stricter)
   RATE_LIMIT_AUTH_TTL: z.string().default('900'), // 15 minutes in seconds

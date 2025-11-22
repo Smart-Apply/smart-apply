@@ -34,6 +34,11 @@ import { ConfigService } from './config/config.service';
             ttl: config.rateLimitAuthTtl,
             limit: config.rateLimitAuthMax,
           },
+          {
+            name: 'health-check',
+            ttl: 60000, // 60 seconds
+            limit: 600, // 600 requests per minute (10/sec) - very generous for polling
+          },
         ],
       }),
     }),

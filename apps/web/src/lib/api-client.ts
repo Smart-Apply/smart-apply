@@ -3,8 +3,17 @@
  * Base URL: http://localhost:3000/api/v1
  */
 
-import type { User, Profile, JobPosting, Application, UpdateProfileDto, ApplicationFilesResponse } from '@/types';
-import { ApiError, NetworkError, shouldRetry, getRetryDelay } from './errors';
+import type {
+  User,
+  Profile,
+  JobPosting,
+  Application,
+  UpdateProfileDto,
+  ApplicationFilesResponse,
+  ApplicationStatusResponse,
+  ResumeData,
+} from '@/types';
+import { ApiError, NetworkError, shouldRetry, getRetryDelay, isPermanentAuthFailure } from './errors';
 import { getCsrfToken, refreshCsrfToken } from './csrf';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
@@ -14,25 +23,47 @@ interface RequestOptions extends RequestInit {
   maxRetries?: number;
 }
 
+// Track if a refresh is already in progress to prevent concurrent refresh requests
+let isRefreshing = false;
+let refreshPromise: Promise<boolean> | null = null;
+
 /**
  * Refresh access token using refresh token
+ * Uses singleton pattern to prevent concurrent refresh requests
  */
 async function refreshAccessToken(): Promise<boolean> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
-      method: 'POST',
-      credentials: 'include', // Send refresh token cookie
-    });
-
-    if (!response.ok) {
-      return false;
-    }
-
-    return true;
-  } catch (error) {
-    console.error('Failed to refresh token:', error);
-    return false;
+  // If already refreshing, return the existing promise
+  if (isRefreshing && refreshPromise) {
+    return refreshPromise;
   }
+
+  // Start new refresh
+  isRefreshing = true;
+  refreshPromise = (async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include', // Send refresh token cookie
+      });
+
+      if (!response.ok) {
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Failed to refresh token:', error);
+      return false;
+    } finally {
+      // Reset refresh state after a short delay to allow token propagation
+      setTimeout(() => {
+        isRefreshing = false;
+        refreshPromise = null;
+      }, 100);
+    }
+  })();
+
+  return refreshPromise;
 }
 
 /**
@@ -72,29 +103,54 @@ async function apiRequest<T>(
         
         // Handle CSRF token errors (403 Forbidden with CSRF error)
         if (response.status === 403 && errorData?.code === 'EBADCSRFTOKEN') {
-          // Refresh CSRF token and retry once
-          await refreshCsrfToken();
-          throw new ApiError(response.status, 'CSRF token invalid or expired. Please retry.', errorData);
+          // Refresh CSRF token and retry ONCE (only if not already retried)
+          if (!isRetryAfterRefresh) {
+            await refreshCsrfToken();
+            return makeRequest(true); // Retry with new CSRF token
+          }
+          // If already retried, throw error (don't retry infinitely)
+          throw new ApiError(response.status, 'CSRF token invalid or expired after retry.', errorData);
         }
 
-        // Handle 401 Unauthorized - attempt token refresh
-        if (response.status === 401 && !isRetryAfterRefresh) {
-          // Don't try to refresh on auth endpoints or refresh endpoint itself
-          const isAuthEndpoint = endpoint.startsWith('/auth/login') || 
-                                 endpoint.startsWith('/auth/register') ||
-                                 endpoint.startsWith('/auth/refresh');
+        // Handle 401 Unauthorized
+        if (response.status === 401) {
+          // Check for permanent authentication failures (user/token deleted from DB)
+          // These should NOT trigger token refresh attempts
+          const errorMessage = errorData?.message || '';
+          const isPermAuthFailure = 
+            errorMessage.includes('User not found') ||
+            errorMessage.includes('Refresh token not found') ||
+            errorMessage.includes('token not found or revoked');
           
-          if (!isAuthEndpoint) {
-            // Try to refresh the token
-            const refreshed = await refreshAccessToken();
+          if (isPermAuthFailure) {
+            // User or tokens were deleted from database - redirect to login immediately
+            // Don't attempt refresh (it will fail anyway and cause retry loops)
+            if (typeof window !== 'undefined') {
+              console.warn('Authentication data invalid (user/token deleted). Redirecting to login...');
+              window.location.href = '/login?session_expired=true';
+            }
+            throw new ApiError(response.status, response.statusText, errorData);
+          }
+          
+          // For other 401 errors, attempt token refresh (only once)
+          if (!isRetryAfterRefresh) {
+            // Don't try to refresh on auth endpoints or refresh endpoint itself
+            const isAuthEndpoint = endpoint.startsWith('/auth/login') || 
+                                   endpoint.startsWith('/auth/register') ||
+                                   endpoint.startsWith('/auth/refresh');
             
-            if (refreshed) {
-              // Retry the original request with new access token
-              return makeRequest(true);
-            } else {
-              // Refresh failed, redirect to login
-              if (typeof window !== 'undefined') {
-                window.location.href = '/login?session_expired=true';
+            if (!isAuthEndpoint) {
+              // Try to refresh the token
+              const refreshed = await refreshAccessToken();
+              
+              if (refreshed) {
+                // Retry the original request with new access token
+                return makeRequest(true);
+              } else {
+                // Refresh failed, redirect to login
+                if (typeof window !== 'undefined') {
+                  window.location.href = '/login?session_expired=true';
+                }
               }
             }
           }
@@ -123,6 +179,12 @@ async function apiRequest<T>(
     try {
       return await makeRequest();
     } catch (error) {
+      // Never retry permanent authentication failures (user/token deleted)
+      // They will never succeed and cause infinite loops
+      if (isPermanentAuthFailure(error)) {
+        throw error;
+      }
+      
       if (retry && shouldRetry(error, retryCount, maxRetries)) {
         retryCount++;
         const delay = getRetryDelay(retryCount);
@@ -203,13 +265,44 @@ export const api = {
         body: JSON.stringify(data),
       }),
 
+    createWithGeneration: (data: { jobPostingId: string }) =>
+      apiRequest<Application>('/applications/create-with-generation', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
     list: () =>
       apiRequest<Application[]>('/applications'),
 
     getById: (id: string) =>
       apiRequest<Application>(`/applications/${id}`),
 
+    getStatus: (id: string) =>
+      apiRequest<ApplicationStatusResponse>(`/applications/${id}/status`),
+
     getFiles: (id: string) =>
       apiRequest<ApplicationFilesResponse>(`/applications/${id}/files`),
+
+    delete: (id: string) =>
+      apiRequest<void>(`/applications/${id}`, {
+        method: 'DELETE',
+      }),
+
+    updateResume: (id: string, data: { resume: ResumeData }) =>
+      apiRequest<Application>(`/applications/${id}/resume`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+
+    upsertCoverLetter: (id: string, data: { instructions?: string; content?: string; regenerate?: boolean }) =>
+      apiRequest<Application>(`/applications/${id}/cover-letter`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    export: (id: string) =>
+      apiRequest<Application>(`/applications/${id}/export`, {
+        method: 'POST',
+      }),
   },
 };

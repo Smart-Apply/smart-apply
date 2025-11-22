@@ -1,7 +1,9 @@
 import {
   Controller,
   Post,
+  Put,
   Get,
+  Delete,
   Param,
   Query,
   Body,
@@ -9,6 +11,8 @@ import {
   ParseBoolPipe,
   Res,
   StreamableFile,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
@@ -18,6 +22,10 @@ import { ApplicationsService } from './applications.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { ApplicationResponseDto } from './dto/application-response.dto';
 import { ApplicationFilesResponseDto } from './dto/application-files-response.dto';
+import { ApplicationStatusResponseDto } from './dto/application-status-response.dto';
+import { UseThrottler } from '../common/decorators/throttle.decorator';
+import { UpdateResumeDto } from './dto/update-resume.dto';
+import { CoverLetterDto } from './dto/cover-letter.dto';
 
 @ApiTags('applications')
 @ApiBearerAuth()
@@ -47,6 +55,62 @@ export class ApplicationsController {
     @Body() dto: CreateApplicationDto,
   ): Promise<ApplicationResponseDto> {
     return this.applicationsService.create(user.id, dto);
+  }
+
+  @Post('create-with-generation')
+  @ApiOperation({
+    summary: 'Create application with immediate LLM generation',
+    description:
+      'Creates a new application and immediately generates resume + cover letter with LLM. Returns READY status for editing.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Application created with generated content',
+    type: ApplicationResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request (missing profile or invalid job posting)',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 429, description: 'Too many requests (max 5 per minute)' })
+  async createWithGeneration(
+    @CurrentUser() user: any,
+    @Body() dto: CreateApplicationDto,
+  ): Promise<ApplicationResponseDto> {
+    return this.applicationsService.createWithGeneration(user.id, dto);
+  }
+
+  @Put(':id/resume')
+  @ApiOperation({ summary: 'Lebenslauf-Daten aktualisieren' })
+  @ApiResponse({ status: 200, type: ApplicationResponseDto })
+  async updateResume(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() dto: UpdateResumeDto,
+  ): Promise<ApplicationResponseDto> {
+    return this.applicationsService.updateResume(user.id, id, dto);
+  }
+
+  @Post(':id/cover-letter')
+  @ApiOperation({ summary: 'Anschreiben generieren oder speichern' })
+  @ApiResponse({ status: 200, type: ApplicationResponseDto })
+  async upsertCoverLetter(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() dto: CoverLetterDto,
+  ): Promise<ApplicationResponseDto> {
+    return this.applicationsService.upsertCoverLetter(user.id, id, dto);
+  }
+
+  @Post(':id/export')
+  @ApiOperation({ summary: 'PDF-Export anstoßen' })
+  @ApiResponse({ status: 200, type: ApplicationResponseDto })
+  async export(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+  ): Promise<ApplicationResponseDto> {
+    return this.applicationsService.requestExport(user.id, id);
   }
 
   @Get()
@@ -99,6 +163,27 @@ export class ApplicationsController {
     includeJobPosting = false,
   ): Promise<ApplicationResponseDto> {
     return this.applicationsService.findOne(user.id, id, includeJobPosting);
+  }
+
+  @Get(':id/status')
+  @UseThrottler('health-check')
+  @ApiOperation({
+    summary: 'Get application status (lightweight)',
+    description:
+      'Returns only the status of an application. Optimized for polling with generous rate limits (600/min).',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Status retrieved successfully',
+    type: ApplicationStatusResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Application not found' })
+  async getStatus(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+  ): Promise<ApplicationStatusResponseDto> {
+    return this.applicationsService.getStatus(user.id, id);
   }
 
   @Get(':id/files')
@@ -167,5 +252,21 @@ export class ApplicationsController {
     });
 
     return new StreamableFile(file);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Delete application',
+    description: 'Deletes an application and its associated files (cover letter and resume PDFs)',
+  })
+  @ApiResponse({
+    status: 204,
+    description: 'Application deleted successfully',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Application not found' })
+  async delete(@CurrentUser() user: any, @Param('id') id: string): Promise<void> {
+    await this.applicationsService.delete(user.id, id);
   }
 }

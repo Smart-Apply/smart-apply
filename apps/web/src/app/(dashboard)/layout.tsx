@@ -31,6 +31,9 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
   const { isAuthenticated, user, clearAuth } = useAuthStore();
+  
+  // Auto-collapse sidebar in edit mode
+  const isEditMode = pathname?.includes('/edit');
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -58,8 +61,9 @@ export default function DashboardLayout({
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* Desktop Sidebar */}
-      <aside className="hidden w-64 border-r bg-white md:block">
+      {/* Desktop Sidebar - Hidden in edit mode */}
+      {!isEditMode && (
+        <aside className="hidden w-64 border-r bg-white md:block">
         <div className="flex h-full flex-col">
           <div className="flex h-16 items-center border-b px-6">
             <h1 className="text-xl font-bold text-blue-600">Smart Apply</h1>
@@ -107,6 +111,7 @@ export default function DashboardLayout({
           </div>
         </div>
       </aside>
+      )}
 
       {/* Mobile Header */}
       <div className="flex flex-1 flex-col md:hidden">

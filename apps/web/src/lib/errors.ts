@@ -108,6 +108,23 @@ export function getErrorMessage(error: unknown): string {
 }
 
 /**
+ * Check if error is a permanent authentication failure (user/token deleted)
+ * These errors should NOT trigger retries as they will never succeed
+ */
+export function isPermanentAuthFailure(error: unknown): boolean {
+  if (!ApiError.isApiError(error) || error.status !== 401) {
+    return false;
+  }
+  
+  const message = error.data?.message || error.message || '';
+  return (
+    message.includes('User not found') ||
+    message.includes('Refresh token not found') ||
+    message.includes('token not found or revoked')
+  );
+}
+
+/**
  * Check if error should trigger retry
  */
 export function shouldRetry(error: unknown, retryCount: number, maxRetries = 3): boolean {

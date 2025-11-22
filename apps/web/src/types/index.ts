@@ -77,6 +77,65 @@ export interface Profile {
   updatedAt: string;
 }
 
+// Resume Draft Types
+export interface ResumeSkillCategory {
+  id?: string;
+  type: string;
+  skills: string[];
+  _key?: string; // Internal key for React rendering
+}
+
+export interface ResumeExperience {
+  id?: string;
+  title: string;
+  company: string;
+  location?: string;
+  dateRange: string;
+  startDate?: string;
+  endDate?: string;
+  achievements?: string[];
+}
+
+export interface ResumeProject {
+  id?: string;
+  name: string;
+  description?: string;
+  date?: string;
+  highlights?: string[];
+}
+
+export interface ResumeEducation {
+  id?: string;
+  degree: string;
+  institution: string;
+  year: string;
+  fieldOfStudy?: string;
+  gpa?: string;
+  description?: string;
+}
+
+export interface ResumeCertification {
+  id?: string;
+  name: string;
+  issuer: string;
+  date?: string;
+}
+
+export interface ResumeData {
+  candidateName: string;
+  email: string;
+  phone?: string;
+  location?: string;
+  linkedin?: string;
+  github?: string;
+  summary?: string;
+  skillCategories: ResumeSkillCategory[];
+  experiences: ResumeExperience[];
+  projects?: ResumeProject[];
+  education?: ResumeEducation[];
+  certifications?: ResumeCertification[];
+}
+
 // DTO types for backend API (dates as strings for API transport)
 export interface EducationDto {
   id?: string;
@@ -131,14 +190,25 @@ export interface Application {
   userId: string;
   jobPostingId: string;
   status: ApplicationStatus;
+  notes?: string;
+  coverLetterText?: string;
+  resumeText?: string;
   coverLetterBlobKey?: string;
   resumeBlobKey?: string;
   coverLetterUrl?: string;
   resumeUrl?: string;
-  error?: string;
+  errorMessage?: string;
   createdAt: string;
   updatedAt: string;
   jobPosting?: JobPosting;
+}
+
+// Application Status Response (lightweight for polling)
+export interface ApplicationStatusResponse {
+  id: string;
+  status: ApplicationStatus;
+  errorMessage: string | null;
+  updatedAt: string;
 }
 
 // Application Files Types
