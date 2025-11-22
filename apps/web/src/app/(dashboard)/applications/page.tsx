@@ -1,14 +1,22 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useApplications } from '@/hooks/use-applications';
+import { useApplications, useDeleteApplication } from '@/hooks/use-applications';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { CenteredLoader } from '@/components/shared/loading';
 import { ApplicationCardSkeleton } from '@/components/shared/skeletons';
-import { Plus, FileText, Clock, CheckCircle, XCircle, AlertCircle, RefreshCw } from 'lucide-react';
+import { Plus, FileText, Clock, CheckCircle, XCircle, AlertCircle, RefreshCw, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import type { ApplicationStatus } from '@/types';
@@ -59,9 +67,14 @@ export default function ApplicationsPage() {
   const router = useRouter();
   const [selectedFilter, setSelectedFilter] = useState<FilterStatus>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [applicationToDelete, setApplicationToDelete] = useState<{ id: string; title: string } | null>(null);
   
   // Track previous application statuses to detect changes
   const prevStatusesRef = useRef<Map<string, ApplicationStatus>>(new Map());
+
+  // Delete application mutation
+  const deleteApplication = useDeleteApplication();
 
   // Fetch applications with automatic polling
   const { data: applications, isLoading, refetch } = useApplications({
@@ -137,6 +150,25 @@ export default function ApplicationsPage() {
     setIsRefreshing(true);
     await refetch();
     setTimeout(() => setIsRefreshing(false), 500);
+  };
+
+  // Delete handlers
+  const handleDeleteClick = (id: string, title: string) => {
+    setApplicationToDelete({ id, title });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!applicationToDelete) return;
+    
+    await deleteApplication.mutateAsync(applicationToDelete.id);
+    setDeleteDialogOpen(false);
+    setApplicationToDelete(null);
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setApplicationToDelete(null);
   };
 
   return (
@@ -262,6 +294,17 @@ export default function ApplicationsPage() {
                             <Button size="sm" onClick={() => router.push(`/applications/${application.id}`)}>
                               Details
                             </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleDeleteClick(
+                                application.id, 
+                                application.jobPosting?.title || `Bewerbung #${application.id}`
+                              )}
+                              disabled={deleteApplication.isPending}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </div>
                       </CardContent>
@@ -305,6 +348,35 @@ export default function ApplicationsPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Bewerbung löschen?</DialogTitle>
+            <DialogDescription>
+              Möchtest du die Bewerbung für &quot;{applicationToDelete?.title}&quot; wirklich löschen?
+              Diese Aktion kann nicht rückgängig gemacht werden.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={handleDeleteCancel}
+              disabled={deleteApplication.isPending}
+            >
+              Abbrechen
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+              disabled={deleteApplication.isPending}
+            >
+              {deleteApplication.isPending ? 'Wird gelöscht...' : 'Löschen'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

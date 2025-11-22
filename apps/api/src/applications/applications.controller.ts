@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Delete,
   Param,
   Query,
   Body,
@@ -9,6 +10,8 @@ import {
   ParseBoolPipe,
   Res,
   StreamableFile,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
@@ -167,5 +170,24 @@ export class ApplicationsController {
     });
 
     return new StreamableFile(file);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Delete application',
+    description: 'Deletes an application and its associated files (cover letter and resume PDFs)',
+  })
+  @ApiResponse({
+    status: 204,
+    description: 'Application deleted successfully',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Application not found' })
+  async delete(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+  ): Promise<void> {
+    await this.applicationsService.delete(user.id, id);
   }
 }

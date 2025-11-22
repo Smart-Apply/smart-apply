@@ -64,3 +64,22 @@ export function useApplicationFiles(id: string) {
     enabled: isAuthenticated && !!id,
   });
 }
+
+/**
+ * Hook to delete an application
+ */
+export function useDeleteApplication() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) =>
+      api.applications.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['applications'] });
+      toastSuccess('Bewerbung wurde gelöscht');
+    },
+    onError: (error: unknown) => {
+      toastError(error, 'Fehler beim Löschen der Bewerbung');
+    },
+  });
+}

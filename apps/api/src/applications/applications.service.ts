@@ -218,6 +218,48 @@ export class ApplicationsService {
   }
 
   /**
+   * Delete an application and its associated files
+   */
+  async delete(userId: string, applicationId: string): Promise<void> {
+    this.logger.log(`Deleting application ${applicationId} for user ${userId}`);
+
+    // Find application (verify ownership)
+    const application = await this.prisma.application.findFirst({
+      where: {
+        id: applicationId,
+        userId,
+      },
+    });
+
+    if (!application) {
+      throw new NotFoundException(`Application with ID ${applicationId} not found`);
+    }
+
+    // Delete files from storage if they exist
+    try {
+      if (application.coverLetterFileKey) {
+        await this.storageService.deleteFile(application.coverLetterFileKey);
+        this.logger.log(`Deleted cover letter: ${application.coverLetterFileKey}`);
+      }
+
+      if (application.resumeFileKey) {
+        await this.storageService.deleteFile(application.resumeFileKey);
+        this.logger.log(`Deleted resume: ${application.resumeFileKey}`);
+      }
+    } catch (error) {
+      this.logger.warn(`Failed to delete files for application ${applicationId}: ${error.message}`);
+      // Continue with database deletion even if file deletion fails
+    }
+
+    // Delete application from database
+    await this.prisma.application.delete({
+      where: { id: applicationId },
+    });
+
+    this.logger.log(`Application ${applicationId} deleted successfully`);
+  }
+
+  /**
    * Map Prisma model to DTO
    */
   private mapToResponseDto(application: any): ApplicationResponseDto {

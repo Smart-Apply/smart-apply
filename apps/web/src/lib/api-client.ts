@@ -237,5 +237,10 @@ export const api = {
 
     getFiles: (id: string) =>
       apiRequest<ApplicationFilesResponse>(`/applications/${id}/files`),
+
+    delete: (id: string) =>
+      apiRequest<void>(`/applications/${id}`, {
+        method: 'DELETE',
+      }),
   },
 };
