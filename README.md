@@ -641,6 +641,8 @@ Access Swagger documentation at `/docs` when running locally.
 - `POST /api/v1/applications` - Create new application
 - `GET /api/v1/applications` - List all applications
 - `GET /api/v1/applications/:id` - Get application details
+- `GET /api/v1/applications/:id/status` - Get lightweight status (for polling)
+- `GET /api/v1/applications/:id/stream` - Stream real-time status updates (SSE)
 - `GET /api/v1/applications/:id/files` - Get PDF download URLs (SAS)
 
 ### Additional Documentation
@@ -648,6 +650,7 @@ Access Swagger documentation at `/docs` when running locally.
 - **[Agent-Based URL Parser Guide](./docs/AGENT_URL_PARSER.md)** - Complete guide for parsing JavaScript-heavy job sites
 - **[Architecture Documentation](./ARCHITECTURE.md)** - Detailed system architecture
 - **[Agent Instructions](./my-agents.md)** - Development guidelines and best practices
+- **[SSE Implementation Guide](./docs/SSE_IMPLEMENTATION.md)** - Server-Sent Events for real-time status updates
 
 ## 🔒 Security
 
