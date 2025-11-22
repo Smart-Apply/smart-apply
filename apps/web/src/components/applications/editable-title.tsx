@@ -31,9 +31,10 @@ export function EditableTitle({
   const updateTitleMutation = useMutation({
     mutationFn: (newTitle: string) =>
       api.applications.updateTitle(applicationId, newTitle),
-    onSuccess: () => {
+    onSuccess: (updatedApp) => {
+      // Update cache immediately for better UX
+      queryClient.setQueryData(['applications', applicationId], updatedApp);
       queryClient.invalidateQueries({ queryKey: ['applications'] });
-      queryClient.invalidateQueries({ queryKey: ['application', applicationId] });
       setIsEditing(false);
       toast.success('Titel aktualisiert');
     },

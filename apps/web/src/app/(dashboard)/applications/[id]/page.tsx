@@ -109,25 +109,52 @@ export default function ApplicationDetailPage() {
     enabled: isAuthenticated && !!applicationId,
   });
 
-  // Status polling: Lightweight status checks (600/min rate limit)
-  const { data: statusData } = useQuery({
-    queryKey: ['applications', applicationId, 'status'],
-    queryFn: () => api.applications.getStatus(applicationId),
-    enabled: isAuthenticated && !!applicationId && (application?.status === 'PENDING' || application?.status === 'GENERATING'),
-    refetchInterval: (query) => {
-      // Poll every 10 seconds if status is PENDING or GENERATING
-      const status = query.state.data?.status;
-      return status === 'PENDING' || status === 'GENERATING' ? 10000 : false;
-    },
-  });
-
-  // Update main application status when status poll detects change
+  // SSE: Real-time status updates (replaces polling)
   useEffect(() => {
-    if (statusData && application && statusData.status !== application.status) {
-      // Status changed - refetch full application details
-      refetch();
+    if (!isAuthenticated || !applicationId || !application) return;
+    
+    // Only connect SSE if status is PENDING or GENERATING
+    if (application.status !== 'PENDING' && application.status !== 'GENERATING') {
+      return;
     }
-  }, [statusData, application, refetch]);
+
+    const eventSource = new EventSource(
+      `${process.env.NEXT_PUBLIC_API_URL}/applications/${applicationId}/stream`,
+      { withCredentials: true }
+    );
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        
+        // Update query cache with new status
+        queryClient.setQueryData(['applications', applicationId], (old: any) => {
+          if (!old) return old;
+          return { ...old, status: data.status };
+        });
+
+        // If status changed to READY or FAILED, refetch full details
+        if (data.status === 'READY' || data.status === 'FAILED') {
+          refetch();
+          eventSource.close();
+        }
+      } catch (err) {
+        console.error('SSE parse error:', err);
+      }
+    };
+
+    eventSource.onerror = (err) => {
+      console.error('SSE error:', err);
+      eventSource.close();
+      
+      // Fallback to single refetch on error
+      setTimeout(() => refetch(), 5000);
+    };
+
+    return () => {
+      eventSource.close();
+    };
+  }, [isAuthenticated, applicationId, application?.status, queryClient, refetch]);
 
   // Detect status changes and show toast notifications
   useEffect(() => {
@@ -371,11 +398,19 @@ export default function ApplicationDetailPage() {
             fallbackId={applicationId}
           />
         </div>
-        <StatusDropdown
-          applicationId={applicationId}
-          currentStatus={application.applicationStatus}
-          variant="dropdown"
-        />
+        <div className="flex items-center gap-2">
+          {application.applicationStatus ? (
+            <StatusDropdown
+              applicationId={applicationId}
+              currentStatus={application.applicationStatus}
+              variant="dropdown"
+            />
+          ) : (
+            <div className="text-xs text-red-500 bg-red-50 px-2 py-1 rounded">
+              Kein Status (bitte Seite neu laden)
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Status Banner */}

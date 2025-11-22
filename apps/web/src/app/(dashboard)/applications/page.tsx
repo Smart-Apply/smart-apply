@@ -82,20 +82,8 @@ export default function ApplicationsPage() {
   // Delete application mutation
   const deleteApplication = useDeleteApplication();
 
-  // Fetch applications with automatic polling
-  const { data: applications, isLoading, refetch } = useApplications({
-    refetchInterval: (query) => {
-      const apps = query.state.data;
-      if (!apps) return false;
-      
-      // Poll every 10 seconds if any application is PENDING or GENERATING
-      const hasActiveApplications = apps.some(
-        (app) => app.status === 'PENDING' || app.status === 'GENERATING'
-      );
-      
-      return hasActiveApplications ? 10000 : false;
-    },
-  });
+  // Fetch applications (no polling - SSE handles real-time updates on detail pages)
+  const { data: applications, isLoading, refetch } = useApplications();
 
   // Detect status changes and show toast notifications
   useEffect(() => {
@@ -256,12 +244,18 @@ export default function ApplicationsPage() {
                                   </span>
                                 )}
                               </div>
-                              <div className="flex items-center gap-2">
-                                <StatusDropdown
-                                  applicationId={application.id}
-                                  currentStatus={application.applicationStatus}
-                                  variant="badge"
-                                />
+                              <div className="flex items-center gap-2 mt-2">
+                                {application.applicationStatus ? (
+                                  <StatusDropdown
+                                    applicationId={application.id}
+                                    currentStatus={application.applicationStatus}
+                                    variant="dropdown"
+                                  />
+                                ) : (
+                                  <div className="text-xs text-red-500 bg-red-50 px-2 py-1 rounded">
+                                    DEBUG: applicationStatus = {JSON.stringify(application.applicationStatus)}
+                                  </div>
+                                )}
                               </div>
                             </CardDescription>
                           </div>

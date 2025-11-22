@@ -17,6 +17,9 @@ export function useApplications(options?: {
     queryFn: () => api.applications.list(),
     enabled: isAuthenticated,
     refetchInterval: options?.refetchInterval,
+    staleTime: 30000, // Consider data fresh for 30 seconds
+    gcTime: 5 * 60 * 1000, // Keep unused data in cache for 5 minutes
+    refetchOnWindowFocus: true, // Refetch when user returns to tab
   });
 }
 
@@ -30,6 +33,9 @@ export function useApplication(id: string) {
     queryKey: ['applications', id],
     queryFn: () => api.applications.getById(id),
     enabled: isAuthenticated && !!id,
+    staleTime: 30000, // Consider data fresh for 30 seconds
+    gcTime: 5 * 60 * 1000, // Keep unused data in cache for 5 minutes
+    refetchOnWindowFocus: true, // Refetch when user returns to tab
   });
 }
 

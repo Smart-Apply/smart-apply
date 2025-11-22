@@ -57,9 +57,10 @@ export function StatusDropdown({
   const updateStatusMutation = useMutation({
     mutationFn: (newStatus: ApplicationTrackingStatus) =>
       api.applications.updateStatus(applicationId, newStatus),
-    onSuccess: () => {
+    onSuccess: (updatedApp) => {
+      // Update cache immediately for better UX
+      queryClient.setQueryData(['applications', applicationId], updatedApp);
       queryClient.invalidateQueries({ queryKey: ['applications'] });
-      queryClient.invalidateQueries({ queryKey: ['application', applicationId] });
       toast.success('Status aktualisiert');
     },
     onError: (error: Error) => {
