@@ -7,6 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { api } from '@/lib/api-client';
 import { toast } from 'sonner';
+import {
+  APPLICATION_TITLE_MIN_LENGTH,
+  APPLICATION_TITLE_MAX_LENGTH,
+  APPLICATION_ID_DISPLAY_LENGTH,
+} from '@/lib/constants';
 
 interface EditableTitleProps {
   applicationId: string;
@@ -40,13 +45,13 @@ export function EditableTitle({
   const handleSave = () => {
     const trimmedTitle = title.trim();
     
-    if (trimmedTitle.length < 3) {
-      toast.error('Titel muss mindestens 3 Zeichen lang sein');
+    if (trimmedTitle.length < APPLICATION_TITLE_MIN_LENGTH) {
+      toast.error(`Titel muss mindestens ${APPLICATION_TITLE_MIN_LENGTH} Zeichen lang sein`);
       return;
     }
 
-    if (trimmedTitle.length > 60) {
-      toast.error('Titel darf maximal 60 Zeichen lang sein');
+    if (trimmedTitle.length > APPLICATION_TITLE_MAX_LENGTH) {
+      toast.error(`Titel darf maximal ${APPLICATION_TITLE_MAX_LENGTH} Zeichen lang sein`);
       return;
     }
 
@@ -75,7 +80,7 @@ export function EditableTitle({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onKeyDown={handleKeyDown}
-          maxLength={60}
+          maxLength={APPLICATION_TITLE_MAX_LENGTH}
           className="flex-1"
           placeholder="z.B. Senior Frontend Developer @ Google"
           autoFocus
@@ -102,7 +107,7 @@ export function EditableTitle({
   return (
     <div className="flex items-center gap-2">
       <h1 className="text-2xl font-bold">
-        {title || `Bewerbung #${fallbackId.substring(0, 8)}`}
+        {title || `Bewerbung #${fallbackId.substring(0, APPLICATION_ID_DISPLAY_LENGTH)}`}
       </h1>
       <Button
         size="sm"

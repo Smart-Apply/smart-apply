@@ -611,12 +611,7 @@ export class ApplicationsService {
     // Verify ownership
     const application = await this.ensureApplicationOwnership(userId, applicationId, true);
 
-    // Validate title length (should be caught by DTO validation, but double-check)
-    if (title.length > 60) {
-      throw new BadRequestException('Title must be at most 60 characters long');
-    }
-
-    // Update title
+    // Update title (validation already handled by DTO)
     const updated = await this.prisma.application.update({
       where: { id: applicationId },
       data: {

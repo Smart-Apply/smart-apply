@@ -21,6 +21,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import type { ApplicationGenerationStatus } from '@/types';
 import { StatusDropdown } from '@/components/applications/status-dropdown';
+import { APPLICATION_ID_DISPLAY_LENGTH } from '@/lib/constants';
 
 // Keep using ApplicationStatus locally for generation status
 type ApplicationStatus = ApplicationGenerationStatus;
@@ -240,7 +241,7 @@ export default function ApplicationsPage() {
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <CardTitle className="text-xl">
-                              {application.title || `Bewerbung #${application.id.substring(0, 8)}`}
+                              {application.title || `Bewerbung #${application.id.substring(0, APPLICATION_ID_DISPLAY_LENGTH)}`}
                             </CardTitle>
                             <CardDescription className="mt-1 space-y-1">
                               <div>

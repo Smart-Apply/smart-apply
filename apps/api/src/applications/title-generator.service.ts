@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { LLMService } from '../llm/llm.service';
+import { APPLICATION_TITLE_MAX_LENGTH } from './constants';
 
 export interface JobPostingForTitle {
   title: string;
@@ -18,9 +19,7 @@ export class TitleGeneratorService {
    * Format: "[Job Title] @ [Company]" or similar
    */
   async generateTitle(jobPosting: JobPostingForTitle): Promise<string> {
-    const location = jobPosting.location ? ` (${jobPosting.location})` : '';
-    
-    const prompt = `Generate a concise application title (max 60 chars) for this job posting.
+    const prompt = `Generate a concise application title (max ${APPLICATION_TITLE_MAX_LENGTH} chars) for this job posting.
 
 Job Title: ${jobPosting.title}
 Company: ${jobPosting.company}
@@ -30,7 +29,7 @@ Format: "[Job Title] @ [Company]" or "[Job Title] - [Company]"
 Example: "Senior Frontend Developer @ Google"
 Example: "Full Stack Engineer - Stripe"
 
-Only return the title, nothing else. Keep it under 60 characters.`;
+Only return the title, nothing else. Keep it under ${APPLICATION_TITLE_MAX_LENGTH} characters.`;
 
     try {
       // Use LLM service with lower temperature for more consistent output
@@ -42,7 +41,7 @@ Only return the title, nothing else. Keep it under 60 characters.`;
       const cleanedTitle = title.trim().replace(/^["']|["']$/g, ''); // Remove quotes if present
       
       // Validate and truncate if needed
-      if (cleanedTitle && cleanedTitle.length <= 60) {
+      if (cleanedTitle && cleanedTitle.length <= APPLICATION_TITLE_MAX_LENGTH) {
         this.logger.log(`Generated title: ${cleanedTitle}`);
         return cleanedTitle;
       }
@@ -64,6 +63,9 @@ Only return the title, nothing else. Keep it under 60 characters.`;
     const result = `${title} @ ${company}`;
     
     // Truncate if too long
-    return result.length > 60 ? result.substring(0, 57) + '...' : result;
+    const truncateAt = APPLICATION_TITLE_MAX_LENGTH - 3; // Reserve space for "..."
+    return result.length > APPLICATION_TITLE_MAX_LENGTH
+      ? result.substring(0, truncateAt) + '...'
+      : result;
   }
 }

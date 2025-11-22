@@ -11,6 +11,7 @@ import type {
   UpdateProfileDto,
   ApplicationFilesResponse,
   ApplicationStatusResponse,
+  ApplicationTrackingStatus,
   ResumeData,
 } from '@/types';
 import { ApiError, NetworkError, shouldRetry, getRetryDelay, isPermanentAuthFailure } from './errors';
@@ -305,7 +306,7 @@ export const api = {
         method: 'POST',
       }),
 
-    updateStatus: (id: string, status: import('@/types').ApplicationTrackingStatus) =>
+    updateStatus: (id: string, status: ApplicationTrackingStatus) =>
       apiRequest<Application>(`/applications/${id}/status`, {
         method: 'PATCH',
         body: JSON.stringify({ status }),

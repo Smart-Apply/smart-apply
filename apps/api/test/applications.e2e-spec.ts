@@ -461,19 +461,21 @@ describe('ApplicationsController (e2e)', () => {
     });
 
     it('should return 400 for title that is too short', async () => {
+      const MIN_LENGTH = 3;
       const response = await request(app.getHttpServer())
         .patch(`/api/v1/applications/${applicationId}/title`)
         .set('Authorization', `Bearer ${authToken}`)
         .send({
-          title: 'Ab',
+          title: 'A'.repeat(MIN_LENGTH - 1), // One char less than minimum
         })
         .expect(400);
 
-      expect(response.body.message).toContain('at least 3 characters');
+      expect(response.body.message).toContain(`at least ${MIN_LENGTH} characters`);
     });
 
     it('should return 400 for title that is too long', async () => {
-      const longTitle = 'A'.repeat(61); // 61 characters (max is 60)
+      const MAX_LENGTH = 60;
+      const longTitle = 'A'.repeat(MAX_LENGTH + 1); // One char more than maximum
       const response = await request(app.getHttpServer())
         .patch(`/api/v1/applications/${applicationId}/title`)
         .set('Authorization', `Bearer ${authToken}`)
@@ -482,7 +484,7 @@ describe('ApplicationsController (e2e)', () => {
         })
         .expect(400);
 
-      expect(response.body.message).toContain('at most 60 characters');
+      expect(response.body.message).toContain(`at most ${MAX_LENGTH} characters`);
     });
 
     it('should sanitize title (XSS protection)', async () => {
