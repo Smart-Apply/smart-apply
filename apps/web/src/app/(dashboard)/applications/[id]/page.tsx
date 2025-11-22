@@ -366,9 +366,19 @@ export default function ApplicationDetailPage() {
               Status: {statusInfo.label}
             </h3>
             {application.status === 'PENDING' && (
-              <p className="text-sm text-gray-600 mt-1">
-                Deine Bewerbung wird in die Warteschlange eingereiht...
-              </p>
+              <div className="space-y-2">
+                <p className="text-sm text-gray-600">
+                  Deine Bewerbung wurde erstellt. Passe nun deinen Lebenslauf und dein Anschreiben an.
+                </p>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => router.push(`/applications/${applicationId}/edit`)}
+                  className="mt-2"
+                >
+                  Unterlagen anpassen & Export starten
+                </Button>
+              </div>
             )}
             {application.status === 'GENERATING' && (
               <p className="text-sm text-gray-600 mt-1">

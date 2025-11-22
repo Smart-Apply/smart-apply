@@ -54,7 +54,6 @@
     "csrf-csrf": "^4.0.3",
     "handlebars": "^4.7.8",
     "helmet": "^7.1.0",
-    "isomorphic-dompurify": "^2.32.0",
     "langchain": "^1.0.3",
     "langchain-core": "^0.0.4",
     "mammoth": "^1.6.0",
@@ -70,6 +69,7 @@
     "puppeteer": "^21.7.0",
     "reflect-metadata": "^0.2.1",
     "rxjs": "^7.8.1",
+    "sanitize-html": "^2.17.0",
     "validator": "^13.15.23",
     "zod": "^3.22.4",
     "zod-to-json-schema": "^3.24.6"

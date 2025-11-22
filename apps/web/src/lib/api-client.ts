@@ -3,7 +3,16 @@
  * Base URL: http://localhost:3000/api/v1
  */
 
-import type { User, Profile, JobPosting, Application, UpdateProfileDto, ApplicationFilesResponse, ApplicationStatusResponse } from '@/types';
+import type {
+  User,
+  Profile,
+  JobPosting,
+  Application,
+  UpdateProfileDto,
+  ApplicationFilesResponse,
+  ApplicationStatusResponse,
+  ResumeData,
+} from '@/types';
 import { ApiError, NetworkError, shouldRetry, getRetryDelay, isPermanentAuthFailure } from './errors';
 import { getCsrfToken, refreshCsrfToken } from './csrf';
 
@@ -256,6 +265,12 @@ export const api = {
         body: JSON.stringify(data),
       }),
 
+    createWithGeneration: (data: { jobPostingId: string }) =>
+      apiRequest<Application>('/applications/create-with-generation', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
     list: () =>
       apiRequest<Application[]>('/applications'),
 
@@ -271,6 +286,23 @@ export const api = {
     delete: (id: string) =>
       apiRequest<void>(`/applications/${id}`, {
         method: 'DELETE',
+      }),
+
+    updateResume: (id: string, data: { resume: ResumeData }) =>
+      apiRequest<Application>(`/applications/${id}/resume`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+
+    upsertCoverLetter: (id: string, data: { instructions?: string; content?: string; regenerate?: boolean }) =>
+      apiRequest<Application>(`/applications/${id}/cover-letter`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    export: (id: string) =>
+      apiRequest<Application>(`/applications/${id}/export`, {
+        method: 'POST',
       }),
   },
 };

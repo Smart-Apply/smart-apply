@@ -9,11 +9,12 @@ import { Separator } from '@/components/ui/separator';
 import { CenteredLoader } from '@/components/shared/loading';
 import { useProfile } from '@/hooks/use-profile';
 import { useJobPostings } from '@/hooks/use-job-postings';
-import { useCreateApplication } from '@/hooks/use-applications';
+import { useCreateApplicationWithGeneration } from '@/hooks/use-applications';
 import { Check, ChevronLeft, ChevronRight, X, AlertCircle, Briefcase, User, FileText, Edit } from 'lucide-react';
 import Link from 'next/link';
 import type { JobPosting, Profile, Skill, Experience } from '@/types';
 import { toast } from 'sonner';
+import { ApplicationLoading } from '@/components/applications/application-loading';
 
 type WizardStep = 'profile' | 'job' | 'review';
 
@@ -52,7 +53,7 @@ export function ApplicationWizard() {
   
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { data: jobPostings, isLoading: jobPostingsLoading } = useJobPostings();
-  const createApplication = useCreateApplication();
+  const createApplication = useCreateApplicationWithGeneration();
 
   const currentStepIndex = steps.findIndex((s) => s.id === currentStep);
   const selectedJob = jobPostings?.find((job) => job.id === selectedJobId);
@@ -92,12 +93,13 @@ export function ApplicationWizard() {
     }
 
     try {
+      // Create application with immediate LLM generation
       const application = await createApplication.mutateAsync({
         jobPostingId: selectedJobId,
       });
       
-      toast.success('Bewerbung wird erstellt!');
-      router.push(`/applications/${application.id}`);
+      // Success! Redirect to edit page
+      router.push(`/applications/${application.id}/edit`);
     } catch (error) {
       // Error is handled by the mutation's onError
       console.error('Failed to create application:', error);
@@ -108,8 +110,14 @@ export function ApplicationWizard() {
     return !!(profile?.summary && profile?.skills?.length);
   };
 
+  // Show loading screen during profile/job loading
   if (profileLoading || jobPostingsLoading) {
     return <CenteredLoader message="Lädt..." />;
+  }
+
+  // Show loading screen during application creation + LLM generation
+  if (createApplication.isPending) {
+    return <ApplicationLoading message="Bewerbung wird mit KI erstellt..." />;
   }
 
   return (

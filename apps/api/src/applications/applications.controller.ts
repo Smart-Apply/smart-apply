@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Put,
   Get,
   Delete,
   Param,
@@ -23,6 +24,8 @@ import { ApplicationResponseDto } from './dto/application-response.dto';
 import { ApplicationFilesResponseDto } from './dto/application-files-response.dto';
 import { ApplicationStatusResponseDto } from './dto/application-status-response.dto';
 import { UseThrottler } from '../common/decorators/throttle.decorator';
+import { UpdateResumeDto } from './dto/update-resume.dto';
+import { CoverLetterDto } from './dto/cover-letter.dto';
 
 @ApiTags('applications')
 @ApiBearerAuth()
@@ -52,6 +55,62 @@ export class ApplicationsController {
     @Body() dto: CreateApplicationDto,
   ): Promise<ApplicationResponseDto> {
     return this.applicationsService.create(user.id, dto);
+  }
+
+  @Post('create-with-generation')
+  @ApiOperation({
+    summary: 'Create application with immediate LLM generation',
+    description:
+      'Creates a new application and immediately generates resume + cover letter with LLM. Returns READY status for editing.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Application created with generated content',
+    type: ApplicationResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request (missing profile or invalid job posting)',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 429, description: 'Too many requests (max 5 per minute)' })
+  async createWithGeneration(
+    @CurrentUser() user: any,
+    @Body() dto: CreateApplicationDto,
+  ): Promise<ApplicationResponseDto> {
+    return this.applicationsService.createWithGeneration(user.id, dto);
+  }
+
+  @Put(':id/resume')
+  @ApiOperation({ summary: 'Lebenslauf-Daten aktualisieren' })
+  @ApiResponse({ status: 200, type: ApplicationResponseDto })
+  async updateResume(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() dto: UpdateResumeDto,
+  ): Promise<ApplicationResponseDto> {
+    return this.applicationsService.updateResume(user.id, id, dto);
+  }
+
+  @Post(':id/cover-letter')
+  @ApiOperation({ summary: 'Anschreiben generieren oder speichern' })
+  @ApiResponse({ status: 200, type: ApplicationResponseDto })
+  async upsertCoverLetter(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() dto: CoverLetterDto,
+  ): Promise<ApplicationResponseDto> {
+    return this.applicationsService.upsertCoverLetter(user.id, id, dto);
+  }
+
+  @Post(':id/export')
+  @ApiOperation({ summary: 'PDF-Export anstoßen' })
+  @ApiResponse({ status: 200, type: ApplicationResponseDto })
+  async export(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+  ): Promise<ApplicationResponseDto> {
+    return this.applicationsService.requestExport(user.id, id);
   }
 
   @Get()
