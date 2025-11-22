@@ -395,9 +395,9 @@ export default function ApplicationDetailPage() {
               <div className="space-y-2">
                 <p className="text-sm text-gray-600">
                   Bei der Erstellung ist ein Fehler aufgetreten.
-                  {application.error && (
+                  {application.errorMessage && (
                     <span className="block mt-1 font-mono text-xs text-red-700 bg-red-50 p-2 rounded">
-                      {application.error}
+                      {application.errorMessage}
                     </span>
                   )}
                 </p>

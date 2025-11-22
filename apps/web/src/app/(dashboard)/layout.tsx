@@ -93,10 +93,14 @@ export default function DashboardLayout({
           <div className="border-t p-4">
             <div className="mb-3 flex items-center gap-3 px-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-600">
-                {user?.name?.charAt(0).toUpperCase()}
+                {(user?.firstName || user?.email)?.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 truncate">
-                <p className="truncate text-sm font-medium">{user?.name}</p>
+                <p className="truncate text-sm font-medium">
+                  {user?.firstName && user?.lastName
+                    ? `${user.firstName} ${user.lastName}`
+                    : user?.firstName || user?.email}
+                </p>
                 <p className="truncate text-xs text-gray-500">{user?.email}</p>
               </div>
             </div>
@@ -154,10 +158,14 @@ export default function DashboardLayout({
                 <div className="border-t p-4">
                   <div className="mb-3 flex items-center gap-3 px-3">
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-600">
-                      {user?.name?.charAt(0).toUpperCase()}
+                      {(user?.firstName || user?.email)?.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 truncate">
-                      <p className="truncate text-sm font-medium">{user?.name}</p>
+                      <p className="truncate text-sm font-medium">
+                        {user?.firstName && user?.lastName
+                          ? `${user.firstName} ${user.lastName}`
+                          : user?.firstName || user?.email}
+                      </p>
                       <p className="truncate text-xs text-gray-500">{user?.email}</p>
                     </div>
                   </div>

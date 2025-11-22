@@ -30,9 +30,12 @@ export function useUpdateProfile() {
       // Invalidate profile query to refetch
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       
-      // Update user in auth store if fullName was changed
-      if (variables.fullName) {
-        updateUser({ name: variables.fullName });
+      // Update user in auth store if firstName or lastName was changed
+      if (variables.firstName || variables.lastName) {
+        updateUser({ 
+          firstName: variables.firstName, 
+          lastName: variables.lastName 
+        });
       }
       
       toastSuccess('Profil erfolgreich aktualisiert');

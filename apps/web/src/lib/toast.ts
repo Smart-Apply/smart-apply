@@ -88,8 +88,8 @@ export function toastPromise<T>(
     success: string | ((data: T) => string);
     error: string | ((error: unknown) => string);
   }
-): Promise<T> {
-  return sonnerToast.promise(promise, {
+): void {
+  sonnerToast.promise(promise, {
     loading: messages.loading,
     success: (data) => {
       return typeof messages.success === 'function'

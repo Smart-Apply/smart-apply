@@ -12,6 +12,7 @@
  */
 
 import DOMPurify from 'isomorphic-dompurify';
+import type { Config as DOMPurifyConfig } from 'dompurify';
 
 /**
  * Sanitize HTML content by allowing only safe tags and attributes.
@@ -141,7 +142,7 @@ export function sanitizeArray(items: string[]): string[] {
  * Configuration for DOMPurify with strict security settings.
  * This can be used for custom sanitization needs.
  */
-export const STRICT_SANITIZE_CONFIG: DOMPurify.Config = {
+export const STRICT_SANITIZE_CONFIG: DOMPurifyConfig = {
   ALLOWED_TAGS: ['b', 'i', 'em', 'strong'],
   ALLOWED_ATTR: [],
   KEEP_CONTENT: true,
@@ -156,6 +157,6 @@ export const STRICT_SANITIZE_CONFIG: DOMPurify.Config = {
  * @param config - Custom DOMPurify configuration
  * @returns Sanitized HTML string
  */
-export function sanitizeWithConfig(dirty: string, config: DOMPurify.Config): string {
+export function sanitizeWithConfig(dirty: string, config: DOMPurifyConfig): string {
   return DOMPurify.sanitize(dirty, config);
 }
