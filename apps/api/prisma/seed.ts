@@ -192,6 +192,9 @@ async function main() {
 
   console.log('✅ Created sample job posting:', jobPosting.title);
 
+  // Import template seeding (run separately if needed)
+  console.log('💡 To seed templates, run: npm run seed:templates');
+
   console.log('🎉 Database seed completed successfully!');
 }
 

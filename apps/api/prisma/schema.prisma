@@ -207,6 +207,12 @@ model Application {
   coverLetterFileKey String?
   resumeFileKey      String?
   
+  // Template selection
+  coverLetterTemplateId String?
+  coverLetterTemplate   Template? @relation("CoverLetterTemplate", fields: [coverLetterTemplateId], references: [id], onDelete: SetNull)
+  resumeTemplateId      String?
+  resumeTemplate        Template? @relation("ResumeTemplate", fields: [resumeTemplateId], references: [id], onDelete: SetNull)
+  
   // Metadata
   notes         String?
   errorMessage  String?
@@ -217,6 +223,8 @@ model Application {
   @@index([userId])
   @@index([status])
   @@index([userId, applicationStatus])
+  @@index([coverLetterTemplateId])
+  @@index([resumeTemplateId])
   @@map("applications")
 }
 
@@ -234,6 +242,36 @@ enum ApplicationGenerationStatus {
   GENERATING   // LLM is generating content
   READY        // PDFs generated and stored
   FAILED       // Generation failed
+}
+
+model Template {
+  id                String   @id @default(cuid())
+  name              String
+  description       String?
+  type              TemplateType
+  category          String   // e.g., "Professional", "Modern", "Creative", "Minimal", "Technical"
+  thumbnailUrl      String?
+  htmlTemplate      String   @db.Text
+  cssStyles         String   @db.Text
+  isActive          Boolean  @default(true)
+  isDefault         Boolean  @default(false)
+  
+  // Relations
+  applicationsAsCoverLetter Application[] @relation("CoverLetterTemplate")
+  applicationsAsResume      Application[] @relation("ResumeTemplate")
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([type, isActive])
+  @@index([isDefault])
+  @@map("templates")
+}
+
+enum TemplateType {
+  COVER_LETTER
+  RESUME
+  BOTH
 }
 
 model RefreshToken {
