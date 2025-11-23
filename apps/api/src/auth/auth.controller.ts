@@ -162,7 +162,7 @@ export class AuthController {
     res.cookie('access_token', accessToken, {
       httpOnly: true, // Prevents JavaScript access (XSS protection)
       secure: isProduction, // HTTPS only in production
-      sameSite: 'strict', // CSRF protection
+      sameSite: isProduction ? 'strict' : 'lax', // 'lax' in dev for cross-origin (3001->3000), 'strict' in prod
       maxAge: 15 * 60 * 1000, // 15 minutes (matches JWT expiry)
       path: '/', // Available for all routes
     });
@@ -171,7 +171,7 @@ export class AuthController {
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true, // Prevents JavaScript access (XSS protection)
       secure: isProduction, // HTTPS only in production
-      sameSite: 'strict', // CSRF protection
+      sameSite: isProduction ? 'strict' : 'lax', // 'lax' in dev for cross-origin (3001->3000), 'strict' in prod
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days (matches JWT expiry)
       path: '/', // Available for all routes
     });
