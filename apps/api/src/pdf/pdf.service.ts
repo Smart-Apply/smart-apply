@@ -164,9 +164,12 @@ export class PdfService implements OnModuleDestroy {
   /**
    * Generate professional cover letter PDF from structured data
    */
-  async generateCoverLetterPDF(data: CoverLetterTemplateData): Promise<Buffer> {
+  async generateCoverLetterPDF(
+    data: CoverLetterTemplateData,
+    templateId?: string,
+  ): Promise<Buffer> {
     try {
-      const html = await this.templateRenderer.renderCoverLetter(data);
+      const html = await this.templateRenderer.renderCoverLetter(data, templateId);
       return this.generatePDFFromRenderedHTML(html, {
         margin: {
           top: '20mm',
@@ -184,9 +187,9 @@ export class PdfService implements OnModuleDestroy {
   /**
    * Generate professional resume PDF from structured data
    */
-  async generateResumePDF(data: ResumeTemplateData): Promise<Buffer> {
+  async generateResumePDF(data: ResumeTemplateData, templateId?: string): Promise<Buffer> {
     try {
-      const html = await this.templateRenderer.renderResume(data);
+      const html = await this.templateRenderer.renderResume(data, templateId);
       return this.generatePDFFromRenderedHTML(html, {
         margin: {
           top: '15mm',

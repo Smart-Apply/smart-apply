@@ -14,6 +14,8 @@ import type {
   ApplicationTrackingStatus,
   ResumeData,
   SessionsResponse,
+  Template,
+  TemplateWithContent,
 } from '@/types';
 import { ApiError, NetworkError, shouldRetry, getRetryDelay, isPermanentAuthFailure } from './errors';
 import { getCsrfToken, refreshCsrfToken } from './csrf';
@@ -259,15 +261,24 @@ export const api = {
       }),
   },
 
+  // Templates
+  templates: {
+    list: (type?: 'COVER_LETTER' | 'RESUME' | 'BOTH') =>
+      apiRequest<Template[]>(`/templates${type ? `?type=${type}` : ''}`),
+
+    getById: (id: string) =>
+      apiRequest<TemplateWithContent>(`/templates/${id}`),
+  },
+
   // Applications
   applications: {
-    create: (data: { jobPostingId: string }) =>
+    create: (data: { jobPostingId: string; coverLetterTemplateId?: string; resumeTemplateId?: string }) =>
       apiRequest<Application>('/applications', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
 
-    createWithGeneration: (data: { jobPostingId: string }) =>
+    createWithGeneration: (data: { jobPostingId: string; coverLetterTemplateId?: string; resumeTemplateId?: string }) =>
       apiRequest<Application>('/applications/create-with-generation', {
         method: 'POST',
         body: JSON.stringify(data),

@@ -70,8 +70,14 @@ export class ApplicationProcessor {
         content: application.coverLetterText,
       };
 
-      const coverLetterPdf = await this.pdfService.generateCoverLetterPDF(coverLetterTemplateData);
-      const resumePdf = await this.pdfService.generateResumePDF(resumeData);
+      const coverLetterPdf = await this.pdfService.generateCoverLetterPDF(
+        coverLetterTemplateData,
+        application.coverLetterTemplateId || undefined,
+      );
+      const resumePdf = await this.pdfService.generateResumePDF(
+        resumeData,
+        application.resumeTemplateId || undefined,
+      );
 
       // 3. Upload to Storage
       this.logger.log('Uploading to storage...');

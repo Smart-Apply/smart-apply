@@ -3,6 +3,8 @@ import * as Handlebars from 'handlebars';
 import * as fs from 'fs/promises';
 import * as fsSync from 'fs';
 import * as path from 'path';
+import { TemplatesService } from '../templates/templates.service';
+import { TemplateType } from '@prisma/client';
 
 export interface CoverLetterTemplateData {
   candidateName: string;
@@ -76,7 +78,7 @@ export class TemplateRendererService {
   private templatesDir: string;
   private stylesDir: string;
 
-  constructor() {
+  constructor(private readonly templatesService?: TemplatesService) {
     // Use process.cwd() which always points to the project root where npm start was run
     const projectRoot = process.cwd();
 
@@ -137,12 +139,33 @@ export class TemplateRendererService {
   }
 
   /**
-   * Render cover letter template
+   * Render cover letter template with optional templateId
    */
-  async renderCoverLetter(data: CoverLetterTemplateData): Promise<string> {
+  async renderCoverLetter(
+    data: CoverLetterTemplateData,
+    templateId?: string,
+  ): Promise<string> {
     try {
-      const template = await this.loadTemplate('cover-letter.hbs');
-      const css = await this.loadStyles(['base.css', 'cover-letter.css']);
+      let template: string;
+      let css: string;
+
+      if (templateId && this.templatesService) {
+        // Load template from database
+        const dbTemplate = await this.templatesService.findOne(templateId);
+        template = dbTemplate.htmlTemplate;
+        css = dbTemplate.cssStyles;
+      } else if (this.templatesService) {
+        // Load default template from database
+        const defaultTemplate = await this.templatesService.findDefault(
+          TemplateType.COVER_LETTER,
+        );
+        template = defaultTemplate.htmlTemplate;
+        css = defaultTemplate.cssStyles;
+      } else {
+        // Fallback to file system templates (for backward compatibility)
+        template = await this.loadTemplate('cover-letter.hbs');
+        css = await this.loadStyles(['base.css', 'cover-letter.css']);
+      }
 
       // Set default values
       const templateData = {
@@ -168,12 +191,28 @@ export class TemplateRendererService {
   }
 
   /**
-   * Render resume template
+   * Render resume template with optional templateId
    */
-  async renderResume(data: ResumeTemplateData): Promise<string> {
+  async renderResume(data: ResumeTemplateData, templateId?: string): Promise<string> {
     try {
-      const template = await this.loadTemplate('resume.hbs');
-      const css = await this.loadStyles(['base.css', 'resume.css']);
+      let template: string;
+      let css: string;
+
+      if (templateId && this.templatesService) {
+        // Load template from database
+        const dbTemplate = await this.templatesService.findOne(templateId);
+        template = dbTemplate.htmlTemplate;
+        css = dbTemplate.cssStyles;
+      } else if (this.templatesService) {
+        // Load default template from database
+        const defaultTemplate = await this.templatesService.findDefault(TemplateType.RESUME);
+        template = defaultTemplate.htmlTemplate;
+        css = defaultTemplate.cssStyles;
+      } else {
+        // Fallback to file system templates (for backward compatibility)
+        template = await this.loadTemplate('resume.hbs');
+        css = await this.loadStyles(['base.css', 'resume.css']);
+      }
 
       const compiledTemplate = Handlebars.compile(template);
       const html = compiledTemplate(data);

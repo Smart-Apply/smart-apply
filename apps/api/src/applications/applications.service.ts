@@ -287,6 +287,8 @@ export class ApplicationsService {
         notes: dto.notes,
         resumeText: JSON.stringify(resumeTemplate),
         coverLetterText: sanitizedCoverLetter,
+        coverLetterTemplateId: dto.coverLetterTemplateId,
+        resumeTemplateId: dto.resumeTemplateId,
       },
       include: {
         jobPosting: true,

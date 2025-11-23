@@ -12,6 +12,22 @@ export class CreateApplicationDto {
   jobPostingId: string;
 
   @ApiPropertyOptional({
+    description: 'ID der Vorlage für das Anschreiben',
+    example: 'professional-cover-letter',
+  })
+  @IsOptional()
+  @IsString()
+  coverLetterTemplateId?: string;
+
+  @ApiPropertyOptional({
+    description: 'ID der Vorlage für den Lebenslauf',
+    example: 'professional-resume',
+  })
+  @IsOptional()
+  @IsString()
+  resumeTemplateId?: string;
+
+  @ApiPropertyOptional({
     description: 'Optionale Notizen zur Bewerbung',
     example: 'Kontakt über Networking Event',
   })

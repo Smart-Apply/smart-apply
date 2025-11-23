@@ -182,6 +182,27 @@ export interface JobPosting {
   updatedAt: string;
 }
 
+// Template Types
+export type TemplateType = 'COVER_LETTER' | 'RESUME' | 'BOTH';
+
+export interface Template {
+  id: string;
+  name: string;
+  description?: string;
+  type: TemplateType;
+  category: string;
+  thumbnailUrl?: string;
+  isActive: boolean;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TemplateWithContent extends Template {
+  htmlTemplate: string;
+  cssStyles: string;
+}
+
 // Application Types
 
 // PDF Generation Status (system-facing)
@@ -216,6 +237,11 @@ export interface Application {
   coverLetterUrl?: string;
   resumeUrl?: string;
   errorMessage?: string;
+  
+  // Template selection
+  coverLetterTemplateId?: string;
+  resumeTemplateId?: string;
+  
   createdAt: string;
   updatedAt: string;
   jobPosting?: JobPosting;

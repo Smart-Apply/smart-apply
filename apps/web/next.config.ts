@@ -8,6 +8,18 @@ const nextConfig: NextConfig = {
   // Set workspace root for file tracing (monorepo setup)
   outputFileTracingRoot: path.join(__dirname, "../../"),
 
+  // Image configuration for external template preview images
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '3000',
+        pathname: '/api/v1/templates/*/preview',
+      },
+    ],
+  },
+
   // Security headers for enhanced XSS and clickjacking protection
   async headers() {
     const isDevelopment = process.env.NODE_ENV === 'development';
@@ -39,8 +51,8 @@ const nextConfig: NextConfig = {
                 : "script-src 'self' 'unsafe-inline'",
               // Tailwind CSS and inline styles require 'unsafe-inline'
               "style-src 'self' 'unsafe-inline'",
-              // Allow images from self, data URIs, and HTTPS sources
-              "img-src 'self' data: https:",
+              // Allow images from self, data URIs, HTTPS sources, and backend API
+              `img-src 'self' data: https: ${apiOrigin}`,
               // Allow fonts from self and data URIs
               "font-src 'self' data:",
               // API and WebSocket connections
