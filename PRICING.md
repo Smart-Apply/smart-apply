@@ -109,11 +109,3 @@ Maximale Automatisierung und Erfolgschancen für anspruchsvolle Nutzer.
   - ATS-Score Feature öffnen  
 
 ---
-
-## 🚀 Optional: Erweiterungen
-
-Auf Wunsch kann ich dir erstellen:
-- Eine **Stripe-Produktdefinition (JSON)**  
-- Eine **In-App Upgrade Modals UX**  
-- Eine **komplette Pricing-Page (React / Next.js)**  
-- Eine **Roadmap-Datei für zukünftige Premium-Features**
