@@ -267,12 +267,15 @@ PUT /api/v1/profile
 
 ## Security & Compliance
 
-### Current Security (8.0/10 Score)
+### Current Security (9.5/10 Score)
 **Implemented ✅**
 - JWT authentication with JwtAuthGuard on all protected endpoints
 - **JWT stored in HttpOnly cookies** (XSS-protected, no localStorage exposure)
+- **Refresh token strategy** with rotation, device tracking, max 5 tokens/user
+- **Session management** with multi-device tracking, remote logout, geolocation
 - Password hashing with argon2 (memory-hard, ASIC-resistant)
 - Helmet security headers (XSS, clickjacking, MIME sniffing protection)
+- **Frontend security headers** (CSP, X-Frame-Options, HSTS, X-Content-Type-Options)
 - CORS with configurable origins (restrictive whitelist)
 - Dual-tier rate limiting:
   - Auth endpoints: 5 attempts / 15 minutes (strict)
@@ -281,17 +284,23 @@ PUT /api/v1/profile
 - Strong JWT secret generation (64+ characters, cryptographically secure)
 - Input validation with class-validator DTOs (whitelist + forbidNonWhitelisted)
 - **Input sanitization** with @Sanitize() decorator and DOMPurify (XSS protection)
+- **Audit logging** with Winston (daily rotation, 90-day retention, security events)
 - User-friendly rate limit error messages in frontend
 - No PII in logs
 
-**Recently Implemented 🆕 (Issues #91-#96)**
+**Recently Implemented 🆕 (Issues #91-#98, #129, #144, #146)**
 - ✅ **#91:** Strong JWT secret generation (openssl rand -base64 64)
 - ✅ **#92:** Restrictive CORS policy with environment-based origins
 - ✅ **#93:** HttpOnly cookies for JWT storage (XSS-protected token storage)
 - ✅ **#94:** Password strength validation with regex enforcement
 - ✅ **#95:** Strict rate limiting on auth endpoints (5/15min)
 - ✅ **#96:** CSRF protection with csrf-csrf (optional, disabled by default)
-- 📝 **Security documentation:** CORS_SECURITY.md, SECURITY.md with rotation procedures
+- ✅ **#97:** Input sanitization with @Sanitize() decorator (XSS protection)
+- ✅ **#98:** Refresh token strategy (dual-token, rotation, device tracking, max 5/user)
+- ✅ **#129:** Audit logging (Winston, daily rotation, 90-day retention, security events)
+- ✅ **#144:** Frontend security headers (CSP, X-Frame-Options, HSTS, X-Content-Type-Options)
+- ✅ **#146:** Session management (multi-device tracking, remote logout, max 5 sessions, cron cleanup)
+- 📝 **Security documentation:** CORS_SECURITY.md, SECURITY.md, XSS_PROTECTION.md, REFRESH_TOKENS.md with rotation procedures
 
 **CSRF Protection Details (Issue #96):**
 - **Package:** csrf-csrf (Double Submit Cookie Pattern)
@@ -306,23 +315,21 @@ PUT /api/v1/profile
 - **Logout:** Changed to GET method (no CSRF validation required)
 - **Important:** `__Host-` cookie prefix only works with HTTPS (production)
 
-**High Priority 🟡 (Should fix before launch)**
-- No refresh token strategy (only access tokens) - Issue #98
-
 **Completed Security Features ✅**
 - JWT stored in HttpOnly cookies (Issue #93) - Enabled by default, XSS-protected
 - Input sanitization with @Sanitize() decorator (Issue #97) - Enabled by default
 - CSRF protection (Issue #96) - Optional, set `ENABLE_CSRF=true` to enable
+- Refresh token strategy (Issue #98) - Dual-token rotation with device tracking
+- Audit logging (Issue #129) - Winston with daily rotation, 90-day retention
+- Frontend security headers (Issue #144) - CSP, X-Frame-Options, HSTS
+- Session management (Issue #146) - Multi-device tracking, remote logout, max 5 sessions
 
-**Medium/Low Priority 🟢 (Post-launch)**
-- Content Security Policy (CSP) headers
-- Frontend security headers in next.config.ts
-- Audit logging for failed logins and suspicious activity
-- Session management (force logout, concurrent session limits)
-- Two-factor authentication (2FA)
-- **Key Vault** for secrets in prod
-- Short-TTL **SAS** for file downloads
-- GDPR-friendly deletion (post-MVP ticket)
+**Future Enhancements 🟢 (Post-MVP)**
+- Two-factor authentication (2FA) - TOTP-based
+- **Key Vault** for secrets in prod - Azure Key Vault integration
+- Short-TTL **SAS** for file downloads - 15-minute expiry
+- GDPR-friendly deletion - Data export and deletion workflows
+- Enhanced audit logging - Real-time alerts, SIEM integration
 
 **Security Roadmap**
 See `MVP_FEATURES.md` for detailed security tasks with priorities and estimates.

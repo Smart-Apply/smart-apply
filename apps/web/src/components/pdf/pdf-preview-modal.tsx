@@ -8,13 +8,16 @@ import { CenteredLoader } from '@/components/shared/loading';
 import { ChevronLeft, ChevronRight, Download, ZoomIn, ZoomOut } from 'lucide-react';
 import { handleDownload } from '@/lib/pdf-utils';
 
-// Set up PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+// Set up PDF.js worker - use local worker from node_modules
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url,
+).toString();
 
 interface PDFPreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  url: string;
+  file: string | Blob | File;
   filename: string;
   title: string;
   onExpired?: () => void;
@@ -23,7 +26,7 @@ interface PDFPreviewModalProps {
 export function PDFPreviewModal({
   isOpen,
   onClose,
-  url,
+  file,
   filename,
   title,
   onExpired,
@@ -65,7 +68,19 @@ export function PDFPreviewModal({
   };
 
   const handleDownloadClick = async () => {
-    await handleDownload(url, filename, onExpired);
+    // If file is a Blob, create a temporary URL for download
+    if (file instanceof Blob) {
+      const url = URL.createObjectURL(file);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } else {
+      await handleDownload(file, filename, onExpired);
+    }
   };
 
   return (
@@ -120,7 +135,7 @@ export function PDFPreviewModal({
         {/* PDF Viewer */}
         <div className="flex-1 overflow-auto bg-gray-100 rounded-lg flex items-center justify-center">
           <Document
-            file={url}
+            file={file}
             onLoadSuccess={onDocumentLoadSuccess}
             onLoadError={onDocumentLoadError}
             loading={<CenteredLoader message="Lädt PDF..." />}

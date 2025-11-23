@@ -40,10 +40,10 @@
 | **Security** | CSRF Protection | Add CSRF tokens for state-changing requests | ✅ Done (#96) | 🟡 High Priority | MVP |
 | **Security** | Input Sanitization (XSS) | Sanitize user inputs (DOMPurify frontend, backend validation) | ✅ Done (#97) | 🟡 High Priority | MVP |
 | **Security** | Token Refresh Strategy | Implement refresh tokens (avoid 7-day expiration logout) | ✅ Done (#98) | 🟡 High Priority | MVP |
-| **Security** | Security Headers (Frontend) | Add CSP, X-Frame-Options in Next.js config | ✅ Done | 🟢 Medium Priority | MVP |
-| **Security** | Audit Logging | Log security events (failed logins, suspicious activity) | ✅ Done | 🟢 Medium Priority | MVP |
-| **Security** | Content Security Policy (CSP) | Prevent XSS with strict CSP headers | ❌ Not yet | 🟢 Medium Priority | Post-MVP |
-| **Security** | Session Management | Track active sessions for multi-device logout | ❌ Not yet | 🟢 Low Priority | Post-MVP |
+| **Security** | Security Headers (Frontend) | Add CSP, X-Frame-Options in Next.js config | ✅ Done (#144) | 🟢 Medium Priority | MVP |
+| **Security** | Audit Logging | Log security events (failed logins, suspicious activity) | ✅ Done (#129) | 🟢 Medium Priority | MVP |
+| **Security** | Session Management | Track active sessions for multi-device logout | ✅ Done (#146) | 🟢 Medium Priority | MVP |
+| **Security** | Content Security Policy (CSP) | Prevent XSS with strict CSP headers | ✅ Done (#144) | 🟢 Medium Priority | MVP |
 | **Security** | Two-Factor Authentication (2FA) | TOTP-based 2FA (Google Authenticator) | ❌ Not yet | 🟢 Low Priority | Post-MVP |
 | **Post-MVP** | ATS Keyword Matching | Evaluate profile/job overlap semantically | ❌ Not yet | — | Phase 2 |
 | **Post-MVP** | Gmail/Outlook Integration | Track application responses | ❌ Not yet | — | Phase 2 |
@@ -55,9 +55,9 @@
 
 ## 🔒 Security Status Summary
 
-**Current Security Score: 9.0/10** ⬆️ (was 6/10)
+**Current Security Score: 9.5/10** ⬆️ (was 8.0/10)
 
-### ✅ All Critical & High Priority Items Implemented (Issues #91-#98)
+### ✅ All Critical, High & Medium Priority Items Implemented (Issues #91-#98, #129, #144, #146)
 
 **Critical Issues (Production Ready) ✅**
 1. **JWT Secret (#91):** 64+ char random string with openssl generation
@@ -70,29 +70,34 @@
 6. **CSRF Protection (#96):** csrf-csrf package (optional, disabled by default)
 7. **XSS Protection (#97):** @Sanitize() decorator on all user inputs
 8. **Refresh Tokens (#98):** Dual-token strategy with rotation, device tracking, max 5 tokens/user
-9. **Security Headers:** Frontend CSP, X-Frame-Options, HSTS in next.config.ts
-10. **Audit Logging:** Winston with daily rotation, 90-day retention, PII-compliant
+9. **Audit Logging (#129):** Winston with daily rotation, 90-day retention, tracks failed logins, rate limit violations, profile updates, refresh token usage
+10. **Session Management (#146):** Multi-device tracking with device fingerprinting, IP geolocation, remote logout (single/all), max 5 sessions, automatic cleanup cron
+11. **Security Headers (#144):** Frontend CSP, X-Frame-Options, HSTS, X-Content-Type-Options in next.config.ts
 
-### Medium Priority (Future Enhancements) 🟢
-11. **Enhanced Audit Logging:** Real-time alerts, SIEM integration, anomaly detection
-12. **Key Vault:** Migrate secrets from .env to Azure Key Vault (production)
-13. **Short-TTL SAS:** Reduce file download URLs to 15-minute expiry
+### Future Enhancements (Post-MVP) 🟢
 
-### Low Priority (Post-MVP) 🟢
-14. **Session Management:** Multi-device session tracking and force logout
-15. **2FA:** Two-factor authentication (TOTP-based)
-16. **GDPR Compliance:** Data deletion and export workflows
+- **Enhanced Audit Logging:** Real-time alerts, SIEM integration, anomaly detection
+- **Key Vault:** Migrate secrets from .env to Azure Key Vault (production)
+- **Short-TTL SAS:** Reduce file download URLs to 15-minute expiry
+- **2FA:** Two-factor authentication (TOTP-based)
+- **GDPR Compliance:** Data deletion and export workflows
 
 ---
 
-✅ **Implementation Summary**
-- Back-end foundation: 95% complete (all core modules done)
-- Security foundation: 90% complete (all critical & high priority done ✅)
-- **Frontend foundation: 85% complete** (auth, profile, jobs, applications, PDF preview ✅)
-- MVP gaps: Real-time status updates (polling/SSE), manual job input backend, optional PDF editing
-- Infrastructure (Azure, LLM, Queue, Storage) production-grade
+## ✅ Implementation Summary
 
-**Security Implementation Details:**
+**Backend:** 95% complete (all core modules done)
+
+**Security:** 95% complete (all critical, high & medium priority done ✅)
+
+**Frontend:** 85% complete (auth, profile, jobs, applications, PDF preview ✅)
+
+**MVP gaps:** Real-time status updates (polling/SSE), manual job input backend, optional PDF editing
+
+**Infrastructure:** Production-grade (Azure, LLM, Queue, Storage)
+
+## Security Implementation Details
+
 - Issue #91: Strong JWT secret (openssl rand -base64 64)
 - Issue #92: Restrictive CORS (environment-based origins)
 - Issue #93: HttpOnly cookies (XSS-protected token storage)
@@ -101,3 +106,6 @@
 - Issue #96: CSRF protection (csrf-csrf, optional)
 - Issue #97: Input sanitization (@Sanitize() decorator, XSS protection)
 - Issue #98: Refresh token strategy (dual-token, rotation, device tracking, max 5/user)
+- Issue #129: Audit logging (Winston, daily rotation, 90-day retention, security events)
+- Issue #144: Frontend security headers (CSP, X-Frame-Options, HSTS, X-Content-Type-Options)
+- Issue #146: Session management (multi-device tracking, remote logout, max 5 sessions, cron cleanup)

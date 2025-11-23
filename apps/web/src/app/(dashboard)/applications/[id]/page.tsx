@@ -91,6 +91,7 @@ export default function ApplicationDetailPage() {
   const createApplication = useCreateApplication();
   const [previewFile, setPreviewFile] = useState<{
     url: string;
+    blob?: Blob;
     filename: string;
     title: string;
   } | null>(null);
@@ -286,6 +287,7 @@ export default function ApplicationDetailPage() {
 
       setPreviewFile({
         url: blobUrl,
+        blob: blob,
         filename: generateFilename(
           'cover-letter',
           application?.jobPosting?.company,
@@ -317,6 +319,7 @@ export default function ApplicationDetailPage() {
 
       setPreviewFile({
         url: blobUrl,
+        blob: blob,
         filename: generateFilename(
           'resume',
           application?.jobPosting?.company,
@@ -660,7 +663,7 @@ export default function ApplicationDetailPage() {
             }
             setPreviewFile(null);
           }}
-          url={previewFile.url}
+          file={previewFile.blob || previewFile.url}
           filename={previewFile.filename}
           title={previewFile.title}
           onExpired={handleExpiredUrl}
