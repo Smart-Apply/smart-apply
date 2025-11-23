@@ -228,7 +228,7 @@ async function bootstrap() {
     operationIdFactory: (controllerKey: string, methodKey: string) => methodKey, // Use method name as operationId
   });
 
-  SwaggerModule.setup('api/docs', app, document, {
+  SwaggerModule.setup('docs', app, document, {
     swaggerOptions: {
       persistAuthorization: true, // Remember auth token in localStorage
       docExpansion: 'none', // Collapse all endpoints by default
@@ -251,7 +251,7 @@ async function bootstrap() {
     `,
   });
 
-  logger.log(`📚 Swagger documentation available at: http://localhost:${configService.port}/api/docs`);
+  logger.log(`📚 Swagger documentation available at: http://localhost:${configService.port}/docs`);
 
   const port = configService.port;
   await app.listen(port);
