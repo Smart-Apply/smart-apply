@@ -21,8 +21,54 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
 
-  // Security
-  app.use(helmet());
+  // Enhanced Helmet configuration with strict Content Security Policy (CSP)
+  // CSP provides defense-in-depth protection against XSS attacks by controlling
+  // which resources the browser is allowed to load and execute
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        useDefaults: false, // We define explicit directives for clarity
+        directives: {
+          defaultSrc: ["'self'"], // Only allow resources from same origin by default
+          scriptSrc: configService.isDevelopment
+            ? ["'self'", "'unsafe-inline'", "'unsafe-eval'"] // Development: Swagger UI needs unsafe-inline/eval
+            : ["'self'"], // Production: No inline scripts allowed
+          styleSrc: ["'self'", "'unsafe-inline'"], // Inline styles needed for Swagger UI
+          imgSrc: ["'self'", 'data:', 'https:'], // Allow images from self, data URIs, and HTTPS
+          connectSrc: ["'self'"], // API calls only to same origin
+          fontSrc: ["'self'", 'data:'], // Fonts from self and data URIs
+          objectSrc: ["'none'"], // Disallow plugins (Flash, Java, etc.)
+          mediaSrc: ["'self'"], // Media from same origin only
+          frameSrc: ["'none'"], // No iframes allowed
+          frameAncestors: ["'none'"], // Prevent embedding in iframes (clickjacking protection)
+          baseUri: ["'self'"], // Restrict base tag to prevent injection
+          formAction: ["'self'"], // Forms can only submit to same origin
+          // upgradeInsecureRequests: Helmet-specific behavior
+          // Empty array [] enables the directive (production: force HTTPS)
+          // null disables the directive (development: allow HTTP)
+          upgradeInsecureRequests: configService.isProduction ? [] : null,
+          reportUri: ['/api/v1/csp-violations'], // Report violations to our endpoint
+        },
+        reportOnly: configService.cspReportOnly, // Start with report-only mode for testing
+      },
+      hsts: {
+        maxAge: 31536000, // 1 year in seconds
+        includeSubDomains: true,
+        preload: true, // Enable HSTS preloading
+      },
+      frameguard: {
+        action: 'deny', // Deny all framing attempts
+      },
+      noSniff: true, // Prevent MIME type sniffing
+      referrerPolicy: {
+        policy: 'strict-origin-when-cross-origin', // Privacy-preserving referrer policy
+      },
+    }),
+  );
+
+  logger.log(
+    `🛡️  CSP configured in ${configService.cspReportOnly ? 'report-only' : 'enforcing'} mode`,
+  );
 
   // Cookie parser - must be before routes
   app.use(cookieParser());

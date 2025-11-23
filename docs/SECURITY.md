@@ -262,15 +262,87 @@ For detailed implementation, see [REFRESH_TOKENS.md](./REFRESH_TOKENS.md).
 - ✅ **CORS origins restricted** to specified domains (see [CORS_SECURITY.md](./CORS_SECURITY.md))
 - Configuration: `CORS_ORIGINS` environment variable with comma-separated list
 - Allowed methods: GET, POST, PUT, DELETE, PATCH
-- Allowed headers: Content-Type, Authorization
+- Allowed headers: Content-Type, Authorization, X-CSRF-Token
+- ✅ **Content Security Policy (CSP)** - Backend layer of defense-in-depth XSS protection
+  - `default-src 'self'` - Only allow same-origin resources
+  - `script-src` - Development allows `unsafe-inline` and `unsafe-eval` for Swagger UI
+  - `object-src 'none'` - Disallow plugins (Flash, Java, etc.)
+  - `frame-ancestors 'none'` - Prevent iframe embedding (clickjacking)
+  - `form-action 'self'` - Restrict form submissions
+  - `upgrade-insecure-requests` - Force HTTPS in production
+  - `report-uri /api/v1/csp-violations` - Violation reporting endpoint
+  - Configuration: `CSP_REPORT_ONLY` environment variable (true=log, false=enforce)
 - ✅ **Security headers** via Helmet middleware (X-Frame-Options, X-Content-Type-Options, etc.)
 - Use **HTTPS** only in production (enforce via headers)
+
+**Backend CSP Configuration:**
+```typescript
+// apps/api/src/main.ts
+app.use(helmet({
+  contentSecurityPolicy: {
+    useDefaults: false,
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: isDevelopment ? ["'self'", "'unsafe-inline'", "'unsafe-eval'"] : ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'", 'data:'],
+      objectSrc: ["'none'"],
+      frameSrc: ["'none'"],
+      frameAncestors: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      upgradeInsecureRequests: isProduction ? [] : null,
+      reportUri: ['/api/v1/csp-violations'],
+    },
+    reportOnly: configService.cspReportOnly, // Environment variable: CSP_REPORT_ONLY
+  },
+  // ... other Helmet options
+}));
+```
+
+**Environment Variables:**
+```bash
+# CSP Report-Only Mode (for testing)
+# true = Log violations without blocking (recommended for initial deployment)
+# false = Enforce CSP and block violations (recommended for production after testing)
+CSP_REPORT_ONLY=false
+```
+
+**CSP Violation Reporting:**
+- Endpoint: `POST /api/v1/csp-violations` (public, no authentication)
+- Violations are logged with structured data for monitoring
+- Optional database storage for compliance reporting (commented out in MVP)
+
+**Testing CSP:**
+```bash
+# Start server in report-only mode
+CSP_REPORT_ONLY=true npm run start:dev
+
+# Check response headers
+curl -I http://localhost:3000/api/v1/auth/me
+
+# Look for: Content-Security-Policy-Report-Only or Content-Security-Policy
+
+# Test with intentional violation in browser console
+# WARNING: Only run this in development/testing environments, never in production!
+eval('alert("CSP Test")');  // Should be blocked by CSP
+
+# Check server logs for violation reports
+tail -f logs/nest-*.log | grep "CSP Violation"
+```
 
 **Production Checklist:**
 - [ ] Set `CORS_ORIGINS` to production frontend URLs (no localhost)
 - [ ] Verify all origins use HTTPS
 - [ ] Test CORS preflight requests
 - [ ] Document all allowed origins
+- [ ] Start with `CSP_REPORT_ONLY=true` to test CSP without breaking functionality
+- [ ] Monitor CSP violation logs for 1-2 weeks
+- [ ] Fix any legitimate CSP violations in code
+- [ ] Switch to `CSP_REPORT_ONLY=false` to enforce CSP in production
+- [ ] Verify Swagger UI works (requires unsafe-inline/eval in development only)
 
 #### Frontend (Next.js)
 - ✅ **Content-Security-Policy (CSP)** - Controls which resources can be loaded
@@ -383,6 +455,9 @@ Before deploying to production, verify:
 - [ ] Input sanitization applied to all user inputs (backend & frontend)
 - [ ] XSS protection tested with common attack vectors
 - [ ] Backend security headers configured (Helmet middleware active)
+- [ ] Backend CSP configured with report-only mode initially
+- [ ] CSP violations monitored and fixed during testing period
+- [ ] Backend CSP switched to enforcing mode after validation
 - [ ] Frontend security headers configured (CSP, X-Frame-Options, HSTS)
 - [ ] CSP violations tested (no errors in browser console)
 - [ ] Application Insights enabled for monitoring
