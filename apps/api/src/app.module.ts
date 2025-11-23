@@ -16,6 +16,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
 import { ConfigService } from './config/config.service';
 import { AuditLoggerModule } from './common/audit-logger';
+import { CSPViolationController } from './common/csp/csp-violation.controller';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { AuditLoggerModule } from './common/audit-logger';
     JobsModule,
     ApplicationsModule,
   ],
+  controllers: [CSPViolationController],
   providers: [
     {
       provide: APP_FILTER,

@@ -163,4 +163,8 @@ export class ConfigService {
   get rateLimitAuthMax(): number {
     return parseInt(this.nestConfig.get('RATE_LIMIT_AUTH_MAX', { infer: true }), 10);
   }
+
+  get cspReportOnly(): boolean {
+    return this.nestConfig.get('CSP_REPORT_ONLY', { infer: true });
+  }
 }

@@ -64,6 +64,10 @@ const envSchema = z.object({
     .string()
     .default('false')
     .transform((val) => val === 'true'),
+  CSP_REPORT_ONLY: z
+    .string()
+    .default('false')
+    .transform((val) => val === 'true'),
 
   // Rate Limiting - Default (general API endpoints)
   RATE_LIMIT_TTL: z.string().default('60'), // 1 minute in seconds (shorter window for development)
