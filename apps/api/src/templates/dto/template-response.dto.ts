@@ -1,10 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-
-export enum TemplateType {
-  COVER_LETTER = 'COVER_LETTER',
-  RESUME = 'RESUME',
-  BOTH = 'BOTH',
-}
+import { TemplateType } from '@prisma/client';
 
 export class TemplateResponseDto {
   @ApiProperty({ example: 'clx1y2z3a4b5c6d7e8f9g0h1' })
@@ -16,8 +11,9 @@ export class TemplateResponseDto {
   @ApiProperty({
     example: 'Classic, formal layout suitable for corporate applications',
     required: false,
+    nullable: true,
   })
-  description?: string;
+  description?: string | null;
 
   @ApiProperty({ enum: TemplateType, example: TemplateType.COVER_LETTER })
   type: TemplateType;
@@ -28,8 +24,9 @@ export class TemplateResponseDto {
   @ApiProperty({
     example: 'https://storage.example.com/thumbnails/professional-cover-letter.png',
     required: false,
+    nullable: true,
   })
-  thumbnailUrl?: string;
+  thumbnailUrl?: string | null;
 
   @ApiProperty({ example: true })
   isActive: boolean;

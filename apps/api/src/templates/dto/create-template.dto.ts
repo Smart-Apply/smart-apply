@@ -1,6 +1,6 @@
 import { IsString, IsEnum, IsOptional, IsBoolean, IsNotEmpty } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { TemplateType } from './template-response.dto';
+import { TemplateType } from '@prisma/client';
 
 export class CreateTemplateDto {
   @ApiProperty({ example: 'Professional Cover Letter' })
