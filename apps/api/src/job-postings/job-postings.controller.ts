@@ -13,7 +13,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JobPostingsService } from './job-postings.service';
-import { ParseJobPostingDto, JobPostingResponseDto } from './dto';
+import { ParseJobPostingDto, CreateJobPostingDto, JobPostingResponseDto } from './dto';
 
 @ApiTags('job-postings')
 @Controller('job-postings')
@@ -21,6 +21,22 @@ import { ParseJobPostingDto, JobPostingResponseDto } from './dto';
 @ApiBearerAuth()
 export class JobPostingsController {
   constructor(private readonly jobPostingsService: JobPostingsService) {}
+
+  @Post()
+  @ApiOperation({ summary: 'Create job posting manually with all fields' })
+  @ApiResponse({
+    status: 201,
+    description: 'Job posting created successfully',
+    type: JobPostingResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Invalid input' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async createJobPosting(
+    @CurrentUser('id') userId: string,
+    @Body() dto: CreateJobPostingDto,
+  ): Promise<JobPostingResponseDto> {
+    return this.jobPostingsService.create(userId, dto);
+  }
 
   @Post('parse')
   @ApiOperation({ summary: 'Parse job posting from text, URL, or file' })

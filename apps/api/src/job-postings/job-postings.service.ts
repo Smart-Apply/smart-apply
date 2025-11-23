@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { ParseJobPostingDto } from './dto/parse-job-posting.dto';
+import { CreateJobPostingDto } from './dto/create-job-posting.dto';
 import { JobPostingResponseDto } from './dto/job-posting-response.dto';
 import { TextParser } from './parsers/text.parser';
 import { UrlParser } from './parsers/url.parser';
@@ -95,6 +96,84 @@ export class JobPostingsService {
     );
 
     return this.mapToResponseDto(jobPosting);
+  }
+
+  /**
+   * Create job posting manually with all fields
+   * @param userId User ID from JWT token
+   * @param dto Create job posting DTO
+   * @returns Job posting response DTO
+   */
+  async create(userId: string, dto: CreateJobPostingDto): Promise<JobPostingResponseDto> {
+    this.logger.log(`Creating manual job posting: ${dto.title} at ${dto.company}`);
+
+    const jobPosting = await this.prisma.jobPosting.create({
+      data: {
+        userId,
+        title: dto.title,
+        company: dto.company,
+        location: dto.location,
+        description: dto.description,
+        requirements: dto.requirements || [],
+        responsibilities: dto.responsibilities || [],
+        niceToHave: dto.niceToHave || [],
+        sourceUrl: dto.url,
+        // rawText can be constructed from the manual input for consistency
+        rawText: this.constructRawText(dto),
+      },
+    });
+
+    this.logger.log(`Created manual job posting: ${jobPosting.id}`);
+
+    return this.mapToResponseDto(jobPosting);
+  }
+
+  /**
+   * Construct raw text representation from manual input
+   * This helps maintain consistency with parsed job postings
+   */
+  private constructRawText(dto: CreateJobPostingDto): string {
+    const parts: string[] = [];
+
+    parts.push(`Job Title: ${dto.title}`);
+    parts.push(`Company: ${dto.company}`);
+    
+    if (dto.location) {
+      parts.push(`Location: ${dto.location}`);
+    }
+
+    if (dto.employmentType) {
+      parts.push(`Employment Type: ${dto.employmentType}`);
+    }
+
+    if (dto.salary) {
+      parts.push(`Salary: ${dto.salary}`);
+    }
+
+    if (dto.url) {
+      parts.push(`\nJob URL: ${dto.url}`);
+    }
+
+    if (dto.description) {
+      parts.push(`\nDescription:\n${dto.description}`);
+    }
+
+    if (dto.requirements && dto.requirements.length > 0) {
+      parts.push(`\nRequirements:`);
+      dto.requirements.forEach((req) => parts.push(`- ${req}`));
+    }
+
+    if (dto.responsibilities && dto.responsibilities.length > 0) {
+      parts.push(`\nResponsibilities:`);
+      dto.responsibilities.forEach((resp) => parts.push(`- ${resp}`));
+    }
+
+    if (dto.niceToHave && dto.niceToHave.length > 0) {
+      parts.push(`\nNice to Have:`);
+      dto.niceToHave.forEach((nice) => parts.push(`- ${nice}`));
+    }
+
+    return parts.join('\n');
   }
 
   /**

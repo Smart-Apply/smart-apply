@@ -31,13 +31,45 @@ export function useJobPosting(id: string) {
 }
 
 /**
+ * Hook to create job posting manually
+ */
+export function useCreateJobPosting() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: {
+      title: string;
+      company: string;
+      location?: string;
+      url?: string;
+      description: string;
+      requirements?: string[];
+      responsibilities?: string[];
+      niceToHave?: string[];
+      salary?: string;
+      employmentType?: string;
+    }) => api.jobPostings.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['job-postings'] });
+      toastSuccess('Stellenanzeige erfolgreich erstellt');
+    },
+    onError: (error: unknown) => {
+      toastError(error, 'Fehler beim Erstellen der Stellenanzeige');
+    },
+  });
+}
+
+/**
  * Hook to parse job posting from URL or text
  */
 export function useParseJobPosting() {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: (data: { text?: string; url?: string; fileId?: string }) =>
       api.jobPostings.parse(data),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['job-postings'] });
       toastSuccess('Stellenanzeige erfolgreich geparst');
     },
     onError: (error: unknown) => {

@@ -243,6 +243,23 @@ export const api = {
 
   // Job Postings
   jobPostings: {
+    create: (data: {
+      title: string;
+      company: string;
+      location?: string;
+      url?: string;
+      description: string;
+      requirements?: string[];
+      responsibilities?: string[];
+      niceToHave?: string[];
+      salary?: string;
+      employmentType?: string;
+    }) =>
+      apiRequest<JobPosting>('/job-postings', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
     parse: (data: { text?: string; url?: string; fileId?: string }) =>
       apiRequest<JobPosting>('/job-postings/parse', {
         method: 'POST',

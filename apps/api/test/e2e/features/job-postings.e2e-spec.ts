@@ -226,4 +226,190 @@ Responsibilities:
       expect(new Date(response.body.createdAt)).toBeInstanceOf(Date);
     });
   });
+
+  describe('POST /api/v1/job-postings', () => {
+    it('should create job posting manually with all fields', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/api/v1/job-postings')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          title: 'Senior Frontend Developer',
+          company: 'Tech Corp',
+          location: 'Berlin, Germany',
+          url: 'https://example.com/jobs/123',
+          description: 'We are looking for an experienced frontend developer to join our team.',
+          requirements: [
+            '5+ years of React experience',
+            'Strong TypeScript skills',
+            'Experience with Next.js',
+          ],
+          responsibilities: [
+            'Build scalable web applications',
+            'Mentor junior developers',
+            'Collaborate with design team',
+          ],
+          niceToHave: [
+            'Experience with GraphQL',
+            'Open source contributions',
+          ],
+          salary: '80,000 - 100,000 EUR',
+          employmentType: 'Full-time',
+        })
+        .expect(201);
+
+      expect(response.body).toHaveProperty('id');
+      expect(response.body.title).toBe('Senior Frontend Developer');
+      expect(response.body.company).toBe('Tech Corp');
+      expect(response.body.location).toBe('Berlin, Germany');
+      expect(response.body.description).toContain('experienced frontend developer');
+      expect(response.body.requirements).toBeInstanceOf(Array);
+      expect(response.body.requirements.length).toBe(3);
+      expect(response.body.requirements[0]).toContain('React');
+      expect(response.body.responsibilities).toBeInstanceOf(Array);
+      expect(response.body.responsibilities.length).toBe(3);
+      expect(response.body.niceToHave).toBeInstanceOf(Array);
+      expect(response.body.niceToHave.length).toBe(2);
+      expect(response.body.sourceUrl).toBe('https://example.com/jobs/123');
+      expect(response.body.rawText).toBeDefined();
+      expect(response.body.rawText).toContain('Senior Frontend Developer');
+      expect(response.body.rawText).toContain('Tech Corp');
+    });
+
+    it('should create job posting with only required fields', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/api/v1/job-postings')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          title: 'Backend Engineer',
+          company: 'StartupXYZ',
+          description: 'Build scalable APIs and microservices.',
+        })
+        .expect(201);
+
+      expect(response.body).toHaveProperty('id');
+      expect(response.body.title).toBe('Backend Engineer');
+      expect(response.body.company).toBe('StartupXYZ');
+      expect(response.body.description).toContain('scalable APIs');
+      expect(response.body.requirements).toBeInstanceOf(Array);
+      expect(response.body.requirements.length).toBe(0);
+      expect(response.body.responsibilities).toBeInstanceOf(Array);
+      expect(response.body.responsibilities.length).toBe(0);
+      expect(response.body.niceToHave).toBeInstanceOf(Array);
+      expect(response.body.niceToHave.length).toBe(0);
+    });
+
+    it('should reject request without required title field', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/api/v1/job-postings')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          company: 'Test Company',
+          description: 'Some description',
+        })
+        .expect(400);
+
+      expect(response.body.message).toBeDefined();
+    });
+
+    it('should reject request without required company field', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/api/v1/job-postings')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          title: 'Test Job',
+          description: 'Some description',
+        })
+        .expect(400);
+
+      expect(response.body.message).toBeDefined();
+    });
+
+    it('should reject request without required description field', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/api/v1/job-postings')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          title: 'Test Job',
+          company: 'Test Company',
+        })
+        .expect(400);
+
+      expect(response.body.message).toBeDefined();
+    });
+
+    it('should reject request without authentication', async () => {
+      await request(app.getHttpServer())
+        .post('/api/v1/job-postings')
+        .send({
+          title: 'Test Job',
+          company: 'Test Company',
+          description: 'Some description',
+        })
+        .expect(401);
+    });
+
+    it('should validate URL format when provided', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/api/v1/job-postings')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          title: 'Test Job',
+          company: 'Test Company',
+          description: 'Some description',
+          url: 'not-a-valid-url',
+        })
+        .expect(400);
+
+      expect(response.body.message).toBeDefined();
+    });
+
+    it('should enforce max length on title', async () => {
+      const longTitle = 'a'.repeat(201);
+      
+      const response = await request(app.getHttpServer())
+        .post('/api/v1/job-postings')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          title: longTitle,
+          company: 'Test Company',
+          description: 'Some description',
+        })
+        .expect(400);
+
+      expect(response.body.message).toBeDefined();
+    });
+
+    it('should sanitize input fields', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/api/v1/job-postings')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          title: '<script>alert("xss")</script>Developer',
+          company: 'Test Company',
+          description: '<img src=x onerror=alert(1)>Description',
+          location: '<b>Location</b>',
+        })
+        .expect(201);
+
+      // Sanitization should remove script tags
+      expect(response.body.title).not.toContain('<script>');
+      expect(response.body.description).not.toContain('onerror');
+    });
+
+    it('should return timestamps', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/api/v1/job-postings')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          title: 'Test Job',
+          company: 'Test Company',
+          description: 'Some description',
+        })
+        .expect(201);
+
+      expect(response.body.createdAt).toBeDefined();
+      expect(response.body.updatedAt).toBeDefined();
+      expect(new Date(response.body.createdAt)).toBeInstanceOf(Date);
+    });
+  });
 });
