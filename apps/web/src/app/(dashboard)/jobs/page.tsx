@@ -4,26 +4,27 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { JobPostingParser } from '@/components/forms/job-posting-parser';
+import { JobPostingForm } from '@/components/forms/job-posting-form';
 import { useJobPostings, useDeleteJobPosting } from '@/hooks/use-job-postings';
-import { Plus, Briefcase, Trash2, ExternalLink, Loader2 } from 'lucide-react';
-import type { JobPosting } from '@/types';
+import { Plus, Briefcase, Trash2, ExternalLink, Loader2, FileText, Edit } from 'lucide-react';
 
 export default function JobsPage() {
   const router = useRouter();
-  const [showParser, setShowParser] = useState(false);
+  const [showInput, setShowInput] = useState(false);
+  const [inputTab, setInputTab] = useState<'parser' | 'manual'>('parser');
   const { data: jobPostings, isLoading } = useJobPostings();
   const deleteJobPosting = useDeleteJobPosting();
 
-  const handleSave = async (jobPosting: JobPosting) => {
-    // In a real implementation, this would save to the backend
-    // For now, we just close the parser and refetch the list
-    setShowParser(false);
-    
-    // The parsed data is already saved by the backend during parsing
-    // We just need to refresh the list
-    window.location.reload();
+  const handleSave = async () => {
+    // Close the input section after saving
+    setShowInput(false);
+  };
+
+  const handleManualSave = () => {
+    // Close the input section after manual creation
+    setShowInput(false);
   };
 
   const handleDelete = async (id: string) => {
@@ -42,16 +43,38 @@ export default function JobsPage() {
             Verwalte deine gespeicherten Stellenanzeigen
           </p>
         </div>
-        <Button onClick={() => setShowParser(!showParser)}>
+        <Button onClick={() => setShowInput(!showInput)}>
           <Plus className="mr-2 h-4 w-4" />
-          {showParser ? 'Parser schließen' : 'Neue Stelle hinzufügen'}
+          {showInput ? 'Eingabe schließen' : 'Neue Stelle hinzufügen'}
         </Button>
       </div>
 
-      {/* Parser Component */}
-      {showParser && (
+      {/* Input Component with Tabs */}
+      {showInput && (
         <div className="animate-in fade-in slide-in-from-top-5 duration-300">
-          <JobPostingParser onSave={handleSave} />
+          <Tabs value={inputTab} onValueChange={(v) => setInputTab(v as 'parser' | 'manual')}>
+            <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsTrigger value="parser">
+                <FileText className="mr-2 h-4 w-4" />
+                Parser (URL/Text)
+              </TabsTrigger>
+              <TabsTrigger value="manual">
+                <Edit className="mr-2 h-4 w-4" />
+                Manuell
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="parser">
+              <JobPostingParser onSave={handleSave} />
+            </TabsContent>
+
+            <TabsContent value="manual">
+              <JobPostingForm 
+                onSave={handleManualSave}
+                onCancel={() => setShowInput(false)}
+              />
+            </TabsContent>
+          </Tabs>
         </div>
       )}
 
@@ -159,7 +182,7 @@ export default function JobsPage() {
                 Du hast noch keine Stellenanzeigen gespeichert. Füge deine erste 
                 Stelle hinzu, um loszulegen.
               </p>
-              <Button onClick={() => setShowParser(true)}>
+              <Button onClick={() => setShowInput(true)}>
                 <Plus className="mr-2 h-4 w-4" />
                 Erste Stelle hinzufügen
               </Button>
@@ -169,7 +192,7 @@ export default function JobsPage() {
       </div>
 
       {/* Info Card */}
-      {!showParser && (!jobPostings || jobPostings.length === 0) && (
+      {!showInput && (!jobPostings || jobPostings.length === 0) && (
         <Card className="border-blue-200 bg-blue-50">
           <CardContent className="pt-6">
             <div className="space-y-2">
@@ -178,8 +201,8 @@ export default function JobsPage() {
               </p>
               <ul className="text-sm text-blue-700 space-y-1 list-disc list-inside">
                 <li>Füge eine Stellenanzeigen-URL ein (z.B. von LinkedIn oder Indeed)</li>
-                <li>Oder kopiere die Stellenbeschreibung manuell</li>
-                <li>Unser Parser extrahiert automatisch die wichtigsten Informationen</li>
+                <li>Oder kopiere die Stellenbeschreibung manuell per Parser</li>
+                <li>Oder erstelle die Stellenanzeige komplett manuell mit allen Feldern</li>
                 <li>Überprüfe und bearbeite die Daten falls nötig</li>
                 <li>Erstelle dann deine maßgeschneiderte Bewerbung</li>
               </ul>
