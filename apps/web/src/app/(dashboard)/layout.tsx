@@ -14,6 +14,7 @@ import {
   LogOut,
   Menu,
   Home,
+  Settings,
 } from 'lucide-react';
 
 const navigation = [
@@ -21,6 +22,7 @@ const navigation = [
   { name: 'Profil', href: '/profile', icon: User },
   { name: 'Bewerbungen', href: '/applications', icon: FileText },
   { name: 'Stellenanzeigen', href: '/jobs', icon: Briefcase },
+  { name: 'Einstellungen', href: '/settings', icon: Settings },
 ];
 
 export default function DashboardLayout({

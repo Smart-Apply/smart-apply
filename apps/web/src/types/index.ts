@@ -244,6 +244,22 @@ export interface ApplicationFilesResponse {
   resume?: ApplicationFile;
 }
 
+// Session Types
+export interface Session {
+  id: string;
+  userId: string;
+  userAgent: string;
+  ipAddress: string;
+  expiresAt: string;
+  createdAt: string;
+  lastUsedAt: string;
+}
+
+export interface SessionsResponse {
+  sessions: Session[];
+  currentSessionId: string;
+}
+
 // API Response Types
 export interface AuthResponse {
   accessToken: string;

@@ -43,7 +43,8 @@ describe('AuthController (e2e)', () => {
         .send({
           email,
           password: 'Test123!',
-          fullName: 'Test User',
+          firstName: 'Test',
+          lastName: 'User',
         })
         .expect(201)
         .expect((res) => {
@@ -272,7 +273,8 @@ describe('AuthController (e2e)', () => {
       const response = await request(app.getHttpServer()).post('/api/v1/auth/register').send({
         email,
         password: 'Test123!',
-        fullName: 'John Doe',
+        firstName: 'John',
+        lastName: 'Doe',
       });
 
       // Extract cookie from response
@@ -287,7 +289,8 @@ describe('AuthController (e2e)', () => {
         .expect(200)
         .expect((res) => {
           expect(res.body).toHaveProperty('email');
-          expect(res.body).toHaveProperty('fullName');
+          expect(res.body).toHaveProperty('firstName');
+          expect(res.body).toHaveProperty('lastName');
         });
     });
 
@@ -303,7 +306,7 @@ describe('AuthController (e2e)', () => {
     });
   });
 
-  describe('/api/v1/auth/logout (POST)', () => {
+  describe('/api/v1/auth/logout (GET)', () => {
     let cookies: string[];
 
     beforeAll(async () => {
@@ -320,9 +323,9 @@ describe('AuthController (e2e)', () => {
 
     it('should logout and clear cookie', () => {
       return request(app.getHttpServer())
-        .post('/api/v1/auth/logout')
+        .get('/api/v1/auth/logout')
         .set('Cookie', cookies)
-        .expect(201)
+        .expect(200)
         .expect((res) => {
           expect(res.body).toHaveProperty('message');
           // Should clear the cookie
@@ -334,7 +337,7 @@ describe('AuthController (e2e)', () => {
     });
 
     it('should require authentication', () => {
-      return request(app.getHttpServer()).post('/api/v1/auth/logout').expect(401);
+      return request(app.getHttpServer()).get('/api/v1/auth/logout').expect(401);
     });
   });
 });

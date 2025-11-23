@@ -13,6 +13,7 @@ import type {
   ApplicationStatusResponse,
   ApplicationTrackingStatus,
   ResumeData,
+  SessionsResponse,
 } from '@/types';
 import { ApiError, NetworkError, shouldRetry, getRetryDelay, isPermanentAuthFailure } from './errors';
 import { getCsrfToken, refreshCsrfToken } from './csrf';
@@ -316,6 +317,22 @@ export const api = {
       apiRequest<Application>(`/applications/${id}/title`, {
         method: 'PATCH',
         body: JSON.stringify({ title }),
+      }),
+  },
+
+  // Sessions
+  sessions: {
+    list: () =>
+      apiRequest<SessionsResponse>('/auth/sessions'),
+
+    revoke: (sessionId: string) =>
+      apiRequest<{ message: string }>(`/auth/sessions/${sessionId}`, {
+        method: 'DELETE',
+      }),
+
+    revokeAll: () =>
+      apiRequest<{ message: string; revokedCount: number }>('/auth/sessions', {
+        method: 'DELETE',
       }),
   },
 };

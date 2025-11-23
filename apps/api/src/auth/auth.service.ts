@@ -1,10 +1,12 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, Inject, forwardRef } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto, LoginDto } from './dto';
 import { ConfigService } from '../config/config.service';
 import { AuditLoggerService } from '../common/audit-logger';
+import { SessionService } from './session.service';
+import { MAX_TOKENS_PER_USER } from './session.constants';
 import { Request } from 'express';
 
 interface TokenPair {
@@ -19,6 +21,10 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService,
     private auditLogger: AuditLoggerService,
+    // Use forwardRef to resolve circular dependency between AuthService and SessionService
+    // This is acceptable as both services are in the same module and need each other
+    @Inject(forwardRef(() => SessionService))
+    private sessionService: SessionService,
   ) {}
 
   async register(dto: RegisterDto, userAgent?: string, ipAddress?: string, req?: Request) {
@@ -68,8 +74,8 @@ export class AuthService {
       this.auditLogger.logRegistration(user.email, user.id, req);
     }
 
-    // Generate tokens
-    const tokens = await this.generateTokens(user.id, user.email, userAgent, ipAddress);
+    // Generate tokens and create session
+    const tokens = await this.generateTokens(user.id, user.email, userAgent, ipAddress, req);
 
     return {
       user,
@@ -107,8 +113,8 @@ export class AuthService {
       this.auditLogger.logLoginAttempt(dto.email, true, req, user.id);
     }
 
-    // Generate tokens
-    const tokens = await this.generateTokens(user.id, user.email, userAgent, ipAddress);
+    // Generate tokens and create session
+    const tokens = await this.generateTokens(user.id, user.email, userAgent, ipAddress, req);
 
     return {
       user: {
@@ -174,11 +180,24 @@ export class AuthService {
       this.auditLogger.logRefreshTokenUsed(payload.sub, payload.email, req);
     }
 
+    // Find session associated with this refresh token
+    const session = await this.sessionService.findSessionByRefreshToken(matchingToken.id);
+    
+    // Update session last active timestamp
+    if (session) {
+      await this.sessionService.updateLastActive(session.id);
+    }
+
     // Revoke the specific refresh token (rotation strategy)
     await this.prisma.refreshToken.update({
       where: { id: matchingToken.id },
       data: { isRevoked: true },
     });
+
+    // Revoke the session associated with the old refresh token
+    if (session) {
+      await this.sessionService.revokeSession(session.id);
+    }
 
     // Clean up old/expired tokens for this user (but keep recently revoked for security audit)
     await this.prisma.refreshToken.deleteMany({
@@ -196,8 +215,8 @@ export class AuthService {
       },
     });
 
-    // Generate new token pair
-    const tokens = await this.generateTokens(payload.sub, payload.email, userAgent, ipAddress);
+    // Generate new token pair and create new session
+    const tokens = await this.generateTokens(payload.sub, payload.email, userAgent, ipAddress, req);
 
     return tokens;
   }
@@ -205,6 +224,9 @@ export class AuthService {
   async logout(userId: string, req: Request): Promise<void> {
     // Log logout event
     this.auditLogger.logLogout(userId, req);
+    
+    // Revoke all sessions for this user
+    await this.sessionService.revokeAllSessions(userId);
     
     // Revoke all refresh tokens for this user
     await this.revokeRefreshToken(userId);
@@ -253,6 +275,7 @@ export class AuthService {
     email: string,
     userAgent?: string,
     ipAddress?: string,
+    req?: Request,
   ): Promise<TokenPair> {
     // Generate access token (short-lived)
     const accessToken = this.jwtService.sign(
@@ -279,7 +302,7 @@ export class AuthService {
     const hashedToken = await argon2.hash(refreshToken);
 
     // Store refresh token in database
-    await this.prisma.refreshToken.create({
+    const storedRefreshToken = await this.prisma.refreshToken.create({
       data: {
         token: hashedToken,
         userId,
@@ -289,8 +312,12 @@ export class AuthService {
       },
     });
 
-    // Enforce max tokens per user (e.g., 5 devices)
-    const MAX_TOKENS_PER_USER = 5;
+    // Create session for this refresh token
+    if (req) {
+      await this.sessionService.createSession(userId, storedRefreshToken.id, req);
+    }
+
+    // Enforce max tokens per user
     const userTokens = await this.prisma.refreshToken.findMany({
       where: {
         userId,
@@ -303,12 +330,19 @@ export class AuthService {
     // Revoke oldest tokens if limit exceeded
     if (userTokens.length > MAX_TOKENS_PER_USER) {
       const tokensToRevoke = userTokens.slice(MAX_TOKENS_PER_USER);
+      const tokenIdsToRevoke = tokensToRevoke.map((t) => t.id);
+      
       await this.prisma.refreshToken.updateMany({
         where: {
-          id: { in: tokensToRevoke.map((t) => t.id) },
+          id: { in: tokenIdsToRevoke },
         },
         data: { isRevoked: true },
       });
+      
+      // Also revoke associated sessions
+      for (const tokenId of tokenIdsToRevoke) {
+        await this.sessionService.revokeSessionByRefreshToken(tokenId);
+      }
     }
 
     return { accessToken, refreshToken };

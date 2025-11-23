@@ -25,6 +25,7 @@ model User {
   jobPostings JobPosting[]
   applications Application[]
   refreshTokens RefreshToken[]
+  sessions Session[]
   auditLogs AuditLog[]
   
   createdAt DateTime @default(now())
@@ -251,6 +252,42 @@ model RefreshToken {
   @@index([userId])
   @@index([token])
   @@map("refresh_tokens")
+}
+
+// Session tracking for multi-device management
+model Session {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Token Info
+  refreshTokenId  String?  // Reference to RefreshToken
+  accessTokenJti  String?  // JWT ID for access token (optional)
+  
+  // Device Info
+  deviceName      String?   // e.g., "iPhone 14 Pro", "Chrome on Windows"
+  deviceType      String?   // mobile, tablet, desktop
+  browser         String?   // Chrome, Safari, Firefox
+  os              String?   // iOS, Android, Windows, macOS
+  
+  // Location Info
+  ipAddress       String
+  country         String?
+  city            String?
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  lastActiveAt    DateTime @default(now())
+  expiresAt       DateTime
+  
+  // Status
+  isActive        Boolean  @default(true)
+  revokedAt       DateTime?
+  
+  @@index([userId, isActive])
+  @@index([userId, lastActiveAt])
+  @@index([expiresAt])
+  @@map("sessions")
 }
 
 // Audit log for security events (optional persistence layer)

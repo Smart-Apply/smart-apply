@@ -1,8 +1,12 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
+import { SessionsController } from './sessions.controller';
+import { SessionService } from './session.service';
+import { SessionCleanupCron } from './session-cleanup.cron';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '../config/config.service';
@@ -17,9 +21,10 @@ import { ConfigService } from '../config/config.service';
         signOptions: { expiresIn: config.jwtAccessExpiresIn },
       }),
     }),
+    ScheduleModule.forRoot(),
   ],
-  controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, PrismaService],
-  exports: [AuthService, JwtModule],
+  controllers: [AuthController, SessionsController],
+  providers: [AuthService, SessionService, SessionCleanupCron, JwtStrategy, PrismaService],
+  exports: [AuthService, SessionService, JwtModule],
 })
 export class AuthModule {}

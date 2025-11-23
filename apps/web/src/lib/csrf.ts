@@ -97,11 +97,13 @@ export async function fetchCsrfToken(): Promise<void> {
       csrfToken = data.csrfToken;
       
       // Cache in localStorage with timestamp
-      try {
-        localStorage.setItem(CSRF_TOKEN_KEY, csrfToken);
-        localStorage.setItem(CSRF_TOKEN_TIMESTAMP_KEY, Date.now().toString());
-      } catch {
-        // localStorage not available, continue without caching
+      if (csrfToken) {
+        try {
+          localStorage.setItem(CSRF_TOKEN_KEY, csrfToken);
+          localStorage.setItem(CSRF_TOKEN_TIMESTAMP_KEY, Date.now().toString());
+        } catch {
+          // localStorage not available, continue without caching
+        }
       }
       
       // Log success (dev only)
