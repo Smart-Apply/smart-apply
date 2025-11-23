@@ -61,7 +61,7 @@ describe('Content Security Policy Headers (e2e)', () => {
       origin: configService.corsOrigins,
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
     });
 
     app.useGlobalPipes(

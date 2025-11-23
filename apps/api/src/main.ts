@@ -43,7 +43,10 @@ async function bootstrap() {
           frameAncestors: ["'none'"], // Prevent embedding in iframes (clickjacking protection)
           baseUri: ["'self'"], // Restrict base tag to prevent injection
           formAction: ["'self'"], // Forms can only submit to same origin
-          upgradeInsecureRequests: configService.isProduction ? [] : null, // Force HTTPS in production
+          // upgradeInsecureRequests: Helmet-specific behavior
+          // Empty array [] enables the directive (production: force HTTPS)
+          // null disables the directive (development: allow HTTP)
+          upgradeInsecureRequests: configService.isProduction ? [] : null,
           reportUri: ['/api/v1/csp-violations'], // Report violations to our endpoint
         },
         reportOnly: configService.cspReportOnly, // Start with report-only mode for testing

@@ -326,6 +326,7 @@ curl -I http://localhost:3000/api/v1/auth/me
 # Look for: Content-Security-Policy-Report-Only or Content-Security-Policy
 
 # Test with intentional violation in browser console
+# WARNING: Only run this in development/testing environments, never in production!
 eval('alert("CSP Test")');  // Should be blocked by CSP
 
 # Check server logs for violation reports
