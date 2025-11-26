@@ -16,6 +16,7 @@ import { JobType } from '../jobs/interfaces/queue.interface';
 import { LLMService, KeywordMatch } from '../llm/llm.service';
 import { TitleGeneratorService } from './title-generator.service';
 import { KeywordsService } from '../keywords/keywords.service';
+import { ATSAgentOutput } from '../agents/agents.interface';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { ApplicationResponseDto, ApplicationStatus } from './dto/application-response.dto';
 import { ApplicationFilesResponseDto } from './dto/application-files-response.dto';
@@ -328,7 +329,7 @@ Summary: ${resume.summary || 'Not provided'}
    * Match extracted keywords against profile for LLM context
    */
   private matchKeywordsForLLM(
-    keywords: any,
+    keywords: ATSAgentOutput,
     profileKeywords: Set<string>,
   ): { matchedKeywords: KeywordMatch[]; missingKeywords: KeywordMatch[] } {
     const matched: KeywordMatch[] = [];
@@ -354,13 +355,13 @@ Summary: ${resume.summary || 'Not provided'}
       }
     };
 
-    // Check all keyword categories
-    keywords.technicalSkills?.forEach((k: string) => checkKeyword(k, 'technical'));
-    keywords.softSkills?.forEach((k: string) => checkKeyword(k, 'soft'));
-    keywords.toolsAndTechnologies?.forEach((k: string) => checkKeyword(k, 'tool'));
-    keywords.industryKeywords?.forEach((k: string) => checkKeyword(k, 'industry'));
-    keywords.senioritySignals?.forEach((k: string) => checkKeyword(k, 'seniority'));
-    keywords.requirementKeywords?.forEach((k: string) => checkKeyword(k, 'requirement'));
+    // Check all keyword categories from ATSAgentOutput
+    keywords.technicalSkills.forEach((k) => checkKeyword(k, 'technical'));
+    keywords.softSkills.forEach((k) => checkKeyword(k, 'soft'));
+    keywords.toolsAndTechnologies.forEach((k) => checkKeyword(k, 'tool'));
+    keywords.industryKeywords.forEach((k) => checkKeyword(k, 'industry'));
+    keywords.senioritySignals.forEach((k) => checkKeyword(k, 'seniority'));
+    keywords.requirementKeywords.forEach((k) => checkKeyword(k, 'requirement'));
 
     return { matchedKeywords: matched, missingKeywords: missing };
   }
