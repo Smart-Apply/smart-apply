@@ -42,7 +42,12 @@ const envSchema = z.object({
   AZURE_OPENAI_API_KEY: z.string().optional(),
   AZURE_OPENAI_DEPLOYMENT_NAME: z.string().default('gpt-4o'),
   AZURE_OPENAI_API_VERSION: z.string().default('2024-02-15-preview'),
-  LLM_PROVIDER: z.enum(['azure-openai', 'mock', 'huggingface']).default('mock'),
+  LLM_PROVIDER: z.enum(['azure-openai', 'azure-ai-foundry', 'mock', 'huggingface']).default('mock'),
+
+  // Azure AI Foundry Agents
+  AZURE_AI_FOUNDRY_CV_WRITER_ENDPOINT: z.string().optional(),
+  AZURE_AI_FOUNDRY_CL_WRITER_ENDPOINT: z.string().optional(),
+  AZURE_AI_FOUNDRY_API_KEY: z.string().optional(),
 
   // Hugging Face
   HUGGINGFACE_API_KEY: z.string().optional(),

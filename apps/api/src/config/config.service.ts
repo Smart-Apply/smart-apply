@@ -96,7 +96,7 @@ export class ConfigService {
     return this.nestConfig.get('AZURE_OPENAI_API_VERSION', { infer: true });
   }
 
-  get llmProvider(): 'azure-openai' | 'mock' | 'huggingface' {
+  get llmProvider(): 'azure-openai' | 'azure-ai-foundry' | 'mock' | 'huggingface' {
     return this.nestConfig.get('LLM_PROVIDER', { infer: true });
   }
 
@@ -106,6 +106,19 @@ export class ConfigService {
 
   get huggingFaceModel(): string {
     return this.nestConfig.get('HUGGINGFACE_MODEL', { infer: true });
+  }
+
+  // Azure AI Foundry Agents
+  get azureAIFoundryCvWriterEndpoint(): string | undefined {
+    return this.nestConfig.get('AZURE_AI_FOUNDRY_CV_WRITER_ENDPOINT', { infer: true });
+  }
+
+  get azureAIFoundryClWriterEndpoint(): string | undefined {
+    return this.nestConfig.get('AZURE_AI_FOUNDRY_CL_WRITER_ENDPOINT', { infer: true });
+  }
+
+  get azureAIFoundryApiKey(): string | undefined {
+    return this.nestConfig.get('AZURE_AI_FOUNDRY_API_KEY', { infer: true });
   }
 
   // Jobs
