@@ -309,9 +309,7 @@ describe('Audit Logging (e2e)', () => {
         .expect(201);
 
       const allCalls = logSpy.mock.calls;
-      const hasPassword = allCalls.some((call) =>
-        JSON.stringify(call).includes(password),
-      );
+      const hasPassword = allCalls.some((call) => JSON.stringify(call).includes(password));
 
       expect(hasPassword).toBe(false);
     });

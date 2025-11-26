@@ -101,9 +101,10 @@ export function buildResumeTemplateData(profile: ProfileWithRelations): ResumeTe
       issuer: cert.issuer,
       date: cert.issueDate ? formatDate(cert.issueDate) : undefined,
     })),
-    languages: profile.languages?.map((lang) => ({
-      name: lang.name,
-      level: lang.level ?? undefined,
-    })) ?? [],
+    languages:
+      profile.languages?.map((lang) => ({
+        name: lang.name,
+        level: lang.level ?? undefined,
+      })) ?? [],
   };
 }

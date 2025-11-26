@@ -42,7 +42,11 @@ export class ProfileService {
     return this.mapToResponseDto(profile);
   }
 
-  async updateProfile(userId: string, dto: UpdateProfileDto, req?: Request): Promise<ProfileResponseDto> {
+  async updateProfile(
+    userId: string,
+    dto: UpdateProfileDto,
+    req?: Request,
+  ): Promise<ProfileResponseDto> {
     try {
       // Start transaction to update profile and nested relations
       const updatedProfile = await this.prisma.$transaction(async (tx) => {
@@ -358,7 +362,9 @@ export class ProfileService {
 
       // Log profile update event
       if (req) {
-        const updatedFields = Object.keys(dto).filter(key => dto[key as keyof UpdateProfileDto] !== undefined);
+        const updatedFields = Object.keys(dto).filter(
+          (key) => dto[key as keyof UpdateProfileDto] !== undefined,
+        );
         this.auditLogger.logProfileUpdate(userId, req, {
           updatedFields,
           hasSkills: dto.skills !== undefined,

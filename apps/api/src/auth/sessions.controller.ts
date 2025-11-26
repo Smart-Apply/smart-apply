@@ -23,10 +23,7 @@ export class SessionsController {
 
   @Delete(':id')
   @ApiOperation({ summary: 'Revoke a specific session (logout from one device)' })
-  async revokeSession(
-    @Param('id') sessionId: string,
-    @CurrentUser() user: any,
-  ) {
+  async revokeSession(@Param('id') sessionId: string, @CurrentUser() user: any) {
     // Verify session belongs to user
     const session = await this.prisma.session.findFirst({
       where: { id: sessionId, userId: user.id },

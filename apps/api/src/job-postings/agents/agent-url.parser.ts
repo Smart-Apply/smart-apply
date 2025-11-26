@@ -18,8 +18,14 @@ const JobPostingSchema = z.object({
   requirements: z.array(z.string()).describe('List of job requirements'),
   responsibilities: z.array(z.string()).describe('List of job responsibilities'),
   niceToHave: z.array(z.string()).describe('Nice to have qualifications'),
-  salary: z.string().nullable().describe('Salary information if available, or null if not specified'),
-  applicationDeadline: z.string().nullable().describe('Application deadline if available, or null if not specified'),
+  salary: z
+    .string()
+    .nullable()
+    .describe('Salary information if available, or null if not specified'),
+  applicationDeadline: z
+    .string()
+    .nullable()
+    .describe('Application deadline if available, or null if not specified'),
 });
 
 export type JobPostingExtraction = z.infer<typeof JobPostingSchema>;
@@ -174,7 +180,9 @@ export class AgentUrlParser {
     // Check if content is too short (likely blocked or error page)
     const cleanedContent = pageContent.replace(/\s+/g, ' ').trim();
     if (cleanedContent.length < 300) {
-      this.logger.warn(`📄 Page content suspiciously short (${cleanedContent.length} chars) for ${hostname}`);
+      this.logger.warn(
+        `📄 Page content suspiciously short (${cleanedContent.length} chars) for ${hostname}`,
+      );
       // Don't throw here, let the LLM try to extract what it can
     }
   }

@@ -114,10 +114,7 @@ export class ApplicationsController {
   @Post(':id/export')
   @ApiOperation({ summary: 'PDF-Export anstoßen' })
   @ApiResponse({ status: 200, type: ApplicationResponseDto })
-  async export(
-    @CurrentUser() user: any,
-    @Param('id') id: string,
-  ): Promise<ApplicationResponseDto> {
+  async export(@CurrentUser() user: any, @Param('id') id: string): Promise<ApplicationResponseDto> {
     return this.applicationsService.requestExport(user.id, id);
   }
 
@@ -308,7 +305,8 @@ export class ApplicationsController {
   @Get(':id/keywords')
   @ApiOperation({
     summary: 'Get keyword analysis for application',
-    description: 'Returns extracted keywords from job posting and match analysis against user profile',
+    description:
+      'Returns extracted keywords from job posting and match analysis against user profile',
   })
   @ApiResponse({
     status: 200,
@@ -327,7 +325,8 @@ export class ApplicationsController {
   @Post(':id/analyze-keywords')
   @ApiOperation({
     summary: 'Trigger keyword extraction and analysis',
-    description: 'Extracts keywords from the job posting using ATS Agent and analyzes match against profile',
+    description:
+      'Extracts keywords from the job posting using ATS Agent and analyzes match against profile',
   })
   @ApiResponse({
     status: 200,

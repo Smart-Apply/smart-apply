@@ -248,10 +248,7 @@ Responsibilities:
             'Mentor junior developers',
             'Collaborate with design team',
           ],
-          niceToHave: [
-            'Experience with GraphQL',
-            'Open source contributions',
-          ],
+          niceToHave: ['Experience with GraphQL', 'Open source contributions'],
           salary: '80,000 - 100,000 EUR',
           employmentType: 'Full-time',
         })
@@ -365,7 +362,7 @@ Responsibilities:
 
     it('should enforce max length on title', async () => {
       const longTitle = 'a'.repeat(201);
-      
+
       const response = await request(app.getHttpServer())
         .post('/api/v1/job-postings')
         .set('Authorization', `Bearer ${authToken}`)

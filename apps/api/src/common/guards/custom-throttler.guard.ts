@@ -9,7 +9,7 @@ import { AuditLoggerService } from '../audit-logger';
  * 1. Skips rate limiting in development (NODE_ENV === 'development')
  * 2. Supports named throttlers via @UseThrottler('name') decorator
  * 3. Logs rate limit violations for audit purposes
- * 
+ *
  * Note: @nestjs/throttler v5 changed the storage API - it only has increment(),
  * not get(). We rely on the parent class for actual rate limiting logic.
  */
@@ -39,7 +39,7 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
     try {
       // Call parent implementation which handles the actual rate limiting
       const result = await super.canActivate(context);
-      
+
       // Add basic rate limit headers on success
       const throttlers = await this.getThrottlers(context);
       if (throttlers.length > 0) {

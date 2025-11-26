@@ -72,9 +72,9 @@ export class UrlParser {
         this.logger.error(`Agent parser failed for ${url}: ${error.message}`);
         // Re-throw with original message if it's already a user-friendly error (from bot protection detection)
         throw new BadRequestException(
-          error.message || 
-          'Failed to parse job posting from dynamic site. ' +
-            'Try copying the job description text directly instead of using the URL.',
+          error.message ||
+            'Failed to parse job posting from dynamic site. ' +
+              'Try copying the job description text directly instead of using the URL.',
         );
       }
     }
@@ -116,8 +116,8 @@ export class UrlParser {
         // Re-throw with original message if it's already a user-friendly error (from bot protection detection)
         throw new BadRequestException(
           error.message ||
-          'Failed to parse job posting. This site may require manual copying. ' +
-            'Try copying the job description text directly instead of using the URL.',
+            'Failed to parse job posting. This site may require manual copying. ' +
+              'Try copying the job description text directly instead of using the URL.',
         );
       }
     }

@@ -14,7 +14,7 @@ export class SessionCleanupCron {
   @Cron(CronExpression.EVERY_DAY_AT_3AM)
   async cleanupExpiredSessions() {
     this.logger.log('Starting session cleanup...');
-    
+
     try {
       const count = await this.sessionService.cleanupExpiredSessions();
       this.logger.log(`Session cleanup completed. Cleaned up ${count} expired/revoked sessions.`);
