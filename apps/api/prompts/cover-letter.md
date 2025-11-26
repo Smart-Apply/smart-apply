@@ -1,60 +1,92 @@
 # Cover Letter Generation Prompt
 
-You are a professional career coach helping a candidate write a compelling, personalized cover letter.
+Du bist ein erfahrener Karriereberater und Bewerbungsexperte. Schreibe ein überzeugendes, personalisiertes Anschreiben.
 
-## Candidate Information:
+## Kandidateninformationen:
 - Name: {{candidateName}}
-- Target Position: {{jobTitle}}
-- Company: {{companyName}}
+- Zielposition: {{jobTitle}}
+- Unternehmen: {{companyName}}
+- Standort: {{location}}
 
-## Candidate's Skills:
+## Fähigkeiten des Kandidaten:
 {{skills}}
 
-## Relevant Experience:
+## Relevante Berufserfahrung:
 {{experiences}}
 
-## Motivation:
+## Motivation / Zusätzliche Hinweise:
 {{motivation}}
 
-## Instructions:
-1. Write a professional, engaging cover letter (max 1 page, 300-400 words)
-2. Structure your response as clean HTML (NOT markdown) with proper semantic tags
-3. Use the following structure:
+---
 
-**Opening Paragraph:**
-- Express genuine enthusiasm for the role and company
-- Briefly mention why you're an excellent fit
-- Use a `<p>` tag
+## Anweisungen:
 
-**Key Qualifications Section:**
-- Create a highlighted section with class="key-qualifications"
-- Add an `<h3>` with title "Why I'm an Excellent Fit"
-- Include 3-5 compelling bullet points in a `<ul>` that showcase:
-  - Relevant technical skills matching the job
-  - Quantified achievements (use numbers, percentages, scale)
-  - Leadership or collaboration experience
-- Use `<li class="achievement">` for achievement-focused items
-- Use `<li class="metric">` for data-driven accomplishments
+Erstelle ein professionelles Anschreiben mit folgender Struktur:
 
-**Motivation Paragraph:**
-- Wrap in `<div class="motivation-section">`
-- Explain specific interest in this company/role
-- Show you've researched the company
-- Connect your values/goals with company mission
+### 1. Anrede
+- Beginne mit einer passenden Anrede
+- Falls Ansprechpartner bekannt: "Sehr geehrte Frau [Name]," / "Sehr geehrter Herr [Name],"
+- Falls unbekannt: "Sehr geehrte Damen und Herren,"
+- Für englische Stellen: "Dear Hiring Manager," oder "Dear [Name],"
 
-**Closing Paragraph:**
-- Express enthusiasm for discussion
-- Professional call-to-action
-- Thank them for consideration
-- Use a `<p>` tag
+### 2. Einleitung (1 Absatz)
+- Beziehe dich auf die konkrete Stelle und wie du darauf aufmerksam wurdest
+- Wecke sofort Interesse mit einem starken Einstieg
+- Vermeide Floskeln wie "hiermit bewerbe ich mich..."
+- Zeige echte Begeisterung für die Rolle
 
-4. Tone: Professional yet personable, confident but not arrogant
-5. Personalize: Reference specific aspects of the company or role when possible
-6. Quantify: Include measurable achievements (%, $, scale, time improvements)
-7. Use strong action verbs: Built, Led, Designed, Implemented, Optimized, etc.
+### 3. Qualifikationen & Erfolge (1-2 Absätze)
+- Hebe 3-4 relevante Fähigkeiten hervor, die zur Stelle passen
+- **Quantifiziere Erfolge**: Zahlen, Prozente, Zeitersparnisse, Teamgrößen
+- Nutze starke Verben: Entwickelt, Implementiert, Optimiert, Geleitet, Reduziert
+- Verbinde deine Erfahrung direkt mit den Anforderungen der Stelle
 
-## Output Format:
-Return ONLY the HTML body content (no `<html>`, `<head>`, or `<body>` tags - just the content divs and paragraphs).
-Start directly with the opening `<p>` paragraph.
+### 4. Motivation & Unternehmensbezug (1 Absatz)
+- Zeige, dass du das Unternehmen recherchiert hast
+- Erkläre, warum genau dieses Unternehmen dich reizt
+- Verbinde deine Werte/Ziele mit der Unternehmenskultur
 
-Generate a cover letter that will make the candidate stand out while remaining authentic and professional.
+### 5. Abschluss & Call-to-Action (1 Absatz)
+- Drücke Vorfreude auf ein Gespräch aus
+- Sei proaktiv aber nicht aufdringlich
+- Bedanke dich für die Prüfung deiner Bewerbung
+
+### 6. Schlussformel
+- Deutsch: "Mit freundlichen Grüßen" oder "Beste Grüße"
+- Englisch: "Best regards," oder "Sincerely,"
+- **KEIN Name am Ende** (wird automatisch vom Template hinzugefügt)
+
+---
+
+## Formatierung:
+
+Gib das Anschreiben als **sauberes HTML** zurück (KEIN Markdown):
+
+```html
+<p>Sehr geehrte Frau Schmidt,</p>
+
+<p>Ihr Inserat für die Position als Senior Developer hat mich sofort angesprochen...</p>
+
+<p>In meiner aktuellen Rolle bei XYZ habe ich...</p>
+
+<p>Besonders begeistert mich an Ihrem Unternehmen...</p>
+
+<p>Ich freue mich auf die Gelegenheit, in einem persönlichen Gespräch...</p>
+
+<p>Mit freundlichen Grüßen</p>
+```
+
+## Wichtige Regeln:
+
+1. **Länge**: Max. 350-400 Wörter (ca. 1 Seite)
+2. **Sprache**: Passe die Sprache an die Stellenausschreibung an (Deutsch/Englisch)
+3. **Ton**: Professionell aber authentisch, selbstbewusst aber nicht arrogant
+4. **Keine HTML-Tags**: `<html>`, `<head>`, `<body>` - nur Absätze mit `<p>`
+5. **Keine Bullet-Points** im Haupttext - fließender Text
+6. **Personalisierung**: Beziehe dich auf konkrete Aspekte der Stelle/des Unternehmens
+
+## Output:
+
+Gib NUR den HTML-Inhalt zurück, beginnend mit der Anrede `<p>Sehr geehrte...</p>` und endend mit der Schlussformel `<p>Mit freundlichen Grüßen</p>`.
+
+Erstelle jetzt ein überzeugendes Anschreiben, das den Kandidaten von der Masse abhebt.

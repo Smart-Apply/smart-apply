@@ -95,6 +95,10 @@ export function buildResumeFromProfile(
       issuer: cert.issuer,
       date: cert.dateObtained || undefined,
     })),
+    languages: (profile.languages || []).map((lang) => ({
+      name: lang.name,
+      level: lang.level || undefined,
+    })),
   };
 }
 

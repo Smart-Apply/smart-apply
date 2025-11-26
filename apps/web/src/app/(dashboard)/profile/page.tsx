@@ -22,6 +22,7 @@ import {
   Calendar,
   Edit,
   Plus,
+  Languages,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -57,6 +58,7 @@ export default function ProfilePage() {
 
   const hasBasicInfo = profile?.phone || profile?.location || profile?.linkedinUrl || profile?.portfolioUrl;
   const hasSkills = profile?.skills && profile.skills.length > 0;
+  const hasLanguages = profile?.languages && profile.languages.length > 0;
   const hasExperiences = profile?.experiences && profile.experiences.length > 0;
   const hasEducation = profile?.education && profile.education.length > 0;
   const hasCertificates = profile?.certificates && profile.certificates.length > 0;
@@ -213,6 +215,51 @@ export default function ProfilePage() {
               <Button variant="outline" size="sm" className="mt-3" onClick={() => router.push('/profile/edit')}>
                 <Plus className="mr-2 h-3 w-3" />
                 Skills hinzufügen
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Languages */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Languages className="h-5 w-5" />
+            Sprachen
+          </CardTitle>
+          <CardDescription>Deine Sprachkenntnisse</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {hasLanguages ? (
+            <div className="flex flex-wrap gap-2">
+              {profile.languages?.map((lang, index) => (
+                <Badge 
+                  key={index} 
+                  variant="outline" 
+                  className={`text-sm ${
+                    lang.level === 'Muttersprache' 
+                      ? 'bg-green-100 text-green-800 border-green-200'
+                      : lang.level === 'Fließend' || lang.level === 'Verhandlungssicher'
+                      ? 'bg-blue-100 text-blue-800 border-blue-200'
+                      : 'bg-gray-100 text-gray-800 border-gray-200'
+                  }`}
+                >
+                  {lang.name}
+                  {lang.level && (
+                    <span className="ml-1 text-xs opacity-80">• {lang.level}</span>
+                  )}
+                </Badge>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+              <p className="text-sm text-blue-800">
+                Noch keine Sprachen hinzugefügt. Füge deine Sprachkenntnisse hinzu.
+              </p>
+              <Button variant="outline" size="sm" className="mt-3" onClick={() => router.push('/profile/edit')}>
+                <Plus className="mr-2 h-3 w-3" />
+                Sprachen hinzufügen
               </Button>
             </div>
           )}

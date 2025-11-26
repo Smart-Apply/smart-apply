@@ -63,6 +63,9 @@ model Profile {
   // Projects
   projects      Project[]
   
+  // Languages
+  languages     Language[]
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -149,6 +152,18 @@ model Project {
   
   @@index([profileId])
   @@map("projects")
+}
+
+model Language {
+  id        String  @id @default(cuid())
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  
+  name      String  // e.g., "Deutsch", "English", "Français"
+  level     String  // e.g., "Muttersprache", "Fließend", "Gut", "Grundkenntnisse" / "Native", "Fluent", "Advanced", "Basic"
+  
+  @@index([profileId])
+  @@map("languages")
 }
 
 model JobPosting {

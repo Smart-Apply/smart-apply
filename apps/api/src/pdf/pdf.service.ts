@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import * as puppeteer from 'puppeteer';
+import { PDFDocument } from 'pdf-lib';
 import { ConfigService } from '../config/config.service';
 import {
   TemplateRendererService,
@@ -16,6 +17,16 @@ export interface PdfGenerationOptions {
     left?: string;
   };
   format?: 'A4' | 'Letter';
+  atsOptimized?: boolean; // Use ATS-friendly template and styles
+  metadata?: PdfMetadata; // PDF metadata for ATS compatibility
+}
+
+export interface PdfMetadata {
+  title?: string; // PDF title (e.g., "Resume - John Doe" or "Cover Letter - Software Engineer")
+  author?: string; // Author name (candidate name)
+  subject?: string; // PDF subject (e.g., "Job Application")
+  keywords?: string[]; // Keywords for ATS (e.g., ["JavaScript", "React", "Node.js"])
+  creator?: string; // Creator (e.g., "Smart Apply")
 }
 
 @Injectable()
@@ -167,17 +178,34 @@ export class PdfService implements OnModuleDestroy {
   async generateCoverLetterPDF(
     data: CoverLetterTemplateData,
     templateId?: string,
+    options: PdfGenerationOptions = {},
   ): Promise<Buffer> {
     try {
-      const html = await this.templateRenderer.renderCoverLetter(data, templateId);
-      return this.generatePDFFromRenderedHTML(html, {
-        margin: {
+      const html = await this.templateRenderer.renderCoverLetter(data, templateId, options.atsOptimized);
+      
+      const pdfOptions: PdfGenerationOptions = {
+        margin: options.atsOptimized ? {
+          top: '0.5in',
+          right: '0.5in',
+          bottom: '0.5in',
+          left: '0.5in',
+        } : {
           top: '20mm',
           right: '25mm',
           bottom: '20mm',
           left: '25mm',
         },
-      });
+        ...options,
+      };
+
+      const pdfBuffer = await this.generatePDFFromRenderedHTML(html, pdfOptions);
+
+      // Add metadata if provided
+      if (options.metadata) {
+        return this.addMetadata(pdfBuffer, options.metadata);
+      }
+
+      return pdfBuffer;
     } catch (error) {
       this.logger.error('Failed to generate cover letter PDF', error);
       throw new Error(`Cover letter PDF generation failed: ${error.message}`);
@@ -187,17 +215,37 @@ export class PdfService implements OnModuleDestroy {
   /**
    * Generate professional resume PDF from structured data
    */
-  async generateResumePDF(data: ResumeTemplateData, templateId?: string): Promise<Buffer> {
+  async generateResumePDF(
+    data: ResumeTemplateData, 
+    templateId?: string, 
+    options: PdfGenerationOptions = {},
+  ): Promise<Buffer> {
     try {
-      const html = await this.templateRenderer.renderResume(data, templateId);
-      return this.generatePDFFromRenderedHTML(html, {
-        margin: {
+      const html = await this.templateRenderer.renderResume(data, templateId, options.atsOptimized);
+      
+      const pdfOptions: PdfGenerationOptions = {
+        margin: options.atsOptimized ? {
+          top: '0.5in',
+          right: '0.5in',
+          bottom: '0.5in',
+          left: '0.5in',
+        } : {
           top: '15mm',
           right: '20mm',
           bottom: '15mm',
           left: '20mm',
         },
-      });
+        ...options,
+      };
+
+      const pdfBuffer = await this.generatePDFFromRenderedHTML(html, pdfOptions);
+
+      // Add metadata if provided
+      if (options.metadata) {
+        return this.addMetadata(pdfBuffer, options.metadata);
+      }
+
+      return pdfBuffer;
     } catch (error) {
       this.logger.error('Failed to generate resume PDF', error);
       throw new Error(`Resume PDF generation failed: ${error.message}`);
@@ -220,8 +268,8 @@ export class PdfService implements OnModuleDestroy {
         waitUntil: 'networkidle0',
       });
 
-      // Generate PDF
-      const pdf = await page.pdf({
+      // Generate PDF with ATS-friendly options
+      const pdfOptions: any = {
         format: options.format || 'A4',
         margin: options.margin || {
           top: '20mm',
@@ -229,16 +277,68 @@ export class PdfService implements OnModuleDestroy {
           bottom: '20mm',
           left: '20mm',
         },
-        printBackground: true,
-      });
+        printBackground: options.atsOptimized ? false : true, // ATS-friendly: no backgrounds
+        displayHeaderFooter: false, // ATS-friendly: no headers/footers
+        preferCSSPageSize: false, // Use format setting
+      };
 
-      this.logger.log(`PDF generated successfully (${pdf.length} bytes)`);
+      // ATS-optimized PDFs: Enable tagged PDF for accessibility/ATS
+      if (options.atsOptimized) {
+        pdfOptions.tagged = true; // UA accessibility (helps ATS)
+        pdfOptions.outline = true; // Document outline for navigation
+      }
+
+      const pdf = await page.pdf(pdfOptions);
+
+      this.logger.log(`PDF generated successfully (${pdf.length} bytes)${options.atsOptimized ? ' [ATS-optimized]' : ''}`);
       return Buffer.from(pdf);
     } catch (error) {
       this.logger.error('Failed to generate PDF from rendered HTML', error);
       throw new Error(`PDF generation failed: ${error.message}`);
     } finally {
       await page.close();
+    }
+  }
+
+  /**
+   * Add metadata to PDF for ATS compatibility
+   */
+  private async addMetadata(pdfBuffer: Buffer, metadata: PdfMetadata): Promise<Buffer> {
+    try {
+      // Load PDF
+      const pdfDoc = await PDFDocument.load(pdfBuffer);
+
+      // Default creator for all PDFs
+      const DEFAULT_PDF_CREATOR = 'Smart Apply';
+
+      // Set metadata fields
+      if (metadata.title) {
+        pdfDoc.setTitle(metadata.title);
+      }
+      if (metadata.author) {
+        pdfDoc.setAuthor(metadata.author);
+      }
+      if (metadata.subject) {
+        pdfDoc.setSubject(metadata.subject);
+      }
+      if (metadata.keywords && metadata.keywords.length > 0) {
+        pdfDoc.setKeywords(metadata.keywords);
+      }
+      // Set creator (use provided value or default)
+      pdfDoc.setCreator(metadata.creator || DEFAULT_PDF_CREATOR);
+
+      // Set creation and modification dates
+      const now = new Date();
+      pdfDoc.setCreationDate(now);
+      pdfDoc.setModificationDate(now);
+
+      // Save and return
+      const pdfBytes = await pdfDoc.save();
+      this.logger.log(`PDF metadata added: ${metadata.title || 'Untitled'}`);
+      return Buffer.from(pdfBytes);
+    } catch (error) {
+      this.logger.error('Failed to add PDF metadata', error);
+      throw new Error(`PDF metadata injection failed: ${error.message}`);
     }
   }
 

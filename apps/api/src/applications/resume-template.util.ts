@@ -2,6 +2,7 @@ import type {
   Certificate,
   Education,
   Experience,
+  Language,
   Profile,
   Project,
   Skill,
@@ -19,6 +20,7 @@ export type ProfileWithRelations = Profile & {
   projects: Project[];
   education: Education[];
   certificates: Certificate[];
+  languages: Language[];
 };
 
 const DEFAULT_CATEGORY = 'Skills';
@@ -99,5 +101,9 @@ export function buildResumeTemplateData(profile: ProfileWithRelations): ResumeTe
       issuer: cert.issuer,
       date: cert.issueDate ? formatDate(cert.issueDate) : undefined,
     })),
+    languages: profile.languages?.map((lang) => ({
+      name: lang.name,
+      level: lang.level ?? undefined,
+    })) ?? [],
   };
 }

@@ -59,6 +59,12 @@ export interface Project {
   endDate?: string | null;
 }
 
+export interface Language {
+  id?: string; // Optional: present for existing languages, absent for new ones
+  name: string;
+  level?: string;
+}
+
 export interface Profile {
   id: number;
   userId: number;
@@ -73,6 +79,7 @@ export interface Profile {
   education?: Education[];
   certificates?: Certificate[];
   projects?: Project[];
+  languages?: Language[];
   createdAt: string;
   updatedAt: string;
 }
@@ -134,6 +141,7 @@ export interface ResumeData {
   projects?: ResumeProject[];
   education?: ResumeEducation[];
   certifications?: ResumeCertification[];
+  languages?: { name: string; level?: string }[];
 }
 
 // DTO types for backend API (dates as strings for API transport)
@@ -163,6 +171,7 @@ export interface UpdateProfileDto {
   education?: EducationDto[]; // Use DTO type with string dates
   certificates?: Certificate[];
   projects?: Project[];
+  languages?: Language[];
 }
 
 // Job Posting Types

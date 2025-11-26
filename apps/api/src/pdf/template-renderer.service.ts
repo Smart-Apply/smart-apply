@@ -35,6 +35,12 @@ export interface ResumeTemplateData {
   projects?: Project[];
   education?: Education[];
   certifications?: Certification[];
+  languages?: ResumeLanguage[];
+}
+
+export interface ResumeLanguage {
+  name: string;
+  level?: string;
 }
 
 export interface SkillCategory {
@@ -141,17 +147,23 @@ export class TemplateRendererService {
   }
 
   /**
-   * Render cover letter template with optional templateId
+   * Render cover letter template with optional templateId and ATS optimization
    */
   async renderCoverLetter(
     data: CoverLetterTemplateData,
     templateId?: string,
+    atsOptimized = false,
   ): Promise<string> {
     try {
       let template: string;
       let css: string;
 
-      if (templateId) {
+      if (atsOptimized) {
+        // Use ATS-optimized template from filesystem
+        this.logger.log('Loading ATS-optimized cover letter template');
+        template = await this.loadTemplate('cover-letter-ats.hbs');
+        css = await this.loadStyles(['base-ats.css', 'cover-letter-ats.css']);
+      } else if (templateId) {
         // Load specific template from database
         this.logger.log(`Loading cover letter template: ${templateId}`);
         const dbTemplate = await this.templatesService.findOne(templateId);
@@ -191,14 +203,23 @@ export class TemplateRendererService {
   }
 
   /**
-   * Render resume template with optional templateId
+   * Render resume template with optional templateId and ATS optimization
    */
-  async renderResume(data: ResumeTemplateData, templateId?: string): Promise<string> {
+  async renderResume(
+    data: ResumeTemplateData, 
+    templateId?: string, 
+    atsOptimized = false,
+  ): Promise<string> {
     try {
       let template: string;
       let css: string;
 
-      if (templateId) {
+      if (atsOptimized) {
+        // Use ATS-optimized template from filesystem
+        this.logger.log('Loading ATS-optimized resume template');
+        template = await this.loadTemplate('resume-ats.hbs');
+        css = await this.loadStyles(['base-ats.css', 'resume-ats.css']);
+      } else if (templateId) {
         // Load specific template from database
         this.logger.log(`Loading resume template: ${templateId}`);
         const dbTemplate = await this.templatesService.findOne(templateId);

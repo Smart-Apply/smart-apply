@@ -63,6 +63,7 @@
     "passport-azure-ad": "^4.3.5",
     "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.1",
+    "pdf-lib": "^1.17.1",
     "pdf-parse": "^1.1.1",
     "pino": "^8.17.2",
     "pino-http": "^9.0.0",

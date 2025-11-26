@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { api } from '@/lib/api-client';
+import { api, resetAuthRedirectFlag } from '@/lib/api-client';
 import { useAuthStore } from '@/stores/auth-store';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -70,6 +70,10 @@ export default function RegisterPage() {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { confirmPassword, ...registerData } = data;
       const response = await api.auth.register(registerData);
+      
+      // Reset the redirect flag to allow future requests
+      resetAuthRedirectFlag();
+      
       setAuth(response.user);
       toast.success('Account erfolgreich erstellt!');
       router.push('/dashboard');

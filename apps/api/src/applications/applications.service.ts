@@ -46,6 +46,7 @@ export class ApplicationsService {
         experiences: true,
         projects: true,
         education: true,
+        languages: true,
       },
     });
 

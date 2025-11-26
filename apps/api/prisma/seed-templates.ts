@@ -10,6 +10,12 @@ function readTemplateFile(filename: string): string {
   return fs.readFileSync(filePath, 'utf-8');
 }
 
+// Helper function to read a single CSS file
+function readCSSFile(filename: string): string {
+  const filePath = path.join(__dirname, '../src/pdf/styles', filename);
+  return fs.readFileSync(filePath, 'utf-8');
+}
+
 // Helper function to read CSS files and combine them
 function readCombinedCSS(files: string[]): string {
   const cssDir = path.join(__dirname, '../src/pdf/styles');
@@ -24,137 +30,209 @@ function readCombinedCSS(files: string[]): string {
 async function seedTemplates() {
   console.log('🎨 Seeding templates...');
 
-  // Read existing template files
-  const coverLetterHTML = readTemplateFile('cover-letter.hbs');
-  const resumeHTML = readTemplateFile('resume.hbs');
+  // Read existing template files (ATS-optimized)
+  const coverLetterHTML = readTemplateFile('cover-letter-ats.hbs');
+  const resumeHTML = readTemplateFile('resume-ats.hbs');
+  
+  // Read CSS files for different styles
+  const modernProfessionalCSS = readCSSFile('modern-professional.css');
+  const elegantMinimalCSS = readCSSFile('elegant-minimal.css');
+  const techModernCSS = readCSSFile('tech-modern.css');
+  const executiveClassicCSS = readCSSFile('executive-classic.css');
+  
+  // Legacy CSS for fallback
   const baseCoverLetterCSS = readCombinedCSS(['base.css', 'cover-letter.css']);
   const baseResumeCSS = readCombinedCSS(['base.css', 'resume.css']);
 
-  // 1. Professional Cover Letter (Default)
+  // ==================================================
+  // COVER LETTER TEMPLATES
+  // ==================================================
+
+  // 1. Modern Professional Cover Letter (Default)
   await prisma.template.upsert({
-    where: { id: 'professional-cover-letter' },
-    update: {},
+    where: { id: 'modern-professional-cover-letter' },
+    update: {
+      htmlTemplate: coverLetterHTML,
+      cssStyles: modernProfessionalCSS,
+    },
     create: {
-      id: 'professional-cover-letter',
-      name: 'Professional Cover Letter',
-      description: 'Classic, formal layout suitable for corporate and traditional industries',
+      id: 'modern-professional-cover-letter',
+      name: 'Modern Professional',
+      description: 'Clean design with navy blue accents. Perfect for corporate and professional roles.',
       type: TemplateType.COVER_LETTER,
       category: 'Professional',
       htmlTemplate: coverLetterHTML,
-      cssStyles: baseCoverLetterCSS,
+      cssStyles: modernProfessionalCSS,
       isActive: true,
       isDefault: true,
     },
   });
 
-  // 2. Modern Cover Letter
+  // 2. Elegant Minimal Cover Letter
   await prisma.template.upsert({
-    where: { id: 'modern-cover-letter' },
-    update: {},
-    create: {
-      id: 'modern-cover-letter',
-      name: 'Modern Cover Letter',
-      description: 'Clean, contemporary design with subtle color accents',
-      type: TemplateType.COVER_LETTER,
-      category: 'Modern',
+    where: { id: 'elegant-minimal-cover-letter' },
+    update: {
       htmlTemplate: coverLetterHTML,
-      cssStyles: baseCoverLetterCSS.replace(/#0066cc/g, '#10b981'), // Green accent
+      cssStyles: elegantMinimalCSS,
+    },
+    create: {
+      id: 'elegant-minimal-cover-letter',
+      name: 'Elegant Minimal',
+      description: 'Sophisticated, understated design with elegant typography and whitespace.',
+      type: TemplateType.COVER_LETTER,
+      category: 'Minimal',
+      htmlTemplate: coverLetterHTML,
+      cssStyles: elegantMinimalCSS,
       isActive: true,
       isDefault: false,
     },
   });
 
-  // 3. Creative Cover Letter
+  // 3. Tech Modern Cover Letter
   await prisma.template.upsert({
-    where: { id: 'creative-cover-letter' },
-    update: {},
-    create: {
-      id: 'creative-cover-letter',
-      name: 'Creative Cover Letter',
-      description: 'Bold, distinctive style for creative industries and startups',
-      type: TemplateType.COVER_LETTER,
-      category: 'Creative',
+    where: { id: 'tech-modern-cover-letter' },
+    update: {
       htmlTemplate: coverLetterHTML,
-      cssStyles: baseCoverLetterCSS.replace(/#0066cc/g, '#8b5cf6'), // Purple accent
+      cssStyles: techModernCSS,
+    },
+    create: {
+      id: 'tech-modern-cover-letter',
+      name: 'Tech Modern',
+      description: 'Developer-focused design with subtle tech aesthetics. Great for software roles.',
+      type: TemplateType.COVER_LETTER,
+      category: 'Technical',
+      htmlTemplate: coverLetterHTML,
+      cssStyles: techModernCSS,
       isActive: true,
       isDefault: false,
     },
   });
 
-  console.log('✅ Created 3 cover letter templates');
-
-  // 4. Professional Resume (Default)
+  // 4. Executive Classic Cover Letter
   await prisma.template.upsert({
-    where: { id: 'professional-resume' },
-    update: {},
+    where: { id: 'executive-classic-cover-letter' },
+    update: {
+      htmlTemplate: coverLetterHTML,
+      cssStyles: executiveClassicCSS,
+    },
     create: {
-      id: 'professional-resume',
-      name: 'Professional Resume',
-      description: 'Traditional CV format optimized for ATS and corporate environments',
+      id: 'executive-classic-cover-letter',
+      name: 'Executive Classic',
+      description: 'Traditional, authoritative design for senior and executive positions.',
+      type: TemplateType.COVER_LETTER,
+      category: 'Executive',
+      htmlTemplate: coverLetterHTML,
+      cssStyles: executiveClassicCSS,
+      isActive: true,
+      isDefault: false,
+    },
+  });
+
+  console.log('✅ Created 4 cover letter templates');
+
+  // ==================================================
+  // RESUME TEMPLATES
+  // ==================================================
+
+  // 5. Modern Professional Resume (Default)
+  await prisma.template.upsert({
+    where: { id: 'modern-professional-resume' },
+    update: {
+      htmlTemplate: resumeHTML,
+      cssStyles: modernProfessionalCSS,
+    },
+    create: {
+      id: 'modern-professional-resume',
+      name: 'Modern Professional',
+      description: 'Clean, ATS-optimized design with navy blue accents. Corporate and versatile.',
       type: TemplateType.RESUME,
       category: 'Professional',
       htmlTemplate: resumeHTML,
-      cssStyles: baseResumeCSS,
+      cssStyles: modernProfessionalCSS,
       isActive: true,
       isDefault: true,
     },
   });
 
-  // 5. Modern Resume
+  // 6. Elegant Minimal Resume
   await prisma.template.upsert({
-    where: { id: 'modern-resume' },
-    update: {},
-    create: {
-      id: 'modern-resume',
-      name: 'Modern Resume',
-      description: 'Two-column layout with visual hierarchy and contemporary styling',
-      type: TemplateType.RESUME,
-      category: 'Modern',
+    where: { id: 'elegant-minimal-resume' },
+    update: {
       htmlTemplate: resumeHTML,
-      cssStyles: baseResumeCSS.replace(/#0066cc/g, '#10b981'), // Green accent
-      isActive: true,
-      isDefault: false,
+      cssStyles: elegantMinimalCSS,
     },
-  });
-
-  // 6. Minimal Resume
-  await prisma.template.upsert({
-    where: { id: 'minimal-resume' },
-    update: {},
     create: {
-      id: 'minimal-resume',
-      name: 'Minimal Resume',
-      description: 'Simple, elegant, text-focused design with maximum readability',
+      id: 'elegant-minimal-resume',
+      name: 'Elegant Minimal',
+      description: 'Sophisticated design with refined typography. Perfect for creative professionals.',
       type: TemplateType.RESUME,
       category: 'Minimal',
       htmlTemplate: resumeHTML,
-      cssStyles: baseResumeCSS
-        .replace(/#0066cc/g, '#1a1a1a') // Black accent
-        .replace(/background: #e6f2ff/g, 'background: #f5f5f5')
-        .replace(/border-left: 4pt solid #0066cc/g, 'border-left: 2pt solid #1a1a1a'),
+      cssStyles: elegantMinimalCSS,
       isActive: true,
       isDefault: false,
     },
   });
 
-  // 7. Technical Resume
+  // 7. Tech Modern Resume
   await prisma.template.upsert({
-    where: { id: 'technical-resume' },
-    update: {},
+    where: { id: 'tech-modern-resume' },
+    update: {
+      htmlTemplate: resumeHTML,
+      cssStyles: techModernCSS,
+    },
     create: {
-      id: 'technical-resume',
-      name: 'Technical Resume',
-      description: 'Skills-focused layout optimized for software developers and engineers',
+      id: 'tech-modern-resume',
+      name: 'Tech Modern',
+      description: 'Developer-focused with monospace elements. Ideal for software engineers.',
       type: TemplateType.RESUME,
       category: 'Technical',
       htmlTemplate: resumeHTML,
-      cssStyles: baseResumeCSS.replace(/#0066cc/g, '#0891b2'), // Cyan accent
+      cssStyles: techModernCSS,
+      isActive: true,
+      isDefault: false,
+    },
+  });
+
+  // 8. Executive Classic Resume
+  await prisma.template.upsert({
+    where: { id: 'executive-classic-resume' },
+    update: {
+      htmlTemplate: resumeHTML,
+      cssStyles: executiveClassicCSS,
+    },
+    create: {
+      id: 'executive-classic-resume',
+      name: 'Executive Classic',
+      description: 'Traditional, authoritative design for senior leaders and executives.',
+      type: TemplateType.RESUME,
+      category: 'Executive',
+      htmlTemplate: resumeHTML,
+      cssStyles: executiveClassicCSS,
       isActive: true,
       isDefault: false,
     },
   });
 
   console.log('✅ Created 4 resume templates');
+
+  // Delete old templates that are no longer needed
+  await prisma.template.deleteMany({
+    where: {
+      id: {
+        in: [
+          'professional-cover-letter',
+          'modern-cover-letter',
+          'creative-cover-letter',
+          'professional-resume',
+          'modern-resume',
+          'minimal-resume',
+          'technical-resume',
+        ],
+      },
+    },
+  });
+  console.log('🗑️ Cleaned up old templates');
   console.log('🎉 Template seed completed successfully!');
 }
 

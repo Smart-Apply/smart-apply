@@ -206,6 +206,30 @@ export class EducationDto {
   description?: string;
 }
 
+export class LanguageDto {
+  @ApiProperty({
+    example: 'clx1234567890',
+    required: false,
+    description: 'If provided, updates existing language; otherwise creates new one',
+  })
+  @IsOptional()
+  @IsString()
+  id?: string;
+
+  @ApiProperty({ example: 'Deutsch', description: 'Language name (e.g., Deutsch, English, Français)' })
+  @Sanitize()
+  @IsString()
+  name: string;
+
+  @ApiProperty({ 
+    example: 'Muttersprache', 
+    description: 'Proficiency level (e.g., Muttersprache, Fließend, Gut, Grundkenntnisse / Native, Fluent, Advanced, Basic)' 
+  })
+  @Sanitize()
+  @IsString()
+  level: string;
+}
+
 export class UpdateProfileDto {
   @ApiProperty({ example: 'John', required: false })
   @IsOptional()
@@ -304,4 +328,18 @@ export class UpdateProfileDto {
   @ValidateNested({ each: true })
   @Type(() => EducationDto)
   education?: EducationDto[];
+
+  @ApiProperty({
+    type: [LanguageDto],
+    required: false,
+    example: [
+      { name: 'Deutsch', level: 'Muttersprache' },
+      { name: 'English', level: 'Fließend' },
+    ],
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => LanguageDto)
+  languages?: LanguageDto[];
 }

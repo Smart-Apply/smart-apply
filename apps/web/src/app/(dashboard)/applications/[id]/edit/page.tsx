@@ -390,7 +390,7 @@ export default function ApplicationResumeEditorPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Anschreiben bearbeiten</CardTitle>
-                    <CardDescription>Gib Hinweise für die KI oder bearbeite den Text direkt im Editor.</CardDescription>
+                    <CardDescription>Bearbeite das Anschreiben direkt im Editor. Die Anrede und Schlussformel sind Teil des Textes.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
@@ -408,7 +408,7 @@ export default function ApplicationResumeEditorPage() {
                     </div>
                     <CoverLetterEditor value={coverLetterValue} onChange={setCoverLetterValue} disabled={coverMutationPending} />
                     <p className="text-xs text-muted-foreground">
-                      Du kannst den Text oben frei bearbeiten. Beim Speichern wird er sanitisiert und für den PDF-Export vorbereitet.
+                      Der Editor enthält den kompletten Briefinhalt inkl. Anrede und Schlussformel. Dein Name wird automatisch als Unterschrift hinzugefügt.
                     </p>
                   </CardContent>
               </Card>

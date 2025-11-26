@@ -31,6 +31,7 @@ export class ProfileService {
         education: {
           orderBy: { startYear: 'desc' },
         },
+        languages: true,
       },
     });
 
@@ -297,6 +298,42 @@ export class ProfileService {
           }
         }
 
+        // Update languages (differential: upsert with IDs, delete orphaned)
+        if (dto.languages !== undefined) {
+          const providedIds = dto.languages.filter((l) => l.id).map((l) => l.id!);
+
+          if (dto.languages.length === 0) {
+            await tx.language.deleteMany({ where: { profileId: profile.id } });
+          } else if (providedIds.length > 0) {
+            await tx.language.deleteMany({
+              where: {
+                profileId: profile.id,
+                id: { notIn: providedIds },
+              },
+            });
+          }
+
+          for (const lang of dto.languages) {
+            if (lang.id) {
+              await tx.language.update({
+                where: { id: lang.id },
+                data: {
+                  name: lang.name,
+                  level: lang.level,
+                },
+              });
+            } else {
+              await tx.language.create({
+                data: {
+                  profileId: profile.id,
+                  name: lang.name,
+                  level: lang.level,
+                },
+              });
+            }
+          }
+        }
+
         // Fetch updated profile with all relations
         return tx.profile.findUnique({
           where: { id: profile.id },
@@ -310,6 +347,7 @@ export class ProfileService {
             education: {
               orderBy: { startYear: 'desc' },
             },
+            languages: true,
           },
         });
       });
@@ -328,6 +366,7 @@ export class ProfileService {
           hasCertificates: dto.certificates !== undefined,
           hasEducation: dto.education !== undefined,
           hasProjects: dto.projects !== undefined,
+          hasLanguages: dto.languages !== undefined,
         });
       }
 
@@ -389,6 +428,12 @@ export class ProfileService {
           endYear: e.endYear?.toISOString(),
           gpa: e.gpa,
           description: e.description,
+        })) || [],
+      languages:
+        profile.languages?.map((l: any) => ({
+          id: l.id,
+          name: l.name,
+          level: l.level,
         })) || [],
       createdAt: profile.createdAt,
       updatedAt: profile.updatedAt,

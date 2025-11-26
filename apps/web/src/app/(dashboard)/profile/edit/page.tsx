@@ -13,13 +13,14 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { SkillsManager } from '@/components/forms/skills-manager';
+import { LanguagesManager } from '@/components/forms/languages-manager';
 import { ExperienceManager } from '@/components/forms/experience-manager';
 import { EducationManager } from '@/components/forms/education-manager';
 import { CertificatesManager } from '@/components/forms/certificates-manager';
 import { ProjectsManager } from '@/components/forms/projects-manager';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import type { Skill, Experience, Education, Certificate, Project } from '@/types';
+import type { Skill, Experience, Education, Certificate, Project, Language } from '@/types';
 
 // Validation schema for basic profile info
 const profileFormSchema = z.object({
@@ -47,6 +48,7 @@ export default function ProfileEditPage() {
   const [education, setEducation] = useState<Education[]>([]);
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [languages, setLanguages] = useState<Language[]>([]);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -87,6 +89,7 @@ export default function ProfileEditPage() {
         setExperiences(profile.experiences || []);
         setCertificates(profile.certificates || []);
         setProjects(profile.projects || []);
+        setLanguages(profile.languages || []);
         
         // Convert education date strings (ISO format from backend) to year numbers for frontend
         const educationWithYears = (profile.education || []).map(edu => ({
@@ -97,9 +100,9 @@ export default function ProfileEditPage() {
         setEducation(educationWithYears);
       });
     }
-    // Only re-run when skills, experiences, education, certificates, or projects arrays change
+    // Only re-run when skills, experiences, education, certificates, projects, or languages arrays change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile?.skills, profile?.experiences, profile?.education, profile?.certificates, profile?.projects]);
+  }, [profile?.skills, profile?.experiences, profile?.education, profile?.certificates, profile?.projects, profile?.languages]);
 
   const onSubmit = async (data: ProfileFormValues) => {
     try {
@@ -155,6 +158,12 @@ export default function ProfileEditPage() {
         startDate,
         endDate,
       }));
+
+      const languagesForUpdate = languages.map(({ id, name, level }) => ({
+        ...(id && { id }), // Include ID if exists
+        name,
+        level,
+      }));
       
       await updateProfile.mutateAsync({
         firstName: data.firstName || undefined,
@@ -169,6 +178,7 @@ export default function ProfileEditPage() {
         education: education.length > 0 ? educationForUpdate : undefined,
         certificates: certificates.length > 0 ? certificatesForUpdate : undefined,
         projects: projects.length > 0 ? projectsForUpdate : undefined,
+        languages: languages.length > 0 ? languagesForUpdate : undefined,
       });
       
       // Stay on edit page after save (data will refresh via React Query)
@@ -406,6 +416,13 @@ export default function ProfileEditPage() {
               <SkillsManager
                 skills={skills}
                 onSkillsChange={setSkills}
+                disabled={updateProfile.isPending}
+              />
+
+              {/* Languages Manager */}
+              <LanguagesManager
+                languages={languages}
+                onLanguagesChange={setLanguages}
                 disabled={updateProfile.isPending}
               />
 

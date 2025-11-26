@@ -64,7 +64,6 @@ interface CoverLetterTemplatePreviewProps {
   location?: string;
   linkedin?: string;
   github?: string;
-  recipientName?: string;
   companyName?: string;
   templateId?: string | null;
 }
@@ -271,7 +270,6 @@ export function CoverLetterTemplatePreview({
   location,
   linkedin,
   github,
-  recipientName,
   companyName,
   templateId,
 }: CoverLetterTemplatePreviewProps) {
@@ -295,7 +293,6 @@ export function CoverLetterTemplatePreview({
     location,
     linkedin,
     github,
-    recipientName,
     companyName,
     content: html,
     date: new Date().toLocaleDateString('de-DE', {
@@ -303,8 +300,7 @@ export function CoverLetterTemplatePreview({
       month: 'long',
       day: 'numeric',
     }),
-    closingPhrase: 'Mit freundlichen Grüßen',
-  }), [html, candidateName, email, phone, location, linkedin, github, recipientName, companyName]);
+  }), [html, candidateName, email, phone, location, linkedin, github, companyName]);
 
   // Render template when data changes
   useEffect(() => {

@@ -76,9 +76,11 @@ export class ApplicationProcessor {
           content: application.coverLetterText!, // Non-null assertion: hasCoverLetter ensures this is defined
         };
 
+        // Always use ATS-optimized format for better parsing by applicant tracking systems
         const coverLetterPdf = await this.pdfService.generateCoverLetterPDF(
           coverLetterTemplateData,
           application.coverLetterTemplateId || undefined,
+          { atsOptimized: true },
         );
 
         // Upload cover letter to storage
@@ -89,10 +91,11 @@ export class ApplicationProcessor {
         );
       }
 
-      // Always generate resume PDF
+      // Always generate resume PDF with ATS optimization
       const resumePdf = await this.pdfService.generateResumePDF(
         resumeData,
         application.resumeTemplateId || undefined,
+        { atsOptimized: true },
       );
 
       // 3. Upload resume to Storage

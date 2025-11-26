@@ -154,10 +154,16 @@ async function main() {
           },
         ],
       },
+      languages: {
+        create: [
+          { name: 'Deutsch', level: 'Muttersprache' },
+          { name: 'Englisch', level: 'Fließend' },
+        ],
+      },
     },
   });
 
-  console.log('✅ Created demo profile with skills, certificates, experiences, and projects');
+  console.log('✅ Created demo profile with skills, certificates, experiences, projects, and languages');
 
   // Create sample job posting
   const jobPosting = await prisma.jobPosting.create({

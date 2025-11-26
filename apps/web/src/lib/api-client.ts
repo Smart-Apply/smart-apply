@@ -31,11 +31,41 @@ interface RequestOptions extends RequestInit {
 let isRefreshing = false;
 let refreshPromise: Promise<boolean> | null = null;
 
+// Track if we're already redirecting to login to prevent multiple redirects
+let isRedirectingToLogin = false;
+
+/**
+ * Clear auth state and redirect to login
+ * Uses a flag to prevent multiple redirects from concurrent requests
+ */
+function handleAuthFailure(): never {
+  if (typeof window !== 'undefined' && !isRedirectingToLogin) {
+    isRedirectingToLogin = true;
+    
+    // Clear auth store to prevent further authenticated requests
+    // This also disables queries that depend on isAuthenticated
+    import('@/stores/auth-store').then(({ useAuthStore }) => {
+      useAuthStore.getState().clearAuth();
+    }).catch(console.error);
+    
+    console.warn('Authentication failed. Redirecting to login...');
+    window.location.href = '/login?session_expired=true';
+  }
+  
+  // Throw error to stop further processing in the request chain
+  throw new ApiError(401, 'Unauthorized', { message: 'Session expired. Redirecting to login...' });
+}
+
 /**
  * Refresh access token using refresh token
  * Uses singleton pattern to prevent concurrent refresh requests
  */
 async function refreshAccessToken(): Promise<boolean> {
+  // If already redirecting, don't bother refreshing
+  if (isRedirectingToLogin) {
+    return false;
+  }
+  
   // If already refreshing, return the existing promise
   if (isRefreshing && refreshPromise) {
     return refreshPromise;
@@ -118,6 +148,11 @@ async function apiRequest<T>(
 
         // Handle 401 Unauthorized
         if (response.status === 401) {
+          // If we're already redirecting, throw immediately to stop further processing
+          if (isRedirectingToLogin) {
+            throw new ApiError(response.status, 'Unauthorized', { message: 'Redirecting to login...' });
+          }
+          
           // Check for permanent authentication failures (user/token deleted from DB)
           // These should NOT trigger token refresh attempts
           const errorMessage = errorData?.message || '';
@@ -128,12 +163,7 @@ async function apiRequest<T>(
           
           if (isPermAuthFailure) {
             // User or tokens were deleted from database - redirect to login immediately
-            // Don't attempt refresh (it will fail anyway and cause retry loops)
-            if (typeof window !== 'undefined') {
-              console.warn('Authentication data invalid (user/token deleted). Redirecting to login...');
-              window.location.href = '/login?session_expired=true';
-            }
-            throw new ApiError(response.status, response.statusText, errorData);
+            handleAuthFailure();
           }
           
           // For other 401 errors, attempt token refresh (only once)
@@ -151,10 +181,8 @@ async function apiRequest<T>(
                 // Retry the original request with new access token
                 return makeRequest(true);
               } else {
-                // Refresh failed, redirect to login
-                if (typeof window !== 'undefined') {
-                  window.location.href = '/login?session_expired=true';
-                }
+                // Refresh failed, clear auth and redirect to login
+                handleAuthFailure();
               }
             }
           }
@@ -198,6 +226,14 @@ async function apiRequest<T>(
       throw error;
     }
   }
+}
+
+/**
+ * Reset the redirect flag - should be called after successful login
+ * This allows the user to log in again after a session expiry redirect
+ */
+export function resetAuthRedirectFlag(): void {
+  isRedirectingToLogin = false;
 }
 
 /**

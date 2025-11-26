@@ -91,6 +91,17 @@ export class EducationResponseDto {
   description?: string;
 }
 
+export class LanguageResponseDto {
+  @ApiProperty()
+  id: string;
+
+  @ApiProperty({ example: 'Deutsch' })
+  name: string;
+
+  @ApiProperty({ example: 'Muttersprache' })
+  level: string;
+}
+
 export class ProfileResponseDto {
   @ApiProperty()
   id: string;
@@ -136,6 +147,9 @@ export class ProfileResponseDto {
 
   @ApiProperty({ type: [EducationResponseDto] })
   education: EducationResponseDto[];
+
+  @ApiProperty({ type: [LanguageResponseDto] })
+  languages: LanguageResponseDto[];
 
   @ApiProperty()
   createdAt: Date;

@@ -6,19 +6,20 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 import { PromptService } from '../../common/services';
 
 // Define the structured output schema for job posting extraction
+// Using .nullable() for optional fields because LLMs often return null instead of undefined
 const JobPostingSchema = z.object({
   title: z.string().describe('The job title'),
   company: z.string().describe('The company name'),
-  location: z.string().optional().describe('The job location'),
-  description: z.string().optional().describe('The job description'),
+  location: z.string().nullable().describe('The job location, or null if not specified'),
+  description: z.string().nullable().describe('The job description, or null if not available'),
   language: z
     .string()
     .describe('Detected language code (e.g., "de" for German, "en" for English, "fr" for French)'),
   requirements: z.array(z.string()).describe('List of job requirements'),
   responsibilities: z.array(z.string()).describe('List of job responsibilities'),
   niceToHave: z.array(z.string()).describe('Nice to have qualifications'),
-  salary: z.string().optional().describe('Salary information if available'),
-  applicationDeadline: z.string().optional().describe('Application deadline if available'),
+  salary: z.string().nullable().describe('Salary information if available, or null if not specified'),
+  applicationDeadline: z.string().nullable().describe('Application deadline if available, or null if not specified'),
 });
 
 export type JobPostingExtraction = z.infer<typeof JobPostingSchema>;
@@ -82,6 +83,9 @@ export class AgentUrlParser {
       // Step 3: Extract page content
       const pageContent = await this.extractPageContent(page);
 
+      // Step 3.5: Check for bot protection / blocking
+      this.detectBotProtection(pageContent, url);
+
       // Step 4: Use LLM to extract structured data
       const extracted = await this.extractStructuredData(pageContent, url);
 
@@ -98,6 +102,80 @@ export class AgentUrlParser {
     } finally {
       // Cleanup
       await this.closeBrowser();
+    }
+  }
+
+  /**
+   * Detect if the page is blocked by bot protection (Cloudflare, CAPTCHA, etc.)
+   * Throws a user-friendly error if blocking is detected
+   */
+  private detectBotProtection(pageContent: string, url: string): void {
+    const contentLower = pageContent.toLowerCase();
+    const hostname = new URL(url).hostname;
+
+    // Cloudflare block indicators
+    const cloudflareBlocked =
+      contentLower.includes('you have been blocked') ||
+      contentLower.includes('ray id') ||
+      contentLower.includes('cloudflare') ||
+      (contentLower.includes('request blocked') && contentLower.includes('error'));
+
+    // CAPTCHA indicators
+    const captchaBlocked =
+      contentLower.includes('captcha') ||
+      contentLower.includes('verify you are human') ||
+      contentLower.includes('i am not a robot') ||
+      contentLower.includes('recaptcha');
+
+    // Access denied indicators
+    const accessDenied =
+      contentLower.includes('access denied') ||
+      contentLower.includes('403 forbidden') ||
+      contentLower.includes('permission denied');
+
+    // Rate limiting indicators
+    const rateLimited =
+      contentLower.includes('too many requests') ||
+      contentLower.includes('rate limit') ||
+      contentLower.includes('429');
+
+    if (cloudflareBlocked) {
+      this.logger.warn(`🛡️ Cloudflare block detected for ${hostname}`);
+      throw new Error(
+        `Diese Webseite (${hostname}) blockiert automatisierte Zugriffe mit Cloudflare. ` +
+          `Bitte kopiere die Stellenbeschreibung direkt und füge sie als Text ein.`,
+      );
+    }
+
+    if (captchaBlocked) {
+      this.logger.warn(`🤖 CAPTCHA detected for ${hostname}`);
+      throw new Error(
+        `Diese Webseite (${hostname}) erfordert eine CAPTCHA-Verifizierung. ` +
+          `Bitte kopiere die Stellenbeschreibung direkt und füge sie als Text ein.`,
+      );
+    }
+
+    if (accessDenied) {
+      this.logger.warn(`🚫 Access denied for ${hostname}`);
+      throw new Error(
+        `Zugriff auf diese Webseite (${hostname}) wurde verweigert. ` +
+          `Bitte kopiere die Stellenbeschreibung direkt und füge sie als Text ein.`,
+      );
+    }
+
+    if (rateLimited) {
+      this.logger.warn(`⏱️ Rate limited by ${hostname}`);
+      throw new Error(
+        `Zu viele Anfragen an ${hostname}. Bitte warte einen Moment und versuche es erneut, ` +
+          `oder kopiere die Stellenbeschreibung direkt und füge sie als Text ein.`,
+      );
+    }
+
+    // Check if content is too short (likely blocked or error page)
+    const cleanedContent = pageContent.replace(/\s+/g, ' ').trim();
+    if (cleanedContent.length < 300) {
+      this.logger.warn(`📄 Page content suspiciously short (${cleanedContent.length} chars) for ${hostname}`);
+      // Don't throw here, let the LLM try to extract what it can
     }
   }
 

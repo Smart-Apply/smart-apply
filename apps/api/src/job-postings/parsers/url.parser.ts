@@ -57,12 +57,12 @@ export class UrlParser {
       try {
         const agentResult = await this.agentParser.parse(url);
 
-        // Convert agent result to our format
+        // Convert agent result to our format (convert null to undefined)
         return {
           title: agentResult.title,
           company: agentResult.company,
-          location: agentResult.location,
-          description: agentResult.description,
+          location: agentResult.location ?? undefined,
+          description: agentResult.description ?? undefined,
           requirements: agentResult.requirements,
           responsibilities: agentResult.responsibilities,
           niceToHave: agentResult.niceToHave,
@@ -70,7 +70,9 @@ export class UrlParser {
         };
       } catch (error) {
         this.logger.error(`Agent parser failed for ${url}: ${error.message}`);
+        // Re-throw with original message if it's already a user-friendly error (from bot protection detection)
         throw new BadRequestException(
+          error.message || 
           'Failed to parse job posting from dynamic site. ' +
             'Try copying the job description text directly instead of using the URL.',
         );
@@ -98,12 +100,12 @@ export class UrlParser {
         this.logger.log(`Using agent-based parser for ${url}`);
         const agentResult = await this.agentParser.parse(url);
 
-        // Convert agent result to our format
+        // Convert agent result to our format (convert null to undefined)
         return {
           title: agentResult.title,
           company: agentResult.company,
-          location: agentResult.location,
-          description: agentResult.description,
+          location: agentResult.location ?? undefined,
+          description: agentResult.description ?? undefined,
           requirements: agentResult.requirements,
           responsibilities: agentResult.responsibilities,
           niceToHave: agentResult.niceToHave,
@@ -111,7 +113,9 @@ export class UrlParser {
         };
       } catch (error) {
         this.logger.error(`Agent parser also failed for ${url}: ${error.message}`);
+        // Re-throw with original message if it's already a user-friendly error (from bot protection detection)
         throw new BadRequestException(
+          error.message ||
           'Failed to parse job posting. This site may require manual copying. ' +
             'Try copying the job description text directly instead of using the URL.',
         );

@@ -1,0 +1,113 @@
+/* ATS-Optimized Cover Letter Styling */
+/* Simple business letter format */
+
+/* Header - Contact information */
+.header {
+  text-align: center;
+  margin-bottom: 0.2in;
+  page-break-inside: avoid;
+}
+
+.header h1 {
+  font-size: 16pt;
+  font-weight: bold;
+  color: #000000;
+  margin-bottom: 0.05in;
+}
+
+.header .contact-info {
+  font-size: 10pt;
+  color: #000000;
+  line-height: 1.4;
+}
+
+.header .contact-info a {
+  color: #000000;
+}
+
+.header .contact-info .separator {
+  margin: 0 0.08in;
+}
+
+/* Date Section */
+.date-section {
+  margin-bottom: 0.15in;
+  font-size: 11pt;
+  text-align: left;
+}
+
+/* Recipient Section */
+.recipient-section {
+  margin-bottom: 0.15in;
+  font-size: 11pt;
+  line-height: 1.4;
+}
+
+.recipient-section strong {
+  font-weight: bold;
+}
+
+/* Salutation */
+.salutation {
+  margin-bottom: 0.15in;
+  font-size: 11pt;
+}
+
+/* Body Content - Simple paragraphs */
+.body-content {
+  font-size: 11pt;
+  line-height: 1.6;
+  text-align: left;
+  margin-bottom: 0.2in;
+}
+
+.body-content p {
+  margin-bottom: 0.12in;
+  text-align: left; /* No justify for ATS */
+}
+
+.body-content ul {
+  margin-left: 0.25in;
+  margin-bottom: 0.12in;
+  list-style-type: disc; /* Standard bullets only */
+}
+
+.body-content li {
+  margin-bottom: 0.06in;
+}
+
+/* Closing Section */
+.closing {
+  margin-top: 0.2in;
+  font-size: 11pt;
+}
+
+.closing p {
+  margin-bottom: 0.08in;
+}
+
+.signature {
+  margin-top: 0.15in;
+}
+
+.signature strong {
+  font-weight: bold;
+}
+
+/* Footer (optional) */
+.footer {
+  margin-top: 0.3in;
+  padding-top: 0.1in;
+  border-top: 1pt solid #000000;
+  font-size: 9pt;
+  color: #000000;
+  text-align: center;
+}
+
+/* NO decorative elements:
+ * - NO fancy headers/footers
+ * - NO letterhead graphics
+ * - NO colored text
+ * - NO background images
+ * - Simple black text on white background only
+ */
