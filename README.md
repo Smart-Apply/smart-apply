@@ -48,7 +48,7 @@ Smart Apply is an intelligent job application assistant that:
 - **ORM**: Prisma
 - **Storage**: Azure Blob Storage (disk in dev)
 - **Queue/Jobs**: Azure Service Bus
-- **LLM**: Azure OpenAI, Hugging Face (with mock provider for tests)
+- **LLM**: Azure AI Foundry Agents, Azure OpenAI, Hugging Face (with mock provider for tests)
 - **Job Parsing**: Playwright + Cheerio (agent-based URL parsing for dynamic sites)
 - **PDF**: Puppeteer (Chromium)
 - **Auth**: JWT + optional OAuth (Microsoft Entra ID, Google)
@@ -87,7 +87,7 @@ smart-apply/
 │   │   │   ├── common/            # Guards, filters, interceptors
 │   │   │   ├── prisma/            # Database client
 │   │   │   ├── storage/           # Disk + Azure Blob providers
-│   │   │   ├── llm/               # Azure OpenAI + Hugging Face + Mock
+│   │   │   ├── llm/               # Azure AI Foundry + OpenAI + Hugging Face + Mock
 │   │   │   ├── pdf/               # PDF generation (Puppeteer)
 │   │   │   ├── templates/         # Template system (7 templates)
 │   │   │   ├── jobs/              # Service Bus integration
@@ -782,7 +782,68 @@ AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4o
 AZURE_OPENAI_API_VERSION=2024-02-15-preview
 ```
 
-#### 3. **Hugging Face Provider** 🆕
+#### 3. **Azure AI Foundry Agents** 🆕 (Recommended for Production)
+
+Leverage specialized AI agents deployed in Azure AI Foundry for resume and cover letter generation. Uses dedicated **CV Writer** and **CL Writer** agents with automatic fallback to Azure OpenAI.
+
+```bash
+LLM_PROVIDER=azure-ai-foundry
+
+# Azure AI Foundry Agent endpoints
+AZURE_AI_FOUNDRY_CV_WRITER_ENDPOINT=https://your-cv-writer-agent.inference.ml.azure.com/score
+AZURE_AI_FOUNDRY_CL_WRITER_ENDPOINT=https://your-cl-writer-agent.inference.ml.azure.com/score
+AZURE_AI_FOUNDRY_API_KEY=your_ai_foundry_api_key
+
+# Azure OpenAI fallback (required)
+AZURE_OPENAI_ENDPOINT=https://your-instance.openai.azure.com/
+AZURE_OPENAI_API_KEY=your_openai_api_key
+AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4o
+AZURE_OPENAI_API_VERSION=2024-02-15-preview
+```
+
+**Features:**
+
+- **Specialized Agents**: Dedicated CV Writer and CL Writer agents optimized for document generation
+- **Intelligent Routing**: Automatically routes resume requests to CV Writer and cover letter requests to CL Writer
+- **Automatic Fallback**: Falls back to Azure OpenAI if agent endpoints are unavailable
+- **Production Ready**: 60-second timeout, multiple response format support, comprehensive error handling
+- **Observability**: Detailed logging for debugging and monitoring
+
+**How It Works:**
+
+1. Application detects document type from prompt keywords (resume/CV or cover letter)
+2. Routes request to appropriate Azure AI Foundry agent (CV Writer or CL Writer)
+3. If agent fails or is unavailable, automatically falls back to Azure OpenAI
+4. Supports multiple response formats for maximum compatibility
+
+**Setup:**
+
+1. Deploy CV Writer and CL Writer agents in Azure AI Foundry
+2. Obtain agent endpoints and API key from Azure portal
+3. Add configuration to `.env`:
+
+   ```bash
+   LLM_PROVIDER=azure-ai-foundry
+   AZURE_AI_FOUNDRY_CV_WRITER_ENDPOINT=https://...
+   AZURE_AI_FOUNDRY_CL_WRITER_ENDPOINT=https://...
+   AZURE_AI_FOUNDRY_API_KEY=your_key
+   
+   # Fallback configuration (recommended)
+   AZURE_OPENAI_ENDPOINT=https://...
+   AZURE_OPENAI_API_KEY=your_key
+   AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4o
+   ```
+
+4. Restart the server
+
+**Notes:**
+
+- Both agent endpoints must be provided for full functionality
+- Azure OpenAI fallback configuration is highly recommended for reliability
+- Agent responses are cached for performance
+- Prompt detection uses keyword matching (resume/CV vs cover letter)
+
+#### 4. **Hugging Face Provider**
 
 For local development with open-source models via Hugging Face Inference API.
 

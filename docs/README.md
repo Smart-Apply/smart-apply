@@ -43,6 +43,10 @@ Benutzer- und Entwickler-Guides
 - **README-APPLICATION-WIZARD.md** - Application Wizard Benutzerguide
 - **TESTING_GUIDE.md** - Testing Best Practices
 - **AGENT_URL_PARSER.md** - URL Parser Agent Dokumentation
+- **AZURE_AI_FOUNDRY_AGENTS.md** - Azure AI Foundry Agents Integration 🆕
+- **MONOREPO_WORKSPACE.md** - Workspace Architecture Guide
+- **MVP_EVALUATION.md** - MVP Evaluation Metrics
+- **TEMPLATE_GUIDE.md** - Template System Guide
 
 ### 🔨 [scripts/](./scripts/)
 
@@ -68,6 +72,7 @@ Utility Scripts und Testing Tools
 - [Template erstellen](./features/TEMPLATE_GUIDE.md) - Neue Templates hinzufügen
 - [Testing Guide](./guides/TESTING_GUIDE.md) - Tests schreiben und ausführen
 - [Wizard Implementation](./implementation/WIZARD_IMPLEMENTATION.md) - Application Wizard verstehen
+- [Azure AI Foundry Agents](./guides/AZURE_AI_FOUNDRY_AGENTS.md) - AI Agents Integration 🆕
 
 ### Für DevOps
 
