@@ -699,6 +699,8 @@ export class ApplicationsService {
   async streamStatus(userId: string, applicationId: string): Promise<Observable<MessageEvent>> {
     // Verify application exists and belongs to user
     await this.ensureApplicationOwnership(userId, applicationId);
+    
+    this.logger.log(`SSE stream started for application ${applicationId} by user ${userId}`);
 
     // Create SSE stream that polls status every 2 seconds
     return interval(2000).pipe(
@@ -718,9 +720,11 @@ export class ApplicationsService {
         });
 
         if (!application) {
+          this.logger.error(`SSE stream error: Application ${applicationId} not found`);
           throw new NotFoundException(`Application with ID ${applicationId} not found`);
         }
 
+        this.logger.debug(`SSE emit: application ${applicationId} status=${application.status}`);
         return application;
       }),
       // Transform to SSE MessageEvent format
@@ -740,7 +744,13 @@ export class ApplicationsService {
       takeWhile((event: MessageEvent) => {
         const eventData = event.data as { status: ApplicationStatus };
         const status = eventData.status;
-        return status === 'PENDING' || status === 'GENERATING';
+        const shouldContinue = status === 'PENDING' || status === 'GENERATING';
+        
+        if (!shouldContinue) {
+          this.logger.log(`SSE stream closing for application ${applicationId} (final status: ${status})`);
+        }
+        
+        return shouldContinue;
       }, true),
     );
   }

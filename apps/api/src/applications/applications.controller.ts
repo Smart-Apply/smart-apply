@@ -17,6 +17,7 @@ import {
   Sse,
   MessageEvent,
 } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { Response } from 'express';
 import { Observable } from 'rxjs';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
@@ -304,6 +305,7 @@ export class ApplicationsController {
   }
 
   @Get(':id/stream')
+  @SkipThrottle() // SSE streams are long-lived connections, not repeated requests
   @Sse()
   @ApiOperation({
     summary: 'Stream application status updates via SSE',

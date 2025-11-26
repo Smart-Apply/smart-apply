@@ -86,12 +86,13 @@ export class AzureAIFoundryProvider implements LLMProvider, OnModuleInit {
         return await this.fallbackToAzureOpenAI(prompt, options);
       }
 
-      if (isResume && this.cvWriterAgentId) {
-        this.logger.log('Calling CV Writer Agent for resume generation');
-        return await this.callAgent(this.cvWriterAgentId, prompt, 'CV Writer');
-      } else if (isCoverLetter && this.clWriterAgentId) {
+      // Check cover letter FIRST - it's more specific (prompts often contain both keywords)
+      if (isCoverLetter && this.clWriterAgentId) {
         this.logger.log('Calling CL Writer Agent for cover letter generation');
         return await this.callAgent(this.clWriterAgentId, prompt, 'CL Writer');
+      } else if (isResume && this.cvWriterAgentId) {
+        this.logger.log('Calling CV Writer Agent for resume generation');
+        return await this.callAgent(this.cvWriterAgentId, prompt, 'CV Writer');
       } else {
         this.logger.log(
           `No matching agent - isResume: ${isResume}, isCoverLetter: ${isCoverLetter}, cvAgentId: ${this.cvWriterAgentId}, clAgentId: ${this.clWriterAgentId}`,

@@ -117,17 +117,24 @@ export default function ApplicationDetailPage() {
     
     // Only connect SSE if status is PENDING or GENERATING
     if (application.status !== 'PENDING' && application.status !== 'GENERATING') {
+      console.log(`[SSE] Skipping SSE for application ${applicationId} - status is ${application.status}`);
       return;
     }
 
+    console.log(`[SSE] Connecting to stream for application ${applicationId}`);
     const eventSource = new EventSource(
       `${process.env.NEXT_PUBLIC_API_URL}/applications/${applicationId}/stream`,
       { withCredentials: true }
     );
 
+    eventSource.onopen = () => {
+      console.log(`[SSE] Connection opened for application ${applicationId}`);
+    };
+
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+        console.log(`[SSE] Received update for application ${applicationId}:`, data);
         
         // Update query cache with new status
         queryClient.setQueryData(['applications', applicationId], (old: any) => {
@@ -137,23 +144,26 @@ export default function ApplicationDetailPage() {
 
         // If status changed to READY or FAILED, refetch full details
         if (data.status === 'READY' || data.status === 'FAILED') {
+          console.log(`[SSE] Final status reached (${data.status}), closing connection and refetching`);
           refetch();
           eventSource.close();
         }
       } catch (err) {
-        console.error('SSE parse error:', err);
+        console.error('[SSE] Parse error:', err);
       }
     };
 
     eventSource.onerror = (err) => {
-      console.error('SSE error:', err);
+      console.error('[SSE] Connection error:', err);
+      console.log('[SSE] ReadyState:', eventSource.readyState);
       eventSource.close();
       
-      // Fallback to single refetch on error
-      setTimeout(() => refetch(), 5000);
+      // No automatic refetch - SSE will be retried on next page load
+      // This prevents rate limit issues from constant retries
     };
 
     return () => {
+      console.log(`[SSE] Cleanup - closing connection for application ${applicationId}`);
       eventSource.close();
     };
   }, [isAuthenticated, applicationId, application?.status, queryClient, refetch]);
