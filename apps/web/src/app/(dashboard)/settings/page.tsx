@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { User, Shield, Bell, Palette, Trash2, ChevronRight } from 'lucide-react';
@@ -50,13 +50,6 @@ export default function SettingsPage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  // Sync preferences state when loaded
-  useEffect(() => {
-    if (preferences) {
-      // Preferences are now loaded from the API
-    }
-  }, [preferences]);
-
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -65,8 +58,10 @@ export default function SettingsPage() {
       const response = await api.auth.updateProfile({ firstName, lastName });
       updateUser(response.user);
       toast.success('Profil erfolgreich aktualisiert');
-    } catch {
-      toast.error('Fehler beim Aktualisieren des Profils');
+    } catch (error) {
+      console.error('Profile update error:', error);
+      const errorMessage = (error as Error)?.message || 'Fehler beim Aktualisieren des Profils';
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }

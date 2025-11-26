@@ -4,7 +4,7 @@ import * as argon2 from 'argon2';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto, LoginDto, UpdateUserDto, ChangePasswordDto } from './dto';
 import { ConfigService } from '../config/config.service';
-import { AuditLoggerService } from '../common/audit-logger';
+import { AuditLoggerService, AuditEventType } from '../common/audit-logger';
 import { SessionService } from './session.service';
 import { MAX_TOKENS_PER_USER } from './session.constants';
 import { Request } from 'express';
@@ -371,7 +371,7 @@ export class AuthService {
     // Log account deletion (after deletion but we saved user data before)
     if (req) {
       this.auditLogger.log({
-        eventType: 'ACCOUNT_DELETED' as any, // Not in the enum but we need to log it
+        eventType: AuditEventType.ACCOUNT_DELETED,
         userId,
         email: user.email,
         ip: req.ip || req.socket.remoteAddress || 'unknown',
