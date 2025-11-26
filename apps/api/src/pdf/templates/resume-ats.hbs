@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resume - {{candidateName}}</title>
+</head>
+<body>
+  {{! Contact Information - Always at top for ATS }}
+  <div class="resume-header no-break">
+    <h1>{{candidateName}}</h1>
+    <div class="contact-info">
+      {{#if email}}
+        {{email}}
+      {{/if}}
+      {{#if phone}}
+        <span class="separator">|</span>
+        {{phone}}
+      {{/if}}
+      {{#if location}}
+        <span class="separator">|</span>
+        {{location}}
+      {{/if}}
+      {{#if linkedin}}
+        <span class="separator">|</span>
+        {{linkedin}}
+      {{/if}}
+      {{#if github}}
+        <span class="separator">|</span>
+        {{github}}
+      {{/if}}
+    </div>
+  </div>
+
+  {{! Professional Summary }}
+  {{#if summary}}
+  <div class="summary-section no-break">
+    <h2>Professional Summary</h2>
+    <p>{{{summary}}}</p>
+  </div>
+  {{/if}}
+
+  {{! Skills - Plain comma-separated list (NO fancy formatting) }}
+  {{#if skillCategories}}
+  <div class="section no-break">
+    <h2>Skills</h2>
+    {{#each skillCategories}}
+    <div class="skill-category">
+      <p class="skill-category-title">{{type}}:</p>
+      <p class="skill-list">
+        {{#each skills}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
+      </p>
+    </div>
+    {{/each}}
+  </div>
+  {{/if}}
+
+  {{! Work Experience }}
+  {{#if experiences}}
+  <div class="section">
+    <h2>Professional Experience</h2>
+    {{#each experiences}}
+    <div class="experience-item no-break">
+      <div class="experience-header">
+        <h3 class="experience-title">{{title}}</h3>
+      </div>
+      <p class="experience-company">{{company}}{{#if location}}, {{location}}{{/if}}</p>
+      <p class="experience-date">{{dateRange}}</p>
+      {{#if achievements}}
+      <ul>
+        {{#each achievements}}
+        <li>{{{this}}}</li>
+        {{/each}}
+      </ul>
+      {{/if}}
+    </div>
+    {{/each}}
+  </div>
+  {{/if}}
+
+  {{! Education }}
+  {{#if education}}
+  <div class="section">
+    <h2>Education</h2>
+    {{#each education}}
+    <div class="education-item no-break">
+      <p class="education-degree">{{degree}}{{#if fieldOfStudy}} - {{fieldOfStudy}}{{/if}}</p>
+      <p class="education-institution">{{institution}}</p>
+      <p class="education-date">{{year}}</p>
+      {{#if gpa}}
+      <p class="education-gpa">GPA: {{gpa}}</p>
+      {{/if}}
+      {{#if description}}
+      <p class="education-description">{{description}}</p>
+      {{/if}}
+    </div>
+    {{/each}}
+  </div>
+  {{/if}}
+
+  {{! Projects }}
+  {{#if projects}}
+  <div class="section">
+    <h2>Projects</h2>
+    {{#each projects}}
+    <div class="project-item no-break">
+      <div class="project-header">
+        <h3 class="project-title">{{name}}</h3>
+        {{#if date}}
+        <p class="project-date">{{date}}</p>
+        {{/if}}
+      </div>
+      {{#if description}}
+      <p class="project-description">{{description}}</p>
+      {{/if}}
+      {{#if highlights}}
+      <ul>
+        {{#each highlights}}
+        <li>{{{this}}}</li>
+        {{/each}}
+      </ul>
+      {{/if}}
+    </div>
+    {{/each}}
+  </div>
+  {{/if}}
+
+  {{! Certifications }}
+  {{#if certifications}}
+  <div class="section">
+    <h2>Certifications</h2>
+    {{#each certifications}}
+    <div class="certification-item no-break">
+      <p><strong class="certification-name">{{name}}</strong> - <span class="certification-issuer">{{issuer}}</span>{{#if date}}, <span class="certification-date">{{date}}</span>{{/if}}</p>
+    </div>
+    {{/each}}
+  </div>
+  {{/if}}
+</body>
+</html>

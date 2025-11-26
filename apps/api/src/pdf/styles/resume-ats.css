@@ -1,0 +1,233 @@
+/* ATS-Optimized Resume Styling */
+/* Maximum parsability - Simple single-column layout */
+
+/* Header Section - Contact info at top (critical for ATS) */
+.resume-header {
+  text-align: center;
+  margin-bottom: 0.2in;
+  page-break-inside: avoid;
+}
+
+.resume-header h1 {
+  font-size: 18pt;
+  font-weight: bold;
+  color: #000000;
+  margin-bottom: 0.05in;
+}
+
+.resume-header .contact-info {
+  font-size: 10pt;
+  color: #000000;
+  line-height: 1.4;
+}
+
+.resume-header .contact-info a {
+  color: #000000;
+}
+
+.resume-header .contact-info .separator {
+  margin: 0 0.08in;
+}
+
+/* Professional Summary - Plain paragraph */
+.summary-section {
+  margin-bottom: 0.2in;
+  page-break-inside: avoid;
+}
+
+.summary-section h2 {
+  font-size: 14pt;
+  margin-bottom: 0.08in;
+}
+
+.summary-section p {
+  text-align: left;
+  line-height: 1.6;
+}
+
+/* Section Styling - Simple headers */
+.section {
+  margin-bottom: 0.2in;
+  page-break-inside: avoid;
+}
+
+.section-title {
+  font-size: 14pt;
+  font-weight: bold;
+  color: #000000;
+  margin-bottom: 0.08in;
+  padding-bottom: 0.04in;
+  border-bottom: 1pt solid #000000;
+  text-transform: uppercase;
+}
+
+/* Skills Section - Comma-separated list (NOT tags or fancy layout) */
+.skills-container {
+  margin-bottom: 0.1in;
+}
+
+.skill-category {
+  margin-bottom: 0.08in;
+  page-break-inside: avoid;
+}
+
+.skill-category-title {
+  font-weight: bold;
+  color: #000000;
+  font-size: 11pt;
+  margin-bottom: 0.04in;
+}
+
+.skill-list {
+  line-height: 1.5;
+}
+
+/* NO skill tags, NO icons, NO colors - Just plain text */
+
+/* Experience Section - Simple chronological list */
+.experience-item {
+  margin-bottom: 0.15in;
+  page-break-inside: avoid;
+}
+
+.experience-header {
+  margin-bottom: 0.04in;
+}
+
+.experience-title {
+  font-weight: bold;
+  font-size: 12pt;
+  color: #000000;
+}
+
+.experience-date {
+  font-size: 10pt;
+  color: #000000;
+  font-style: italic;
+}
+
+.experience-company {
+  font-style: italic;
+  color: #000000;
+  margin-bottom: 0.06in;
+  font-size: 11pt;
+}
+
+.experience-item ul {
+  margin-left: 0.25in;
+  margin-bottom: 0;
+  list-style-type: disc; /* Standard bullets only */
+}
+
+.experience-item li {
+  margin-bottom: 0.04in;
+  line-height: 1.5;
+}
+
+/* Projects Section - Simple list format */
+.project-item {
+  margin-bottom: 0.12in;
+  page-break-inside: avoid;
+}
+
+.project-header {
+  margin-bottom: 0.04in;
+}
+
+.project-title {
+  font-weight: bold;
+  font-size: 11pt;
+  color: #000000;
+}
+
+.project-date {
+  font-size: 10pt;
+  color: #000000;
+  font-style: italic;
+}
+
+.project-description {
+  margin-bottom: 0.06in;
+  font-size: 11pt;
+  color: #000000;
+}
+
+.project-item ul {
+  margin-left: 0.25in;
+  margin-bottom: 0;
+}
+
+.project-item li {
+  margin-bottom: 0.04in;
+}
+
+/* Education Section - Simple two-line format */
+.education-item {
+  margin-bottom: 0.1in;
+  page-break-inside: avoid;
+}
+
+.education-degree {
+  font-weight: bold;
+  font-size: 11pt;
+  color: #000000;
+  margin-bottom: 0.02in;
+}
+
+.education-institution {
+  color: #000000;
+  font-size: 11pt;
+  margin-bottom: 0.02in;
+}
+
+.education-date {
+  font-size: 10pt;
+  color: #000000;
+  font-style: italic;
+}
+
+.education-gpa {
+  font-size: 10pt;
+  color: #000000;
+  margin-top: 0.02in;
+}
+
+.education-description {
+  font-size: 10pt;
+  color: #000000;
+  margin-top: 0.04in;
+  line-height: 1.4;
+}
+
+/* Certifications Section - Simple list */
+.certification-item {
+  margin-bottom: 0.08in;
+  page-break-inside: avoid;
+}
+
+.certification-name {
+  font-weight: bold;
+  font-size: 11pt;
+  color: #000000;
+}
+
+.certification-issuer {
+  font-size: 10pt;
+  color: #000000;
+}
+
+.certification-date {
+  font-size: 10pt;
+  color: #000000;
+  font-style: italic;
+}
+
+/* NO complex elements that confuse ATS:
+ * - NO tables
+ * - NO multi-column layouts (grid/flexbox)
+ * - NO text boxes
+ * - NO images or icons
+ * - NO fancy borders or backgrounds
+ * - NO colored text (except black)
+ * - ALL text must be selectable (not in images)
+ */

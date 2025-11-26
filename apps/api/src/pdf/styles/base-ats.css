@@ -1,0 +1,155 @@
+/* ATS-Optimized Base CSS for Maximum Parsability */
+/* Focus: Simple layout, safe fonts, no complex styling */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ATS-Safe Font Stack - Standard fonts recognized by all ATS systems */
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11pt;
+  line-height: 1.6;
+  color: #000000; /* Pure black for maximum readability */
+  background: white;
+  max-width: 8.5in; /* Letter size width */
+  margin: 0 auto;
+  padding: 0.5in; /* Simple margins */
+}
+
+/* Simple Typography Hierarchy - No fancy styling */
+h1 {
+  font-size: 18pt;
+  font-weight: bold;
+  color: #000000;
+  margin-bottom: 0.1in;
+  text-align: center;
+}
+
+h2 {
+  font-size: 14pt;
+  font-weight: bold;
+  color: #000000;
+  margin-top: 0.15in;
+  margin-bottom: 0.08in;
+  border-bottom: 1pt solid #000000;
+  padding-bottom: 0.04in;
+  text-transform: uppercase;
+}
+
+h3 {
+  font-size: 12pt;
+  font-weight: bold;
+  color: #000000;
+  margin-top: 0.08in;
+  margin-bottom: 0.04in;
+}
+
+h4 {
+  font-size: 11pt;
+  font-weight: bold;
+  color: #000000;
+  margin-top: 0.06in;
+  margin-bottom: 0.03in;
+}
+
+/* Paragraphs - Simple spacing */
+p {
+  margin-bottom: 0.08in;
+  text-align: left; /* No justify - easier for ATS to parse */
+}
+
+/* Lists - Standard bullet points */
+ul {
+  margin-left: 0.25in;
+  margin-bottom: 0.08in;
+  list-style-type: disc; /* Standard bullets only */
+}
+
+ol {
+  margin-left: 0.25in;
+  margin-bottom: 0.08in;
+}
+
+li {
+  margin-bottom: 0.04in;
+  padding-left: 0;
+}
+
+/* Strong emphasis - Simple bold */
+strong {
+  font-weight: bold;
+  color: #000000;
+}
+
+/* Emphasis - Simple italic */
+em {
+  font-style: italic;
+}
+
+/* Links - Black text, no decoration (ATS often ignores links) */
+a {
+  color: #000000;
+  text-decoration: none;
+}
+
+/* Contact information */
+.contact-info {
+  text-align: center;
+  margin-bottom: 0.15in;
+  font-size: 10pt;
+  line-height: 1.4;
+}
+
+.contact-info a {
+  color: #000000;
+}
+
+.separator {
+  margin: 0 0.1in;
+}
+
+/* Section spacing */
+.section {
+  margin-bottom: 0.15in;
+  page-break-inside: avoid;
+}
+
+/* No complex layouts - single column only */
+/* No floats, no flexbox, no grid - ATS often can't parse these */
+
+/* Page break control */
+.page-break {
+  page-break-after: always;
+}
+
+.no-break {
+  page-break-inside: avoid;
+}
+
+/* Avoid page breaks in important sections */
+h2, h3 {
+  page-break-after: avoid;
+}
+
+ul, ol {
+  page-break-inside: avoid;
+}
+
+/* Print styles */
+@media print {
+  body {
+    max-width: 100%;
+    padding: 0;
+  }
+  
+  h2, h3, h4 {
+    page-break-after: avoid;
+  }
+  
+  .section, .no-break {
+    page-break-inside: avoid;
+  }
+}
