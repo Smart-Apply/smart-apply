@@ -1,4 +1,10 @@
-import { Injectable, UnauthorizedException, ConflictException, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { PrismaService } from '../prisma/prisma.service';
@@ -127,7 +133,12 @@ export class AuthService {
     };
   }
 
-  async refresh(refreshToken: string, userAgent?: string, ipAddress?: string, req?: Request): Promise<TokenPair> {
+  async refresh(
+    refreshToken: string,
+    userAgent?: string,
+    ipAddress?: string,
+    req?: Request,
+  ): Promise<TokenPair> {
     // Verify refresh token signature
     let payload: any;
     try {
@@ -157,7 +168,7 @@ export class AuthService {
     }
 
     // Verify the provided token matches one of the stored hashes
-    let matchingToken: typeof storedTokens[0] | null = null;
+    let matchingToken: (typeof storedTokens)[0] | null = null;
     for (const storedToken of storedTokens) {
       try {
         const isMatch = await argon2.verify(storedToken.token, refreshToken);
@@ -182,7 +193,7 @@ export class AuthService {
 
     // Find session associated with this refresh token
     const session = await this.sessionService.findSessionByRefreshToken(matchingToken.id);
-    
+
     // Update session last active timestamp
     if (session) {
       await this.sessionService.updateLastActive(session.id);
@@ -205,7 +216,7 @@ export class AuthService {
         userId: payload.sub,
         OR: [
           { expiresAt: { lt: new Date() } },
-          { 
+          {
             AND: [
               { isRevoked: true },
               { createdAt: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) } }, // Keep revoked tokens for 24h
@@ -224,10 +235,10 @@ export class AuthService {
   async logout(userId: string, req: Request): Promise<void> {
     // Log logout event
     this.auditLogger.logLogout(userId, req);
-    
+
     // Revoke all sessions for this user
     await this.sessionService.revokeAllSessions(userId);
-    
+
     // Revoke all refresh tokens for this user
     await this.revokeRefreshToken(userId);
   }
@@ -285,9 +296,9 @@ export class AuthService {
 
     // Generate refresh token (long-lived) with unique identifier
     const refreshToken = this.jwtService.sign(
-      { 
-        sub: userId, 
-        email, 
+      {
+        sub: userId,
+        email,
         type: 'refresh',
         jti: `${Date.now()}-${Math.random().toString(36).substring(7)}`, // Unique token ID
       },
@@ -331,14 +342,14 @@ export class AuthService {
     if (userTokens.length > MAX_TOKENS_PER_USER) {
       const tokensToRevoke = userTokens.slice(MAX_TOKENS_PER_USER);
       const tokenIdsToRevoke = tokensToRevoke.map((t) => t.id);
-      
+
       await this.prisma.refreshToken.updateMany({
         where: {
           id: { in: tokenIdsToRevoke },
         },
         data: { isRevoked: true },
       });
-      
+
       // Also revoke associated sessions
       for (const tokenId of tokenIdsToRevoke) {
         await this.sessionService.revokeSessionByRefreshToken(tokenId);

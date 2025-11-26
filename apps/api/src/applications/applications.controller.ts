@@ -113,10 +113,7 @@ export class ApplicationsController {
   @Post(':id/export')
   @ApiOperation({ summary: 'PDF-Export anstoßen' })
   @ApiResponse({ status: 200, type: ApplicationResponseDto })
-  async export(
-    @CurrentUser() user: any,
-    @Param('id') id: string,
-  ): Promise<ApplicationResponseDto> {
+  async export(@CurrentUser() user: any, @Param('id') id: string): Promise<ApplicationResponseDto> {
     return this.applicationsService.requestExport(user.id, id);
   }
 

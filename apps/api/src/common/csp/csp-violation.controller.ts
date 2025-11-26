@@ -25,10 +25,10 @@ interface CSPViolation {
 
 /**
  * CSP Violation Reporting Controller
- * 
+ *
  * Receives and logs Content Security Policy violation reports from browsers.
  * This endpoint is public to allow browsers to send violation reports without authentication.
- * 
+ *
  * Security Note: This endpoint logs violations for monitoring but does not store them in the database
  * to avoid potential DoS attacks from malicious clients sending fake violation reports.
  */
@@ -50,7 +50,7 @@ export class CSPViolationController {
   })
   async reportViolation(@Body() violation: CSPViolation) {
     const report = violation['csp-report'];
-    
+
     // Log violation with structured data for monitoring
     this.logger.warn('CSP Violation detected', {
       directive: report['violated-directive'],

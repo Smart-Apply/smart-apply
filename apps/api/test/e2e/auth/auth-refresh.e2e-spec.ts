@@ -44,19 +44,17 @@ describe('Auth Refresh Token (e2e)', () => {
     beforeAll(async () => {
       // Register a test user
       const email = `refresh-test-${Date.now()}@example.com`;
-      const response = await request(app.getHttpServer())
-        .post('/api/v1/auth/register')
-        .send({
-          email,
-          password: 'Test123!',
-          firstName: 'Test',
-          lastName: 'User',
-        });
+      const response = await request(app.getHttpServer()).post('/api/v1/auth/register').send({
+        email,
+        password: 'Test123!',
+        firstName: 'Test',
+        lastName: 'User',
+      });
 
       // Extract cookies
       const setCookie = response.headers['set-cookie'];
       const cookies = Array.isArray(setCookie) ? setCookie : [setCookie].filter(Boolean);
-      
+
       // Extract refresh token from cookie
       const refreshCookie = cookies.find((c: string) => c.startsWith('refresh_token='));
       if (refreshCookie) {
@@ -74,13 +72,13 @@ describe('Auth Refresh Token (e2e)', () => {
 
       expect(response.body).toHaveProperty('message');
       expect(response.headers['set-cookie']).toBeDefined();
-      
+
       // Should set both new access and refresh tokens
       const setCookie = response.headers['set-cookie'];
       const cookies = Array.isArray(setCookie) ? setCookie : [setCookie].filter(Boolean);
       const hasAccessToken = cookies.some((c: string) => c.startsWith('access_token='));
       const hasRefreshToken = cookies.some((c: string) => c.startsWith('refresh_token='));
-      
+
       expect(hasAccessToken).toBe(true);
       expect(hasRefreshToken).toBe(true);
     });
@@ -120,19 +118,15 @@ describe('Auth Refresh Token (e2e)', () => {
     it('should reject access token used as refresh token', async () => {
       // Login to get fresh tokens
       const email = `access-token-test-${Date.now()}@example.com`;
-      await request(app.getHttpServer())
-        .post('/api/v1/auth/register')
-        .send({
-          email,
-          password: 'Test123!',
-        });
+      await request(app.getHttpServer()).post('/api/v1/auth/register').send({
+        email,
+        password: 'Test123!',
+      });
 
-      const loginResponse = await request(app.getHttpServer())
-        .post('/api/v1/auth/login')
-        .send({
-          email,
-          password: 'Test123!',
-        });
+      const loginResponse = await request(app.getHttpServer()).post('/api/v1/auth/login').send({
+        email,
+        password: 'Test123!',
+      });
 
       const setCookie = loginResponse.headers['set-cookie'];
       const cookies = Array.isArray(setCookie) ? setCookie : [setCookie].filter(Boolean);
@@ -188,12 +182,10 @@ describe('Auth Refresh Token (e2e)', () => {
       const password = 'Test123!';
 
       // Register user
-      await request(app.getHttpServer())
-        .post('/api/v1/auth/register')
-        .send({
-          email,
-          password,
-        });
+      await request(app.getHttpServer()).post('/api/v1/auth/register').send({
+        email,
+        password,
+      });
 
       // Login 6 times from different "devices" (should revoke oldest)
       for (let i = 0; i < 6; i++) {
@@ -227,7 +219,7 @@ describe('Auth Refresh Token (e2e)', () => {
   describe('Logout with Refresh Token', () => {
     it('should revoke refresh tokens on logout', async () => {
       const email = `logout-refresh-test-${Date.now()}@example.com`;
-      
+
       // Register and get tokens
       const registerResponse = await request(app.getHttpServer())
         .post('/api/v1/auth/register')
@@ -297,14 +289,12 @@ describe('Auth Refresh Token (e2e)', () => {
   describe('Token Expiration', () => {
     it('should reject expired refresh token', async () => {
       const email = `expired-token-test-${Date.now()}@example.com`;
-      
+
       // Register user
-      const response = await request(app.getHttpServer())
-        .post('/api/v1/auth/register')
-        .send({
-          email,
-          password: 'Test123!',
-        });
+      const response = await request(app.getHttpServer()).post('/api/v1/auth/register').send({
+        email,
+        password: 'Test123!',
+      });
 
       const userId = response.body.user.id;
 

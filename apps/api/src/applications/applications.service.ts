@@ -303,7 +303,9 @@ export class ApplicationsService {
       },
     });
 
-    this.logger.log(`Application ${application.id} created with generated content (coverLetter: ${shouldGenerateCoverLetter})`);
+    this.logger.log(
+      `Application ${application.id} created with generated content (coverLetter: ${shouldGenerateCoverLetter})`,
+    );
     return this.mapToResponseDto(application);
   }
 
@@ -389,7 +391,9 @@ export class ApplicationsService {
     // Cover letter is optional - user may have opted out during creation
     // Log whether we're exporting with or without cover letter
     if (!application.coverLetterText) {
-      this.logger.log(`Exporting application ${applicationId} without cover letter (user opted out)`);
+      this.logger.log(
+        `Exporting application ${applicationId} without cover letter (user opted out)`,
+      );
     }
 
     await this.cleanupGeneratedFiles(application);
@@ -585,9 +589,7 @@ export class ApplicationsService {
     applicationId: string,
     status: ApplicationTrackingStatus,
   ): Promise<ApplicationResponseDto> {
-    this.logger.log(
-      `Updating application ${applicationId} status to ${status} for user ${userId}`,
-    );
+    this.logger.log(`Updating application ${applicationId} status to ${status} for user ${userId}`);
 
     // Verify ownership
     const application = await this.ensureApplicationOwnership(userId, applicationId, true);
@@ -709,7 +711,7 @@ export class ApplicationsService {
   async streamStatus(userId: string, applicationId: string): Promise<Observable<MessageEvent>> {
     // Verify application exists and belongs to user
     await this.ensureApplicationOwnership(userId, applicationId);
-    
+
     this.logger.log(`SSE stream started for application ${applicationId} by user ${userId}`);
 
     // Create SSE stream that polls status every 2 seconds
@@ -755,11 +757,13 @@ export class ApplicationsService {
         const eventData = event.data as { status: ApplicationStatus };
         const status = eventData.status;
         const shouldContinue = status === 'PENDING' || status === 'GENERATING';
-        
+
         if (!shouldContinue) {
-          this.logger.log(`SSE stream closing for application ${applicationId} (final status: ${status})`);
+          this.logger.log(
+            `SSE stream closing for application ${applicationId} (final status: ${status})`,
+          );
         }
-        
+
         return shouldContinue;
       }, true),
     );

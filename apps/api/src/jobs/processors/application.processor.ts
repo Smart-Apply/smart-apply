@@ -47,7 +47,9 @@ export class ApplicationProcessor {
       // Cover letter is optional - user may have opted out during creation
       const hasCoverLetter = !!application.coverLetterText;
       if (!hasCoverLetter) {
-        this.logger.log(`Application ${applicationId} has no cover letter - generating resume only`);
+        this.logger.log(
+          `Application ${applicationId} has no cover letter - generating resume only`,
+        );
       }
 
       let resumeData: ResumeTemplateData;
@@ -62,7 +64,7 @@ export class ApplicationProcessor {
       this.logger.log('Converting HTML templates to PDFs...');
 
       let coverLetterKey: string | null = null;
-      
+
       // Only generate cover letter PDF if content exists
       if (hasCoverLetter) {
         const coverLetterTemplateData = {
@@ -113,7 +115,9 @@ export class ApplicationProcessor {
         },
       });
 
-      this.logger.log(`Application ${applicationId} completed successfully (coverLetter: ${hasCoverLetter})`);
+      this.logger.log(
+        `Application ${applicationId} completed successfully (coverLetter: ${hasCoverLetter})`,
+      );
     } catch (error) {
       this.logger.error(`Application ${applicationId} failed: ${error.message}`, error.stack);
 

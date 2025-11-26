@@ -25,10 +25,7 @@ describe('CSRF Protection (e2e)', () => {
     app.use(cookieParser());
 
     // Configure CSRF protection
-    const {
-      generateCsrfToken,
-      doubleCsrfProtection,
-    } = doubleCsrf({
+    const { generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
       getSecret: () => configService.jwtSecret,
       getSessionIdentifier: (req) => req.headers['authorization'] || '',
       cookieName: '__Host-csrf',
@@ -79,10 +76,10 @@ describe('CSRF Protection (e2e)', () => {
           expect(res.body).toHaveProperty('message');
           expect(typeof res.body.csrfToken).toBe('string');
           expect(res.body.csrfToken.length).toBeGreaterThan(0);
-          
+
           // Store for next tests
           csrfToken = res.body.csrfToken;
-          
+
           // Extract CSRF cookie
           const cookies = res.headers['set-cookie'] as unknown as string[] | undefined;
           expect(cookies).toBeDefined();
@@ -117,12 +114,10 @@ describe('CSRF Protection (e2e)', () => {
   describe('POST requests with CSRF token', () => {
     beforeEach(async () => {
       // Fetch CSRF token before each test
-      const res = await request(app.getHttpServer())
-        .get('/api/v1/auth/csrf-token')
-        .expect(200);
-      
+      const res = await request(app.getHttpServer()).get('/api/v1/auth/csrf-token').expect(200);
+
       csrfToken = res.body.csrfToken;
-      
+
       // Extract cookie
       const cookies = res.headers['set-cookie'] as unknown as string[] | undefined;
       const csrfCookieHeader = cookies?.find((c: string) => c.includes('__Host-csrf'));
@@ -139,7 +134,8 @@ describe('CSRF Protection (e2e)', () => {
         .send({
           email,
           password: 'Test123!',
-          firstName: 'Test', lastName: 'User',
+          firstName: 'Test',
+          lastName: 'User',
         })
         .expect(201)
         .expect((res) => {
@@ -157,7 +153,8 @@ describe('CSRF Protection (e2e)', () => {
         .send({
           email,
           password: 'Test123!',
-          firstName: 'Test', lastName: 'User',
+          firstName: 'Test',
+          lastName: 'User',
         })
         .expect(403)
         .expect((res) => {
@@ -170,12 +167,10 @@ describe('CSRF Protection (e2e)', () => {
     it('should allow GET /api/v1/auth/me without CSRF token', async () => {
       // First register and login to get auth cookie
       const email = `test-csrf-get-${Date.now()}@example.com`;
-      
+
       // Get CSRF token for registration
-      const csrfRes = await request(app.getHttpServer())
-        .get('/api/v1/auth/csrf-token')
-        .expect(200);
-      
+      const csrfRes = await request(app.getHttpServer()).get('/api/v1/auth/csrf-token').expect(200);
+
       const token = csrfRes.body.csrfToken;
       const cookies = csrfRes.headers['set-cookie'] as unknown as string[] | undefined;
       const cookie = cookies?.find((c: string) => c.includes('__Host-csrf'))!;
@@ -188,7 +183,8 @@ describe('CSRF Protection (e2e)', () => {
         .send({
           email,
           password: 'Test123!',
-          firstName: 'Test', lastName: 'User',
+          firstName: 'Test',
+          lastName: 'User',
         })
         .expect(201);
 
@@ -225,12 +221,10 @@ describe('CSRF Protection (e2e)', () => {
     beforeEach(async () => {
       // Setup: Register and login to get auth cookie
       testEmail = `test-csrf-mutate-${Date.now()}@example.com`;
-      
+
       // Get CSRF token
-      const csrfRes = await request(app.getHttpServer())
-        .get('/api/v1/auth/csrf-token')
-        .expect(200);
-      
+      const csrfRes = await request(app.getHttpServer()).get('/api/v1/auth/csrf-token').expect(200);
+
       const token = csrfRes.body.csrfToken;
       const cookies = csrfRes.headers['set-cookie'] as unknown as string[] | undefined;
       const cookie = cookies?.find((c: string) => c.includes('__Host-csrf'))!;
@@ -243,7 +237,8 @@ describe('CSRF Protection (e2e)', () => {
         .send({
           email: testEmail,
           password: 'Test123!',
-          firstName: 'Test', lastName: 'User',
+          firstName: 'Test',
+          lastName: 'User',
         })
         .expect(201);
 
@@ -265,7 +260,7 @@ describe('CSRF Protection (e2e)', () => {
       const newCsrfRes = await request(app.getHttpServer())
         .get('/api/v1/auth/csrf-token')
         .expect(200);
-      
+
       csrfToken = newCsrfRes.body.csrfToken;
       const newCookies = newCsrfRes.headers['set-cookie'] as unknown as string[] | undefined;
       csrfCookie = newCookies?.find((c: string) => c.includes('__Host-csrf'))!;

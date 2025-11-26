@@ -44,7 +44,7 @@ describe('SessionsController (e2e)', () => {
       .expect(201);
 
     userId = registerResponse.body.user.id;
-    
+
     // Extract cookie from registration response
     const setCookie = registerResponse.headers['set-cookie'];
     const cookies = Array.isArray(setCookie) ? setCookie : [setCookie];
@@ -64,7 +64,7 @@ describe('SessionsController (e2e)', () => {
 
       expect(Array.isArray(response.body)).toBe(true);
       expect(response.body.length).toBeGreaterThan(0);
-      
+
       // Verify session structure
       const session = response.body[0];
       expect(session).toHaveProperty('id');
@@ -80,9 +80,7 @@ describe('SessionsController (e2e)', () => {
     });
 
     it('should require authentication', () => {
-      return request(app.getHttpServer())
-        .get('/api/v1/auth/sessions')
-        .expect(401);
+      return request(app.getHttpServer()).get('/api/v1/auth/sessions').expect(401);
     });
   });
 
@@ -134,7 +132,10 @@ describe('SessionsController (e2e)', () => {
           firstName: 'Device',
           lastName: 'Test',
         })
-        .set('User-Agent', 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1')
+        .set(
+          'User-Agent',
+          'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1',
+        )
         .expect(201);
 
       // Login with custom user agent
@@ -144,7 +145,10 @@ describe('SessionsController (e2e)', () => {
           email,
           password: 'Test123!',
         })
-        .set('User-Agent', 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1')
+        .set(
+          'User-Agent',
+          'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1',
+        )
         .expect(201);
 
       // Extract cookies
@@ -272,7 +276,7 @@ describe('SessionsController (e2e)', () => {
       expect(updatedSessionsResponse.body.length).toBe(2);
     });
 
-    it('should not allow revoking another user\'s session', async () => {
+    it("should not allow revoking another user's session", async () => {
       // Register two users
       const email1 = `session-user1-${Date.now()}@example.com`;
       const email2 = `session-user2-${Date.now()}@example.com`;
