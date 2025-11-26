@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { NotFoundException } from '@nestjs/common';
 import { KeywordsService } from './keywords.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -377,15 +378,15 @@ describe('KeywordsService', () => {
   });
 
   describe('analyzeMatch', () => {
-    it('should throw error if profile not found', async () => {
+    it('should throw NotFoundException if profile not found', async () => {
       mockPrismaService.profile.findUnique.mockResolvedValue(null);
 
       await expect(service.analyzeMatch('user-123', 'job-456')).rejects.toThrow(
-        'Profile not found',
+        NotFoundException,
       );
     });
 
-    it('should throw error if job posting not found', async () => {
+    it('should throw NotFoundException if job posting not found', async () => {
       mockPrismaService.profile.findUnique.mockResolvedValue({
         id: 'profile-1',
         skills: [],
@@ -398,7 +399,7 @@ describe('KeywordsService', () => {
       mockPrismaService.jobPosting.findUnique.mockResolvedValue(null);
 
       await expect(service.analyzeMatch('user-123', 'job-456')).rejects.toThrow(
-        'Job posting not found',
+        NotFoundException,
       );
     });
 

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   getAllSynonyms,
@@ -39,10 +39,28 @@ export class KeywordsService {
   private readonly logger = new Logger(KeywordsService.name);
   private readonly reverseLookup: Map<string, string>;
   private readonly allSynonyms: Record<string, string[]>;
+  // Pre-compiled regex cache for performance
+  private readonly regexCache: Map<string, RegExp>;
 
   constructor(private readonly prisma: PrismaService) {
     this.reverseLookup = buildReverseLookup();
     this.allSynonyms = getAllSynonyms();
+    this.regexCache = this.precompileRegexPatterns();
+  }
+
+  /**
+   * Pre-compile regex patterns for all keywords and their synonyms
+   */
+  private precompileRegexPatterns(): Map<string, RegExp> {
+    const cache = new Map<string, RegExp>();
+    for (const [canonical, synonyms] of Object.entries(this.allSynonyms)) {
+      const allVariations = [canonical, ...synonyms];
+      for (const variation of allVariations) {
+        const escaped = variation.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        cache.set(variation.toLowerCase(), new RegExp(`\\b${escaped}\\b`, 'gi'));
+      }
+    }
+    return cache;
   }
 
   /**
@@ -128,7 +146,7 @@ export class KeywordsService {
     });
 
     if (!profile) {
-      throw new Error('Profile not found');
+      throw new NotFoundException('Profile not found');
     }
 
     // Fetch job posting
@@ -137,10 +155,71 @@ export class KeywordsService {
     });
 
     if (!jobPosting) {
-      throw new Error('Job posting not found');
+      throw new NotFoundException('Job posting not found');
     }
 
-    return this.performAnalysis(profile as unknown as ProfileData, jobPosting as unknown as JobPostingData);
+    return this.performAnalysis(
+      this.mapProfileToData(profile),
+      this.mapJobPostingToData(jobPosting),
+    );
+  }
+
+  /**
+   * Map Prisma profile entity to ProfileData interface
+   */
+  private mapProfileToData(profile: {
+    skills: { name: string; level?: string | null }[];
+    experiences: { title: string; company: string; description?: string | null }[];
+    education: { degree: string; institution: string; fieldOfStudy?: string | null }[];
+    certificates: { name: string; issuer: string }[];
+    projects: { name: string; description?: string | null; technologies: string[] }[];
+    languages: { name: string; level: string }[];
+    summary?: string | null;
+  }): ProfileData {
+    return {
+      skills: profile.skills.map((s) => ({ name: s.name, level: s.level ?? undefined })),
+      experiences: profile.experiences.map((e) => ({
+        title: e.title,
+        company: e.company,
+        description: e.description ?? undefined,
+      })),
+      education: profile.education.map((e) => ({
+        degree: e.degree,
+        institution: e.institution,
+        fieldOfStudy: e.fieldOfStudy ?? undefined,
+      })),
+      certificates: profile.certificates.map((c) => ({ name: c.name, issuer: c.issuer })),
+      projects: profile.projects.map((p) => ({
+        name: p.name,
+        description: p.description ?? undefined,
+        technologies: p.technologies,
+      })),
+      languages: profile.languages.map((l) => ({ name: l.name, level: l.level })),
+      summary: profile.summary ?? undefined,
+    };
+  }
+
+  /**
+   * Map Prisma job posting entity to JobPostingData interface
+   */
+  private mapJobPostingToData(jobPosting: {
+    title: string;
+    company: string;
+    description?: string | null;
+    requirements: string[];
+    responsibilities: string[];
+    niceToHave: string[];
+    rawText?: string | null;
+  }): JobPostingData {
+    return {
+      title: jobPosting.title,
+      company: jobPosting.company,
+      description: jobPosting.description ?? undefined,
+      requirements: jobPosting.requirements,
+      responsibilities: jobPosting.responsibilities,
+      niceToHave: jobPosting.niceToHave,
+      rawText: jobPosting.rawText ?? undefined,
+    };
   }
 
   /**
@@ -197,11 +276,10 @@ export class KeywordsService {
     }
 
     // Calculate overall match percentage
-    const totalKeywords = allJobKeywords.length;
-    const matchedCount = matchedKeywords.length;
-    const matchPercentage = totalKeywords > 0 
-      ? Math.round((matchedCount / totalKeywords) * 100) 
-      : 0;
+    const matchPercentage = this.calculateMatchPercentage(
+      matchedKeywords.length,
+      allJobKeywords.length,
+    );
 
     // Generate insights
     const suggestions = this.generateSuggestions(missingKeywords, categoryStats);
@@ -210,38 +288,14 @@ export class KeywordsService {
 
     // Calculate category breakdown
     const categoryBreakdown = {
-      technical: {
-        matched: categoryStats.technical.matched,
-        total: categoryStats.technical.total,
-        percentage: categoryStats.technical.total > 0
-          ? Math.round((categoryStats.technical.matched / categoryStats.technical.total) * 100)
-          : 0,
-      },
-      soft: {
-        matched: categoryStats.soft.matched,
-        total: categoryStats.soft.total,
-        percentage: categoryStats.soft.total > 0
-          ? Math.round((categoryStats.soft.matched / categoryStats.soft.total) * 100)
-          : 0,
-      },
-      experience: {
-        matched: categoryStats.experience.matched,
-        total: categoryStats.experience.total,
-        percentage: categoryStats.experience.total > 0
-          ? Math.round((categoryStats.experience.matched / categoryStats.experience.total) * 100)
-          : 0,
-      },
-      other: {
-        matched: categoryStats.other.matched,
-        total: categoryStats.other.total,
-        percentage: categoryStats.other.total > 0
-          ? Math.round((categoryStats.other.matched / categoryStats.other.total) * 100)
-          : 0,
-      },
+      technical: this.calculateCategoryPercentage(categoryStats.technical),
+      soft: this.calculateCategoryPercentage(categoryStats.soft),
+      experience: this.calculateCategoryPercentage(categoryStats.experience),
+      other: this.calculateCategoryPercentage(categoryStats.other),
     };
 
     this.logger.log(
-      `Match analysis complete: ${matchPercentage}% (${matchedCount}/${totalKeywords} keywords)`,
+      `Match analysis complete: ${matchPercentage}% (${matchedKeywords.length}/${allJobKeywords.length} keywords)`,
     );
 
     return {
@@ -515,6 +569,7 @@ export class KeywordsService {
 
   /**
    * Count how often a keyword appears in job posting
+   * Uses pre-compiled regex patterns for performance
    */
   private countKeywordFrequency(keyword: string, jobPosting: JobPostingData): number {
     const text = this.buildJobPostingText(jobPosting).toLowerCase();
@@ -524,9 +579,19 @@ export class KeywordsService {
 
     let count = 0;
     for (const variation of allVariations) {
-      const regex = new RegExp(`\\b${this.escapeRegex(variation)}\\b`, 'gi');
-      const matches = text.match(regex);
-      count += matches ? matches.length : 0;
+      const cachedRegex = this.regexCache.get(variation.toLowerCase());
+      if (cachedRegex) {
+        // Reset lastIndex for global regex
+        cachedRegex.lastIndex = 0;
+        const matches = text.match(cachedRegex);
+        count += matches ? matches.length : 0;
+      } else {
+        // Fallback for uncached patterns
+        const escaped = this.escapeRegex(variation);
+        const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
+        const matches = text.match(regex);
+        count += matches ? matches.length : 0;
+      }
     }
 
     return count;
@@ -550,6 +615,29 @@ export class KeywordsService {
     if (category === 'soft') return 'soft';
     if (category === 'experience') return 'experience';
     return 'other';
+  }
+
+  /**
+   * Calculate match percentage from matched and total counts
+   */
+  private calculateMatchPercentage(matchedCount: number, totalCount: number): number {
+    if (totalCount === 0) return 0;
+    return Math.round((matchedCount / totalCount) * 100);
+  }
+
+  /**
+   * Calculate category percentage with matched and total counts
+   */
+  private calculateCategoryPercentage(stats: { matched: number; total: number }): {
+    matched: number;
+    total: number;
+    percentage: number;
+  } {
+    return {
+      matched: stats.matched,
+      total: stats.total,
+      percentage: this.calculateMatchPercentage(stats.matched, stats.total),
+    };
   }
 
   /**
