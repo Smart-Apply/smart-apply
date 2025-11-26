@@ -8,19 +8,24 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JobPostingsService } from './job-postings.service';
 import { ParseJobPostingDto, CreateJobPostingDto, JobPostingResponseDto } from './dto';
+import { KeywordsService, MatchAnalysisResponseDto } from '../keywords';
 
 @ApiTags('job-postings')
 @Controller('job-postings')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class JobPostingsController {
-  constructor(private readonly jobPostingsService: JobPostingsService) {}
+  constructor(
+    private readonly jobPostingsService: JobPostingsService,
+    private readonly keywordsService: KeywordsService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create job posting manually with all fields' })
@@ -96,5 +101,28 @@ export class JobPostingsController {
     @Param('id') id: string,
   ): Promise<void> {
     return this.jobPostingsService.deleteJobPosting(userId, id);
+  }
+
+  @Post(':id/analyze')
+  @ApiOperation({ 
+    summary: 'Analyze job posting keywords against user profile',
+    description: 'Extract keywords from job posting and compare against user profile to calculate ATS match percentage',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Match analysis completed successfully',
+    type: MatchAnalysisResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Job posting or profile not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async analyzeJobPosting(
+    @CurrentUser('id') userId: string,
+    @Param('id') id: string,
+  ): Promise<MatchAnalysisResponseDto> {
+    try {
+      return await this.keywordsService.analyzeMatch(userId, id);
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
   }
 }
