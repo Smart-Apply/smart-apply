@@ -1,4 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { AgentsClient } from '@azure/ai-agents';
+import { DefaultAzureCredential } from '@azure/identity';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { ConfigService } from '../../config/config.service';
@@ -6,15 +8,17 @@ import { LLMProvider, GenerateOptions } from '../llm.interface';
 
 /**
  * Azure AI Foundry Agent Provider
- * Leverages specialized AI agents (CV Writer & CL Writer) deployed in Azure AI Foundry.
+ * Uses Azure AI Agents SDK to leverage specialized AI agents (CV Writer & CL Writer).
  * Falls back to Azure OpenAI if agent calls fail.
  */
 @Injectable()
-export class AzureAIFoundryProvider implements LLMProvider {
+export class AzureAIFoundryProvider implements LLMProvider, OnModuleInit {
   private readonly logger = new Logger(AzureAIFoundryProvider.name);
-  private readonly cvWriterEndpoint: string;
-  private readonly clWriterEndpoint: string;
-  private readonly apiKey: string;
+  private agentsClient: AgentsClient | null = null;
+  
+  private readonly projectEndpoint: string;
+  private readonly cvWriterAgentId: string;
+  private readonly clWriterAgentId: string;
 
   // Fallback to Azure OpenAI
   private readonly azureOpenAIEndpoint: string;
@@ -26,10 +30,10 @@ export class AzureAIFoundryProvider implements LLMProvider {
     private httpService: HttpService,
     private configService: ConfigService,
   ) {
-    // Azure AI Foundry configuration
-    this.cvWriterEndpoint = this.configService.azureAIFoundryCvWriterEndpoint || '';
-    this.clWriterEndpoint = this.configService.azureAIFoundryClWriterEndpoint || '';
-    this.apiKey = this.configService.azureAIFoundryApiKey || '';
+    // Azure AI Foundry Agents configuration
+    this.projectEndpoint = process.env.PROJECT_ENDPOINT || '';
+    this.cvWriterAgentId = process.env.CV_WRITER_AGENT_ID || '';
+    this.clWriterAgentId = process.env.CL_WRITER_AGENT_ID || '';
 
     // Azure OpenAI fallback configuration
     this.azureOpenAIEndpoint = this.configService.azureOpenAIEndpoint || '';
@@ -37,9 +41,13 @@ export class AzureAIFoundryProvider implements LLMProvider {
     this.azureOpenAIDeploymentName = this.configService.azureOpenAIDeploymentName;
     this.azureOpenAIApiVersion = this.configService.azureOpenAIApiVersion;
 
-    if (!this.cvWriterEndpoint || !this.clWriterEndpoint || !this.apiKey) {
+    if (!this.projectEndpoint) {
+      this.logger.warn('PROJECT_ENDPOINT not configured. Azure AI Foundry agents disabled.');
+    }
+
+    if (!this.cvWriterAgentId || !this.clWriterAgentId) {
       this.logger.warn(
-        'Azure AI Foundry agent endpoints or API key not configured. Will use fallback.',
+        'Agent IDs not configured. Run "npm run create-agents" to create agents. Will use fallback.',
       );
     }
 
@@ -50,20 +58,44 @@ export class AzureAIFoundryProvider implements LLMProvider {
     }
   }
 
+  async onModuleInit() {
+    // Initialize Azure AI Agents Client with Managed Identity
+    if (this.projectEndpoint && this.cvWriterAgentId && this.clWriterAgentId) {
+      try {
+        this.agentsClient = new AgentsClient(this.projectEndpoint, new DefaultAzureCredential());
+        this.logger.log('Azure AI Foundry Agents Client initialized successfully');
+      } catch (error) {
+        this.logger.error('Failed to initialize Azure AI Foundry Agents Client', error);
+        this.logger.warn('Will use Azure OpenAI fallback for all requests');
+      }
+    }
+  }
+
   async generateText(prompt: string, options?: GenerateOptions): Promise<string> {
     // Determine which agent to call based on prompt content
     const isResume = this.isResumePrompt(prompt);
     const isCoverLetter = this.isCoverLetterPrompt(prompt);
 
+    this.logger.debug(
+      `Prompt detection - Resume: ${isResume}, CoverLetter: ${isCoverLetter}, PromptStart: "${prompt.substring(0, 100)}"`,
+    );
+
     try {
-      if (isResume && this.cvWriterEndpoint) {
+      if (!this.agentsClient) {
+        this.logger.warn('Agents client not initialized, using fallback');
+        return await this.fallbackToAzureOpenAI(prompt, options);
+      }
+
+      if (isResume && this.cvWriterAgentId) {
         this.logger.log('Calling CV Writer Agent for resume generation');
-        return await this.callCVWriterAgent(prompt, options);
-      } else if (isCoverLetter && this.clWriterEndpoint) {
+        return await this.callAgent(this.cvWriterAgentId, prompt, 'CV Writer');
+      } else if (isCoverLetter && this.clWriterAgentId) {
         this.logger.log('Calling CL Writer Agent for cover letter generation');
-        return await this.callCLWriterAgent(prompt, options);
+        return await this.callAgent(this.clWriterAgentId, prompt, 'CL Writer');
       } else {
-        this.logger.log('No matching agent endpoint, using Azure OpenAI fallback');
+        this.logger.log(
+          `No matching agent - isResume: ${isResume}, isCoverLetter: ${isCoverLetter}, cvAgentId: ${this.cvWriterAgentId}, clAgentId: ${this.clWriterAgentId}`,
+        );
         return await this.fallbackToAzureOpenAI(prompt, options);
       }
     } catch (error: any) {
@@ -75,116 +107,83 @@ export class AzureAIFoundryProvider implements LLMProvider {
   }
 
   /**
-   * Call the CV Writer Agent for resume generation
+   * Call an Azure AI Agent using the Agents SDK
    */
-  private async callCVWriterAgent(prompt: string, options?: GenerateOptions): Promise<string> {
+  private async callAgent(agentId: string, prompt: string, agentName: string): Promise<string> {
+    if (!this.agentsClient) {
+      throw new Error('Agents client not initialized');
+    }
+
     try {
-      const response = await firstValueFrom(
-        this.httpService.post(
-          this.cvWriterEndpoint,
-          {
-            prompt,
-            temperature: options?.temperature ?? 0.6,
-            maxTokens: options?.maxTokens ?? 2500,
-            systemMessage: options?.systemMessage,
-          },
-          {
-            headers: {
-              'api-key': this.apiKey,
-              'Content-Type': 'application/json',
-            },
-            timeout: 60000, // 60 second timeout for agent processing
-          },
-        ),
-      );
+      // Create a new thread for this conversation
+      const thread = await this.agentsClient.threads.create();
+      this.logger.debug(`Created thread ${thread.id} for ${agentName}`);
 
-      const content = this.extractContentFromResponse(response.data);
+      try {
+        // Create a message in the thread
+        await this.agentsClient.messages.create(thread.id, 'user', prompt);
 
-      if (!content) {
-        throw new Error('No content in CV Writer Agent response');
+        // Create and poll a run (wait for agent to process)
+        const run = await this.agentsClient.runs.createAndPoll(thread.id, agentId, {
+          pollingOptions: {
+            intervalInMs: 2000, // Poll every 2 seconds
+          },
+        });
+
+        if (run.status !== 'completed') {
+          throw new Error(`Agent run failed with status: ${run.status}`);
+        }
+
+        // Retrieve messages (agent's response)
+        const messages = await this.agentsClient.messages.list(thread.id);
+        const messagesArray: any[] = [];
+        for await (const message of messages) {
+          messagesArray.push(message);
+        }
+
+        // Find the assistant's response (most recent)
+        const assistantMessage = messagesArray.find((m: any) => m.role === 'assistant');
+        if (!assistantMessage) {
+          throw new Error('No assistant response found');
+        }
+
+        // Extract text content
+        const content = this.extractContentFromMessage(assistantMessage);
+        
+        this.logger.log(`Successfully generated content with ${agentName}`);
+        return content;
+      } finally {
+        // Always clean up the thread
+        try {
+          await this.agentsClient.threads.delete(thread.id);
+          this.logger.debug(`Deleted thread ${thread.id}`);
+        } catch (deleteError) {
+          this.logger.warn(`Failed to delete thread ${thread.id}`, deleteError);
+        }
       }
-
-      this.logger.log('Successfully generated resume with CV Writer Agent');
-      return content;
     } catch (error: any) {
-      this.logger.error(`CV Writer Agent call failed: ${error.message}`);
+      this.logger.error(`${agentName} call failed: ${error.message}`);
       throw error;
     }
   }
 
   /**
-   * Call the CL Writer Agent for cover letter generation
+   * Extract text content from Azure AI Agents message
    */
-  private async callCLWriterAgent(prompt: string, options?: GenerateOptions): Promise<string> {
-    try {
-      const response = await firstValueFrom(
-        this.httpService.post(
-          this.clWriterEndpoint,
-          {
-            prompt,
-            temperature: options?.temperature ?? 0.7,
-            maxTokens: options?.maxTokens ?? 1500,
-            systemMessage: options?.systemMessage,
-          },
-          {
-            headers: {
-              'api-key': this.apiKey,
-              'Content-Type': 'application/json',
-            },
-            timeout: 60000, // 60 second timeout for agent processing
-          },
-        ),
-      );
+  private extractContentFromMessage(message: any): string {
+    if (!message.content || !Array.isArray(message.content)) {
+      return '';
+    }
 
-      const content = this.extractContentFromResponse(response.data);
-
-      if (!content) {
-        throw new Error('No content in CL Writer Agent response');
+    // Extract all text content from the message
+    const textParts: string[] = [];
+    for (const content of message.content) {
+      if (content.type === 'text' && 'text' in content && content.text?.value) {
+        textParts.push(content.text.value);
       }
-
-      this.logger.log('Successfully generated cover letter with CL Writer Agent');
-      return content;
-    } catch (error: any) {
-      this.logger.error(`CL Writer Agent call failed: ${error.message}`);
-      throw error;
-    }
-  }
-
-  /**
-   * Extract content from Azure AI Foundry agent response
-   * Supports multiple response formats
-   */
-  private extractContentFromResponse(data: any): string {
-    // Try different response formats that Azure AI Foundry might use
-    if (typeof data === 'string') {
-      return data;
     }
 
-    if (data.content) {
-      return data.content;
-    }
-
-    if (data.message?.content) {
-      return data.message.content;
-    }
-
-    if (data.choices && data.choices[0]?.message?.content) {
-      return data.choices[0].message.content;
-    }
-
-    if (data.choices && data.choices[0]?.text) {
-      return data.choices[0].text;
-    }
-
-    if (data.text) {
-      return data.text;
-    }
-
-    if (data.result) {
-      return data.result;
-    }
-
-    return '';
+    return textParts.join('\n');
   }
 
   /**

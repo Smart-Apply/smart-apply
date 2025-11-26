@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { LLMService } from '../llm/llm.service';
+import { LLMProvider } from '../llm/llm.interface';
 import { APPLICATION_TITLE_MAX_LENGTH, ELLIPSIS_LENGTH } from './constants';
 
 export interface JobPostingForTitle {
@@ -12,7 +13,10 @@ export interface JobPostingForTitle {
 export class TitleGeneratorService {
   private readonly logger = new Logger(TitleGeneratorService.name);
 
-  constructor(private readonly llmService: LLMService) {}
+  constructor(
+    @Inject('AZURE_OPENAI_PROVIDER')
+    private readonly azureOpenAIProvider: LLMProvider,
+  ) {}
 
   /**
    * Generate a concise application title using LLM
@@ -32,8 +36,8 @@ Example: "Full Stack Engineer - Stripe"
 Only return the title, nothing else. Keep it under ${APPLICATION_TITLE_MAX_LENGTH} characters.`;
 
     try {
-      // Use LLM service with lower temperature for more consistent output
-      const title = await this.llmService.generateText(prompt, {
+      // Use direct Azure OpenAI provider (not agents) for simple title generation
+      const title = await this.azureOpenAIProvider.generateText(prompt, {
         maxTokens: 50,
         temperature: 0.3,
       });
@@ -42,7 +46,7 @@ Only return the title, nothing else. Keep it under ${APPLICATION_TITLE_MAX_LENGT
       
       // Validate and truncate if needed
       if (cleanedTitle && cleanedTitle.length <= APPLICATION_TITLE_MAX_LENGTH) {
-        this.logger.log(`Generated title: ${cleanedTitle}`);
+        this.logger.log(`Generated title with Azure OpenAI: ${cleanedTitle}`);
         return cleanedTitle;
       }
 

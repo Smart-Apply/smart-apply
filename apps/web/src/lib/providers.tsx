@@ -56,10 +56,16 @@ export function Providers({ children }: { children: React.ReactNode }) {
       })
   );
 
-  // Initialize CSRF token on app load
+  // Initialize CSRF token on app load (silently fail if backend is not available)
   useEffect(() => {
     fetchCsrfToken().catch((error) => {
-      console.error('Failed to initialize CSRF token:', error);
+      // Silently ignore CSRF fetch errors during development
+      // (backend might not be running yet)
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('⚠️  Backend not reachable, skipping CSRF token fetch');
+      } else {
+        console.error('Failed to initialize CSRF token:', error);
+      }
     });
   }, []);
 

@@ -22,9 +22,11 @@
     "prisma:migrate": "prisma migrate dev --schema=./prisma/schema.prisma",
     "prisma:seed": "ts-node -r tsconfig-paths/register prisma/seed.ts",
     "prisma:seed:templates": "ts-node -r tsconfig-paths/register prisma/seed-templates.ts",
-    "prisma:studio": "prisma studio --schema=./prisma/schema.prisma"
+    "prisma:studio": "prisma studio --schema=./prisma/schema.prisma",
+    "create-agents": "ts-node -r tsconfig-paths/register scripts/create-agents.ts"
   },
   "dependencies": {
+    "@azure/ai-agents": "^1.0.0",
     "@azure/identity": "^4.0.0",
     "@azure/keyvault-secrets": "^4.8.0",
     "@azure/service-bus": "^7.9.4",

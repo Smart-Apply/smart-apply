@@ -64,7 +64,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
         ? exception.stack
         : JSON.stringify(exception);
 
-    this.logger.error(logMessage, logDetails);
+    // Don't log 401 errors as ERROR (normal auth flow with token refresh)
+    if (status === HttpStatus.UNAUTHORIZED) {
+      this.logger.debug(logMessage);
+    } else {
+      this.logger.error(logMessage, logDetails);
+    }
 
     response.status(status).json(errorResponse);
   }

@@ -75,6 +75,7 @@ export async function fetchCsrfToken(): Promise<void> {
       const response = await fetch(`${API_BASE_URL}/auth/csrf-token`, {
         method: 'GET',
         credentials: 'include', // Include cookies
+        signal: AbortSignal.timeout(5000), // 5 second timeout
       });
 
       if (!response.ok) {

@@ -27,8 +27,16 @@ import { ConfigService } from '../config/config.service';
       },
       inject: [ConfigService, HttpService],
     },
+    // Direct Azure OpenAI provider for simple tasks (title generation, etc.)
+    {
+      provide: 'AZURE_OPENAI_PROVIDER',
+      useFactory: (configService: ConfigService, httpService: HttpService) => {
+        return new AzureOpenAIProvider(httpService, configService);
+      },
+      inject: [ConfigService, HttpService],
+    },
     LLMService,
   ],
-  exports: [LLMService],
+  exports: [LLMService, 'AZURE_OPENAI_PROVIDER'],
 })
 export class LLMModule {}
