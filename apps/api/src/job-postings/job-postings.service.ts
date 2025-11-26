@@ -137,7 +137,7 @@ export class JobPostingsService {
 
     parts.push(`Job Title: ${dto.title}`);
     parts.push(`Company: ${dto.company}`);
-    
+
     if (dto.location) {
       parts.push(`Location: ${dto.location}`);
     }

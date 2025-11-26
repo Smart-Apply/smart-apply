@@ -65,7 +65,7 @@ export class AuditLoggerService {
   log(entry: AuditLogEntry) {
     // Map 'warning' to 'warn' for winston compatibility
     const level = entry.severity === 'warning' ? 'warn' : entry.severity;
-    
+
     this.logger.log({
       level,
       message: entry.eventType,

@@ -30,7 +30,7 @@ import { CSPViolationController } from './common/csp/csp-violation.controller';
         const isDevelopment = config.nodeEnv === 'development';
         const developmentLimit = 10000000; // 10 million requests per minute in development
         const defaultLimit = isDevelopment ? developmentLimit : config.rateLimitMax;
-        
+
         // Log rate limit configuration for debugging
         console.log('[ThrottlerModule] Configuration:', {
           environment: config.nodeEnv,

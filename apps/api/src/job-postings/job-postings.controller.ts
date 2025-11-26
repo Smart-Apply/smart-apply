@@ -104,9 +104,10 @@ export class JobPostingsController {
   }
 
   @Post(':id/analyze')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Analyze job posting keywords against user profile',
-    description: 'Extract keywords from job posting and compare against user profile to calculate ATS match percentage',
+    description:
+      'Extract keywords from job posting and compare against user profile to calculate ATS match percentage',
   })
   @ApiResponse({
     status: 200,

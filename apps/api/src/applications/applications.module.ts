@@ -10,14 +10,7 @@ import { ApplicationsService } from './applications.service';
 import { TitleGeneratorService } from './title-generator.service';
 
 @Module({
-  imports: [
-    PrismaModule,
-    JobsModule,
-    StorageModule,
-    LLMModule,
-    KeywordsModule,
-    AgentsModule,
-  ],
+  imports: [PrismaModule, JobsModule, StorageModule, LLMModule, KeywordsModule, AgentsModule],
   controllers: [ApplicationsController],
   providers: [ApplicationsService, TitleGeneratorService],
   exports: [ApplicationsService],

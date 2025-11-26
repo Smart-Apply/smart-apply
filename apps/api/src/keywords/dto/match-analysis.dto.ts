@@ -9,9 +9,24 @@ export class KeywordMatchDto {
 
   @ApiProperty({
     description: 'Category of the keyword',
-    enum: ['technical', 'soft', 'experience', 'industry', 'methodology', 'education', 'certification'],
+    enum: [
+      'technical',
+      'soft',
+      'experience',
+      'industry',
+      'methodology',
+      'education',
+      'certification',
+    ],
   })
-  category: 'technical' | 'soft' | 'experience' | 'industry' | 'methodology' | 'education' | 'certification';
+  category:
+    | 'technical'
+    | 'soft'
+    | 'experience'
+    | 'industry'
+    | 'methodology'
+    | 'education'
+    | 'certification';
 
   @ApiProperty({ description: 'Whether the keyword was found in the profile' })
   found: boolean;
@@ -36,10 +51,16 @@ export class MatchAnalysisResponseDto {
   @ApiProperty({ description: 'Overall match percentage from 0 to 100', minimum: 0, maximum: 100 })
   matchPercentage: number;
 
-  @ApiProperty({ description: 'Keywords found in both job posting and profile', type: [KeywordMatchDto] })
+  @ApiProperty({
+    description: 'Keywords found in both job posting and profile',
+    type: [KeywordMatchDto],
+  })
   matchedKeywords: KeywordMatchDto[];
 
-  @ApiProperty({ description: 'Keywords in job posting but not in profile', type: [KeywordMatchDto] })
+  @ApiProperty({
+    description: 'Keywords in job posting but not in profile',
+    type: [KeywordMatchDto],
+  })
   missingKeywords: KeywordMatchDto[];
 
   @ApiProperty({ description: 'Suggestions to improve profile match', type: [String] })

@@ -488,9 +488,7 @@ describe('ApplicationsController (e2e)', () => {
         })
         .expect(400);
 
-      expect(response.body.message).toContain(
-        `at most ${APPLICATION_TITLE_MAX_LENGTH} characters`,
-      );
+      expect(response.body.message).toContain(`at most ${APPLICATION_TITLE_MAX_LENGTH} characters`);
     });
 
     it('should sanitize title (XSS protection)', async () => {
@@ -546,7 +544,7 @@ describe('ApplicationsController (e2e)', () => {
         applicationStatus: 'APPLIED', // Default status
         status: 'PENDING', // Generation status
       });
-      
+
       // Title should be auto-generated (either by LLM or fallback)
       expect(response.body.title).toBeDefined();
       expect(typeof response.body.title).toBe('string');

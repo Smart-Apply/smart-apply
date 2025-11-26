@@ -1,21 +1,12 @@
 import { Controller, Get, Param, Query, UseGuards, Res } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiQuery,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { Response } from 'express';
 import { SkipThrottle } from '@nestjs/throttler';
 import { TemplatesService } from './templates.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { Public } from '../common/decorators/public.decorator';
 import { TemplateType } from '@prisma/client';
-import {
-  TemplateResponseDto,
-  TemplateWithContentResponseDto,
-} from './dto/template-response.dto';
+import { TemplateResponseDto, TemplateWithContentResponseDto } from './dto/template-response.dto';
 
 @ApiTags('templates')
 @Controller('templates')
@@ -70,7 +61,7 @@ export class TemplatesController {
   })
   async getPreview(@Param('id') id: string, @Res() res: Response): Promise<void> {
     const imageBuffer = await this.templatesService.generatePreview(id);
-    
+
     res.setHeader('Content-Type', 'image/png');
     res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 1 day
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin'); // Allow loading from frontend
