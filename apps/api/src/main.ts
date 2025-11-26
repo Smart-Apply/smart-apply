@@ -211,9 +211,10 @@ async function bootstrap() {
       'cookie-auth',
     )
     // API Tags (organized by module)
-    .addTag('auth', 'Authentication endpoints (register, login, logout, refresh)')
+    .addTag('auth', 'Authentication endpoints (register, login, logout, refresh, profile, password, account)')
     .addTag('auth/sessions', 'Session management (list, revoke sessions)')
     .addTag('profile', 'User profile management (skills, experience, education)')
+    .addTag('user-preferences', 'User preferences (language, theme, notifications, privacy)')
     .addTag('job-postings', 'Job postings management (manual creation & parser)')
     .addTag('applications', 'Application generation & management (LLM → PDF pipeline)')
     .addTag('templates', 'Template management (cover letter & resume templates)')

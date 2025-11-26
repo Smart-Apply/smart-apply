@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { User, Shield, Bell, Palette, Globe, Trash2, ChevronRight } from 'lucide-react';
+import { User, Shield, Bell, Palette, Trash2, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -65,7 +65,7 @@ export default function SettingsPage() {
       const response = await api.auth.updateProfile({ firstName, lastName });
       updateUser(response.user);
       toast.success('Profil erfolgreich aktualisiert');
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Aktualisieren des Profils');
     } finally {
       setIsLoading(false);
@@ -100,8 +100,8 @@ export default function SettingsPage() {
       // User has been logged out from all devices, redirect to login
       clearAuth();
       router.push('/login');
-    } catch (error: any) {
-      const errorMessage = error?.message || 'Fehler beim Ändern des Passworts';
+    } catch (error) {
+      const errorMessage = (error as Error)?.message || 'Fehler beim Ändern des Passworts';
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -116,8 +116,8 @@ export default function SettingsPage() {
       toast.success('Account wurde gelöscht');
       clearAuth();
       router.push('/');
-    } catch (error: any) {
-      const errorMessage = error?.message || 'Fehler beim Löschen des Accounts';
+    } catch (error) {
+      const errorMessage = (error as Error)?.message || 'Fehler beim Löschen des Accounts';
       toast.error(errorMessage);
     } finally {
       setIsDeleting(false);
