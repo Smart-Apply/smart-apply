@@ -59,7 +59,14 @@ Multi-provider architecture for different environments:
    - `AzureOpenAIProvider` (prod)
    - Configuration via `LLM_PROVIDER` env var
 
-3. **JobsService** (TODO: `src/jobs/`)
+3. **AgentsModule** (`src/agents/`)
+   - `ATSKeywordAgent` - Extracts keywords from job postings using Azure AI Foundry
+   - `CVWriterAgent` - Generates tailored resumes based on keywords + profile
+   - `CLWriterAgent` - Generates cover letters based on keywords + profile
+   - `ApplicationPipelineService` - Orchestrates all agents with EventEmitter progress updates
+   - Configuration via `ATS_AGENT_ID`, `CV_WRITER_AGENT_ID`, `CL_WRITER_AGENT_ID` env vars
+
+4. **JobsService** (TODO: `src/jobs/`)
    - `InMemoryQueueProvider` (dev)
    - `AzureServiceBusProvider` (prod)
    - Configuration via `JOBS_DRIVER` env var
@@ -91,9 +98,12 @@ npm run prisma:seed
 ## Key Directories
 
 - `apps/api/src/` - Backend modules (auth, profile, applications, etc.)
+- `apps/api/src/agents/` - Azure AI Foundry agents (ATS, CV Writer, CL Writer)
+- `apps/api/src/keywords/` - Keyword extraction service
 - `apps/api/prisma/` - Schema, migrations, seed
 - `apps/web/src/app/` - Next.js pages (auth, dashboard)
 - `apps/web/src/components/` - UI components (shadcn/ui)
+- `apps/web/src/components/applications/` - ATS analysis components
 - `apps/web/src/lib/` - API client, utils
 - `prompts/` - LLM templates (cover-letter.md, resume.md)
 
@@ -124,6 +134,94 @@ npm run prisma:seed
 - Auth tests (register, login, me)
 
 **See GitHub Issues for remaining frontend work (#42-#55)**
+
+## ATS Agent Architecture
+
+### Overview
+
+The ATS (Applicant Tracking System) analysis feature uses Azure AI Foundry Agents to extract keywords from job postings and match them against the user's resume. This provides real-time feedback on how well a resume matches a job posting.
+
+### Agent Pipeline
+
+```
+Job Posting → [ATS Agent] → Keywords → [Matching] → Score + Analysis
+                                            ↑
+                                    Resume Text (from application)
+```
+
+### Components
+
+**1. ATSKeywordAgent** (`src/agents/ats/ats-keyword.agent.ts`)
+- Uses Azure AI Foundry SDK (`@azure/ai-agents`)
+- Agent ID: `asst_Jn2tlDlX3ZhzVIQhhw5Qa57W`
+- Extracts structured keywords from job postings:
+  - Technical skills (programming languages, frameworks)
+  - Soft skills (communication, leadership)
+  - Tools & technologies (specific software, platforms)
+  - Industry keywords (domain-specific terms)
+  - Seniority signals (experience levels)
+  - Requirement keywords (certifications, education)
+
+**2. KeywordsService** (`src/keywords/keywords.service.ts`)
+- Orchestrates keyword extraction via ATS Agent
+- Parses agent response into structured format
+- Handles fallback to mock data for testing
+
+**3. ApplicationsService** (ATS methods)
+- `getKeywordsAnalysis()` - Returns cached analysis or triggers new one
+- `analyzeKeywords()` - Fresh extraction and matching
+- `extractResumeKeywords()` - Extracts keywords from saved resume JSON
+- `extractProfileKeywords()` - Fallback: extracts from user profile
+- `matchKeywords()` - Compares job keywords against resume/profile
+- `calculateMatchAnalysis()` - Calculates scores and suggestions
+
+### Matching Logic
+
+Keywords are matched against the application's `resumeText` (not the profile), which allows:
+- ATS score to reflect edits made in edit mode
+- Users to optimize their resume for specific jobs
+- Real-time feedback when adding keywords
+
+**Score Calculation (Weighted):**
+- Technical skills: 40%
+- Experience/seniority: 25%
+- Soft skills: 20%
+- Industry keywords: 15%
+
+### Frontend Components
+
+**ATSAnalysisPanel** (`components/applications/ats-analysis-panel.tsx`)
+- Main panel for application detail page
+- Shows match score, keywords, and suggestions
+- "Neu analysieren" button for fresh analysis
+
+**ATSScoreSidebar** (`components/applications/ats-score-sidebar.tsx`)
+- Compact sidebar for edit mode
+- Shows score and missing keywords
+- Auto-refreshes after saving resume
+
+**Supporting Components:**
+- `MatchScoreCard` - Score visualization with category breakdown
+- `KeywordsOverview` - Tabbed view of all/found/missing keywords
+- `SuggestionsCard` - Improvement recommendations with profile links
+- `HighlightedText` - Keyword highlighting in text
+
+### Environment Variables
+
+```bash
+# Azure AI Foundry Agents
+AZURE_AI_FOUNDRY_ENDPOINT=https://your-project.api.azureml.ms
+ATS_AGENT_ID=asst_Jn2tlDlX3ZhzVIQhhw5Qa57W
+CV_WRITER_AGENT_ID=asst_xxxxx  # Optional
+CL_WRITER_AGENT_ID=asst_xxxxx  # Optional
+```
+
+### Database Fields
+
+Added to `Application` model:
+- `keywordsData` (Json?) - Cached keyword analysis results
+- `matchScore` (Int?) - Overall match score (0-100)
+- `matchDetails` (Json?) - Detailed match breakdown
 
 ## Security (8.0/10)
 
@@ -432,6 +530,56 @@ All profile endpoints require authentication via JWT in HttpOnly cookie (`access
 - **CSRF Token Endpoint**: 100 requests / 15 minutes (default)
 - **All Other Endpoints**: 100 requests / 15 minutes (default)
 
+### ATS Analysis Endpoints (Protected)
+
+**GET /api/v1/applications/:id/keywords**
+- **Purpose:** Get keyword analysis for application (cached if available)
+- **Authentication:** Required
+- **Response:**
+  ```typescript
+  {
+    applicationId: string,
+    keywords: {
+      technicalSkills: string[],
+      softSkills: string[],
+      toolsAndTechnologies: string[],
+      industryKeywords: string[],
+      senioritySignals: string[],
+      requirementKeywords: string[]
+    },
+    matchAnalysis: {
+      overallScore: number,          // 0-100 percentage
+      categoryScores: {
+        technical: number,
+        soft: number,
+        experience: number,
+        industry: number
+      },
+      suggestions: string[],
+      strengths: string[],
+      weaknesses: string[]
+    },
+    matchedKeywords: [{ keyword: string, category: string, found: boolean, confidence: number }],
+    missingKeywords: [{ keyword: string, category: string, found: boolean, confidence: number }],
+    analyzedAt: Date
+  }
+  ```
+- **Notes:** Returns cached analysis if available, otherwise triggers new analysis
+
+**POST /api/v1/applications/:id/analyze-keywords**
+- **Purpose:** Trigger fresh ATS keyword extraction and matching
+- **Authentication:** Required
+- **Response:** Same structure as GET /keywords
+- **Pipeline:**
+  1. Extract keywords from job posting using ATS Agent (Azure AI Foundry)
+  2. Extract keywords from application's saved resume (NOT profile)
+  3. Match keywords and calculate scores
+  4. Cache results in `keywordsData` field
+- **Notes:** 
+  - Uses `resumeText` from application for matching (reflects edits made in edit mode)
+  - Falls back to profile if no resume exists
+  - ATS Agent ID: `asst_Jn2tlDlX3ZhzVIQhhw5Qa57W`
+
 ### Error Responses
 
 All endpoints follow consistent error format:
@@ -484,4 +632,6 @@ Common status codes:
 3. **Version history** for applications (edit flow)
 4. **Managed Identity** instead of connection strings
 5. **Prometheus/Grafana** monitoring
-6. **ATS export** (JSON format for applicant tracking systems)
+6. ~~**ATS export** (JSON format for applicant tracking systems)~~ ✅ **Implemented**
+7. **CV/CL Writer Agents** - Integrate CVWriterAgent and CLWriterAgent for full pipeline
+8. **ATS Score History** - Track score changes over time
