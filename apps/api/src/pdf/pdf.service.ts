@@ -181,20 +181,26 @@ export class PdfService implements OnModuleDestroy {
     options: PdfGenerationOptions = {},
   ): Promise<Buffer> {
     try {
-      const html = await this.templateRenderer.renderCoverLetter(data, templateId, options.atsOptimized);
-      
+      const html = await this.templateRenderer.renderCoverLetter(
+        data,
+        templateId,
+        options.atsOptimized,
+      );
+
       const pdfOptions: PdfGenerationOptions = {
-        margin: options.atsOptimized ? {
-          top: '0.5in',
-          right: '0.5in',
-          bottom: '0.5in',
-          left: '0.5in',
-        } : {
-          top: '20mm',
-          right: '25mm',
-          bottom: '20mm',
-          left: '25mm',
-        },
+        margin: options.atsOptimized
+          ? {
+              top: '0.5in',
+              right: '0.5in',
+              bottom: '0.5in',
+              left: '0.5in',
+            }
+          : {
+              top: '20mm',
+              right: '25mm',
+              bottom: '20mm',
+              left: '25mm',
+            },
         ...options,
       };
 
@@ -216,25 +222,27 @@ export class PdfService implements OnModuleDestroy {
    * Generate professional resume PDF from structured data
    */
   async generateResumePDF(
-    data: ResumeTemplateData, 
-    templateId?: string, 
+    data: ResumeTemplateData,
+    templateId?: string,
     options: PdfGenerationOptions = {},
   ): Promise<Buffer> {
     try {
       const html = await this.templateRenderer.renderResume(data, templateId, options.atsOptimized);
-      
+
       const pdfOptions: PdfGenerationOptions = {
-        margin: options.atsOptimized ? {
-          top: '0.5in',
-          right: '0.5in',
-          bottom: '0.5in',
-          left: '0.5in',
-        } : {
-          top: '15mm',
-          right: '20mm',
-          bottom: '15mm',
-          left: '20mm',
-        },
+        margin: options.atsOptimized
+          ? {
+              top: '0.5in',
+              right: '0.5in',
+              bottom: '0.5in',
+              left: '0.5in',
+            }
+          : {
+              top: '15mm',
+              right: '20mm',
+              bottom: '15mm',
+              left: '20mm',
+            },
         ...options,
       };
 
@@ -290,7 +298,9 @@ export class PdfService implements OnModuleDestroy {
 
       const pdf = await page.pdf(pdfOptions);
 
-      this.logger.log(`PDF generated successfully (${pdf.length} bytes)${options.atsOptimized ? ' [ATS-optimized]' : ''}`);
+      this.logger.log(
+        `PDF generated successfully (${pdf.length} bytes)${options.atsOptimized ? ' [ATS-optimized]' : ''}`,
+      );
       return Buffer.from(pdf);
     } catch (error) {
       this.logger.error('Failed to generate PDF from rendered HTML', error);

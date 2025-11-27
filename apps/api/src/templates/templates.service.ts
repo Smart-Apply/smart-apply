@@ -2,10 +2,7 @@ import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { TemplateType } from '@prisma/client';
-import {
-  TemplateResponseDto,
-  TemplateWithContentResponseDto,
-} from './dto/template-response.dto';
+import { TemplateResponseDto, TemplateWithContentResponseDto } from './dto/template-response.dto';
 import { CreateTemplateDto } from './dto/create-template.dto';
 
 @Injectable()
@@ -163,7 +160,7 @@ export class TemplatesService {
    */
   async generatePreview(id: string): Promise<Buffer> {
     const template = await this.findOne(id);
-    
+
     // Check if preview already exists in storage
     if (template.previewImageKey) {
       try {
@@ -174,23 +171,23 @@ export class TemplatesService {
         this.logger.warn(`Cached preview not found for template ${id}, regenerating...`);
       }
     }
-    
+
     // Generate new preview
     this.logger.log(`Generating preview for template: ${id}`);
     const sampleData = this.getSampleDataForTemplate(template.type);
     const html = this.wrapTemplateWithStyles(template.htmlTemplate, template.cssStyles, sampleData);
     const imageBuffer = await this.generatePreviewImage(html);
-    
+
     // Store preview in storage
     const previewKey = `templates/${id}/preview.png`;
     await this.storage.upload(previewKey, imageBuffer, 'image/png');
-    
+
     // Update template with preview key
     await this.prisma.template.update({
       where: { id },
       data: { previewImageKey: previewKey },
     });
-    
+
     this.logger.log(`Preview generated and cached for template: ${id}`);
     return imageBuffer;
   }
@@ -272,7 +269,7 @@ export class TemplatesService {
     const Handlebars = require('handlebars');
     const template = Handlebars.compile(htmlTemplate);
     const content = template(data);
-    
+
     return `
       <!DOCTYPE html>
       <html>
@@ -290,22 +287,22 @@ export class TemplatesService {
    */
   private async generatePreviewImage(html: string): Promise<Buffer> {
     const puppeteer = require('puppeteer');
-    
+
     const browser = await puppeteer.launch({
       headless: 'new', // Use new headless mode (Chrome 109+)
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
-    
+
     try {
       const page = await browser.newPage();
       await page.setViewport({ width: 595, height: 842 }); // A4 size at 72 DPI
       await page.setContent(html, { waitUntil: 'networkidle0' });
-      
+
       const screenshot = await page.screenshot({
         type: 'png',
         fullPage: false,
       });
-      
+
       return screenshot as Buffer;
     } finally {
       await browser.close();

@@ -88,9 +88,9 @@ export class TemplateRendererService {
     // Determine if running from source or dist
     // __dirname when running from dist: /Users/.../dist/apps/api/pdf
     // __dirname when running from src (ts-node): /Users/.../apps/api/src/pdf
-    
+
     const isDevelopment = __dirname.includes('/src/');
-    
+
     if (isDevelopment) {
       // Development mode (ts-node): Use source templates
       this.templatesDir = path.join(__dirname, 'templates');
@@ -172,9 +172,7 @@ export class TemplateRendererService {
       } else {
         // Load default template from database
         this.logger.log('Loading default cover letter template');
-        const defaultTemplate = await this.templatesService.findDefault(
-          TemplateType.COVER_LETTER,
-        );
+        const defaultTemplate = await this.templatesService.findDefault(TemplateType.COVER_LETTER);
         template = defaultTemplate.htmlTemplate;
         css = defaultTemplate.cssStyles;
       }
@@ -206,8 +204,8 @@ export class TemplateRendererService {
    * Render resume template with optional templateId and ATS optimization
    */
   async renderResume(
-    data: ResumeTemplateData, 
-    templateId?: string, 
+    data: ResumeTemplateData,
+    templateId?: string,
     atsOptimized = false,
   ): Promise<string> {
     try {

@@ -64,9 +64,7 @@ describe('AzureAIFoundryProvider', () => {
       };
 
       // Should not throw, just warn
-      expect(
-        () => new AzureAIFoundryProvider(httpService, mockConfigService as any),
-      ).not.toThrow();
+      expect(() => new AzureAIFoundryProvider(httpService, mockConfigService as any)).not.toThrow();
     });
 
     it('should warn if Azure OpenAI fallback configuration is missing', () => {
@@ -81,9 +79,7 @@ describe('AzureAIFoundryProvider', () => {
       };
 
       // Should not throw, just warn
-      expect(
-        () => new AzureAIFoundryProvider(httpService, mockConfigService as any),
-      ).not.toThrow();
+      expect(() => new AzureAIFoundryProvider(httpService, mockConfigService as any)).not.toThrow();
     });
   });
 
@@ -243,9 +239,7 @@ describe('AzureAIFoundryProvider', () => {
   describe('Fallback to Azure OpenAI', () => {
     it('should fallback to Azure OpenAI when CV Writer Agent fails', async () => {
       // First call fails (CV Writer Agent)
-      mockHttpPost.mockReturnValueOnce(
-        throwError(() => new Error('Agent endpoint unavailable')),
-      );
+      mockHttpPost.mockReturnValueOnce(throwError(() => new Error('Agent endpoint unavailable')));
 
       // Second call succeeds (Azure OpenAI fallback)
       const fallbackResponse = {

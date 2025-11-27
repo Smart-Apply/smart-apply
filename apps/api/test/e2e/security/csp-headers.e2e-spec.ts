@@ -94,40 +94,50 @@ describe('Content Security Policy Headers (e2e)', () => {
     it('should have strict default-src directive', async () => {
       const response = await request(app.getHttpServer()).get('/api/v1/auth/me');
 
-      const cspHeader = response.headers['content-security-policy'] || response.headers['content-security-policy-report-only'];
-      
+      const cspHeader =
+        response.headers['content-security-policy'] ||
+        response.headers['content-security-policy-report-only'];
+
       expect(cspHeader).toContain("default-src 'self'");
     });
 
     it('should disallow object-src (plugins)', async () => {
       const response = await request(app.getHttpServer()).get('/api/v1/auth/me');
 
-      const cspHeader = response.headers['content-security-policy'] || response.headers['content-security-policy-report-only'];
-      
+      const cspHeader =
+        response.headers['content-security-policy'] ||
+        response.headers['content-security-policy-report-only'];
+
       expect(cspHeader).toContain("object-src 'none'");
     });
 
     it('should disallow frame-ancestors (clickjacking protection)', async () => {
       const response = await request(app.getHttpServer()).get('/api/v1/auth/me');
 
-      const cspHeader = response.headers['content-security-policy'] || response.headers['content-security-policy-report-only'];
-      
+      const cspHeader =
+        response.headers['content-security-policy'] ||
+        response.headers['content-security-policy-report-only'];
+
       expect(cspHeader).toContain("frame-ancestors 'none'");
     });
 
     it('should configure reportUri directive', async () => {
       const response = await request(app.getHttpServer()).get('/api/v1/auth/me');
 
-      const cspHeader = response.headers['content-security-policy'] || response.headers['content-security-policy-report-only'];
-      
+      const cspHeader =
+        response.headers['content-security-policy'] ||
+        response.headers['content-security-policy-report-only'];
+
       expect(cspHeader).toContain('report-uri /api/v1/csp-violations');
     });
 
     it('should allow unsafe-inline and unsafe-eval in development for Swagger', async () => {
       const response = await request(app.getHttpServer()).get('/api/v1/auth/me');
 
-      const cspHeader = response.headers['content-security-policy'] || response.headers['content-security-policy-report-only'];
-      
+      const cspHeader =
+        response.headers['content-security-policy'] ||
+        response.headers['content-security-policy-report-only'];
+
       if (configService.isDevelopment) {
         expect(cspHeader).toContain("'unsafe-inline'");
         expect(cspHeader).toContain("'unsafe-eval'");
@@ -143,24 +153,30 @@ describe('Content Security Policy Headers (e2e)', () => {
     it('should restrict img-src appropriately', async () => {
       const response = await request(app.getHttpServer()).get('/api/v1/auth/me');
 
-      const cspHeader = response.headers['content-security-policy'] || response.headers['content-security-policy-report-only'];
-      
+      const cspHeader =
+        response.headers['content-security-policy'] ||
+        response.headers['content-security-policy-report-only'];
+
       expect(cspHeader).toContain("img-src 'self' data: https:");
     });
 
     it('should restrict form-action to self', async () => {
       const response = await request(app.getHttpServer()).get('/api/v1/auth/me');
 
-      const cspHeader = response.headers['content-security-policy'] || response.headers['content-security-policy-report-only'];
-      
+      const cspHeader =
+        response.headers['content-security-policy'] ||
+        response.headers['content-security-policy-report-only'];
+
       expect(cspHeader).toContain("form-action 'self'");
     });
 
     it('should restrict base-uri to self', async () => {
       const response = await request(app.getHttpServer()).get('/api/v1/auth/me');
 
-      const cspHeader = response.headers['content-security-policy'] || response.headers['content-security-policy-report-only'];
-      
+      const cspHeader =
+        response.headers['content-security-policy'] ||
+        response.headers['content-security-policy-report-only'];
+
       expect(cspHeader).toContain("base-uri 'self'");
     });
   });

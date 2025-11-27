@@ -13,9 +13,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JobsService } from '../jobs/jobs.service';
 import { StorageService } from '../storage/storage.service';
 import { JobType } from '../jobs/interfaces/queue.interface';
-import { LLMService } from '../llm/llm.service';
+import { LLMService, KeywordMatch } from '../llm/llm.service';
 import { TitleGeneratorService } from './title-generator.service';
 import { KeywordsService } from '../keywords/keywords.service';
+import { ATSAgentOutput } from '../agents/agents.interface';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { ApplicationResponseDto, ApplicationStatus } from './dto/application-response.dto';
 import { ApplicationFilesResponseDto } from './dto/application-files-response.dto';
@@ -170,6 +171,10 @@ export class ApplicationsService {
         issuer: cert.issuer.trim(),
         date: trim(cert.date),
       })),
+      languages: (resume.languages || []).map((lang) => ({
+        name: lang.name.trim(),
+        level: lang.level?.trim(),
+      })).filter((lang) => lang.name),
     };
   }
 
@@ -200,6 +205,169 @@ export class ApplicationsService {
       experiences,
       motivation: motivationParts.join('\n\n'),
     };
+  }
+
+  /**
+   * Build context for ATS-optimized cover letter generation
+   * Formats profile and keywords for strategic keyword placement
+   */
+  private buildATSCoverLetterContext(
+    resume: any,
+    jobPosting: {
+      title: string;
+      company: string;
+      location?: string | null;
+      description?: string | null;
+    },
+    matchedKeywords: KeywordMatch[],
+    missingKeywords: KeywordMatch[],
+  ) {
+    // Format profile information
+    const skills = (resume.skillCategories || [])
+      .flatMap((category: { skills: string[] }) => category.skills)
+      .filter(Boolean)
+      .join(', ');
+
+    const experiences = (resume.experiences || [])
+      .map(
+        (experience: {
+          title: string;
+          company: string;
+          dateRange: string;
+          achievements?: string[];
+        }) =>
+          `${experience.title} at ${experience.company} (${experience.dateRange})${
+            experience.achievements?.length
+              ? ': ' + experience.achievements.slice(0, 2).join('; ')
+              : ''
+          }`,
+      )
+      .join('\n');
+
+    const profileString = `
+Name: ${resume.candidateName}
+Skills: ${skills}
+Experience: ${experiences}
+Summary: ${resume.summary || 'Not provided'}
+    `.trim();
+
+    return {
+      profile: profileString,
+      jobTitle: jobPosting.title,
+      companyName: jobPosting.company,
+      location: jobPosting.location || undefined,
+      jobDescription: jobPosting.description || undefined,
+      matchedKeywords,
+      missingKeywords,
+    };
+  }
+
+  /**
+   * Build context for ATS-optimized resume generation
+   * Formats profile and keywords for strategic keyword placement
+   */
+  private buildATSResumeContext(
+    resume: any,
+    jobPosting: {
+      title: string;
+      company: string;
+      description?: string | null;
+    },
+    matchedKeywords: KeywordMatch[],
+    missingKeywords: KeywordMatch[],
+  ) {
+    const profileString = JSON.stringify(resume, null, 2);
+
+    return {
+      profile: profileString,
+      jobTitle: jobPosting.title,
+      companyName: jobPosting.company,
+      jobDescription: jobPosting.description || undefined,
+      matchedKeywords,
+      missingKeywords,
+    };
+  }
+
+  /**
+   * Extract keywords for a job posting and match against profile
+   * Used for ATS-optimized content generation
+   */
+  private async getKeywordsForGeneration(
+    jobPosting: {
+      title: string;
+      company: string;
+      location?: string | null;
+      description?: string | null;
+      requirements: string[];
+      responsibilities: string[];
+      niceToHave: string[];
+      rawText?: string | null;
+    },
+    profileKeywords: Set<string>,
+  ): Promise<{ matchedKeywords: KeywordMatch[]; missingKeywords: KeywordMatch[] }> {
+    try {
+      // Extract keywords using ATS Agent
+      const keywords = await this.keywordsService.extractKeywords({
+        title: jobPosting.title,
+        company: jobPosting.company,
+        location: jobPosting.location || undefined,
+        description: jobPosting.description || undefined,
+        requirements: jobPosting.requirements,
+        responsibilities: jobPosting.responsibilities,
+        niceToHave: jobPosting.niceToHave,
+        rawText: jobPosting.rawText || undefined,
+      });
+
+      // Perform matching
+      return this.matchKeywordsForLLM(keywords, profileKeywords);
+    } catch (error) {
+      this.logger.warn(
+        'Failed to extract keywords for ATS generation, using fallback',
+        error as Error,
+      );
+      return { matchedKeywords: [], missingKeywords: [] };
+    }
+  }
+
+  /**
+   * Match extracted keywords against profile for LLM context
+   */
+  private matchKeywordsForLLM(
+    keywords: ATSAgentOutput,
+    profileKeywords: Set<string>,
+  ): { matchedKeywords: KeywordMatch[]; missingKeywords: KeywordMatch[] } {
+    const matched: KeywordMatch[] = [];
+    const missing: KeywordMatch[] = [];
+
+    const checkKeyword = (keyword: string, category: KeywordMatch['category']) => {
+      const normalized = keyword.toLowerCase();
+      const found =
+        profileKeywords.has(normalized) ||
+        [...profileKeywords].some((pk) => pk.includes(normalized) || normalized.includes(pk));
+
+      const match: KeywordMatch = {
+        keyword,
+        category,
+        found,
+        confidence: found ? 0.85 : 0,
+      };
+
+      if (found) {
+        matched.push(match);
+      } else {
+        missing.push(match);
+      }
+    };
+
+    // Check all keyword categories from ATSAgentOutput
+    keywords.technicalSkills.forEach((k) => checkKeyword(k, 'technical'));
+    keywords.softSkills.forEach((k) => checkKeyword(k, 'soft'));
+    keywords.toolsAndTechnologies.forEach((k) => checkKeyword(k, 'tool'));
+    keywords.industryKeywords.forEach((k) => checkKeyword(k, 'industry'));
+    keywords.senioritySignals.forEach((k) => checkKeyword(k, 'seniority'));
+    keywords.requirementKeywords.forEach((k) => checkKeyword(k, 'requirement'));
+
+    return { matchedKeywords: matched, missingKeywords: missing };
   }
 
   private ensureNotGenerating(application: Application) {
@@ -277,18 +445,43 @@ export class ApplicationsService {
     // 3. Generate title for application
     const title = await this.titleGenerator.generateTitle(jobPosting);
 
-    // 4. Generate cover letter with LLM (only if requested)
+    // 4. Extract keywords for ATS-optimized generation
+    const profileKeywords = this.extractProfileKeywords(profile);
+    const { matchedKeywords, missingKeywords } = await this.getKeywordsForGeneration(
+      jobPosting,
+      profileKeywords,
+    );
+
+    this.logger.log(
+      `Keyword analysis: ${matchedKeywords.length} matched, ${missingKeywords.length} missing`,
+    );
+
+    // 5. Generate cover letter with LLM (only if requested)
     let sanitizedCoverLetter: string | null = null;
     if (shouldGenerateCoverLetter) {
-      this.logger.log('Generating cover letter with LLM');
-      const coverLetterContext = this.buildCoverLetterContext(resumeTemplate, jobPosting);
-      const coverLetterContent = await this.llmService.generateCoverLetter(coverLetterContext);
-      sanitizedCoverLetter = this.sanitizeCoverLetter(coverLetterContent);
+      // Use ATS-optimized generation if we have keywords
+      if (matchedKeywords.length > 0 || missingKeywords.length > 0) {
+        this.logger.log('Generating ATS-optimized cover letter with keyword placement');
+        const atsContext = this.buildATSCoverLetterContext(
+          resumeTemplate,
+          jobPosting,
+          matchedKeywords,
+          missingKeywords,
+        );
+        const coverLetterContent = await this.llmService.generateCoverLetterATS(atsContext);
+        sanitizedCoverLetter = this.sanitizeCoverLetter(coverLetterContent);
+      } else {
+        // Fallback to standard generation
+        this.logger.log('Generating cover letter with standard LLM (no keywords available)');
+        const coverLetterContext = this.buildCoverLetterContext(resumeTemplate, jobPosting);
+        const coverLetterContent = await this.llmService.generateCoverLetter(coverLetterContext);
+        sanitizedCoverLetter = this.sanitizeCoverLetter(coverLetterContent);
+      }
     } else {
       this.logger.log('Skipping cover letter generation (user opted out)');
     }
 
-    // 5. Create application with generated content (status: READY for editing)
+    // 6. Create application with generated content (status: READY for editing)
     const application = await this.prisma.application.create({
       data: {
         userId,
@@ -307,7 +500,9 @@ export class ApplicationsService {
       },
     });
 
-    this.logger.log(`Application ${application.id} created with generated content (coverLetter: ${shouldGenerateCoverLetter})`);
+    this.logger.log(
+      `Application ${application.id} created with generated content (coverLetter: ${shouldGenerateCoverLetter}, ATS-optimized: ${matchedKeywords.length > 0})`,
+    );
     return this.mapToResponseDto(application);
   }
 
@@ -358,8 +553,31 @@ export class ApplicationsService {
 
     let content = dto.content;
     if (!content || dto.regenerate) {
-      const context = this.buildCoverLetterContext(resume, jobPosting, dto.instructions);
-      content = await this.llmService.generateCoverLetter(context);
+      // Extract keywords from resume for ATS-optimized generation
+      const resumeKeywords = this.extractResumeKeywords(application.resumeText);
+
+      // Get keyword analysis for ATS optimization
+      const { matchedKeywords, missingKeywords } = await this.getKeywordsForGeneration(
+        jobPosting,
+        resumeKeywords,
+      );
+
+      // Use ATS-optimized generation if keywords are available
+      if (matchedKeywords.length > 0 || missingKeywords.length > 0) {
+        this.logger.log('Regenerating cover letter with ATS optimization');
+        const atsContext = this.buildATSCoverLetterContext(
+          resume,
+          jobPosting,
+          matchedKeywords,
+          missingKeywords,
+        );
+        content = await this.llmService.generateCoverLetterATS(atsContext);
+      } else {
+        // Fallback to standard generation
+        this.logger.log('Regenerating cover letter with standard LLM');
+        const context = this.buildCoverLetterContext(resume, jobPosting, dto.instructions);
+        content = await this.llmService.generateCoverLetter(context);
+      }
     }
 
     const sanitizedContent = this.sanitizeCoverLetter(content);
@@ -393,7 +611,9 @@ export class ApplicationsService {
     // Cover letter is optional - user may have opted out during creation
     // Log whether we're exporting with or without cover letter
     if (!application.coverLetterText) {
-      this.logger.log(`Exporting application ${applicationId} without cover letter (user opted out)`);
+      this.logger.log(
+        `Exporting application ${applicationId} without cover letter (user opted out)`,
+      );
     }
 
     await this.cleanupGeneratedFiles(application);
@@ -589,9 +809,7 @@ export class ApplicationsService {
     applicationId: string,
     status: ApplicationTrackingStatus,
   ): Promise<ApplicationResponseDto> {
-    this.logger.log(
-      `Updating application ${applicationId} status to ${status} for user ${userId}`,
-    );
+    this.logger.log(`Updating application ${applicationId} status to ${status} for user ${userId}`);
 
     // Verify ownership
     const application = await this.ensureApplicationOwnership(userId, applicationId, true);
@@ -713,7 +931,7 @@ export class ApplicationsService {
   async streamStatus(userId: string, applicationId: string): Promise<Observable<MessageEvent>> {
     // Verify application exists and belongs to user
     await this.ensureApplicationOwnership(userId, applicationId);
-    
+
     this.logger.log(`SSE stream started for application ${applicationId} by user ${userId}`);
 
     // Create SSE stream that polls status every 2 seconds
@@ -759,11 +977,13 @@ export class ApplicationsService {
         const eventData = event.data as { status: ApplicationStatus };
         const status = eventData.status;
         const shouldContinue = status === 'PENDING' || status === 'GENERATING';
-        
+
         if (!shouldContinue) {
-          this.logger.log(`SSE stream closing for application ${applicationId} (final status: ${status})`);
+          this.logger.log(
+            `SSE stream closing for application ${applicationId} (final status: ${status})`,
+          );
         }
-        
+
         return shouldContinue;
       }, true),
     );
@@ -898,11 +1118,17 @@ export class ApplicationsService {
 
     // Experience titles and descriptions
     profile.experiences.forEach((e) => {
-      e.title.toLowerCase().split(/\s+/).forEach((w) => keywords.add(w));
+      e.title
+        .toLowerCase()
+        .split(/\s+/)
+        .forEach((w) => keywords.add(w));
       if (e.description) {
-        e.description.toLowerCase().split(/\s+/).forEach((w) => {
-          if (w.length > 3) keywords.add(w);
-        });
+        e.description
+          .toLowerCase()
+          .split(/\s+/)
+          .forEach((w) => {
+            if (w.length > 3) keywords.add(w);
+          });
       }
     });
 
@@ -913,7 +1139,10 @@ export class ApplicationsService {
 
     // Certificates
     profile.certificates.forEach((c) => {
-      c.name.toLowerCase().split(/\s+/).forEach((w) => keywords.add(w));
+      c.name
+        .toLowerCase()
+        .split(/\s+/)
+        .forEach((w) => keywords.add(w));
     });
 
     return keywords;
@@ -927,25 +1156,51 @@ export class ApplicationsService {
     const keywords = new Set<string>();
 
     if (!resumeText) {
+      this.logger.debug('extractResumeKeywords: No resumeText provided');
       return keywords;
     }
 
     try {
       const resume = JSON.parse(resumeText);
+      this.logger.debug(`extractResumeKeywords: Parsing resume with keys: ${Object.keys(resume).join(', ')}`);
 
-      // Summary - extract meaningful words
-      if (resume.summary) {
-        resume.summary.toLowerCase().split(/\s+/).forEach((w: string) => {
-          if (w.length > 3) keywords.add(w.replace(/[^a-zA-ZäöüÄÖÜß]/g, ''));
+      // Helper: Add keyword preserving tech terms (C++, .NET, AWS, etc.)
+      const addKeyword = (word: string) => {
+        const trimmed = word.trim().toLowerCase();
+        if (trimmed.length >= 2) {
+          keywords.add(trimmed);
+        }
+      };
+
+      // Helper: Split text but preserve tech terms
+      const extractWords = (text: string) => {
+        if (!text) return;
+        // Split on whitespace but keep special chars within words
+        text.split(/\s+/).forEach((w) => {
+          const cleaned = w.replace(/^[,;.:!?"'()\[\]{}]+|[,;.:!?"'()\[\]{}]+$/g, '');
+          if (cleaned.length >= 2) {
+            keywords.add(cleaned.toLowerCase());
+          }
         });
+      };
+
+      // Summary
+      if (resume.summary) {
+        extractWords(resume.summary);
       }
 
-      // Skills from all categories
+      // Skills from all categories - MOST IMPORTANT for ATS matching
       if (resume.skillCategories && Array.isArray(resume.skillCategories)) {
-        resume.skillCategories.forEach((category: { skills?: string[] }) => {
+        resume.skillCategories.forEach((category: { type?: string; skills?: string[] }) => {
           if (category.skills && Array.isArray(category.skills)) {
             category.skills.forEach((skill: string) => {
-              keywords.add(skill.toLowerCase().trim());
+              // Add full skill name (e.g., "React.js", "Node.js", "C++")
+              addKeyword(skill);
+              // Also add without common suffixes for fuzzy matching
+              const simplified = skill.toLowerCase().replace(/\.js$|\.net$/i, '');
+              if (simplified !== skill.toLowerCase()) {
+                addKeyword(simplified);
+              }
             });
           }
         });
@@ -953,59 +1208,41 @@ export class ApplicationsService {
 
       // Experience titles and achievements
       if (resume.experiences && Array.isArray(resume.experiences)) {
-        resume.experiences.forEach((exp: { title?: string; company?: string; achievements?: string[] }) => {
-          if (exp.title) {
-            exp.title.toLowerCase().split(/\s+/).forEach((w: string) => keywords.add(w));
-          }
-          if (exp.achievements && Array.isArray(exp.achievements)) {
-            exp.achievements.forEach((achievement: string) => {
-              achievement.toLowerCase().split(/\s+/).forEach((w: string) => {
-                if (w.length > 3) keywords.add(w.replace(/[^a-zA-ZäöüÄÖÜß]/g, ''));
-              });
-            });
-          }
-        });
+        resume.experiences.forEach(
+          (exp: { title?: string; company?: string; achievements?: string[] }) => {
+            if (exp.title) extractWords(exp.title);
+            if (exp.achievements && Array.isArray(exp.achievements)) {
+              exp.achievements.forEach((achievement: string) => extractWords(achievement));
+            }
+          },
+        );
       }
 
       // Projects and highlights
       if (resume.projects && Array.isArray(resume.projects)) {
-        resume.projects.forEach((project: { name?: string; description?: string; highlights?: string[] }) => {
-          if (project.name) {
-            project.name.toLowerCase().split(/\s+/).forEach((w: string) => keywords.add(w));
-          }
-          if (project.description) {
-            project.description.toLowerCase().split(/\s+/).forEach((w: string) => {
-              if (w.length > 3) keywords.add(w.replace(/[^a-zA-ZäöüÄÖÜß]/g, ''));
-            });
-          }
-          if (project.highlights && Array.isArray(project.highlights)) {
-            project.highlights.forEach((h: string) => {
-              h.toLowerCase().split(/\s+/).forEach((w: string) => {
-                if (w.length > 3) keywords.add(w.replace(/[^a-zA-ZäöüÄÖÜß]/g, ''));
-              });
-            });
-          }
-        });
+        resume.projects.forEach(
+          (project: { name?: string; description?: string; highlights?: string[] }) => {
+            if (project.name) extractWords(project.name);
+            if (project.description) extractWords(project.description);
+            if (project.highlights && Array.isArray(project.highlights)) {
+              project.highlights.forEach((h: string) => extractWords(h));
+            }
+          },
+        );
       }
 
       // Certifications
       if (resume.certifications && Array.isArray(resume.certifications)) {
         resume.certifications.forEach((cert: { name?: string; issuer?: string }) => {
-          if (cert.name) {
-            cert.name.toLowerCase().split(/\s+/).forEach((w: string) => keywords.add(w));
-          }
+          if (cert.name) extractWords(cert.name);
         });
       }
 
       // Education
       if (resume.education && Array.isArray(resume.education)) {
         resume.education.forEach((edu: { degree?: string; fieldOfStudy?: string }) => {
-          if (edu.degree) {
-            edu.degree.toLowerCase().split(/\s+/).forEach((w: string) => keywords.add(w));
-          }
-          if (edu.fieldOfStudy) {
-            edu.fieldOfStudy.toLowerCase().split(/\s+/).forEach((w: string) => keywords.add(w));
-          }
+          if (edu.degree) extractWords(edu.degree);
+          if (edu.fieldOfStudy) extractWords(edu.fieldOfStudy);
         });
       }
 
@@ -1013,20 +1250,13 @@ export class ApplicationsService {
       if (resume.languages && Array.isArray(resume.languages)) {
         resume.languages.forEach((lang: { name?: string }) => {
           if (lang.name) {
-            keywords.add(lang.name.toLowerCase());
+            addKeyword(lang.name);
           }
         });
       }
 
-      // Filter out empty strings and very short words
-      const filtered = new Set<string>();
-      keywords.forEach((k) => {
-        if (k && k.length > 1) {
-          filtered.add(k);
-        }
-      });
-
-      return filtered;
+      this.logger.debug(`extractResumeKeywords: Extracted ${keywords.size} keywords: ${[...keywords].slice(0, 20).join(', ')}...`);
+      return keywords;
     } catch (error) {
       this.logger.warn('Failed to parse resume text for keyword extraction', error as Error);
       return keywords;
@@ -1045,7 +1275,8 @@ export class ApplicationsService {
 
     const checkKeyword = (keyword: string, category: string) => {
       const normalized = keyword.toLowerCase();
-      const found = profileKeywords.has(normalized) ||
+      const found =
+        profileKeywords.has(normalized) ||
         [...profileKeywords].some((pk) => pk.includes(normalized) || normalized.includes(pk));
 
       const match = {
@@ -1082,28 +1313,37 @@ export class ApplicationsService {
     missingKeywords: any[],
     keywords: any,
   ): any {
-    const totalTechnical = (keywords.technicalSkills?.length || 0) + (keywords.toolsAndTechnologies?.length || 0);
+    const totalTechnical =
+      (keywords.technicalSkills?.length || 0) + (keywords.toolsAndTechnologies?.length || 0);
     const totalSoft = keywords.softSkills?.length || 0;
-    const totalExperience = (keywords.senioritySignals?.length || 0) + (keywords.requirementKeywords?.length || 0);
+    const totalExperience =
+      (keywords.senioritySignals?.length || 0) + (keywords.requirementKeywords?.length || 0);
     const totalIndustry = keywords.industryKeywords?.length || 0;
 
-    const matchedTechnical = matchedKeywords.filter((k) => k.category === 'technical' || k.category === 'tool').length;
+    const matchedTechnical = matchedKeywords.filter(
+      (k) => k.category === 'technical' || k.category === 'tool',
+    ).length;
     const matchedSoft = matchedKeywords.filter((k) => k.category === 'soft').length;
-    const matchedExperience = matchedKeywords.filter((k) => k.category === 'seniority' || k.category === 'requirement').length;
+    const matchedExperience = matchedKeywords.filter(
+      (k) => k.category === 'seniority' || k.category === 'requirement',
+    ).length;
     const matchedIndustry = matchedKeywords.filter((k) => k.category === 'industry').length;
 
-    const technicalScore = totalTechnical > 0 ? Math.round((matchedTechnical / totalTechnical) * 100) : 0;
+    const technicalScore =
+      totalTechnical > 0 ? Math.round((matchedTechnical / totalTechnical) * 100) : 0;
     const softScore = totalSoft > 0 ? Math.round((matchedSoft / totalSoft) * 100) : 0;
-    const experienceScore = totalExperience > 0 ? Math.round((matchedExperience / totalExperience) * 100) : 0;
-    const industryScore = totalIndustry > 0 ? Math.round((matchedIndustry / totalIndustry) * 100) : 0;
+    const experienceScore =
+      totalExperience > 0 ? Math.round((matchedExperience / totalExperience) * 100) : 0;
+    const industryScore =
+      totalIndustry > 0 ? Math.round((matchedIndustry / totalIndustry) * 100) : 0;
 
     // Weighted average
     const weights = { technical: 0.4, soft: 0.2, experience: 0.25, industry: 0.15 };
     const overallScore = Math.round(
       technicalScore * weights.technical +
-      softScore * weights.soft +
-      experienceScore * weights.experience +
-      industryScore * weights.industry,
+        softScore * weights.soft +
+        experienceScore * weights.experience +
+        industryScore * weights.industry,
     );
 
     const suggestions: string[] = [];

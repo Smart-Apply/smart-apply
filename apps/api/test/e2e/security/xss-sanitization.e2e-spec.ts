@@ -6,7 +6,7 @@ import { AppModule } from '../../../src/app.module';
 
 /**
  * XSS Sanitization E2E Tests
- * 
+ *
  * Tests input sanitization across all DTOs to prevent XSS attacks.
  * Verifies that malicious scripts are properly escaped at the backend.
  */
@@ -43,7 +43,7 @@ describe('XSS Sanitization (e2e)', () => {
     app = moduleFixture.createNestApplication();
     app.use(cookieParser());
     app.setGlobalPrefix('api/v1');
-    
+
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
@@ -51,19 +51,17 @@ describe('XSS Sanitization (e2e)', () => {
         transform: true, // Enable transformation for sanitization decorators
       }),
     );
-    
+
     await app.init();
 
     // Register and login a test user
     const email = `xss-test-${Date.now()}@example.com`;
-    const registerRes = await request(app.getHttpServer())
-      .post('/api/v1/auth/register')
-      .send({
-        email,
-        password: 'Test123!',
-        firstName: 'XSS',
-        lastName: 'Tester',
-      });
+    const registerRes = await request(app.getHttpServer()).post('/api/v1/auth/register').send({
+      email,
+      password: 'Test123!',
+      firstName: 'XSS',
+      lastName: 'Tester',
+    });
 
     // Extract token from cookie
     const cookies = registerRes.headers['set-cookie'];
@@ -82,7 +80,7 @@ describe('XSS Sanitization (e2e)', () => {
   describe('Auth - Registration', () => {
     it('should sanitize firstName with XSS payload', async () => {
       const email = `sanitize-first-${Date.now()}@example.com`;
-      
+
       const res = await request(app.getHttpServer())
         .post('/api/v1/auth/register')
         .send({
@@ -98,7 +96,7 @@ describe('XSS Sanitization (e2e)', () => {
 
     it('should sanitize lastName with XSS payload', async () => {
       const email = `sanitize-last-${Date.now()}@example.com`;
-      
+
       const res = await request(app.getHttpServer())
         .post('/api/v1/auth/register')
         .send({
@@ -172,9 +170,7 @@ describe('XSS Sanitization (e2e)', () => {
         .expect(200);
 
       // Find the skill we just created
-      const skill = res.body.skills.find((s: any) =>
-        s.name.startsWith('XSS-Test-Skill-'),
-      );
+      const skill = res.body.skills.find((s: any) => s.name.startsWith('XSS-Test-Skill-'));
       expect(skill).toBeDefined();
       expect(skill.level).toBe(SANITIZED.img);
     });
@@ -305,7 +301,7 @@ describe('XSS Sanitization (e2e)', () => {
         .send({
           text: 'Software Engineer position at TechCorp',
         });
-      
+
       jobPostingId = jobRes.body.id;
     });
 

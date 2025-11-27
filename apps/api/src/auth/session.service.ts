@@ -2,10 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Request } from 'express';
 import * as UAParser from 'ua-parser-js';
-import { 
-  MAX_SESSIONS_PER_USER, 
-  SESSION_EXPIRATION_DAYS, 
-  REVOKED_SESSION_CLEANUP_DAYS 
+import {
+  MAX_SESSIONS_PER_USER,
+  SESSION_EXPIRATION_DAYS,
+  REVOKED_SESSION_CLEANUP_DAYS,
 } from './session.constants';
 
 @Injectable()
@@ -15,11 +15,7 @@ export class SessionService {
   /**
    * Create a new session for the user
    */
-  async createSession(
-    userId: string,
-    refreshTokenId: string,
-    req: Request,
-  ): Promise<any> {
+  async createSession(userId: string, refreshTokenId: string, req: Request): Promise<any> {
     const parser = new UAParser.UAParser(req.headers['user-agent']);
     const device = parser.getResult();
 
@@ -87,10 +83,7 @@ export class SessionService {
   /**
    * Revoke all sessions for a user (except optionally one)
    */
-  async revokeAllSessions(
-    userId: string,
-    exceptSessionId?: string,
-  ): Promise<void> {
+  async revokeAllSessions(userId: string, exceptSessionId?: string): Promise<void> {
     await this.prisma.session.updateMany({
       where: {
         userId,
@@ -145,10 +138,10 @@ export class SessionService {
             AND: [
               { isActive: false },
               // Clean up revoked sessions older than configured days
-              { 
-                revokedAt: { 
-                  lt: new Date(Date.now() - REVOKED_SESSION_CLEANUP_DAYS * 24 * 60 * 60 * 1000) 
-                } 
+              {
+                revokedAt: {
+                  lt: new Date(Date.now() - REVOKED_SESSION_CLEANUP_DAYS * 24 * 60 * 60 * 1000),
+                },
               },
             ],
           },
@@ -172,12 +165,12 @@ export class SessionService {
       const forwardedArray = Array.isArray(forwarded) ? forwarded : forwarded.split(',');
       return forwardedArray[0].trim();
     }
-    
+
     const realIp = req.headers['x-real-ip'];
     if (realIp) {
       return Array.isArray(realIp) ? realIp[0] : realIp;
     }
-    
+
     return req.socket.remoteAddress || 'unknown';
   }
 
@@ -188,11 +181,9 @@ export class SessionService {
     if (device.device.model) {
       return device.device.model;
     }
-    
+
     const browser = device.browser.name || 'Unknown Browser';
     const os = device.os.name || 'Unknown OS';
     return `${browser} on ${os}`;
   }
-
-
 }

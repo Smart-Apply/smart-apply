@@ -154,7 +154,7 @@ describe('ATS-Optimized PDF Generation Integration', () => {
 
       // Validate ATS-friendliness
       const validation = await atsValidator.validatePdf(pdfBuffer);
-      
+
       expect(validation.isTextBased).toBe(true);
       expect(validation.hasMetadata).toBe(true);
       expect(validation.score).toBeGreaterThanOrEqual(90); // Should be excellent ATS score
@@ -171,7 +171,7 @@ describe('ATS-Optimized PDF Generation Integration', () => {
       });
 
       const validation = await atsValidator.validatePdf(pdfBuffer);
-      
+
       expect(validation.usesSafeFonts).toBe(true);
     }, 30000);
 
@@ -181,7 +181,7 @@ describe('ATS-Optimized PDF Generation Integration', () => {
       });
 
       const validation = await atsValidator.validatePdf(pdfBuffer);
-      
+
       expect(validation.hasComplexLayouts).toBe(false);
       expect(validation.hasSingleColumn).toBe(true);
     }, 30000);
@@ -200,7 +200,7 @@ describe('ATS-Optimized PDF Generation Integration', () => {
       });
 
       const report = await atsValidator.getDetailedReport(pdfBuffer);
-      
+
       expect(report.checks.metadata.passed).toBe(true);
       expect(report.checks.metadata.title).toBe(metadata.title);
       expect(report.checks.metadata.author).toBe(metadata.author);
@@ -248,7 +248,7 @@ describe('ATS-Optimized PDF Generation Integration', () => {
       expect(pdfBuffer.length).toBeGreaterThan(0);
 
       const validation = await atsValidator.validatePdf(pdfBuffer);
-      
+
       expect(validation.isTextBased).toBe(true);
       expect(validation.hasMetadata).toBe(true);
       expect(validation.score).toBeGreaterThanOrEqual(85);
@@ -260,7 +260,7 @@ describe('ATS-Optimized PDF Generation Integration', () => {
       });
 
       const validation = await atsValidator.validatePdf(pdfBuffer);
-      
+
       expect(validation.isTextBased).toBe(true);
       expect(validation.hasSelectableText).toBe(true);
     }, 30000);
@@ -271,9 +271,7 @@ describe('ATS-Optimized PDF Generation Integration', () => {
       candidateName: 'Test User',
       email: 'test@example.com',
       summary: 'Software engineer with 3 years of experience',
-      skillCategories: [
-        { type: 'Languages', skills: ['JavaScript', 'Python'] },
-      ],
+      skillCategories: [{ type: 'Languages', skills: ['JavaScript', 'Python'] }],
       experiences: [
         {
           title: 'Software Engineer',
@@ -342,7 +340,7 @@ describe('ATS-Optimized PDF Generation Integration', () => {
       expect(report.checks).toBeDefined();
       expect(report.recommendations).toBeDefined();
       expect(report.score).toBeGreaterThan(0);
-      
+
       // Check all validation checks are present
       expect(report.checks.textBased).toBeDefined();
       expect(report.checks.complexLayouts).toBeDefined();

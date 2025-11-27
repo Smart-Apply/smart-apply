@@ -32,19 +32,28 @@ export class CreateJobPostingDto {
   @Sanitize()
   description: string;
 
-  @ApiPropertyOptional({ description: 'Job requirements (one per line or as array)', type: [String] })
+  @ApiPropertyOptional({
+    description: 'Job requirements (one per line or as array)',
+    type: [String],
+  })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   requirements?: string[];
 
-  @ApiPropertyOptional({ description: 'Job responsibilities (one per line or as array)', type: [String] })
+  @ApiPropertyOptional({
+    description: 'Job responsibilities (one per line or as array)',
+    type: [String],
+  })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   responsibilities?: string[];
 
-  @ApiPropertyOptional({ description: 'Nice to have qualifications (one per line or as array)', type: [String] })
+  @ApiPropertyOptional({
+    description: 'Nice to have qualifications (one per line or as array)',
+    type: [String],
+  })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
@@ -57,7 +66,10 @@ export class CreateJobPostingDto {
   @Sanitize()
   salary?: string;
 
-  @ApiPropertyOptional({ description: 'Employment type (e.g., Full-time, Part-time, Contract)', maxLength: 50 })
+  @ApiPropertyOptional({
+    description: 'Employment type (e.g., Full-time, Part-time, Contract)',
+    maxLength: 50,
+  })
   @IsOptional()
   @IsString()
   @MaxLength(50)

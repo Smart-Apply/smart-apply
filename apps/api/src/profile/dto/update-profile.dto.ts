@@ -216,14 +216,18 @@ export class LanguageDto {
   @IsString()
   id?: string;
 
-  @ApiProperty({ example: 'Deutsch', description: 'Language name (e.g., Deutsch, English, Français)' })
+  @ApiProperty({
+    example: 'Deutsch',
+    description: 'Language name (e.g., Deutsch, English, Français)',
+  })
   @Sanitize()
   @IsString()
   name: string;
 
-  @ApiProperty({ 
-    example: 'Muttersprache', 
-    description: 'Proficiency level (e.g., Muttersprache, Fließend, Gut, Grundkenntnisse / Native, Fluent, Advanced, Basic)' 
+  @ApiProperty({
+    example: 'Muttersprache',
+    description:
+      'Proficiency level (e.g., Muttersprache, Fließend, Gut, Grundkenntnisse / Native, Fluent, Advanced, Basic)',
   })
   @Sanitize()
   @IsString()

@@ -74,15 +74,15 @@ export class ApplicationResponseDto {
   @ApiPropertyOptional({ example: 'LLM service unavailable' })
   errorMessage?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 'professional-cover-letter',
-    description: 'ID of the selected cover letter template'
+    description: 'ID of the selected cover letter template',
   })
   coverLetterTemplateId?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 'modern-resume',
-    description: 'ID of the selected resume template'
+    description: 'ID of the selected resume template',
   })
   resumeTemplateId?: string;
 

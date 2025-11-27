@@ -23,14 +23,14 @@ describe('AtsValidatorService', () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-      
+
       page.drawText('John Doe', {
         x: 50,
         y: 700,
         size: 20,
         font: helveticaFont,
       });
-      
+
       page.drawText('Software Engineer', {
         x: 50,
         y: 670,
@@ -42,7 +42,7 @@ describe('AtsValidatorService', () => {
       pdfDoc.setTitle('Resume - John Doe');
       pdfDoc.setAuthor('John Doe');
       pdfDoc.setKeywords(['JavaScript', 'React', 'Node.js']);
-      
+
       const pdfBytes = await pdfDoc.save();
       const pdfBuffer = Buffer.from(pdfBytes);
 
@@ -60,14 +60,14 @@ describe('AtsValidatorService', () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-      
+
       page.drawText('Test Resume', {
         x: 50,
         y: 700,
         size: 14,
         font: helveticaFont,
       });
-      
+
       // No metadata set
       const pdfBytes = await pdfDoc.save();
       const pdfBuffer = Buffer.from(pdfBytes);
@@ -83,11 +83,11 @@ describe('AtsValidatorService', () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       const form = pdfDoc.getForm();
-      
+
       // Add a text field (indicates complex layout)
       const textField = form.createTextField('test.field');
       textField.addToPage(page, { x: 50, y: 700, width: 200, height: 30 });
-      
+
       const pdfBytes = await pdfDoc.save();
       const pdfBuffer = Buffer.from(pdfBytes);
 
@@ -95,7 +95,7 @@ describe('AtsValidatorService', () => {
 
       expect(result.hasComplexLayouts).toBe(true);
       expect(result.warnings).toContain(
-        'PDF contains complex layouts (tables, multi-column, text boxes) that may confuse ATS'
+        'PDF contains complex layouts (tables, multi-column, text boxes) that may confuse ATS',
       );
     });
 
@@ -104,7 +104,7 @@ describe('AtsValidatorService', () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-      
+
       page.drawText('John Doe - Software Engineer', {
         x: 50,
         y: 700,
@@ -116,7 +116,7 @@ describe('AtsValidatorService', () => {
       pdfDoc.setAuthor('John Doe');
       pdfDoc.setSubject('Software Engineer Application');
       pdfDoc.setKeywords(['JavaScript', 'TypeScript', 'React']);
-      
+
       const pdfBytes = await pdfDoc.save();
       const pdfBuffer = Buffer.from(pdfBytes);
 
@@ -132,7 +132,7 @@ describe('AtsValidatorService', () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-      
+
       page.drawText('Resume Text', {
         x: 50,
         y: 700,
@@ -142,7 +142,7 @@ describe('AtsValidatorService', () => {
 
       pdfDoc.setTitle('Resume');
       pdfDoc.setAuthor('Test User');
-      
+
       const pdfBytes = await pdfDoc.save();
       const pdfBuffer = Buffer.from(pdfBytes);
 
@@ -158,14 +158,14 @@ describe('AtsValidatorService', () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-      
+
       page.drawText('Resume without metadata', {
         x: 50,
         y: 700,
         size: 12,
         font: helveticaFont,
       });
-      
+
       // No metadata set
       const pdfBytes = await pdfDoc.save();
       const pdfBuffer = Buffer.from(pdfBytes);
@@ -186,11 +186,11 @@ describe('AtsValidatorService', () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       const form = pdfDoc.getForm();
-      
+
       // Add form field (complex layout)
       const textField = form.createTextField('test.field');
       textField.addToPage(page, { x: 50, y: 700, width: 200, height: 30 });
-      
+
       // No metadata
       const pdfBytes = await pdfDoc.save();
       const pdfBuffer = Buffer.from(pdfBytes);
@@ -198,10 +198,10 @@ describe('AtsValidatorService', () => {
       const report = await service.getDetailedReport(pdfBuffer);
 
       expect(report.recommendations).toContain(
-        'Use simple single-column layout. Avoid tables, text boxes, and multi-column layouts.'
+        'Use simple single-column layout. Avoid tables, text boxes, and multi-column layouts.',
       );
       expect(report.recommendations).toContain(
-        'Add PDF metadata: title, author, keywords for better ATS recognition.'
+        'Add PDF metadata: title, author, keywords for better ATS recognition.',
       );
     });
 
@@ -209,7 +209,7 @@ describe('AtsValidatorService', () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       const timesRoman = await pdfDoc.embedFont(StandardFonts.TimesRoman);
-      
+
       page.drawText('Test Text', {
         x: 50,
         y: 700,
@@ -219,7 +219,7 @@ describe('AtsValidatorService', () => {
 
       pdfDoc.setTitle('Test');
       pdfDoc.setAuthor('Test');
-      
+
       const pdfBytes = await pdfDoc.save();
       const pdfBuffer = Buffer.from(pdfBytes);
 
@@ -233,7 +233,7 @@ describe('AtsValidatorService', () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
-      
+
       page.drawText('Test', {
         x: 50,
         y: 700,
@@ -245,7 +245,7 @@ describe('AtsValidatorService', () => {
       pdfDoc.setAuthor('Jane Doe');
       // pdf-lib accepts array but stores as comma-separated string
       pdfDoc.setKeywords(['Python', 'Django', 'PostgreSQL']);
-      
+
       const pdfBytes = await pdfDoc.save();
       const pdfBuffer = Buffer.from(pdfBytes);
 
@@ -256,7 +256,7 @@ describe('AtsValidatorService', () => {
       expect(report.checks.metadata.author).toBe('Jane Doe');
       // Keywords are split from comma-separated string
       expect(report.checks.metadata.keywords?.length).toBeGreaterThan(0);
-      expect(report.checks.metadata.keywords?.some(k => k.includes('Python'))).toBe(true);
+      expect(report.checks.metadata.keywords?.some((k) => k.includes('Python'))).toBe(true);
     });
   });
 
@@ -272,13 +272,13 @@ describe('AtsValidatorService', () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-      
+
       page.drawText('Perfect ATS Resume', { x: 50, y: 700, size: 12, font });
 
       pdfDoc.setTitle('Resume');
       pdfDoc.setAuthor('Test User');
       pdfDoc.setKeywords(['Skill1', 'Skill2']);
-      
+
       const pdfBytes = await pdfDoc.save();
       const result = await service.validatePdf(Buffer.from(pdfBytes));
 
@@ -289,11 +289,11 @@ describe('AtsValidatorService', () => {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage();
       const form = pdfDoc.getForm();
-      
+
       // Complex layout with form
       const field = form.createTextField('field');
       field.addToPage(page, { x: 50, y: 700, width: 100, height: 20 });
-      
+
       // No metadata
       const pdfBytes = await pdfDoc.save();
       const result = await service.validatePdf(Buffer.from(pdfBytes));

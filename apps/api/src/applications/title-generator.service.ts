@@ -23,13 +23,14 @@ export class TitleGeneratorService {
     const title = jobPosting.title || 'Position';
     const company = jobPosting.company || 'Unknown Company';
     const result = `${title} @ ${company}`;
-    
+
     // Truncate if too long (reserve space for ellipsis)
     const truncateAt = APPLICATION_TITLE_MAX_LENGTH - ELLIPSIS_LENGTH;
-    const finalTitle = result.length > APPLICATION_TITLE_MAX_LENGTH
-      ? result.substring(0, truncateAt) + '...'
-      : result;
-    
+    const finalTitle =
+      result.length > APPLICATION_TITLE_MAX_LENGTH
+        ? result.substring(0, truncateAt) + '...'
+        : result;
+
     this.logger.debug(`Generated title: ${finalTitle}`);
     return finalTitle;
   }

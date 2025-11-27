@@ -7,12 +7,14 @@ Dieses Dokument beschreibt das vollständige Pricing-Modell für Smart Apply bas
 ## 🟩 Free Tier (0 € / Monat)
 
 ### ⭐ Ziel
+
 Niedrige Einstiegshürde, sofortiger Mehrwert, klar erkennbare Grenzen.
 
 ### 🎁 Features
+
 - **3 KI-Anschreiben pro Monat**
 - **3 KI-Lebensläufe pro Monat**
-- **Job-Parsing**  
+- **Job-Parsing**
   - Bis zu **10 URLs pro Monat**
 - **Standard-Template**
 - **Keine PDF-Exports**
@@ -24,10 +26,12 @@ Niedrige Einstiegshürde, sofortiger Mehrwert, klar erkennbare Grenzen.
 
 ## 🟦 Pro Tier (9,99 € / Monat)
 
-### ⭐ Ziel
+### ⭐ Ziel für Pro
+
 Komplette Bewerbungsunterstützung – ideal für aktive Jobsuchende.
 
-### 🎁 Features
+### 🎁 Features für Pro
+
 - **Unbegrenzte KI-Anschreiben**
 - **Unbegrenzte KI-Lebensläufe**
 - **PDF-Export (Cover Letter & Resume)**
@@ -46,10 +50,12 @@ Komplette Bewerbungsunterstützung – ideal für aktive Jobsuchende.
 
 ## 🟧 Premium Tier (17,99 € / Monat)
 
-### ⭐ Ziel
+### ⭐ Ziel für Premium
+
 Maximale Automatisierung und Erfolgschancen für anspruchsvolle Nutzer.
 
-### 🎁 Features
+### 🎁 Features für Premium
+
 - **Alles aus Pro**
 - **Premium-Templates & Custom Branding**  
   (eigene Farben, Layout, Branding)
@@ -69,43 +75,43 @@ Maximale Automatisierung und Erfolgschancen für anspruchsvolle Nutzer.
 
 # 📦 Feature-Vergleich (Tabelle)
 
-| Feature | Free | Pro (9,99 €) | Premium (17,99 €) |
-|--------|------|--------------|--------------------|
-| KI-Anschreiben | 3/Monat | Unbegrenzt | Unbegrenzt |
-| KI-Lebenslauf | 3/Monat | Unbegrenzt | Unbegrenzt |
-| PDF-Export | ❌ | ✅ | ✅ |
-| Templates | Standard | Mehrere | Premium + Custom |
-| Branding | ❌ | ❌ | ✅ |
-| Job-Parsing | 10/Monat | Unbegrenzt | Unbegrenzt |
-| ATS-Optimierung | ❌ | ✅ | Advanced |
-| Keyword Matching | ❌ | Basic | Semantisch |
-| Bewerbungsspeicherung | 1 | Unbegrenzt | Unbegrenzt |
-| Bewerbungstracking | Manuell | Halbautomatisch | Automatisch (E-Mail Parsing) |
-| Bewerbungsagent | ❌ | ❌ | ✅ |
-| LinkedIn-Import | ❌ | ✅ | ✅ |
-| Mehrsprachige Anschreiben | ❌ | DE+EN | Alle |
-| Analytics | ❌ | Basic | Advanced |
-| Werbung | Ja | Nein | Nein |
-| Support | Standard | Standard | Premium |
+| Feature                   | Free     | Pro (9,99 €)    | Premium (17,99 €)            |
+| ------------------------- | -------- | --------------- | ---------------------------- |
+| KI-Anschreiben            | 3/Monat  | Unbegrenzt      | Unbegrenzt                   |
+| KI-Lebenslauf             | 3/Monat  | Unbegrenzt      | Unbegrenzt                   |
+| PDF-Export                | ❌       | ✅              | ✅                           |
+| Templates                 | Standard | Mehrere         | Premium + Custom             |
+| Branding                  | ❌       | ❌              | ✅                           |
+| Job-Parsing               | 10/Monat | Unbegrenzt      | Unbegrenzt                   |
+| ATS-Optimierung           | ❌       | ✅              | Advanced                     |
+| Keyword Matching          | ❌       | Basic           | Semantisch                   |
+| Bewerbungsspeicherung     | 1        | Unbegrenzt      | Unbegrenzt                   |
+| Bewerbungstracking        | Manuell  | Halbautomatisch | Automatisch (E-Mail Parsing) |
+| Bewerbungsagent           | ❌       | ❌              | ✅                           |
+| LinkedIn-Import           | ❌       | ✅              | ✅                           |
+| Mehrsprachige Anschreiben | ❌       | DE+EN           | Alle                         |
+| Analytics                 | ❌       | Basic           | Advanced                     |
+| Werbung                   | Ja       | Nein            | Nein                         |
+| Support                   | Standard | Standard        | Premium                      |
 
 ---
 
 ## 🎯 Positionierung
 
-- **Free** → Testen, Value spüren, Limitationen erleben  
-- **Pro** → Der Standard-Plan für alle aktiven Bewerber  
-- **Premium** → Automatisierung + Wettbewerbsvorteil + Zeitersparnis  
+- **Free** → Testen, Value spüren, Limitationen erleben
+- **Pro** → Der Standard-Plan für alle aktiven Bewerber
+- **Premium** → Automatisierung + Wettbewerbsvorteil + Zeitersparnis
 
 ---
 
 ## 📌 Hinweise für die Implementierung
 
-- **Free-Limits** serverseitig in NestJS durch Rate-Limits / Counters  
-- **Pro/Premium** über Stripe Webhooks + Role-Based Access  
-- **Premium-Only Features** unbedingt UI-mäßig „gelockt“ anzeigen  
+- **Free-Limits** serverseitig in NestJS durch Rate-Limits / Counters
+- **Pro/Premium** über Stripe Webhooks + Role-Based Access
+- **Premium-Only Features** unbedingt UI-mäßig „gelockt“ anzeigen
 - **Upgrade-Modals** triggered by:
-  - PDF Download Klick im Free Tier  
-  - Mehr als 3 Generierungen  
-  - ATS-Score Feature öffnen  
+  - PDF Download Klick im Free Tier
+  - Mehr als 3 Generierungen
+  - ATS-Score Feature öffnen
 
 ---
