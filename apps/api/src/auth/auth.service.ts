@@ -2,13 +2,14 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  BadRequestException,
   Inject,
   forwardRef,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { PrismaService } from '../prisma/prisma.service';
-import { RegisterDto, LoginDto } from './dto';
+import { RegisterDto, LoginDto, UpdateUserProfileDto, ChangePasswordDto, DeleteAccountDto } from './dto';
 import { ConfigService } from '../config/config.service';
 import { AuditLoggerService } from '../common/audit-logger';
 import { SessionService } from './session.service';
@@ -279,6 +280,137 @@ export class AuthService {
     }
 
     return user;
+  }
+
+  async updateUserProfile(userId: string, dto: UpdateUserProfileDto, req?: Request) {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(dto.firstName !== undefined && { firstName: dto.firstName }),
+        ...(dto.lastName !== undefined && { lastName: dto.lastName }),
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        createdAt: true,
+      },
+    });
+
+    // Log profile update event
+    if (req) {
+      this.auditLogger.logProfileUpdate(userId, req, {
+        updatedFields: Object.keys(dto).filter((key) => dto[key as keyof UpdateUserProfileDto] !== undefined),
+      });
+    }
+
+    return user;
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto, req?: Request): Promise<void> {
+    // Get user with password
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, password: true },
+    });
+
+    if (!user || !user.password) {
+      throw new BadRequestException('Cannot change password for OAuth accounts');
+    }
+
+    // Verify current password
+    const valid = await argon2.verify(user.password, dto.currentPassword);
+    if (!valid) {
+      // Log failed password change attempt
+      if (req) {
+        this.auditLogger.logSecurityEvent('PASSWORD_CHANGE_FAILED', user.email, req, user.id, {
+          reason: 'Invalid current password',
+        });
+      }
+      throw new BadRequestException('Current password is incorrect');
+    }
+
+    // Ensure new password is different from current
+    if (dto.currentPassword === dto.newPassword) {
+      throw new BadRequestException('New password must be different from current password');
+    }
+
+    // Hash new password
+    const hashedPassword = await argon2.hash(dto.newPassword);
+
+    // Update password
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    // Revoke all refresh tokens (force re-login on all devices)
+    await this.revokeRefreshToken(userId);
+
+    // Revoke all sessions
+    await this.sessionService.revokeAllSessions(userId);
+
+    // Log successful password change
+    if (req) {
+      this.auditLogger.logSecurityEvent('PASSWORD_CHANGE_SUCCESS', user.email, req, user.id);
+    }
+  }
+
+  async deleteAccount(userId: string, dto: DeleteAccountDto, req?: Request): Promise<void> {
+    // Get user with password
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, password: true },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    // For local accounts, verify password
+    if (user.password) {
+      const valid = await argon2.verify(user.password, dto.password);
+      if (!valid) {
+        // Log failed account deletion attempt
+        if (req) {
+          this.auditLogger.logSecurityEvent('ACCOUNT_DELETE_FAILED', user.email, req, user.id, {
+            reason: 'Invalid password',
+          });
+        }
+        throw new BadRequestException('Password is incorrect');
+      }
+    }
+
+    // Get all applications to clean up storage files
+    const applications = await this.prisma.application.findMany({
+      where: { userId },
+      select: { coverLetterFileKey: true, resumeFileKey: true },
+    });
+
+    // Collect file keys to delete (will be handled by cascade delete from DB,
+    // but we need to track them for storage cleanup)
+    const fileKeysToDelete: string[] = [];
+    for (const app of applications) {
+      if (app.coverLetterFileKey) fileKeysToDelete.push(app.coverLetterFileKey);
+      if (app.resumeFileKey) fileKeysToDelete.push(app.resumeFileKey);
+    }
+
+    // Log account deletion event before deleting
+    if (req) {
+      this.auditLogger.logSecurityEvent('ACCOUNT_DELETED', user.email, req, user.id, {
+        applicationsDeleted: applications.length,
+        filesDeleted: fileKeysToDelete.length,
+      });
+    }
+
+    // Delete user (cascade will delete Profile, Applications, JobPostings, Sessions, RefreshTokens, UserPreferences)
+    await this.prisma.user.delete({
+      where: { id: userId },
+    });
+
+    // Note: Storage cleanup would need StorageService injection to delete actual files
+    // For now, we rely on database cascade delete. File cleanup can be done via a cleanup job.
   }
 
   private async generateTokens(

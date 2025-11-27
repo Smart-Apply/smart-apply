@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { User, Shield, Bell, Palette, Globe, Trash2, ChevronRight } from 'lucide-react';
+import { User, Shield, Bell, Palette, Trash2, ChevronRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -31,12 +31,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import type { UserPreferences } from '@/types';
+import { ApiError } from '@/lib/errors';
 
 export default function SettingsPage() {
   const router = useRouter();
   const { user, clearAuth, updateUser } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isLoadingPreferences, setIsLoadingPreferences] = useState(true);
 
   // Form states
   const [firstName, setFirstName] = useState(user?.firstName || '');
@@ -47,23 +50,41 @@ export default function SettingsPage() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [deletePassword, setDeletePassword] = useState('');
 
-  // Preferences
-  const [language, setLanguage] = useState('de');
-  const [theme, setTheme] = useState('light');
-  const [emailNotifications, setEmailNotifications] = useState(true);
+  // User preferences
+  const [preferences, setPreferences] = useState<UserPreferences | null>(null);
+
+  // Load user preferences on mount
+  useEffect(() => {
+    const loadPreferences = async () => {
+      try {
+        const data = await api.userPreferences.get();
+        setPreferences(data);
+      } catch (error) {
+        console.error('Failed to load preferences:', error);
+        toast.error('Fehler beim Laden der Einstellungen');
+      } finally {
+        setIsLoadingPreferences(false);
+      }
+    };
+    loadPreferences();
+  }, []);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      // In a real app, you'd call an API endpoint to update user info
-      // For now, we'll just update the local state
-      updateUser({ firstName, lastName });
+      const updatedUser = await api.auth.updateProfile({ firstName, lastName });
+      updateUser({ firstName: updatedUser.firstName, lastName: updatedUser.lastName });
       toast.success('Profil erfolgreich aktualisiert');
     } catch (error) {
-      toast.error('Fehler beim Aktualisieren des Profils');
+      if (error instanceof ApiError) {
+        toast.error(error.message || 'Fehler beim Aktualisieren des Profils');
+      } else {
+        toast.error('Fehler beim Aktualisieren des Profils');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -85,31 +106,65 @@ export default function SettingsPage() {
     setIsLoading(true);
 
     try {
-      // TODO: Implement password change API endpoint
-      toast.success('Passwort erfolgreich geändert');
+      await api.auth.changePassword({ currentPassword, newPassword });
+      toast.success('Passwort erfolgreich geändert. Bitte melden Sie sich erneut an.');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
+      // Password change invalidates sessions, redirect to login
+      clearAuth();
+      router.push('/login');
     } catch (error) {
-      toast.error('Fehler beim Ändern des Passworts');
+      if (error instanceof ApiError) {
+        const message = error.data?.message || error.message || 'Fehler beim Ändern des Passworts';
+        toast.error(Array.isArray(message) ? message[0] : message);
+      } else {
+        toast.error('Fehler beim Ändern des Passworts');
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleDeleteAccount = async () => {
+    if (!deletePassword) {
+      toast.error('Bitte geben Sie Ihr Passwort ein');
+      return;
+    }
+
     setIsDeleting(true);
 
     try {
-      // TODO: Implement account deletion API endpoint
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      await api.auth.deleteAccount({ password: deletePassword });
       toast.success('Account wurde gelöscht');
       clearAuth();
       router.push('/');
     } catch (error) {
-      toast.error('Fehler beim Löschen des Accounts');
+      if (error instanceof ApiError) {
+        const message = error.data?.message || error.message || 'Fehler beim Löschen des Accounts';
+        toast.error(Array.isArray(message) ? message[0] : message);
+      } else {
+        toast.error('Fehler beim Löschen des Accounts');
+      }
     } finally {
       setIsDeleting(false);
+      setDeletePassword('');
+    }
+  };
+
+  const handleUpdatePreference = async (key: keyof UserPreferences, value: boolean | string) => {
+    if (!preferences) return;
+
+    try {
+      const updatedPreferences = await api.userPreferences.update({ [key]: value });
+      setPreferences(updatedPreferences);
+      toast.success('Einstellung gespeichert');
+    } catch (error) {
+      if (error instanceof ApiError) {
+        toast.error(error.message || 'Fehler beim Speichern der Einstellung');
+      } else {
+        toast.error('Fehler beim Speichern der Einstellung');
+      }
     }
   };
 
@@ -216,12 +271,23 @@ export default function SettingsPage() {
                       einschließlich Profil, Bewerbungen und Stellenanzeigen werden permanent gelöscht.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
+                  <div className="py-4">
+                    <Label htmlFor="deletePassword">Passwort zur Bestätigung</Label>
+                    <Input
+                      id="deletePassword"
+                      type="password"
+                      value={deletePassword}
+                      onChange={(e) => setDeletePassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="mt-2"
+                    />
+                  </div>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                    <AlertDialogCancel onClick={() => setDeletePassword('')}>Abbrechen</AlertDialogCancel>
                     <AlertDialogAction
                       onClick={handleDeleteAccount}
                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      disabled={isDeleting}
+                      disabled={isDeleting || !deletePassword}
                     >
                       {isDeleting ? 'Wird gelöscht...' : 'Account löschen'}
                     </AlertDialogAction>
@@ -308,45 +374,61 @@ export default function SettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Bewerbungs-Updates</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Erhalte Updates zu deinen Bewerbungen
-                  </p>
+              {isLoadingPreferences ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-6 w-6 animate-spin" />
                 </div>
-                <Button
-                  variant={emailNotifications ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setEmailNotifications(!emailNotifications)}
-                >
-                  {emailNotifications ? 'Aktiviert' : 'Deaktiviert'}
-                </Button>
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Neue Stellenanzeigen</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Erhalte Benachrichtigungen über neue Stellenanzeigen
-                  </p>
-                </div>
-                <Button variant="outline" size="sm">
-                  Deaktiviert
-                </Button>
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Marketing-E-Mails</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Erhalte Newsletter und Produktupdates
-                  </p>
-                </div>
-                <Button variant="outline" size="sm">
-                  Deaktiviert
-                </Button>
-              </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Bewerbungs-Updates</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Erhalte Updates zu deinen Bewerbungen
+                      </p>
+                    </div>
+                    <Button
+                      variant={preferences?.applicationUpdates ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => handleUpdatePreference('applicationUpdates', !preferences?.applicationUpdates)}
+                    >
+                      {preferences?.applicationUpdates ? 'Aktiviert' : 'Deaktiviert'}
+                    </Button>
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Neue Stellenanzeigen</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Erhalte Benachrichtigungen über neue Stellenanzeigen
+                      </p>
+                    </div>
+                    <Button
+                      variant={preferences?.newJobPostings ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => handleUpdatePreference('newJobPostings', !preferences?.newJobPostings)}
+                    >
+                      {preferences?.newJobPostings ? 'Aktiviert' : 'Deaktiviert'}
+                    </Button>
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Marketing-E-Mails</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Erhalte Newsletter und Produktupdates
+                      </p>
+                    </div>
+                    <Button
+                      variant={preferences?.marketingEmails ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => handleUpdatePreference('marketingEmails', !preferences?.marketingEmails)}
+                    >
+                      {preferences?.marketingEmails ? 'Aktiviert' : 'Deaktiviert'}
+                    </Button>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -361,20 +443,29 @@ export default function SettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="language">Sprache</Label>
-                <Select value={language} onValueChange={setLanguage}>
-                  <SelectTrigger id="language">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="de">Deutsch</SelectItem>
-                    <SelectItem value="en">English</SelectItem>
-                    <SelectItem value="fr">Français</SelectItem>
-                    <SelectItem value="es">Español</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {isLoadingPreferences ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="language">Sprache</Label>
+                  <Select
+                    value={preferences?.language || 'de'}
+                    onValueChange={(value) => handleUpdatePreference('language', value)}
+                  >
+                    <SelectTrigger id="language">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="de">Deutsch</SelectItem>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="fr">Français</SelectItem>
+                      <SelectItem value="es">Español</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -386,19 +477,28 @@ export default function SettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="theme">Theme</Label>
-                <Select value={theme} onValueChange={setTheme}>
-                  <SelectTrigger id="theme">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="light">Hell</SelectItem>
-                    <SelectItem value="dark">Dunkel</SelectItem>
-                    <SelectItem value="system">System</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {isLoadingPreferences ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="theme">Theme</Label>
+                  <Select
+                    value={preferences?.theme || 'system'}
+                    onValueChange={(value) => handleUpdatePreference('theme', value)}
+                  >
+                    <SelectTrigger id="theme">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="light">Hell</SelectItem>
+                      <SelectItem value="dark">Dunkel</SelectItem>
+                      <SelectItem value="system">System</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -410,29 +510,45 @@ export default function SettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Profil öffentlich</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Dein Profil kann von anderen gesehen werden
-                  </p>
+              {isLoadingPreferences ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-6 w-6 animate-spin" />
                 </div>
-                <Button variant="outline" size="sm">
-                  Deaktiviert
-                </Button>
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Analyse-Daten</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Hilf uns, die App zu verbessern
-                  </p>
-                </div>
-                <Button variant="default" size="sm">
-                  Aktiviert
-                </Button>
-              </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Profil öffentlich</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Dein Profil kann von anderen gesehen werden
+                      </p>
+                    </div>
+                    <Button
+                      variant={preferences?.profilePublic ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => handleUpdatePreference('profilePublic', !preferences?.profilePublic)}
+                    >
+                      {preferences?.profilePublic ? 'Aktiviert' : 'Deaktiviert'}
+                    </Button>
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Analyse-Daten</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Hilf uns, die App zu verbessern
+                      </p>
+                    </div>
+                    <Button
+                      variant={preferences?.analyticsEnabled ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => handleUpdatePreference('analyticsEnabled', !preferences?.analyticsEnabled)}
+                    >
+                      {preferences?.analyticsEnabled ? 'Aktiviert' : 'Deaktiviert'}
+                    </Button>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

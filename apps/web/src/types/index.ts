@@ -377,3 +377,28 @@ export interface PipelineStatus {
   timestamp: string;
   error?: string;
 }
+
+// User Preferences Types
+export interface UserPreferences {
+  id: string;
+  userId: string;
+  applicationUpdates: boolean;
+  newJobPostings: boolean;
+  marketingEmails: boolean;
+  language: string;
+  theme: string;
+  profilePublic: boolean;
+  analyticsEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateUserPreferencesDto {
+  applicationUpdates?: boolean;
+  newJobPostings?: boolean;
+  marketingEmails?: boolean;
+  language?: string;
+  theme?: string;
+  profilePublic?: boolean;
+  analyticsEnabled?: boolean;
+}

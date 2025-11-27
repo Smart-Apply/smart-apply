@@ -3,16 +3,20 @@ import {
   Post,
   Body,
   Get,
+  Put,
+  Delete,
   UseGuards,
   Res,
   Req,
   UnauthorizedException,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
-import { RegisterDto, LoginDto } from './dto';
+import { RegisterDto, LoginDto, UpdateUserProfileDto, ChangePasswordDto, DeleteAccountDto } from './dto';
 import { Public } from '../common/decorators/public.decorator';
 import { UseThrottler } from '../common/decorators/throttle.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -160,6 +164,80 @@ export class AuthController {
     });
 
     return { message: 'Logged out successfully' };
+  }
+
+  @Put('profile')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update current user profile (firstName, lastName)' })
+  async updateProfile(
+    @CurrentUser() user: any,
+    @Body() dto: UpdateUserProfileDto,
+    @Req() req: Request,
+  ) {
+    return this.authService.updateUserProfile(user.id, dto, req);
+  }
+
+  @Post('change-password')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Change password (invalidates all sessions)' })
+  async changePassword(
+    @CurrentUser() user: any,
+    @Body() dto: ChangePasswordDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    await this.authService.changePassword(user.id, dto, req);
+
+    // Clear cookies after password change (user must re-login)
+    res.clearCookie('access_token', {
+      httpOnly: true,
+      secure: this.configService.isProduction,
+      sameSite: 'strict',
+      path: '/',
+    });
+
+    res.clearCookie('refresh_token', {
+      httpOnly: true,
+      secure: this.configService.isProduction,
+      sameSite: 'strict',
+      path: '/',
+    });
+
+    return { message: 'Password changed successfully. Please log in again.' };
+  }
+
+  @Delete('account')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete account permanently (requires password confirmation)' })
+  async deleteAccount(
+    @CurrentUser() user: any,
+    @Body() dto: DeleteAccountDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    await this.authService.deleteAccount(user.id, dto, req);
+
+    // Clear cookies after account deletion
+    res.clearCookie('access_token', {
+      httpOnly: true,
+      secure: this.configService.isProduction,
+      sameSite: 'strict',
+      path: '/',
+    });
+
+    res.clearCookie('refresh_token', {
+      httpOnly: true,
+      secure: this.configService.isProduction,
+      sameSite: 'strict',
+      path: '/',
+    });
+
+    return { message: 'Account deleted successfully' };
   }
 
   /**

@@ -171,10 +171,12 @@ export class ApplicationsService {
         issuer: cert.issuer.trim(),
         date: trim(cert.date),
       })),
-      languages: (resume.languages || []).map((lang) => ({
-        name: lang.name.trim(),
-        level: lang.level?.trim(),
-      })).filter((lang) => lang.name),
+      languages: (resume.languages || [])
+        .map((lang) => ({
+          name: lang.name.trim(),
+          level: lang.level?.trim(),
+        }))
+        .filter((lang) => lang.name),
     };
   }
 
@@ -1162,7 +1164,9 @@ Summary: ${resume.summary || 'Not provided'}
 
     try {
       const resume = JSON.parse(resumeText);
-      this.logger.debug(`extractResumeKeywords: Parsing resume with keys: ${Object.keys(resume).join(', ')}`);
+      this.logger.debug(
+        `extractResumeKeywords: Parsing resume with keys: ${Object.keys(resume).join(', ')}`,
+      );
 
       // Helper: Add keyword preserving tech terms (C++, .NET, AWS, etc.)
       const addKeyword = (word: string) => {
@@ -1255,7 +1259,9 @@ Summary: ${resume.summary || 'Not provided'}
         });
       }
 
-      this.logger.debug(`extractResumeKeywords: Extracted ${keywords.size} keywords: ${[...keywords].slice(0, 20).join(', ')}...`);
+      this.logger.debug(
+        `extractResumeKeywords: Extracted ${keywords.size} keywords: ${[...keywords].slice(0, 20).join(', ')}...`,
+      );
       return keywords;
     } catch (error) {
       this.logger.warn('Failed to parse resume text for keyword extraction', error as Error);

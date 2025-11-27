@@ -19,8 +19,11 @@ export enum AuditEventType {
 
   // Account Changes
   PASSWORD_CHANGED = 'PASSWORD_CHANGED',
+  PASSWORD_CHANGE_FAILED = 'PASSWORD_CHANGE_FAILED',
   EMAIL_CHANGED = 'EMAIL_CHANGED',
   PROFILE_UPDATED = 'PROFILE_UPDATED',
+  ACCOUNT_DELETED = 'ACCOUNT_DELETED',
+  ACCOUNT_DELETE_FAILED = 'ACCOUNT_DELETE_FAILED',
 
   // Suspicious Activity
   MULTIPLE_FAILED_LOGINS = 'MULTIPLE_FAILED_LOGINS',
@@ -175,6 +178,45 @@ export class AuditLoggerService {
     this.log({
       eventType: AuditEventType.PROFILE_UPDATED,
       userId,
+      ip: this.getClientIp(req),
+      userAgent: req.headers['user-agent'] || 'unknown',
+      timestamp: new Date(),
+      severity: 'info',
+      metadata,
+    });
+  }
+
+  logSecurityEvent(
+    eventType: string,
+    email: string,
+    req: Request,
+    userId?: string,
+    metadata?: Record<string, any>,
+  ) {
+    // Map string event types to enum values
+    const eventTypeEnum = AuditEventType[eventType as keyof typeof AuditEventType] || eventType;
+    
+    // Determine severity based on event type
+    const failedEvents = ['PASSWORD_CHANGE_FAILED', 'ACCOUNT_DELETE_FAILED'];
+    const severity = failedEvents.includes(eventType) ? 'warning' : 'info';
+
+    this.log({
+      eventType: eventTypeEnum,
+      email,
+      userId,
+      ip: this.getClientIp(req),
+      userAgent: req.headers['user-agent'] || 'unknown',
+      timestamp: new Date(),
+      severity,
+      metadata,
+    });
+  }
+
+  logAccountDeleted(userId: string, email: string, req: Request, metadata?: Record<string, any>) {
+    this.log({
+      eventType: AuditEventType.ACCOUNT_DELETED,
+      userId,
+      email,
       ip: this.getClientIp(req),
       userAgent: req.headers['user-agent'] || 'unknown',
       timestamp: new Date(),

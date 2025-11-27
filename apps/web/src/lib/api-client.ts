@@ -17,6 +17,8 @@ import type {
   Template,
   TemplateWithContent,
   ApplicationKeywordsResponse,
+  UserPreferences,
+  UpdateUserPreferencesDto,
 } from '@/types';
 import { ApiError, NetworkError, shouldRetry, getRetryDelay, isPermanentAuthFailure } from './errors';
 import { getCsrfToken, refreshCsrfToken } from './csrf';
@@ -264,6 +266,36 @@ export const api = {
 
     getCsrfToken: () =>
       apiRequest<{ csrfToken: string; message: string }>('/auth/csrf-token'),
+
+    updateProfile: (data: { firstName?: string; lastName?: string }) =>
+      apiRequest<User>('/auth/profile', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+
+    changePassword: (data: { currentPassword: string; newPassword: string }) =>
+      apiRequest<{ message: string }>('/auth/change-password', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    deleteAccount: (data: { password: string }) =>
+      apiRequest<{ message: string }>('/auth/account', {
+        method: 'DELETE',
+        body: JSON.stringify(data),
+      }),
+  },
+
+  // User Preferences
+  userPreferences: {
+    get: () =>
+      apiRequest<UserPreferences>('/user-preferences'),
+
+    update: (data: UpdateUserPreferencesDto) =>
+      apiRequest<UserPreferences>('/user-preferences', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
   },
 
   // Profile

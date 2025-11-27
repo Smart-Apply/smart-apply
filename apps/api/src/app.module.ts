@@ -13,6 +13,7 @@ import { PdfModule } from './pdf/pdf.module';
 import { JobsModule } from './jobs/jobs.module';
 import { ApplicationsModule } from './applications/applications.module';
 import { TemplatesModule } from './templates/templates.module';
+import { UserPreferencesModule } from './user-preferences/user-preferences.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
 import { ConfigService } from './config/config.service';
@@ -78,6 +79,7 @@ import { CSPViolationController } from './common/csp/csp-violation.controller';
     JobsModule,
     ApplicationsModule,
     TemplatesModule,
+    UserPreferencesModule,
   ],
   controllers: [CSPViolationController],
   providers: [

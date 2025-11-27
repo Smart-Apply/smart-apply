@@ -24,11 +24,13 @@ describe('LLMService - ATS Methods', () => {
 
   describe('generateCoverLetterATS', () => {
     const mockContext: ATSCoverLetterContext = {
-      profile: 'Name: John Doe\nSkills: React, TypeScript, Node.js\nExperience: Senior Developer at TechCorp',
+      profile:
+        'Name: John Doe\nSkills: React, TypeScript, Node.js\nExperience: Senior Developer at TechCorp',
       jobTitle: 'Senior Frontend Developer',
       companyName: 'InnovateTech',
       location: 'Berlin, Germany',
-      jobDescription: 'We are looking for a Senior Frontend Developer with React and TypeScript experience.',
+      jobDescription:
+        'We are looking for a Senior Frontend Developer with React and TypeScript experience.',
       matchedKeywords: [
         { keyword: 'React', category: 'technical', found: true, confidence: 0.95 },
         { keyword: 'TypeScript', category: 'technical', found: true, confidence: 0.9 },
@@ -106,7 +108,8 @@ describe('LLMService - ATS Methods', () => {
       }),
       jobTitle: 'Full Stack Developer',
       companyName: 'StartupXYZ',
-      jobDescription: 'Looking for an experienced Full Stack Developer with React and Node.js skills.',
+      jobDescription:
+        'Looking for an experienced Full Stack Developer with React and Node.js skills.',
       matchedKeywords: [
         { keyword: 'React', category: 'technical', found: true, confidence: 0.95 },
         { keyword: 'Node.js', category: 'technical', found: true, confidence: 0.9 },

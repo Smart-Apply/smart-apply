@@ -22,6 +22,7 @@ model User {
   providerId String? // External OAuth ID
   
   profile   Profile?
+  preferences UserPreferences?
   jobPostings JobPosting[]
   applications Application[]
   refreshTokens RefreshToken[]
@@ -33,6 +34,29 @@ model User {
 
   @@index([email])
   @@map("users")
+}
+
+// User preferences for settings (notifications, language, theme, privacy)
+model UserPreferences {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Notifications
+  applicationUpdates  Boolean  @default(true)
+  newJobPostings      Boolean  @default(false)
+  marketingEmails     Boolean  @default(false)
+  
+  // Preferences
+  language            String   @default("de")
+  theme               String   @default("system")
+  profilePublic       Boolean  @default(false)
+  analyticsEnabled    Boolean  @default(true)
+  
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("user_preferences")
 }
 
 model Profile {
