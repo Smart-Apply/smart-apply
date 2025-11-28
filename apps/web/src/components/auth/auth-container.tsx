@@ -162,15 +162,14 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4 py-8">
-      <div className="relative h-[800px] w-[1040px] overflow-hidden rounded-xl bg-white shadow-lg">
+    <div className="flex min-h-screen items-center justify-center bg-muted px-4 py-8">
+      <div className="relative h-[800px] w-[1040px] overflow-hidden rounded-xl bg-card shadow-lg border border-border">
         {/* Sliding Branding Panel */}
         <div
-          className={`absolute top-0 z-20 h-full w-1/2 transform transition-transform duration-500 ease-in-out ${
-            isLogin ? 'translate-x-0' : 'translate-x-full'
-          }`}
+          className={`absolute top-0 z-20 h-full w-1/2 transform transition-transform duration-500 ease-in-out ${isLogin ? 'translate-x-0' : 'translate-x-full'
+            }`}
         >
-          <div className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-xl bg-[#1b2a49] p-12">
+          <div className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-xl bg-primary p-12">
             {/* Background Texture - Curved Lines */}
             <svg
               className="absolute inset-0 h-full w-full"
@@ -197,13 +196,12 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
             <div className="relative z-10 flex h-full w-full flex-col justify-center px-4">
               {/* Login Branding (Logo + SmartApply) */}
               <div
-                className={`absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-300 ${
-                  isLogin && !isAnimating ? 'opacity-100' : 'opacity-0'
-                }`}
+                className={`absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-300 ${isLogin && !isAnimating ? 'opacity-100' : 'opacity-0'
+                  }`}
               >
                 {/* SVG Logo */}
                 <svg
-                  className="mb-8 h-40 w-40 text-white"
+                  className="mb-8 h-40 w-40 text-primary-foreground"
                   viewBox="0 0 100 100"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
@@ -217,34 +215,33 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
                   <line x1="32" y1="55" x2="68" y2="55" stroke="currentColor" strokeWidth="3" />
                   <polyline points="35,65 42,72 55,58" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                <h2 className="font-poppins text-[48px] font-bold leading-normal text-white">
+                <h2 className="font-poppins text-[48px] font-bold leading-normal text-primary-foreground">
                   SmartApply
                 </h2>
               </div>
 
               {/* Register Branding (Motto) */}
               <div
-                className={`absolute inset-0 flex flex-col justify-center px-4 transition-opacity duration-300 ${
-                  !isLogin && !isAnimating ? 'opacity-100' : 'opacity-0'
-                }`}
+                className={`absolute inset-0 flex flex-col justify-center px-4 transition-opacity duration-300 ${!isLogin && !isAnimating ? 'opacity-100' : 'opacity-0'
+                  }`}
               >
-                <h2 className="mb-16 text-center font-poppins text-[64px] font-bold leading-normal text-white">
+                <h2 className="mb-16 text-center font-poppins text-[64px] font-bold leading-normal text-primary-foreground">
                   SmartApply
                 </h2>
                 <div className="space-y-1">
                   <div className="w-[321px] text-left">
-                    <p className="font-poppins text-[45px] font-extrabold leading-normal text-white">
+                    <p className="font-poppins text-[45px] font-extrabold leading-normal text-primary-foreground">
                       Where
                     </p>
-                    <p className="font-poppins text-[45px] font-extrabold leading-normal text-white">
+                    <p className="font-poppins text-[45px] font-extrabold leading-normal text-primary-foreground">
                       Applications
                     </p>
                   </div>
                   <div className="ml-auto w-fit text-right">
-                    <p className="mt-4 font-poppins text-[45px] font-extrabold leading-normal text-white">
+                    <p className="mt-4 font-poppins text-[45px] font-extrabold leading-normal text-primary-foreground">
                       Become A
                     </p>
-                    <p className="font-poppins text-[45px] font-extrabold leading-normal text-white">
+                    <p className="font-poppins text-[45px] font-extrabold leading-normal text-primary-foreground">
                       System
                     </p>
                   </div>
@@ -258,11 +255,10 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
         <div className="flex h-full w-full">
           {/* Login Form (Right Side when active) */}
           <div
-            className={`absolute right-0 top-0 flex h-full w-1/2 flex-col justify-center px-8 py-12 transition-opacity duration-300 md:px-12 ${
-              isLogin && !isAnimating ? 'z-10 opacity-100' : 'z-0 opacity-0'
-            }`}
+            className={`absolute right-0 top-0 flex h-full w-1/2 flex-col justify-center px-8 py-12 transition-opacity duration-300 md:px-12 ${isLogin && !isAnimating ? 'z-10 opacity-100' : 'z-0 opacity-0'
+              }`}
           >
-            <h1 className="mb-8 text-center font-poppins text-2xl font-semibold text-[#1b2a49]">
+            <h1 className="mb-8 text-center font-poppins text-2xl font-semibold text-foreground">
               Anmelden
             </h1>
 
@@ -273,14 +269,14 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="font-poppins text-lg font-semibold text-[#1b2a49]">
+                      <FormLabel className="font-poppins text-lg font-semibold text-foreground">
                         E-Mail
                       </FormLabel>
                       <FormControl>
                         <Input
                           type="email"
                           placeholder="Deine E-Mail"
-                          className="h-10 rounded-xl border-2 border-gray-300 bg-transparent px-4 font-poppins text-[15px] placeholder:text-gray-400 focus:border-[#1b2a49]"
+                          className="h-10 rounded-xl border-2 border-input bg-transparent px-4 font-poppins text-[15px] placeholder:text-muted-foreground focus:border-primary"
                           {...field}
                         />
                       </FormControl>
@@ -294,14 +290,14 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="font-poppins text-lg font-semibold text-[#1b2a49]">
+                      <FormLabel className="font-poppins text-lg font-semibold text-foreground">
                         Passwort
                       </FormLabel>
                       <FormControl>
                         <Input
                           type="password"
                           placeholder="Dein Passwort"
-                          className="h-10 rounded-xl border-2 border-gray-300 bg-transparent px-4 font-poppins text-[15px] placeholder:text-gray-400 focus:border-[#1b2a49]"
+                          className="h-10 rounded-xl border-2 border-input bg-transparent px-4 font-poppins text-[15px] placeholder:text-muted-foreground focus:border-primary"
                           {...field}
                         />
                       </FormControl>
@@ -313,7 +309,7 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
                 <div className="flex justify-center pt-2">
                   <Button
                     type="submit"
-                    className="h-10 w-40 rounded-xl bg-[#1b2a49] font-poppins text-base font-semibold text-white hover:bg-[#152238]"
+                    className="h-10 w-40 rounded-xl bg-primary font-poppins text-base font-semibold text-primary-foreground hover:bg-primary/90"
                     disabled={loginForm.formState.isSubmitting}
                   >
                     {loginForm.formState.isSubmitting ? 'Anmelden...' : 'Anmelden'}
@@ -323,11 +319,11 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
             </Form>
 
             <div className="mt-6 text-center font-poppins text-sm">
-              <span className="text-black">Noch kein Konto? </span>
+              <span className="text-foreground">Noch kein Konto? </span>
               <button
                 type="button"
                 onClick={handleToggle}
-                className="font-bold text-[#1b2a49] hover:underline"
+                className="font-bold text-primary hover:underline"
               >
                 Registrieren
               </button>
@@ -335,9 +331,9 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
 
             {/* Social Login */}
             <div className="mt-6 flex items-center">
-              <div className="flex-1 border-t border-gray-300"></div>
-              <span className="px-4 font-poppins text-xs text-gray-500">Oder anmelden mit</span>
-              <div className="flex-1 border-t border-gray-300"></div>
+              <div className="flex-1 border-t border-border"></div>
+              <span className="px-4 font-poppins text-xs text-muted-foreground">Oder anmelden mit</span>
+              <div className="flex-1 border-t border-border"></div>
             </div>
 
             <div className="mt-6 flex justify-center gap-4">
@@ -350,11 +346,10 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
 
           {/* Register Form (Left Side when active) */}
           <div
-            className={`absolute left-0 top-0 flex h-full w-1/2 flex-col justify-center px-8 py-12 transition-opacity duration-300 md:px-12 ${
-              !isLogin && !isAnimating ? 'z-10 opacity-100' : 'z-0 opacity-0'
-            }`}
+            className={`absolute left-0 top-0 flex h-full w-1/2 flex-col justify-center px-8 py-12 transition-opacity duration-300 md:px-12 ${!isLogin && !isAnimating ? 'z-10 opacity-100' : 'z-0 opacity-0'
+              }`}
           >
-            <h1 className="mb-6 text-center font-poppins text-2xl font-semibold text-[#1b2a49]">
+            <h1 className="mb-6 text-center font-poppins text-2xl font-semibold text-foreground">
               Registrieren
             </h1>
 
@@ -366,13 +361,13 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
                     name="firstName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="font-poppins text-base font-semibold text-[#1b2a49]">
+                        <FormLabel className="font-poppins text-base font-semibold text-foreground">
                           Vorname
                         </FormLabel>
                         <FormControl>
                           <Input
                             placeholder="Dein Vorname"
-                            className="h-9 rounded-xl border-2 border-gray-300 bg-transparent px-4 text-[14px] placeholder:text-gray-400 focus:border-[#1b2a49]"
+                            className="h-9 rounded-xl border-2 border-input bg-transparent px-4 text-[14px] placeholder:text-muted-foreground focus:border-primary"
                             {...field}
                           />
                         </FormControl>
@@ -386,13 +381,13 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
                     name="lastName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="font-poppins text-base font-semibold text-[#1b2a49]">
+                        <FormLabel className="font-poppins text-base font-semibold text-foreground">
                           Nachname
                         </FormLabel>
                         <FormControl>
                           <Input
                             placeholder="Dein Nachname"
-                            className="h-9 rounded-xl border-2 border-gray-300 bg-transparent px-4 text-[14px] placeholder:text-gray-400 focus:border-[#1b2a49]"
+                            className="h-9 rounded-xl border-2 border-input bg-transparent px-4 text-[14px] placeholder:text-muted-foreground focus:border-primary"
                             {...field}
                           />
                         </FormControl>
@@ -407,14 +402,14 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="font-poppins text-base font-semibold text-[#1b2a49]">
+                      <FormLabel className="font-poppins text-base font-semibold text-foreground">
                         E-Mail
                       </FormLabel>
                       <FormControl>
                         <Input
                           type="email"
                           placeholder="Deine E-Mail"
-                          className="h-9 rounded-xl border-2 border-gray-300 bg-transparent px-4 text-[14px] placeholder:text-gray-400 focus:border-[#1b2a49]"
+                          className="h-9 rounded-xl border-2 border-input bg-transparent px-4 text-[14px] placeholder:text-muted-foreground focus:border-primary"
                           {...field}
                         />
                       </FormControl>
@@ -428,14 +423,14 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="font-poppins text-base font-semibold text-[#1b2a49]">
+                      <FormLabel className="font-poppins text-base font-semibold text-foreground">
                         Passwort
                       </FormLabel>
                       <FormControl>
                         <Input
                           type="password"
                           placeholder="Dein Passwort"
-                          className="h-9 rounded-xl border-2 border-gray-300 bg-transparent px-4 text-[14px] placeholder:text-gray-400 focus:border-[#1b2a49]"
+                          className="h-9 rounded-xl border-2 border-input bg-transparent px-4 text-[14px] placeholder:text-muted-foreground focus:border-primary"
                           {...field}
                         />
                       </FormControl>
@@ -450,14 +445,14 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
                   name="confirmPassword"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="font-poppins text-base font-semibold text-[#1b2a49]">
+                      <FormLabel className="font-poppins text-base font-semibold text-foreground">
                         Passwort wiederholen
                       </FormLabel>
                       <FormControl>
                         <Input
                           type="password"
                           placeholder="Dein Passwort"
-                          className="h-9 rounded-xl border-2 border-gray-300 bg-transparent px-4 text-[14px] placeholder:text-gray-400 focus:border-[#1b2a49]"
+                          className="h-9 rounded-xl border-2 border-input bg-transparent px-4 text-[14px] placeholder:text-muted-foreground focus:border-primary"
                           {...field}
                         />
                       </FormControl>
@@ -469,7 +464,7 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
                 <div className="flex justify-center pt-2">
                   <Button
                     type="submit"
-                    className="h-10 w-40 rounded-xl bg-[#1b2a49] font-poppins text-base font-semibold text-white hover:bg-[#152238]"
+                    className="h-10 w-40 rounded-xl bg-primary font-poppins text-base font-semibold text-primary-foreground hover:bg-primary/90"
                     disabled={registerForm.formState.isSubmitting}
                   >
                     {registerForm.formState.isSubmitting ? 'Registriere...' : 'Registrieren'}
@@ -479,11 +474,11 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
             </Form>
 
             <div className="mt-4 text-center font-poppins text-sm">
-              <span className="text-black">Bereits ein Konto? </span>
+              <span className="text-foreground">Bereits ein Konto? </span>
               <button
                 type="button"
                 onClick={handleToggle}
-                className="font-bold text-[#1b2a49] hover:underline"
+                className="font-bold text-primary hover:underline"
               >
                 Anmelden
               </button>
@@ -526,7 +521,7 @@ function SocialButton({ icon, label }: { icon: string; label: string }) {
   return (
     <button
       type="button"
-      className="flex h-12 w-12 items-center justify-center rounded-full border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md"
+      className="flex h-12 w-12 items-center justify-center rounded-full border border-border bg-card shadow-sm transition-shadow hover:shadow-md"
       aria-label={label}
     >
       {icons[icon]}

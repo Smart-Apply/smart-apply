@@ -46,77 +46,102 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --background: #FFFFFF;
+  --foreground: #1B2A49;
+  --card: #FAFAFA;
+  --card-foreground: #1B2A49;
+  --popover: #FAFAFA;
+  --popover-foreground: #1B2A49;
+  --primary: #1B2A49;
+  --primary-foreground: #FFFFFF;
+  --secondary: #6B6969;
+  --secondary-foreground: #FFFFFF;
+  --muted: #F5F6F8;
+  --muted-foreground: #6B6969;
+  --accent: #3B82F6;
+  --accent-foreground: #FFFFFF;
+  --destructive: #DC2626;
+  --destructive-foreground: #FFFFFF;
+  --border: #E0E0E0;
+  --input: #E0E0E0;
+  --ring: #3B82F6;
+  --chart-1: #3B82F6;
+  --chart-2: #1B2A49;
+  --chart-3: #6B6969;
+  --chart-4: #EAB308;
+  --chart-5: #16A34A;
+  --sidebar: #FAFAFA;
+  --sidebar-foreground: #1B2A49;
+  --sidebar-primary: #1B2A49;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #E5E9F2;
+  --sidebar-accent-foreground: #1B2A49;
+  --sidebar-border: #E0E0E0;
+  --sidebar-ring: #3B82F6;
+
+  /* Status Colors */
+  --primary-soft: #E5E9F2;
+  --success: #16A34A;
+  --success-foreground: #FFFFFF;
+  --success-soft: #D1FADF;
+  --warning: #EAB308;
+  --warning-foreground: #FFFFFF;
+  --warning-soft: #FEF3C7;
+  --destructive-soft: #FEE2E2;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* Dark mode adaptation of the palette */
+  --background: #0F172A;
+  --foreground: #F5F6F8;
+  --card: #1E293B;
+  --card-foreground: #F5F6F8;
+  --popover: #1E293B;
+  --popover-foreground: #F5F6F8;
+  --primary: #3B82F6;
+  /* Brighter blue for dark mode primary */
+  --primary-foreground: #FFFFFF;
+  --secondary: #475569;
+  --secondary-foreground: #F5F6F8;
+  --muted: #1E293B;
+  --muted-foreground: #94A3B8;
+  --accent: #1B2A49;
+  --accent-foreground: #F5F6F8;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border: #334155;
+  --input: #334155;
+  --ring: #3B82F6;
+  --chart-1: #3B82F6;
+  --chart-2: #60A5FA;
+  --chart-3: #94A3B8;
+  --chart-4: #FACC15;
+  --chart-5: #4ADE80;
+  --sidebar: #0F172A;
+  --sidebar-foreground: #F5F6F8;
+  --sidebar-primary: #3B82F6;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #1E293B;
+  --sidebar-accent-foreground: #F5F6F8;
+  --sidebar-border: #334155;
+  --sidebar-ring: #3B82F6;
+
+  /* Status Colors Dark Mode */
+  --primary-soft: #1E293B;
+  --success: #4ADE80;
+  --success-foreground: #000000;
+  --success-soft: #064E3B;
+  --warning: #FACC15;
+  --warning-foreground: #000000;
+  --warning-soft: #422006;
+  --destructive-soft: #7F1D1D;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -130,7 +155,7 @@
     padding-left: 1rem;
     padding-right: 1rem;
   }
-  
+
   @media (min-width: 640px) {
     .container {
       max-width: 640px;
@@ -138,13 +163,13 @@
       padding-right: 1.5rem;
     }
   }
-  
+
   @media (min-width: 768px) {
     .container {
       max-width: 768px;
     }
   }
-  
+
   @media (min-width: 1024px) {
     .container {
       max-width: 1024px;
@@ -152,7 +177,7 @@
       padding-right: 2rem;
     }
   }
-  
+
   @media (min-width: 1280px) {
     .container {
       max-width: 1280px;
@@ -167,25 +192,25 @@
     padding-left: 1.5rem;
     margin: 0.5rem 0;
   }
-  
+
   ol {
     list-style-type: decimal;
     padding-left: 1.5rem;
     margin: 0.5rem 0;
   }
-  
+
   li {
     margin: 0.25rem 0;
   }
-  
-  li > p {
+
+  li>p {
     margin: 0;
   }
-  
+
   p {
     margin: 0.5rem 0;
   }
-  
+
   blockquote {
     border-left: 3px solid #e2e8f0;
     padding-left: 1rem;
@@ -193,21 +218,31 @@
     color: #64748b;
     font-style: italic;
   }
-  
+
   strong {
     font-weight: 600;
   }
-  
+
   em {
     font-style: italic;
   }
-  
-  h1, h2, h3 {
+
+  h1,
+  h2,
+  h3 {
     font-weight: 600;
     margin: 1rem 0 0.5rem;
   }
-  
-  h1 { font-size: 1.5rem; }
-  h2 { font-size: 1.25rem; }
-  h3 { font-size: 1.125rem; }
+
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  h2 {
+    font-size: 1.25rem;
+  }
+
+  h3 {
+    font-size: 1.125rem;
+  }
 }

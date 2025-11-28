@@ -6,15 +6,15 @@ import { Badge } from '@/components/ui/badge';
 import { useApplications } from '@/hooks/use-applications';
 import { useJobPostings } from '@/hooks/use-job-postings';
 import { useProfile } from '@/hooks/use-profile';
-import { 
-  FileText, 
-  Briefcase, 
-  User, 
-  Plus, 
-  TrendingUp, 
-  Clock, 
-  CheckCircle2, 
-  XCircle, 
+import {
+  FileText,
+  Briefcase,
+  User,
+  Plus,
+  TrendingUp,
+  Clock,
+  CheckCircle2,
+  XCircle,
   Send,
   Calendar,
   Building2,
@@ -25,11 +25,11 @@ import type { ApplicationTrackingStatus } from '@/types';
 
 // Status-Konfiguration
 const STATUS_CONFIG: Record<ApplicationTrackingStatus, { label: string; color: string; bgColor: string }> = {
-  CREATED: { label: 'Erstellt', color: 'text-slate-600', bgColor: 'bg-slate-100' },
-  APPLIED: { label: 'Beworben', color: 'text-blue-600', bgColor: 'bg-blue-100' },
-  INTERVIEW: { label: 'Interview', color: 'text-amber-600', bgColor: 'bg-amber-100' },
-  ACCEPTED: { label: 'Angenommen', color: 'text-green-600', bgColor: 'bg-green-100' },
-  REJECTED: { label: 'Abgelehnt', color: 'text-red-600', bgColor: 'bg-red-100' },
+  CREATED: { label: 'Erstellt', color: 'text-muted-foreground', bgColor: 'bg-muted' },
+  APPLIED: { label: 'Beworben', color: 'text-accent', bgColor: 'bg-primary-soft' },
+  INTERVIEW: { label: 'Interview', color: 'text-warning-foreground', bgColor: 'bg-warning' },
+  ACCEPTED: { label: 'Angenommen', color: 'text-success-foreground', bgColor: 'bg-success' },
+  REJECTED: { label: 'Abgelehnt', color: 'text-destructive-foreground', bgColor: 'bg-destructive' },
 };
 
 // Profil-Vollständigkeit berechnen
@@ -42,22 +42,22 @@ function calculateProfileCompletion(profile: {
   projects?: unknown[];
 } | null | undefined): number {
   if (!profile) return 0;
-  
+
   const fields = [
     !!profile.summary,
     (profile.skills?.length ?? 0) > 0,
     (profile.experiences?.length ?? 0) > 0,
     (profile.education?.length ?? 0) > 0,
   ];
-  
+
   const bonusFields = [
     (profile.certificates?.length ?? 0) > 0,
     (profile.projects?.length ?? 0) > 0,
   ];
-  
+
   const baseScore = fields.filter(Boolean).length / fields.length * 80;
   const bonusScore = bonusFields.filter(Boolean).length / bonusFields.length * 20;
-  
+
   return Math.round(baseScore + bonusScore);
 }
 
@@ -88,12 +88,12 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="mt-1 text-gray-500">
+          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+          <p className="mt-1 text-muted-foreground">
             Willkommen zurück! Hier ist eine Übersicht deiner Bewerbungen.
           </p>
         </div>
-        <Button onClick={() => router.push('/applications/new')}>
+        <Button onClick={() => router.push('/applications/new')} className="bg-primary text-primary-foreground hover:bg-primary/90">
           <Plus className="mr-2 h-4 w-4" />
           Neue Bewerbung
         </Button>
@@ -101,58 +101,58 @@ export default function DashboardPage() {
 
       {/* Haupt-Stats */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push('/applications')}>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow border-border bg-card" onClick={() => router.push('/applications')}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Bewerbungen</CardTitle>
-            <FileText className="h-4 w-4 text-blue-500" />
+            <CardTitle className="text-sm font-medium text-foreground">Bewerbungen</CardTitle>
+            <FileText className="h-4 w-4 text-accent" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalApplications}</div>
-            <p className="text-xs text-gray-500 mt-1">
+            <div className="text-2xl font-bold text-foreground">{totalApplications}</div>
+            <p className="text-xs text-muted-foreground mt-1">
               {activeCount} aktiv · {statusCounts.CREATED || 0} in Bearbeitung
             </p>
           </CardContent>
         </Card>
 
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push('/jobs')}>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow border-border bg-card" onClick={() => router.push('/jobs')}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Stellenanzeigen</CardTitle>
-            <Briefcase className="h-4 w-4 text-purple-500" />
+            <CardTitle className="text-sm font-medium text-foreground">Stellenanzeigen</CardTitle>
+            <Briefcase className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{jobsLoading ? '...' : jobPostings?.length || 0}</div>
-            <p className="text-xs text-gray-500 mt-1">
+            <div className="text-2xl font-bold text-foreground">{jobsLoading ? '...' : jobPostings?.length || 0}</div>
+            <p className="text-xs text-muted-foreground mt-1">
               Gespeicherte Jobs
             </p>
           </CardContent>
         </Card>
 
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push('/profile')}>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow border-border bg-card" onClick={() => router.push('/profile')}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Profil</CardTitle>
-            <User className="h-4 w-4 text-green-500" />
+            <CardTitle className="text-sm font-medium text-foreground">Profil</CardTitle>
+            <User className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{profileLoading ? '...' : `${profileCompletion}%`}</div>
-            <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
-              <div 
-                className="bg-green-500 h-1.5 rounded-full transition-all" 
+            <div className="text-2xl font-bold text-foreground">{profileLoading ? '...' : `${profileCompletion}%`}</div>
+            <div className="w-full bg-muted rounded-full h-1.5 mt-2">
+              <div
+                className="bg-success h-1.5 rounded-full transition-all"
                 style={{ width: `${profileCompletion}%` }}
               />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-border bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Erfolgsquote</CardTitle>
-            <TrendingUp className="h-4 w-4 text-amber-500" />
+            <CardTitle className="text-sm font-medium text-foreground">Erfolgsquote</CardTitle>
+            <TrendingUp className="h-4 w-4 text-warning" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold text-foreground">
               {successRate !== null ? `${successRate}%` : '–'}
             </div>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               {acceptedCount} angenommen · {rejectedCount} abgelehnt
             </p>
           </CardContent>
@@ -160,10 +160,10 @@ export default function DashboardPage() {
       </div>
 
       {/* Status-Übersicht */}
-      <Card>
+      <Card className="border-border bg-card">
         <CardHeader>
-          <CardTitle className="text-lg">Bewerbungs-Pipeline</CardTitle>
-          <CardDescription>Übersicht deiner Bewerbungen nach Status</CardDescription>
+          <CardTitle className="text-lg text-foreground">Bewerbungs-Pipeline</CardTitle>
+          <CardDescription className="text-muted-foreground">Übersicht deiner Bewerbungen nach Status</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -171,7 +171,7 @@ export default function DashboardPage() {
               <button
                 key={status}
                 onClick={() => router.push(`/applications?status=${status}`)}
-                className={`${config.bgColor} rounded-lg p-4 text-center hover:opacity-80 transition-opacity`}
+                className={`${config.bgColor} rounded-lg p-4 text-center hover:opacity-80 transition-opacity border border-transparent`}
               >
                 <div className={`text-2xl font-bold ${config.color}`}>
                   {statusCounts[status] || 0}
@@ -188,20 +188,20 @@ export default function DashboardPage() {
       {/* Zwei-Spalten-Layout */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Letzte Bewerbungen */}
-        <Card>
+        <Card className="border-border bg-card">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle>Letzte Bewerbungen</CardTitle>
-              <CardDescription>Deine neuesten Bewerbungen</CardDescription>
+              <CardTitle className="text-foreground">Letzte Bewerbungen</CardTitle>
+              <CardDescription className="text-muted-foreground">Deine neuesten Bewerbungen</CardDescription>
             </div>
-            <Button variant="ghost" size="sm" onClick={() => router.push('/applications')}>
+            <Button variant="ghost" size="sm" onClick={() => router.push('/applications')} className="text-muted-foreground hover:text-foreground">
               Alle anzeigen
               <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
           </CardHeader>
           <CardContent>
             {applicationsLoading ? (
-              <div className="text-center text-gray-500 py-8">Lädt...</div>
+              <div className="text-center text-muted-foreground py-8">Lädt...</div>
             ) : applications && applications.length > 0 ? (
               <div className="space-y-3">
                 {applications.slice(0, 5).map((app) => {
@@ -210,17 +210,17 @@ export default function DashboardPage() {
                     <button
                       key={app.id}
                       onClick={() => router.push(`/applications/${app.id}`)}
-                      className="w-full flex items-center justify-between rounded-lg border p-3 hover:bg-gray-50 transition-colors text-left"
+                      className="w-full flex items-center justify-between rounded-lg border border-border p-3 hover:bg-muted/50 transition-colors text-left"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
-                          <Building2 className="h-5 w-5 text-gray-500" />
+                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                          <Building2 className="h-5 w-5 text-muted-foreground" />
                         </div>
                         <div className="min-w-0">
-                          <p className="font-medium truncate">
+                          <p className="font-medium truncate text-foreground">
                             {app.jobPosting?.title || 'Unbekannte Stelle'}
                           </p>
-                          <p className="text-sm text-gray-500 truncate">
+                          <p className="text-sm text-muted-foreground truncate">
                             {app.jobPosting?.company || 'Unbekanntes Unternehmen'}
                           </p>
                         </div>
@@ -236,8 +236,8 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="text-center py-8">
-                <FileText className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500 mb-4">Noch keine Bewerbungen erstellt.</p>
+                <FileText className="h-12 w-12 text-muted-foreground/50 mx-auto mb-3" />
+                <p className="text-muted-foreground mb-4">Noch keine Bewerbungen erstellt.</p>
                 <Button variant="outline" onClick={() => router.push('/applications/new')}>
                   <Plus className="mr-2 h-4 w-4" />
                   Erste Bewerbung erstellen
@@ -251,29 +251,29 @@ export default function DashboardPage() {
         <div className="space-y-6">
           {/* Profil-Hinweis wenn nicht vollständig */}
           {!profileLoading && profileCompletion < 100 && (
-            <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
+            <Card className="border-accent/20 bg-primary-soft/50">
               <CardHeader>
-                <CardTitle className="text-blue-900 flex items-center gap-2">
+                <CardTitle className="text-primary flex items-center gap-2">
                   <User className="h-5 w-5" />
                   Profil vervollständigen
                 </CardTitle>
-                <CardDescription className="text-blue-700">
+                <CardDescription className="text-primary/80">
                   Ein vollständiges Profil verbessert deine generierten Bewerbungen.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm text-blue-700">Fortschritt</span>
-                  <span className="text-sm font-medium text-blue-900">{profileCompletion}%</span>
+                  <span className="text-sm text-primary/80">Fortschritt</span>
+                  <span className="text-sm font-medium text-primary">{profileCompletion}%</span>
                 </div>
-                <div className="w-full bg-blue-200 rounded-full h-2 mb-4">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all" 
+                <div className="w-full bg-primary/10 rounded-full h-2 mb-4">
+                  <div
+                    className="bg-primary h-2 rounded-full transition-all"
                     style={{ width: `${profileCompletion}%` }}
                   />
                 </div>
-                <Button 
-                  className="w-full bg-blue-600 hover:bg-blue-700" 
+                <Button
+                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
                   onClick={() => router.push('/profile/edit')}
                 >
                   Profil bearbeiten
@@ -283,41 +283,41 @@ export default function DashboardPage() {
           )}
 
           {/* Quick Actions */}
-          <Card>
+          <Card className="border-border bg-card">
             <CardHeader>
-              <CardTitle>Schnellzugriff</CardTitle>
+              <CardTitle className="text-foreground">Schnellzugriff</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-3">
-              <Button 
-                variant="outline" 
-                className="h-auto py-4 flex-col gap-2"
+              <Button
+                variant="outline"
+                className="h-auto py-4 flex-col gap-2 hover:bg-muted/50 hover:text-foreground"
                 onClick={() => router.push('/applications/new')}
               >
-                <Plus className="h-5 w-5 text-blue-500" />
+                <Plus className="h-5 w-5 text-accent" />
                 <span className="text-xs">Neue Bewerbung</span>
               </Button>
-              <Button 
-                variant="outline" 
-                className="h-auto py-4 flex-col gap-2"
+              <Button
+                variant="outline"
+                className="h-auto py-4 flex-col gap-2 hover:bg-muted/50 hover:text-foreground"
                 onClick={() => router.push('/jobs')}
               >
-                <Briefcase className="h-5 w-5 text-purple-500" />
+                <Briefcase className="h-5 w-5 text-primary" />
                 <span className="text-xs">Jobs durchsuchen</span>
               </Button>
-              <Button 
-                variant="outline" 
-                className="h-auto py-4 flex-col gap-2"
+              <Button
+                variant="outline"
+                className="h-auto py-4 flex-col gap-2 hover:bg-muted/50 hover:text-foreground"
                 onClick={() => router.push('/profile/edit')}
               >
-                <User className="h-5 w-5 text-green-500" />
+                <User className="h-5 w-5 text-success" />
                 <span className="text-xs">Profil bearbeiten</span>
               </Button>
-              <Button 
-                variant="outline" 
-                className="h-auto py-4 flex-col gap-2"
+              <Button
+                variant="outline"
+                className="h-auto py-4 flex-col gap-2 hover:bg-muted/50 hover:text-foreground"
                 onClick={() => router.push('/applications?status=APPLIED')}
               >
-                <Send className="h-5 w-5 text-amber-500" />
+                <Send className="h-5 w-5 text-warning" />
                 <span className="text-xs">Offene Bewerbungen</span>
               </Button>
             </CardContent>
@@ -325,9 +325,9 @@ export default function DashboardPage() {
 
           {/* Aktivitäts-Hinweis */}
           {applications && applications.length > 0 && (
-            <Card className="bg-gray-50">
+            <Card className="bg-muted/50 border-border">
               <CardContent className="pt-6">
-                <div className="flex items-center gap-3 text-sm text-gray-600">
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
                   <Calendar className="h-4 w-4" />
                   <span>
                     Letzte Aktivität: {new Date(applications[0].updatedAt || applications[0].createdAt).toLocaleDateString('de-DE', {
