@@ -41,10 +41,10 @@ const LANGUAGE_LEVELS = [
  * - Remove language on badge close button
  * - Validate language name (non-empty, unique)
  */
-export function LanguagesManager({ 
-  languages, 
-  onLanguagesChange, 
-  disabled = false 
+export function LanguagesManager({
+  languages,
+  onLanguagesChange,
+  disabled = false
 }: LanguagesManagerProps) {
   const [languageName, setLanguageName] = useState('');
   const [languageLevel, setLanguageLevel] = useState('Fließend');
@@ -70,10 +70,10 @@ export function LanguagesManager({
 
     // Add new language
     const newLanguage: Language = { name, level: languageLevel };
-    const updatedLanguages = [...languages, newLanguage].sort((a, b) => 
+    const updatedLanguages = [...languages, newLanguage].sort((a, b) =>
       a.name.localeCompare(b.name)
     );
-    
+
     onLanguagesChange(updatedLanguages);
     setLanguageName('');
     toast.success(`Sprache "${name}" hinzugefügt`);
@@ -95,29 +95,28 @@ export function LanguagesManager({
   const getLevelBadgeColor = (level?: string) => {
     switch (level) {
       case 'Muttersprache':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-200';
       case 'Fließend':
       case 'Verhandlungssicher':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200';
       case 'Fortgeschritten':
       case 'Gute Kenntnisse':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        return 'bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-200';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-slate-100 text-slate-800 border-slate-200 hover:bg-slate-200';
     }
   };
 
   return (
     <div className="space-y-4">
       <div>
-        <Label htmlFor="language-input" className="flex items-center gap-2">
-          <Languages className="h-4 w-4" />
+        <Label htmlFor="language-input" className="flex items-center gap-2 text-base">
           Sprachen
         </Label>
-        <p className="text-sm text-gray-500 mb-2">
+        <p className="text-sm text-muted-foreground mb-4">
           Füge deine Sprachkenntnisse hinzu
         </p>
-        
+
         <div className="flex gap-2">
           <Input
             id="language-input"
@@ -159,8 +158,8 @@ export function LanguagesManager({
 
       {/* Languages Display */}
       {languages.length > 0 ? (
-        <div>
-          <p className="text-sm font-medium text-gray-700 mb-2">
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-foreground">
             Deine Sprachen ({languages.length})
           </p>
           <div className="flex flex-wrap gap-2">
@@ -168,7 +167,7 @@ export function LanguagesManager({
               <Badge
                 key={`${lang.name}-${index}`}
                 variant="outline"
-                className={`text-sm pl-3 pr-2 py-1.5 gap-1.5 ${getLevelBadgeColor(lang.level)}`}
+                className={`text-sm pl-3 pr-2 py-1.5 gap-1.5 transition-colors ${getLevelBadgeColor(lang.level)}`}
               >
                 <span className="font-medium">{lang.name}</span>
                 {lang.level && (
@@ -188,8 +187,11 @@ export function LanguagesManager({
           </div>
         </div>
       ) : (
-        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-          <p className="text-sm text-blue-800">
+        <div className="flex flex-col items-center justify-center py-8 text-center rounded-xl border border-dashed border-border bg-muted/20">
+          <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-3">
+            <Languages className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <p className="text-sm text-muted-foreground max-w-xs">
             Noch keine Sprachen hinzugefügt. Beginne mit dem Hinzufügen deiner Sprachkenntnisse oben.
           </p>
         </div>

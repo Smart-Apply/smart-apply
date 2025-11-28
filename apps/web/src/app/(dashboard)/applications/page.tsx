@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useApplications, useDeleteApplication } from '@/hooks/use-applications';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -40,11 +40,23 @@ import {
   Users,
   ThumbsUp,
   ThumbsDown,
+  MoreHorizontal,
+  Calendar,
+  MapPin,
+  Building2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Application, ApplicationGenerationStatus, ApplicationTrackingStatus } from '@/types';
 import { StatusDropdown } from '@/components/applications/status-dropdown';
 import { APPLICATION_ID_DISPLAY_LENGTH } from '@/lib/constants';
+import { formatDistanceToNow } from 'date-fns';
+import { de } from 'date-fns/locale';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 // ============================================================================
 // Constants & Types
@@ -61,7 +73,7 @@ const TRACKING_STATUS_TABS: {
   icon: typeof Briefcase;
 }[] = [
     { value: 'all', label: 'Alle', icon: Briefcase },
-    { value: 'CREATED', label: 'Erstellt', icon: FileText },
+    { value: 'CREATED', label: 'Entwurf', icon: FileText },
     { value: 'APPLIED', label: 'Beworben', icon: Send },
     { value: 'INTERVIEW', label: 'Interview', icon: Users },
     { value: 'OFFER', label: 'Angebot', icon: CheckCircle },
@@ -88,7 +100,7 @@ function getGenerationStatusInfo(status: ApplicationGenerationStatus) {
         label: 'Ausstehend',
         icon: Clock,
         variant: 'secondary' as const,
-        color: 'text-gray-600',
+        color: 'text-muted-foreground',
       };
     case 'GENERATING':
       return {
@@ -101,7 +113,7 @@ function getGenerationStatusInfo(status: ApplicationGenerationStatus) {
       return {
         label: 'PDF Fertig',
         icon: CheckCircle,
-        variant: 'default' as const,
+        variant: 'outline' as const,
         color: 'text-green-600',
       };
     case 'FAILED':
@@ -116,7 +128,7 @@ function getGenerationStatusInfo(status: ApplicationGenerationStatus) {
         label: status,
         icon: AlertCircle,
         variant: 'secondary' as const,
-        color: 'text-gray-600',
+        color: 'text-muted-foreground',
       };
   }
 }
@@ -294,6 +306,7 @@ export default function ApplicationsPage() {
     await deleteApplication.mutateAsync(applicationToDelete.id);
     setDeleteDialogOpen(false);
     setApplicationToDelete(null);
+    toast.success('Bewerbung gelöscht');
   };
 
   const handleDeleteCancel = () => {
@@ -302,13 +315,13 @@ export default function ApplicationsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 animate-in fade-in duration-500">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Bewerbungen</h1>
-          <p className="mt-1 text-gray-500">
-            Verwalte alle deine Bewerbungen an einem Ort
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Bewerbungen</h1>
+          <p className="mt-1 text-muted-foreground">
+            Verwalte und verfolge den Status deiner Bewerbungen.
           </p>
         </div>
         <div className="flex gap-2">
@@ -317,11 +330,15 @@ export default function ApplicationsPage() {
             size="sm"
             onClick={handleRefresh}
             disabled={isRefreshing}
+            className="h-10"
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
             Aktualisieren
           </Button>
-          <Button onClick={() => router.push('/applications/new')}>
+          <Button
+            onClick={() => router.push('/applications/new')}
+            className="h-10 shadow-md hover:shadow-lg transition-all"
+          >
             <Plus className="mr-2 h-4 w-4" />
             Neue Bewerbung
           </Button>
@@ -329,60 +346,77 @@ export default function ApplicationsPage() {
       </div>
 
       {isLoading ? (
-        <div className="space-y-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <ApplicationCardSkeleton />
+          <ApplicationCardSkeleton />
+          <ApplicationCardSkeleton />
           <ApplicationCardSkeleton />
           <ApplicationCardSkeleton />
           <ApplicationCardSkeleton />
         </div>
       ) : applications && applications.length > 0 ? (
-        <>
-          {/* Tabs for Application Tracking Status */}
-          <Tabs value={selectedTab} onValueChange={handleTabChange}>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <TabsList className="h-auto flex-wrap">
+        <div className="space-y-6">
+          {/* Controls: Tabs & Sort */}
+          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between bg-card/50 p-1 rounded-xl">
+            <Tabs value={selectedTab} onValueChange={handleTabChange} className="w-full lg:w-auto">
+              <TabsList className="h-auto flex-wrap justify-start bg-transparent p-0 gap-1">
                 {TRACKING_STATUS_TABS.map((tab) => {
                   const Icon = tab.icon;
                   const count = statusCounts[tab.value];
+                  const isActive = selectedTab === tab.value;
+
                   return (
                     <TabsTrigger
                       key={tab.value}
                       value={tab.value}
-                      className="flex items-center gap-1.5 px-3 py-1.5"
+                      className={`
+                        flex items-center gap-2 px-3 py-2 rounded-lg border border-transparent
+                        data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:border-border/50
+                        transition-all duration-200
+                      `}
                     >
-                      <Icon className="h-4 w-4" />
-                      <span className="hidden sm:inline">{tab.label}</span>
-                      <Badge
-                        variant={selectedTab === tab.value ? 'default' : 'secondary'}
-                        className="ml-1 min-w-[1.5rem] justify-center"
-                      >
-                        {count}
-                      </Badge>
+                      <Icon className={`h-4 w-4 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
+                      <span className={isActive ? 'font-medium text-foreground' : 'text-muted-foreground'}>
+                        {tab.label}
+                      </span>
+                      {count > 0 && (
+                        <Badge
+                          variant="secondary"
+                          className={`
+                            ml-1 h-5 min-w-[1.25rem] px-1 justify-center text-[10px]
+                            ${isActive ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}
+                          `}
+                        >
+                          {count}
+                        </Badge>
+                      )}
                     </TabsTrigger>
                   );
                 })}
               </TabsList>
+            </Tabs>
 
-              {/* Sort Dropdown */}
-              <div className="flex items-center gap-2">
-                <ArrowUpDown className="h-4 w-4 text-gray-500" />
-                <Select value={sortBy} onValueChange={handleSortChange}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Sortieren" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SORT_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="flex items-center gap-2 ml-auto">
+              <span className="text-sm text-muted-foreground whitespace-nowrap hidden sm:inline-block">
+                Sortieren nach:
+              </span>
+              <Select value={sortBy} onValueChange={handleSortChange}>
+                <SelectTrigger className="w-[180px] bg-background">
+                  <SelectValue placeholder="Sortieren" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SORT_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          </Tabs>
+          </div>
 
           {/* Results Info */}
-          <div className="flex items-center justify-between text-sm text-gray-500">
+          <div className="flex items-center justify-between text-sm text-muted-foreground px-1">
             <span>
               {filteredApplications.length} {filteredApplications.length === 1 ? 'Bewerbung' : 'Bewerbungen'}
               {selectedTab !== 'all' && ` mit Status "${TRACKING_STATUS_TABS.find(t => t.value === selectedTab)?.label}"`}
@@ -394,147 +428,160 @@ export default function ApplicationsPage() {
             )}
           </div>
 
-          {/* Application Cards */}
+          {/* Application Cards Grid */}
           {paginatedApplications.length > 0 ? (
-            <div className="grid gap-4">
-              {paginatedApplications.map((application) => {
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {paginatedApplications.map((application, index) => {
                 const statusInfo = getGenerationStatusInfo(application.status);
                 const StatusIcon = statusInfo.icon;
+                const jobTitle = application.title || application.jobPosting?.title || `Bewerbung #${application.id.substring(0, APPLICATION_ID_DISPLAY_LENGTH)}`;
+                const company = application.jobPosting?.company;
+                const location = application.jobPosting?.location;
+                const timeAgo = formatDistanceToNow(new Date(application.createdAt), { addSuffix: true, locale: de });
 
                 return (
-                  <Card key={application.id} className="hover:shadow-md transition-shadow">
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <CardTitle className="text-xl">
-                            {application.title ||
-                              application.jobPosting?.title ||
-                              `Bewerbung #${application.id.substring(0, APPLICATION_ID_DISPLAY_LENGTH)}`}
+                  <Card
+                    key={application.id}
+                    className="group hover:shadow-soft hover:-translate-y-1 transition-all duration-300 border-border/50 overflow-hidden flex flex-col"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-1.5">
+                          <CardTitle className="text-lg font-semibold leading-tight line-clamp-1" title={jobTitle}>
+                            {jobTitle}
                           </CardTitle>
-                          <CardDescription className="mt-1 space-y-1">
-                            <div>
-                              {application.jobPosting?.company && (
-                                <span className="font-medium">{application.jobPosting.company}</span>
-                              )}
-                              {application.jobPosting?.location && (
-                                <span className="text-gray-500">
-                                  {' • '}
-                                  {application.jobPosting.location}
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2 mt-2">
-                              <StatusDropdown
-                                applicationId={application.id}
-                                currentStatus={application.applicationStatus}
-                                variant="dropdown"
-                              />
-                            </div>
-                          </CardDescription>
+                          <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+                            {company && (
+                              <div className="flex items-center gap-1.5">
+                                <Building2 className="h-3.5 w-3.5 shrink-0" />
+                                <span className="font-medium text-foreground/80 truncate">{company}</span>
+                              </div>
+                            )}
+                            {location && (
+                              <div className="flex items-center gap-1.5">
+                                <MapPin className="h-3.5 w-3.5 shrink-0" />
+                                <span className="truncate">{location}</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <Badge variant={statusInfo.variant} className="ml-4 shrink-0">
-                          <StatusIcon
-                            className={`mr-1 h-3 w-3 ${application.status === 'GENERATING' ? 'animate-spin' : ''}`}
-                          />
-                          {statusInfo.label}
-                        </Badge>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 text-muted-foreground hover:text-foreground">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => router.push(`/applications/${application.id}`)}>
+                              Details anzeigen
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => router.push(`/applications/${application.id}/edit`)}>
+                              Bearbeiten
+                            </DropdownMenuItem>
+                            {application.status === 'READY' && application.coverLetterUrl && (
+                              <DropdownMenuItem onClick={() => window.open(application.coverLetterUrl, '_blank')}>
+                                Anschreiben öffnen
+                              </DropdownMenuItem>
+                            )}
+                            {application.status === 'READY' && application.resumeUrl && (
+                              <DropdownMenuItem onClick={() => window.open(application.resumeUrl, '_blank')}>
+                                Lebenslauf öffnen
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => handleDeleteClick(application.id, jobTitle)}
+                            >
+                              Löschen
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm text-gray-500">
-                          Erstellt am{' '}
-                          {new Date(application.createdAt).toLocaleDateString('de-DE', {
-                            day: '2-digit',
-                            month: 'long',
-                            year: 'numeric',
-                          })}
-                        </div>
-                        <div className="flex gap-2">
-                          {application.status === 'READY' && (
-                            <>
-                              {application.coverLetterUrl && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => window.open(application.coverLetterUrl, '_blank')}
-                                >
-                                  <FileText className="mr-2 h-4 w-4" />
-                                  Anschreiben
-                                </Button>
-                              )}
-                              {application.resumeUrl && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => window.open(application.resumeUrl, '_blank')}
-                                >
-                                  <FileText className="mr-2 h-4 w-4" />
-                                  Lebenslauf
-                                </Button>
-                              )}
-                            </>
-                          )}
-                          <Button size="sm" onClick={() => router.push(`/applications/${application.id}`)}>
-                            Details
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() =>
-                              handleDeleteClick(
-                                application.id,
-                                application.jobPosting?.title || `Bewerbung #${application.id}`
-                              )
-                            }
-                            disabled={deleteApplication.isPending}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+
+                    <CardContent className="pb-3 flex-1">
+                      <div className="flex items-center justify-between mb-4">
+                        <Badge variant={statusInfo.variant} className="font-normal text-xs py-0.5 h-6">
+                          <StatusIcon className={`mr-1.5 h-3 w-3 ${application.status === 'GENERATING' ? 'animate-spin' : ''}`} />
+                          {statusInfo.label}
+                        </Badge>
+                        <div className="text-xs text-muted-foreground flex items-center gap-1" title={new Date(application.createdAt).toLocaleString()}>
+                          <Calendar className="h-3 w-3" />
+                          {timeAgo}
                         </div>
                       </div>
+
+                      <div className="pt-3 border-t border-border/50">
+                        <div className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">Status</div>
+                        <StatusDropdown
+                          applicationId={application.id}
+                          currentStatus={application.applicationStatus}
+                          variant="dropdown"
+                        />
+                      </div>
                     </CardContent>
+
+                    <CardFooter className="pt-0 pb-4 px-6 flex gap-2">
+                      <Button
+                        className="w-full shadow-sm group-hover:shadow transition-all"
+                        size="sm"
+                        onClick={() => router.push(`/applications/${application.id}`)}
+                      >
+                        Details
+                        <ChevronRight className="h-3.5 w-3.5 ml-1.5 opacity-70" />
+                      </Button>
+                    </CardFooter>
                   </Card>
                 );
               })}
             </div>
           ) : (
-            <Card>
-              <CardContent className="py-12">
-                <div className="text-center">
-                  <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Keine Bewerbungen gefunden
-                  </h3>
-                  <p className="text-gray-500">
-                    Es gibt keine Bewerbungen mit dem Status &quot;
-                    {TRACKING_STATUS_TABS.find((t) => t.value === selectedTab)?.label}&quot;
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="flex flex-col items-center justify-center py-16 text-center rounded-2xl border border-dashed border-border bg-muted/10 animate-in fade-in zoom-in-95 duration-500">
+              <div className="h-16 w-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
+                <FileText className="h-8 w-8 text-muted-foreground/50" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                Keine Bewerbungen gefunden
+              </h3>
+              <p className="text-muted-foreground max-w-sm mb-6">
+                Es gibt keine Bewerbungen mit dem Status &quot;
+                {TRACKING_STATUS_TABS.find((t) => t.value === selectedTab)?.label}&quot;.
+              </p>
+              {selectedTab !== 'all' ? (
+                <Button variant="outline" onClick={() => setSelectedTab('all')}>
+                  Alle anzeigen
+                </Button>
+              ) : (
+                <Button onClick={() => router.push('/applications/new')}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Erste Bewerbung erstellen
+                </Button>
+              )}
+            </div>
           )}
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 pt-4">
+            <div className="flex items-center justify-center gap-2 pt-8">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handlePrevPage}
                 disabled={currentPage === 1}
+                className="h-8 w-8 p-0"
               >
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Zurück
+                <ChevronLeft className="h-4 w-4" />
+                <span className="sr-only">Zurück</span>
               </Button>
 
               <div className="flex items-center gap-1">
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                   <Button
                     key={page}
-                    variant={page === currentPage ? 'default' : 'outline'}
+                    variant={page === currentPage ? 'default' : 'ghost'}
                     size="sm"
-                    className="w-8 h-8 p-0"
+                    className={`h-8 w-8 p-0 ${page === currentPage ? 'pointer-events-none' : ''}`}
                     onClick={() => setCurrentPage(page)}
                   >
                     {page}
@@ -547,30 +594,33 @@ export default function ApplicationsPage() {
                 size="sm"
                 onClick={handleNextPage}
                 disabled={currentPage === totalPages}
+                className="h-8 w-8 p-0"
               >
-                Weiter
-                <ChevronRight className="h-4 w-4 ml-1" />
+                <ChevronRight className="h-4 w-4" />
+                <span className="sr-only">Weiter</span>
               </Button>
             </div>
           )}
-        </>
+        </div>
       ) : (
-        <Card>
-          <CardContent className="py-12">
-            <div className="text-center">
-              <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Noch keine Bewerbungen</h3>
-              <p className="text-gray-500 mb-6">
-                Erstelle deine erste Bewerbung mit KI-Unterstützung
-              </p>
-              <Button onClick={() => router.push('/applications/new')}>
-                <Plus className="mr-2 h-4 w-4" />
-                Erste Bewerbung erstellen
-              </Button>
+        <div className="flex flex-col items-center justify-center py-20 text-center rounded-2xl border border-dashed border-border bg-muted/10 animate-in fade-in zoom-in-95 duration-500">
+          <div className="relative mb-6">
+            <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse"></div>
+            <div className="relative h-20 w-20 rounded-full bg-background shadow-soft flex items-center justify-center border border-border/50">
+              <FileText className="h-10 w-10 text-primary" />
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+          <h3 className="text-xl font-bold text-foreground mb-2">Noch keine Bewerbungen</h3>
+          <p className="text-muted-foreground mb-8 max-w-md">
+            Erstelle deine erste Bewerbung mit KI-Unterstützung und behalte den Überblick über deinen Bewerbungsprozess.
+          </p>
+          <Button size="lg" onClick={() => router.push('/applications/new')} className="shadow-lg hover:shadow-xl transition-all">
+            <Plus className="mr-2 h-5 w-5" />
+            Erste Bewerbung erstellen
+          </Button>
+        </div>
+      )
+      }
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -578,7 +628,7 @@ export default function ApplicationsPage() {
           <DialogHeader>
             <DialogTitle>Bewerbung löschen?</DialogTitle>
             <DialogDescription>
-              Möchtest du die Bewerbung für &quot;{applicationToDelete?.title}&quot; wirklich löschen?
+              Möchtest du die Bewerbung für <span className="font-medium text-foreground">&quot;{applicationToDelete?.title}&quot;</span> wirklich löschen?
               Diese Aktion kann nicht rückgängig gemacht werden.
             </DialogDescription>
           </DialogHeader>
@@ -600,6 +650,6 @@ export default function ApplicationsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </div >
   );
 }

@@ -2,7 +2,7 @@
 
 import { startTransition, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Briefcase, MapPin, Sparkles, FileText } from 'lucide-react';
+import { ArrowLeft, Briefcase, MapPin, Sparkles, FileText, Save, RefreshCw, CheckCircle2, AlertCircle, Download, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +19,7 @@ import type { ResumeData } from '@/types';
 import { toast } from 'sonner';
 import { stripHtml } from '@/lib/sanitize';
 import { toTiptapHtml } from '@/lib/markdown';
+import { cn } from '@/lib/utils';
 
 const EMPTY_RESUME: ResumeData = {
   candidateName: 'Vorname Nachname',
@@ -40,6 +41,23 @@ const STATUS_LABELS: Record<string, string> = {
   GENERATING: 'In Bearbeitung',
   READY: 'Fertig',
   FAILED: 'Fehlgeschlagen',
+  OFFER: 'Angebot',
+  WITHDRAWN: 'Zurückgezogen',
+  REJECTED: 'Abgelehnt',
+  INTERVIEW: 'Interview',
+  APPLIED: 'Beworben',
+};
+
+const STATUS_COLORS: Record<string, { variant: "default" | "secondary" | "destructive" | "outline", className?: string }> = {
+  PENDING: { variant: 'secondary' },
+  GENERATING: { variant: 'secondary', className: 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800' },
+  READY: { variant: 'secondary', className: 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800' },
+  FAILED: { variant: 'destructive' },
+  OFFER: { variant: 'secondary', className: 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800' },
+  WITHDRAWN: { variant: 'outline', className: 'text-muted-foreground' },
+  REJECTED: { variant: 'destructive' },
+  INTERVIEW: { variant: 'secondary', className: 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800' },
+  APPLIED: { variant: 'default' },
 };
 
 export default function ApplicationResumeEditorPage() {
@@ -61,7 +79,7 @@ export default function ApplicationResumeEditorPage() {
   const [coverVersion, setCoverVersion] = useState<string | null>(null);
   const [instructions, setInstructions] = useState('');
   const [activeTab, setActiveTab] = useState<'resume' | 'cover-letter'>('resume');
-  
+
   // Trigger ATS score refresh after saving
   const [atsRefreshTrigger, setAtsRefreshTrigger] = useState(0);
 
@@ -124,8 +142,10 @@ export default function ApplicationResumeEditorPage() {
   const statusBadge = useMemo(() => {
     if (!application) return null;
     const label = STATUS_LABELS[application.status] || application.status;
+    const config = STATUS_COLORS[application.status] || { variant: 'outline' };
+
     return (
-      <Badge variant="outline" className="text-sm font-medium">
+      <Badge variant={config.variant} className={cn("text-sm font-medium px-2.5 py-0.5", config.className)}>
         {label}
       </Badge>
     );
@@ -139,7 +159,7 @@ export default function ApplicationResumeEditorPage() {
 
   const handleResumeSave = async () => {
     if (!parsedResume) return;
-    
+
     try {
       const normalized = normalizeResumeForSave(parsedResume);
       await updateResume.mutateAsync(normalized);
@@ -171,7 +191,7 @@ export default function ApplicationResumeEditorPage() {
     try {
       const updated = await upsertCoverLetter.mutateAsync({ content: coverLetterValue });
       const sanitized = updated.coverLetterText || '';
-      
+
       // Use startTransition to batch state updates and prevent intermediate "changes detected" state
       startTransition(() => {
         setCoverLetterValue(sanitized);
@@ -179,7 +199,7 @@ export default function ApplicationResumeEditorPage() {
         setCoverVersion(sanitized);
         setCoverInitialized(true);
       });
-      
+
       toast.success('Anschreiben gespeichert');
     } catch (err) {
       console.error('Cover letter save failed', err);
@@ -194,10 +214,10 @@ export default function ApplicationResumeEditorPage() {
         instructions: trimmed ? trimmed : undefined,
         regenerate: true,
       });
-      
+
       // Convert LLM output (Markdown) to Tiptap-compatible HTML
       const sanitized = toTiptapHtml(updated.coverLetterText || '');
-      
+
       // Use startTransition to batch state updates
       startTransition(() => {
         setCoverLetterValue(sanitized);
@@ -205,7 +225,7 @@ export default function ApplicationResumeEditorPage() {
         setCoverVersion(sanitized);
         setCoverInitialized(true);
       });
-      
+
       toast.success('Anschreiben generiert');
     } catch (err) {
       console.error('Cover letter generation failed', err);
@@ -224,7 +244,7 @@ export default function ApplicationResumeEditorPage() {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Zurück zu Bewerbungen
         </Button>
-        <Card>
+        <Card className="shadow-soft border-border/50">
           <CardHeader>
             <CardTitle>Editor nicht verfügbar</CardTitle>
             <CardDescription>Die Bewerbung konnte nicht geladen werden.</CardDescription>
@@ -237,15 +257,15 @@ export default function ApplicationResumeEditorPage() {
   const isSaveDisabled = !parsedResume || updateResume.isPending;
   const coverMutationPending = upsertCoverLetter.isPending;
   const isCoverSaveDisabled = !coverHasContent || coverMutationPending;
-  
+
   // Check if data exists in the application (saved data), not just in editor state
   const hasSavedResume = application?.resumeText && application.resumeText.trim().length > 0;
   const hasSavedCoverLetter = application?.coverLetterText && stripHtml(application.coverLetterText).trim().length > 0;
-  
+
   // Cover letter is only required if it was generated (coverLetterText exists)
   // If user opted out of cover letter generation, we don't require it for export
   const coverLetterWasGenerated = application?.coverLetterText !== null && application?.coverLetterText !== undefined;
-  
+
   const exportDisabledReason = (() => {
     if (application.status === 'GENERATING') {
       return 'Export läuft bereits. Bitte warte auf den Abschluss.';
@@ -283,41 +303,78 @@ export default function ApplicationResumeEditorPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="space-y-2">
-          <Button variant="ghost" size="sm" onClick={() => router.push(`/applications/${applicationId}`)}>
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Header Section */}
+      <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+        <div className="space-y-4">
+          <Button variant="ghost" size="sm" onClick={() => router.push(`/applications/${applicationId}`)} className="pl-0 hover:pl-2 transition-all text-muted-foreground hover:text-foreground">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Zurück zur Bewerbung
+            Zurück zur Übersicht
           </Button>
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-semibold">Unterlagen anpassen</h1>
-            {statusBadge}
+
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-bold tracking-tight text-foreground">Unterlagen anpassen</h1>
+              {statusBadge}
+            </div>
+            <p className="text-muted-foreground max-w-2xl">
+              Passe deinen Lebenslauf und dein Anschreiben an, bevor du die finalen PDFs exportierst.
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Passe deinen Lebenslauf als JSON an, generiere das Anschreiben mit KI und exportiere danach beide PDFs.
-          </p>
+
           {application.jobPosting && (
-            <div className="flex flex-wrap gap-4 text-sm text-slate-600">
-              <span className="inline-flex items-center gap-1">
-                <Briefcase className="h-4 w-4" />
-                {application.jobPosting.title}
-              </span>
+            <div className="flex flex-wrap gap-3 text-sm">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50 border border-border/50 text-foreground/80">
+                <Briefcase className="h-3.5 w-3.5 text-primary" />
+                <span className="font-medium">{application.jobPosting.title}</span>
+              </div>
               {application.jobPosting.company && (
-                <span className="inline-flex items-center gap-1">
-                  <Sparkles className="h-4 w-4" />
-                  {application.jobPosting.company}
-                </span>
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50 border border-border/50 text-foreground/80">
+                  <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                  <span>{application.jobPosting.company}</span>
+                </div>
               )}
               {application.jobPosting.location && (
-                <span className="inline-flex items-center gap-1">
-                  <MapPin className="h-4 w-4" />
-                  {application.jobPosting.location}
-                </span>
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50 border border-border/50 text-foreground/80">
+                  <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span>{application.jobPosting.location}</span>
+                </div>
               )}
             </div>
           )}
         </div>
+
+        {/* Export Card - Compact */}
+        <Card className="w-full md:w-auto min-w-[300px] shadow-soft border-border/50 bg-card/50 backdrop-blur-sm">
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center justify-between gap-4">
+              <div className="space-y-1">
+                <p className="font-medium text-sm">PDF Export</p>
+                <p className="text-xs text-muted-foreground">
+                  {exportDisabledReason ? (
+                    <span className="text-orange-600 dark:text-orange-400 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      Aktion erforderlich
+                    </span>
+                  ) : (
+                    <span className="text-green-600 dark:text-green-400 flex items-center gap-1">
+                      <CheckCircle2 className="h-3 w-3" />
+                      Bereit zum Export
+                    </span>
+                  )}
+                </p>
+              </div>
+              <Button onClick={handleExport} disabled={!canExport} size="sm" className="shadow-sm">
+                {exportApplication.isPending || application.status === 'GENERATING' ? (
+                  <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Download className="h-4 w-4 mr-2" />
+                )}
+                Exportieren
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <Tabs
@@ -326,27 +383,48 @@ export default function ApplicationResumeEditorPage() {
         defaultValue="resume"
         className="space-y-6"
       >
-        <TabsList>
-          <TabsTrigger value="resume">Lebenslauf</TabsTrigger>
-          {coverLetterWasGenerated && (
-            <TabsTrigger value="cover-letter">Anschreiben</TabsTrigger>
-          )}
-        </TabsList>
+        <div className="border-b border-border/50">
+          <TabsList className="bg-transparent p-0 h-auto gap-6">
+            <TabsTrigger
+              value="resume"
+              className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:text-primary border-b-2 border-transparent rounded-none px-2 py-3 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Lebenslauf
+            </TabsTrigger>
+            {coverLetterWasGenerated && (
+              <TabsTrigger
+                value="cover-letter"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:text-primary border-b-2 border-transparent rounded-none px-2 py-3 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Anschreiben
+              </TabsTrigger>
+            )}
+          </TabsList>
+        </div>
 
-        <TabsContent value="resume" className="space-y-6 focus-visible:outline-none">
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={handleResumeReset} disabled={!hasResumeChanges || updateResume.isPending}>
-              Änderungen verwerfen
-            </Button>
-            <Button onClick={handleResumeSave} disabled={isSaveDisabled}>
-              {updateResume.isPending ? 'Speichert...' : 'Speichern'}
-            </Button>
+        <TabsContent value="resume" className="space-y-6 focus-visible:outline-none mt-0">
+          <div className="flex flex-wrap items-center justify-between gap-4 py-2">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className={cn("h-2 w-2 rounded-full", hasResumeChanges ? "bg-orange-500" : "bg-green-500")} />
+              {hasResumeChanges ? "Ungespeicherte Änderungen" : "Alle Änderungen gespeichert"}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={handleResumeReset} disabled={!hasResumeChanges || updateResume.isPending}>
+                Zurücksetzen
+              </Button>
+              <Button onClick={handleResumeSave} disabled={isSaveDisabled} size="sm" className="shadow-sm">
+                {updateResume.isPending ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                Speichern
+              </Button>
+            </div>
           </div>
 
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(380px,580px)_280px] lg:grid-cols-[minmax(0,1fr)_minmax(380px,580px)]">
             {/* Form Editor - Scrollable independently */}
-            <div className="h-[calc(100vh-280px)] overflow-y-auto pr-4">
-              <div className="space-y-6">
+            <div className="h-[calc(100vh-280px)] overflow-y-auto pr-2 scrollbar-thin">
+              <div className="space-y-6 pb-10">
                 {parsedResume && (
                   <ResumeFormEditor
                     value={parsedResume}
@@ -359,16 +437,23 @@ export default function ApplicationResumeEditorPage() {
 
             {/* Live Preview - Scrollable independently, sticky container */}
             <div className="sticky top-6 h-[calc(100vh-280px)]">
-              <Card className="h-full flex flex-col">
-                <CardHeader className="flex-shrink-0">
-                  <CardTitle>Live-Vorschau</CardTitle>
-                  <CardDescription>A4-Format Vorschau mit gewähltem Template</CardDescription>
+              <Card className="h-full flex flex-col shadow-soft border-border/50 overflow-hidden bg-muted/30">
+                <CardHeader className="flex-shrink-0 bg-card border-b border-border/50 py-3 px-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <CardTitle className="text-base">Vorschau</CardTitle>
+                      <CardDescription className="text-xs">A4-Format</CardDescription>
+                    </div>
+                    <Badge variant="outline" className="text-xs font-normal">
+                      Live Preview
+                    </Badge>
+                  </div>
                 </CardHeader>
-                <CardContent className="flex-1 overflow-y-auto overflow-x-hidden">
+                <CardContent className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 bg-muted/30 scrollbar-thin">
                   {parsedResume && (
-                    <div className="w-full">
-                      <ResumeTemplatePreview 
-                        resume={parsedResume} 
+                    <div className="w-full shadow-lg mx-auto max-w-[210mm] bg-white min-h-[297mm]">
+                      <ResumeTemplatePreview
+                        resume={parsedResume}
                         templateId={application?.resumeTemplateId}
                       />
                     </div>
@@ -378,7 +463,7 @@ export default function ApplicationResumeEditorPage() {
             </div>
 
             {/* ATS Score Sidebar - Only visible on xl screens */}
-            <div className="hidden xl:block sticky top-6 h-[calc(100vh-280px)] overflow-y-auto">
+            <div className="hidden xl:block sticky top-6 h-[calc(100vh-280px)] overflow-y-auto scrollbar-thin">
               <ATSScoreSidebar
                 applicationId={applicationId}
                 refreshTrigger={atsRefreshTrigger}
@@ -396,112 +481,97 @@ export default function ApplicationResumeEditorPage() {
         </TabsContent>
 
         {coverLetterWasGenerated && (
-          <TabsContent value="cover-letter" className="space-y-6 focus-visible:outline-none">
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={handleCoverReset} disabled={!hasCoverChanges || coverMutationPending}>
-                Änderungen verwerfen
-              </Button>
-              <Button onClick={handleCoverSave} disabled={isCoverSaveDisabled}>
-                {coverMutationPending ? 'Speichert...' : 'Speichern'}
-              </Button>
+          <TabsContent value="cover-letter" className="space-y-6 focus-visible:outline-none mt-0">
+            <div className="flex flex-wrap items-center justify-between gap-4 py-2">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className={cn("h-2 w-2 rounded-full", hasCoverChanges ? "bg-orange-500" : "bg-green-500")} />
+                {hasCoverChanges ? "Ungespeicherte Änderungen" : "Alle Änderungen gespeichert"}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" onClick={handleCoverReset} disabled={!hasCoverChanges || coverMutationPending}>
+                  Zurücksetzen
+                </Button>
+                <Button onClick={handleCoverSave} disabled={isCoverSaveDisabled} size="sm" className="shadow-sm">
+                  {coverMutationPending ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                  Speichern
+                </Button>
+              </div>
             </div>
 
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(380px,580px)]">
               {/* Editor - Scrollable independently */}
-              <div className="h-[calc(100vh-280px)] overflow-y-auto pr-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Anschreiben bearbeiten</CardTitle>
-                    <CardDescription>Bearbeite das Anschreiben direkt im Editor. Die Anrede und Schlussformel sind Teil des Textes.</CardDescription>
+              <div className="h-[calc(100vh-280px)] overflow-y-auto pr-2 scrollbar-thin">
+                <Card className="shadow-soft border-border/50">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-lg">Anschreiben bearbeiten</CardTitle>
+                    <CardDescription>Bearbeite das Anschreiben direkt im Editor oder generiere es neu.</CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-slate-700">Hinweise für die Generierung (optional)</label>
+                  <CardContent className="space-y-6">
+                    <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border/50">
+                      <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                        <Sparkles className="h-3.5 w-3.5 text-primary" />
+                        KI-Generierung (Optional)
+                      </label>
                       <Textarea
                         value={instructions}
                         onChange={(event) => setInstructions(event.target.value)}
-                        placeholder="Betone Azure-Projekte, Wunsch nach Remote-Setup, gewünschter Ton etc."
-                        rows={4}
+                        placeholder="Z.B.: Betone meine Erfahrung mit React und meinen Wunsch nach Remote-Arbeit..."
+                        rows={3}
                         disabled={coverMutationPending}
+                        className="resize-none bg-background"
                       />
-                      <Button variant="outline" size="sm" onClick={handleGenerateCoverLetter} disabled={coverMutationPending} className="w-full">
-                        {coverMutationPending ? 'Generiere...' : 'Mit KI generieren'}
+                      <Button variant="secondary" size="sm" onClick={handleGenerateCoverLetter} disabled={coverMutationPending} className="w-full">
+                        {coverMutationPending ? <RefreshCw className="h-3.5 w-3.5 animate-spin mr-2" /> : <Sparkles className="h-3.5 w-3.5 mr-2" />}
+                        Neu generieren
                       </Button>
                     </div>
-                    <CoverLetterEditor value={coverLetterValue} onChange={setCoverLetterValue} disabled={coverMutationPending} />
-                    <p className="text-xs text-muted-foreground">
-                      Der Editor enthält den kompletten Briefinhalt inkl. Anrede und Schlussformel. Dein Name wird automatisch als Unterschrift hinzugefügt.
-                    </p>
-                  </CardContent>
-              </Card>
-            </div>
 
-            {/* Live Preview - Scrollable independently, sticky container */}
-            <div className="sticky top-6 h-[calc(100vh-280px)]">
-              <Card className="h-full flex flex-col">
-                <CardHeader className="flex-shrink-0">
-                  <CardTitle>Live-Vorschau</CardTitle>
-                  <CardDescription>A4-Format Vorschau mit gewähltem Template</CardDescription>
-                </CardHeader>
-                <CardContent className="flex-1 overflow-y-auto overflow-x-hidden">
-                  <div className="w-full">
-                    <CoverLetterTemplatePreview 
-                      html={coverLetterValue}
-                      candidateName={parsedResume?.candidateName}
-                      email={parsedResume?.email}
-                      phone={parsedResume?.phone}
-                      location={parsedResume?.location}
-                      linkedin={parsedResume?.linkedin}
-                      github={parsedResume?.github}
-                      companyName={application?.jobPosting?.company}
-                      templateId={application?.coverLetterTemplateId}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-foreground">Inhalt</label>
+                      <CoverLetterEditor value={coverLetterValue} onChange={setCoverLetterValue} disabled={coverMutationPending} />
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Der Editor enthält den kompletten Briefinhalt inkl. Anrede und Schlussformel. Dein Name wird automatisch als Unterschrift hinzugefügt.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Live Preview - Scrollable independently, sticky container */}
+              <div className="sticky top-6 h-[calc(100vh-280px)]">
+                <Card className="h-full flex flex-col shadow-soft border-border/50 overflow-hidden bg-muted/30">
+                  <CardHeader className="flex-shrink-0 bg-card border-b border-border/50 py-3 px-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <CardTitle className="text-base">Vorschau</CardTitle>
+                        <CardDescription className="text-xs">A4-Format</CardDescription>
+                      </div>
+                      <Badge variant="outline" className="text-xs font-normal">
+                        Live Preview
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 bg-muted/30 scrollbar-thin">
+                    <div className="w-full shadow-lg mx-auto max-w-[210mm] bg-white min-h-[297mm]">
+                      <CoverLetterTemplatePreview
+                        html={coverLetterValue}
+                        candidateName={parsedResume?.candidateName}
+                        email={parsedResume?.email}
+                        phone={parsedResume?.phone}
+                        location={parsedResume?.location}
+                        linkedin={parsedResume?.linkedin}
+                        github={parsedResume?.github}
+                        companyName={application?.jobPosting?.company}
+                        templateId={application?.coverLetterTemplateId}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
-          </div>
-        </TabsContent>
+          </TabsContent>
         )}
       </Tabs>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>PDF Export</CardTitle>
-          <CardDescription>
-            Starte die Generierung, sobald Lebenslauf und Anschreiben angepasst sind. Der Prozess lädt beide PDFs in den
-            Hintergrund.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-wrap items-start justify-between gap-4">
-          <div className="space-y-1 text-sm text-slate-600">
-            <p>
-              Aktueller Status:{' '}
-              <span className="font-semibold text-slate-900">{STATUS_LABELS[application.status] || application.status}</span>
-            </p>
-            {exportDisabledReason ? (
-              <p className="text-sm text-destructive">{exportDisabledReason}</p>
-            ) : (
-              <p className="text-xs text-muted-foreground">Alle Voraussetzungen erfüllt – Export kann gestartet werden.</p>
-            )}
-            {application.status === 'READY' && (
-              <p className="text-xs text-muted-foreground">
-                Download verfügbar in der Detailansicht oder per Direktlink aus der Übersicht.
-              </p>
-            )}
-          </div>
-          <Button onClick={handleExport} disabled={!canExport} className="min-w-[220px]">
-            {exportApplication.isPending || application.status === 'GENERATING' ? (
-              'Export wird vorbereitet...'
-            ) : (
-              <span className="inline-flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                PDF Export starten
-              </span>
-            )}
-          </Button>
-        </CardContent>
-      </Card>
     </div>
   );
 }

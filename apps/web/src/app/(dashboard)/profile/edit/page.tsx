@@ -12,14 +12,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SkillsManager } from '@/components/forms/skills-manager';
 import { LanguagesManager } from '@/components/forms/languages-manager';
 import { ExperienceManager } from '@/components/forms/experience-manager';
 import { EducationManager } from '@/components/forms/education-manager';
 import { CertificatesManager } from '@/components/forms/certificates-manager';
 import { ProjectsManager } from '@/components/forms/projects-manager';
-import { ArrowLeft, Loader2 } from 'lucide-react';
-import Link from 'next/link';
+import { ArrowLeft, Loader2, User, Briefcase, GraduationCap, Code, Award, Save } from 'lucide-react';
 import type { Skill, Experience, Education, Certificate, Project, Language } from '@/types';
 
 // Validation schema for basic profile info
@@ -41,7 +41,7 @@ export default function ProfileEditPage() {
   const { data: profile, isLoading } = useProfile();
   const user = useAuthStore((state) => state.user);
   const updateProfile = useUpdateProfile();
-  
+
   // State for skills, experiences, education, certificates, and projects management
   const [skills, setSkills] = useState<Skill[]>([]);
   const [experiences, setExperiences] = useState<Experience[]>([]);
@@ -80,18 +80,16 @@ export default function ProfileEditPage() {
     }
   }, [user, profile, form]);
 
-  // Sync skills, experiences, education, certificates, and projects from profile (separate effect to track changes properly)
+  // Sync skills, experiences, education, certificates, and projects from profile
   useEffect(() => {
     if (profile) {
-      // Update state when profile data changes (after successful mutation)
       startTransition(() => {
         setSkills(profile.skills || []);
         setExperiences(profile.experiences || []);
         setCertificates(profile.certificates || []);
         setProjects(profile.projects || []);
         setLanguages(profile.languages || []);
-        
-        // Convert education date strings (ISO format from backend) to year numbers for frontend
+
         const educationWithYears = (profile.education || []).map(edu => ({
           ...edu,
           startYear: edu.startYear ? new Date(edu.startYear).getFullYear() : undefined,
@@ -100,71 +98,28 @@ export default function ProfileEditPage() {
         setEducation(educationWithYears);
       });
     }
-    // Only re-run when skills, experiences, education, certificates, projects, or languages arrays change
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.skills, profile?.experiences, profile?.education, profile?.certificates, profile?.projects, profile?.languages]);
 
   const onSubmit = async (data: ProfileFormValues) => {
     try {
-      // Map frontend field names to backend DTO field names
-      // Keep IDs for differential updates (backend upserts based on ID presence)
-      const skillsForUpdate = skills.map(({ id, name, level }) => ({
-        ...(id && { id }), // Include ID if exists (for update), omit if new (for create)
-        name,
-        level,
-      }));
-      
+      const skillsForUpdate = skills.map(({ id, name, level }) => ({ ...(id && { id }), name, level }));
       const experiencesForUpdate = experiences.map(({ id, title, company, location, startDate, endDate, description, current }) => ({
-        ...(id && { id }), // Include ID if exists
-        title,
-        company,
-        location, // Keep null as-is for explicit clearing
-        startDate,
-        endDate, // Keep null as-is for "current" jobs
-        description, // Keep null as-is to allow clearing descriptions
-        current,
+        ...(id && { id }), title, company, location, startDate, endDate, description, current
       }));
-      
       const educationForUpdate = education.map(({ id, degree, institution, fieldOfStudy, startYear, endYear, gpa, description }) => ({
-        ...(id && { id }), // Include ID if exists (for update), omit if new (for create)
-        degree,
-        institution,
-        fieldOfStudy,
-        // Convert year numbers to ISO date strings (YYYY-01-01) for backend DateTime fields
+        ...(id && { id }), degree, institution, fieldOfStudy,
         startYear: startYear ? `${startYear}-01-01` : undefined,
         endYear: endYear ? `${endYear}-01-01` : undefined,
-        gpa,
-        description,
+        gpa, description,
       }));
-      
-      // Map frontend certificate fields to backend DTO fields
-      // Backend uses: dateObtained (for issueDate), url (for credentialUrl)
-      // Note: Backend doesn't currently support expiryDate and credentialId
       const certificatesForUpdate = certificates.map(({ id, name, issuer, dateObtained, url }) => ({
-        ...(id && { id }), // Include ID if exists
-        name,
-        issuer,
-        dateObtained: dateObtained || undefined, // Backend expects dateObtained
-        url: url || undefined, // Backend maps this to credentialUrl
-        // expiryDate and credentialId are not yet supported by backend
+        ...(id && { id }), name, issuer, dateObtained: dateObtained || undefined, url: url || undefined,
       }));
-
       const projectsForUpdate = projects.map(({ id, name, description, technologies, url, startDate, endDate }) => ({
-        ...(id && { id }), // Include ID if exists
-        name,
-        description,
-        technologies, // Already an array in Project type
-        url,
-        startDate,
-        endDate,
+        ...(id && { id }), name, description, technologies, url, startDate, endDate,
       }));
+      const languagesForUpdate = languages.map(({ id, name, level }) => ({ ...(id && { id }), name, level }));
 
-      const languagesForUpdate = languages.map(({ id, name, level }) => ({
-        ...(id && { id }), // Include ID if exists
-        name,
-        level,
-      }));
-      
       await updateProfile.mutateAsync({
         firstName: data.firstName || undefined,
         lastName: data.lastName || undefined,
@@ -180,301 +135,284 @@ export default function ProfileEditPage() {
         projects: projects.length > 0 ? projectsForUpdate : undefined,
         languages: languages.length > 0 ? languagesForUpdate : undefined,
       });
-      
-      // Stay on edit page after save (data will refresh via React Query)
-      // User can manually navigate back via Cancel button or back arrow
+
     } catch (error) {
-      // Error is handled by the mutation hook (toast notification)
       console.error('Failed to update profile:', error);
     }
   };
 
-  const handleCancel = () => {
-    router.push('/profile');
-  };
-
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.push('/profile')}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Profil bearbeiten</h1>
-            <p className="mt-1 text-gray-500">Lädt dein Profil...</p>
-          </div>
-        </div>
-        <Card>
-          <CardHeader>
-            <div className="h-6 w-48 animate-pulse rounded bg-gray-200" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="space-y-2">
-                  <div className="h-4 w-32 animate-pulse rounded bg-gray-200" />
-                  <div className="h-10 w-full animate-pulse rounded bg-gray-200" />
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+      <div className="flex h-[50vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in pb-10">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => router.push('/profile')}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Profil bearbeiten</h1>
-          <p className="mt-1 text-gray-500">Aktualisiere deine grundlegenden Informationen</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => router.push('/profile')} className="rounded-full hover:bg-muted">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Profil bearbeiten</h1>
+            <p className="text-muted-foreground">Aktualisiere deine Informationen</p>
+          </div>
         </div>
+        <Button onClick={form.handleSubmit(onSubmit)} disabled={updateProfile.isPending} className="shadow-lg shadow-primary/20">
+          {updateProfile.isPending ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Save className="mr-2 h-4 w-4" />
+          )}
+          Speichern
+        </Button>
       </div>
 
-      {/* Form */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Grundinformationen</CardTitle>
-          <CardDescription>
-            Diese Informationen werden verwendet, um deine Bewerbungen zu personalisieren.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid gap-6 md:grid-cols-2">
-                {/* Vorname */}
-                <FormField
-                  control={form.control}
-                  name="firstName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Vorname *</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Max Mustermann"
-                          {...field}
-                          disabled={updateProfile.isPending}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                {/* Nachname */}
-                <FormField
-                  control={form.control}
-                  name="lastName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nachname *</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Mustermann"
-                          {...field}
-                          disabled={updateProfile.isPending}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+      <Tabs defaultValue="basic" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-6 lg:w-auto h-auto p-1 bg-muted/50 rounded-xl">
+          <TabsTrigger value="basic" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm py-2">Basis</TabsTrigger>
+          <TabsTrigger value="experience" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm py-2">Erfahrung</TabsTrigger>
+          <TabsTrigger value="education" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm py-2">Bildung</TabsTrigger>
+          <TabsTrigger value="skills" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm py-2">Skills</TabsTrigger>
+          <TabsTrigger value="projects" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm py-2">Projekte</TabsTrigger>
+          <TabsTrigger value="certificates" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm py-2">Zertifikate</TabsTrigger>
+        </TabsList>
 
-                {/* Email (Read-only) */}
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>E-Mail *</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="email"
-                          placeholder="max@example.com"
-                          {...field}
-                          disabled
-                          className="bg-gray-50"
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        E-Mail kann nicht geändert werden
-                      </FormDescription>
-                    </FormItem>
-                  )}
-                />
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
 
-                {/* Phone */}
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Telefon</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="tel"
-                          placeholder="+49 123 456789"
-                          {...field}
-                          disabled={updateProfile.isPending}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            <TabsContent value="basic" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <Card className="border-border/50 shadow-soft">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <User className="h-5 w-5 text-primary" />
+                    Grundinformationen
+                  </CardTitle>
+                  <CardDescription>Persönliche Daten und Kontaktinformationen</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="firstName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Vorname *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Max" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="lastName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nachname *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Mustermann" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>E-Mail</FormLabel>
+                          <FormControl>
+                            <Input {...field} disabled className="bg-muted" />
+                          </FormControl>
+                          <FormDescription>E-Mail kann nicht geändert werden</FormDescription>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Telefon</FormLabel>
+                          <FormControl>
+                            <Input placeholder="+49 123 456789" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="location"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Standort</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Berlin, Deutschland" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="linkedIn"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>LinkedIn URL</FormLabel>
+                          <FormControl>
+                            <Input placeholder="https://linkedin.com/in/..." {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="website"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Website / Portfolio</FormLabel>
+                          <FormControl>
+                            <Input placeholder="https://example.com" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="summary"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Über mich</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Erzähle kurz etwas über dich..."
+                            className="min-h-[150px] resize-none"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription>Eine kurze Zusammenfassung für dein Profil.</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-                {/* Location */}
-                <FormField
-                  control={form.control}
-                  name="location"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Standort</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Berlin, Deutschland"
-                          {...field}
-                          disabled={updateProfile.isPending}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            <TabsContent value="experience" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <Card className="border-border/50 shadow-soft">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Briefcase className="h-5 w-5 text-primary" />
+                    Berufserfahrung
+                  </CardTitle>
+                  <CardDescription>Füge deine bisherigen Arbeitsstellen hinzu</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ExperienceManager
+                    experiences={experiences}
+                    onExperiencesChange={setExperiences}
+                    disabled={updateProfile.isPending}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-                {/* LinkedIn */}
-                <FormField
-                  control={form.control}
-                  name="linkedIn"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>LinkedIn URL</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="url"
-                          placeholder="https://linkedin.com/in/username"
-                          {...field}
-                          disabled={updateProfile.isPending}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            <TabsContent value="education" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <Card className="border-border/50 shadow-soft">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <GraduationCap className="h-5 w-5 text-primary" />
+                    Ausbildung
+                  </CardTitle>
+                  <CardDescription>Deine schulische und akademische Laufbahn</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <EducationManager
+                    education={education}
+                    onEducationChange={setEducation}
+                    disabled={updateProfile.isPending}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-                {/* Website */}
-                <FormField
-                  control={form.control}
-                  name="website"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Website / Portfolio</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="url"
-                          placeholder="https://example.com"
-                          {...field}
-                          disabled={updateProfile.isPending}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+            <TabsContent value="skills" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <Card className="border-border/50 shadow-soft">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Code className="h-5 w-5 text-primary" />
+                    Fähigkeiten & Sprachen
+                  </CardTitle>
+                  <CardDescription>Was kannst du besonders gut?</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-8">
+                  <SkillsManager
+                    skills={skills}
+                    onSkillsChange={setSkills}
+                    disabled={updateProfile.isPending}
+                  />
+                  <LanguagesManager
+                    languages={languages}
+                    onLanguagesChange={setLanguages}
+                    disabled={updateProfile.isPending}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-              {/* Summary (Full width) */}
-              <FormField
-                control={form.control}
-                name="summary"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Professionelle Zusammenfassung</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Erzähle etwas über dich, deine Erfahrung und deine Ziele..."
-                        className="min-h-[150px] resize-none"
-                        {...field}
-                        disabled={updateProfile.isPending}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Eine kurze Zusammenfassung deiner beruflichen Erfahrung und Ziele (optional)
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <TabsContent value="projects" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <Card className="border-border/50 shadow-soft">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Code className="h-5 w-5 text-primary" />
+                    Projekte
+                  </CardTitle>
+                  <CardDescription>Zeige deine besten Arbeiten</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ProjectsManager
+                    projects={projects}
+                    onProjectsChange={setProjects}
+                    disabled={updateProfile.isPending}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-              {/* Skills Manager */}
-              <SkillsManager
-                skills={skills}
-                onSkillsChange={setSkills}
-                disabled={updateProfile.isPending}
-              />
+            <TabsContent value="certificates" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <Card className="border-border/50 shadow-soft">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Award className="h-5 w-5 text-primary" />
+                    Zertifikate
+                  </CardTitle>
+                  <CardDescription>Deine Qualifikationen und Urkunden</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <CertificatesManager
+                    certificates={certificates}
+                    onCertificatesChange={setCertificates}
+                    disabled={updateProfile.isPending}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-              {/* Languages Manager */}
-              <LanguagesManager
-                languages={languages}
-                onLanguagesChange={setLanguages}
-                disabled={updateProfile.isPending}
-              />
-
-              {/* Experience Manager */}
-              <ExperienceManager
-                experiences={experiences}
-                onExperiencesChange={setExperiences}
-                disabled={updateProfile.isPending}
-              />
-
-              {/* Education Manager */}
-              <EducationManager
-                education={education}
-                onEducationChange={setEducation}
-                disabled={updateProfile.isPending}
-              />
-
-              {/* Certificates Manager */}
-              <CertificatesManager
-                certificates={certificates}
-                onCertificatesChange={setCertificates}
-                disabled={updateProfile.isPending}
-              />
-
-              {/* Projects Manager */}
-              <ProjectsManager
-                projects={projects}
-                onProjectsChange={setProjects}
-                disabled={updateProfile.isPending}
-              />
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-4 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleCancel}
-                  disabled={updateProfile.isPending}
-                >
-                  Abbrechen
-                </Button>
-                <Button type="submit" disabled={updateProfile.isPending}>
-                  {updateProfile.isPending && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
-                  Speichern
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+          </form>
+        </Form>
+      </Tabs>
     </div>
   );
 }

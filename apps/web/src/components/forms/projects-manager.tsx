@@ -57,16 +57,6 @@ const projectSchema = z.object({
 
 type ProjectFormValues = z.infer<typeof projectSchema>;
 
-/**
- * ProjectsManager Component
- * 
- * Manages project entries with add, edit, and delete functionality.
- * - Display list of existing projects (sorted by start date, most recent first)
- * - Add new project via dialog/modal
- * - Edit existing entries
- * - Delete entries with confirmation
- * - Technologies input as comma-separated values that become chips
- */
 export function ProjectsManager({
   projects,
   onProjectsChange,
@@ -89,13 +79,11 @@ export function ProjectsManager({
     },
   });
 
-  // Sort projects by start date (most recent first)
   const sortedProjects = [...projects].sort((a, b) => {
-    // Projects without start date go to the end
     if (!a.startDate && !b.startDate) return 0;
     if (!a.startDate) return 1;
     if (!b.startDate) return -1;
-    
+
     const dateA = new Date(a.startDate);
     const dateB = new Date(b.startDate);
     return dateB.getTime() - dateA.getTime();
@@ -120,16 +108,15 @@ export function ProjectsManager({
     form.reset({
       name: project.name,
       description: project.description || '',
-      technologies: project.technologies?.join(', ') || '', // Convert array to comma-separated string
+      technologies: project.technologies?.join(', ') || '',
       url: project.url || '',
-      startDate: project.startDate ? project.startDate.split('T')[0] : '', // Convert ISO to YYYY-MM-DD
+      startDate: project.startDate ? project.startDate.split('T')[0] : '',
       endDate: project.endDate ? project.endDate.split('T')[0] : '',
     });
     setIsDialogOpen(true);
   };
 
   const handleSubmit = (data: ProjectFormValues) => {
-    // Parse technologies from comma-separated string to array
     const technologiesArray = data.technologies
       ?.split(',')
       .map(tech => tech.trim())
@@ -147,16 +134,14 @@ export function ProjectsManager({
     let updatedProjects: Project[];
 
     if (editingIndex !== null) {
-      // Update existing project - PRESERVE THE ID!
       const existingProject = projects[editingIndex];
       updatedProjects = [...projects];
       updatedProjects[editingIndex] = {
         ...newProject,
-        ...(existingProject.id && { id: existingProject.id }), // Keep existing ID
+        ...(existingProject.id && { id: existingProject.id }),
       };
       toast.success('Projekt aktualisiert');
     } else {
-      // Add new project (no ID yet - backend will assign one)
       updatedProjects = [...projects, newProject];
       toast.success('Projekt hinzugefügt');
     }
@@ -181,67 +166,67 @@ export function ProjectsManager({
   };
 
   return (
-    <div className="space-y-4">
-      <div>
-        <Label className="text-base">Projekte</Label>
-        <p className="text-sm text-gray-500 mb-4">
-          Zeige deine persönlichen und beruflichen Projekte
-        </p>
-
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-medium">Projekte</h3>
+          <p className="text-sm text-muted-foreground">
+            Deine persönlichen und beruflichen Projekte
+          </p>
+        </div>
         <Button
           type="button"
           onClick={openAddDialog}
           disabled={disabled}
-          variant="outline"
-          className="w-full sm:w-auto"
+          size="sm"
         >
           <Plus className="h-4 w-4 mr-2" />
-          Projekt hinzufügen
+          Hinzufügen
         </Button>
       </div>
 
-      {/* Projects List */}
       {sortedProjects.length > 0 ? (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {sortedProjects.map((project, displayIndex) => {
-            // Find the original index for editing/deleting
             const originalIndex = projects.findIndex(
               p => p.name === project.name && p.startDate === project.startDate
             );
-            
+
             return (
-              <Card key={displayIndex} className="border-gray-200">
-                <CardContent className="p-4">
+              <Card key={displayIndex} className="border-border/50 shadow-sm hover:shadow-md transition-all">
+                <CardContent className="p-5">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-start gap-2">
-                        <FolderGit2 className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                      <div className="flex items-start gap-3">
+                        <div className="mt-1 h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <FolderGit2 className="h-4 w-4 text-primary" />
+                        </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="font-semibold text-gray-900">{project.name}</h3>
+                            <h4 className="font-semibold text-foreground">{project.name}</h4>
                             {project.url && (
                               <a
                                 href={project.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-blue-600 hover:text-blue-700 flex items-center gap-1 text-sm"
+                                className="text-primary hover:text-primary/80 flex items-center gap-1 text-xs bg-primary/5 px-2 py-0.5 rounded-full transition-colors"
                               >
                                 <ExternalLink className="h-3 w-3" />
-                                <span className="sr-only">Projektlink öffnen</span>
+                                <span>Link</span>
                               </a>
                             )}
                           </div>
-                          
+
                           {project.description && (
-                            <p className="mt-1 text-sm text-gray-700 line-clamp-2">
+                            <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
                               {project.description}
                             </p>
                           )}
 
                           {project.technologies && project.technologies.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-2">
+                            <div className="flex flex-wrap gap-1.5 mt-3">
                               {project.technologies.map((tech, techIndex) => (
-                                <Badge key={techIndex} variant="secondary" className="text-xs">
+                                <Badge key={techIndex} variant="secondary" className="text-[10px] px-1.5 py-0 h-5 bg-secondary/50 hover:bg-secondary">
                                   {tech}
                                 </Badge>
                               ))}
@@ -249,8 +234,8 @@ export function ProjectsManager({
                           )}
 
                           {(project.startDate || project.endDate) && (
-                            <div className="flex items-center gap-1 mt-2 text-sm text-gray-500">
-                              <Calendar className="h-3 w-3 flex-shrink-0" />
+                            <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
+                              <Calendar className="h-3 w-3" />
                               <span>
                                 {project.startDate ? formatDate(project.startDate) : '?'} -{' '}
                                 {project.endDate ? formatDate(project.endDate) : 'Heute'}
@@ -260,18 +245,17 @@ export function ProjectsManager({
                         </div>
                       </div>
                     </div>
-                    
-                    <div className="flex items-center gap-1 flex-shrink-0">
+
+                    <div className="flex items-center gap-1">
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
                         onClick={() => openEditDialog(originalIndex)}
                         disabled={disabled}
-                        className="h-8 w-8"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
                       >
                         <Edit className="h-4 w-4" />
-                        <span className="sr-only">Bearbeiten</span>
                       </Button>
                       <Button
                         type="button"
@@ -279,10 +263,9 @@ export function ProjectsManager({
                         size="icon"
                         onClick={() => setDeleteConfirmIndex(originalIndex)}
                         disabled={disabled}
-                        className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
                       >
                         <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Löschen</span>
                       </Button>
                     </div>
                   </div>
@@ -292,14 +275,27 @@ export function ProjectsManager({
           })}
         </div>
       ) : (
-        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-          <p className="text-sm text-blue-800">
-            Noch keine Projekte hinzugefügt. Zeige deine persönlichen und beruflichen Projekte.
+        <div className="flex flex-col items-center justify-center py-10 text-center rounded-xl border border-dashed border-border bg-muted/20">
+          <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-4">
+            <FolderGit2 className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <h3 className="font-medium text-foreground">Keine Projekte</h3>
+          <p className="text-sm text-muted-foreground mt-1 max-w-xs">
+            Zeige deine persönlichen und beruflichen Projekte, um dein Profil zu stärken.
           </p>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={openAddDialog}
+            disabled={disabled}
+            className="mt-4"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Erstes Projekt hinzufügen
+          </Button>
         </div>
       )}
 
-      {/* Add/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -313,7 +309,6 @@ export function ProjectsManager({
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-              {/* Project Name */}
               <FormField
                 control={form.control}
                 name="name"
@@ -321,17 +316,13 @@ export function ProjectsManager({
                   <FormItem>
                     <FormLabel>Projektname *</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="z.B. E-Commerce Platform"
-                        {...field}
-                      />
+                      <Input placeholder="z.B. E-Commerce Platform" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              {/* Description */}
               <FormField
                 control={form.control}
                 name="description"
@@ -350,7 +341,6 @@ export function ProjectsManager({
                 )}
               />
 
-              {/* Technologies */}
               <FormField
                 control={form.control}
                 name="technologies"
@@ -363,7 +353,7 @@ export function ProjectsManager({
                         {...field}
                       />
                     </FormControl>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       Technologien durch Komma trennen
                     </p>
                     <FormMessage />
@@ -371,7 +361,6 @@ export function ProjectsManager({
                 )}
               />
 
-              {/* Project URL */}
               <FormField
                 control={form.control}
                 name="url"
@@ -390,7 +379,6 @@ export function ProjectsManager({
                 )}
               />
 
-              {/* Date Range */}
               <div className="grid gap-4 sm:grid-cols-2">
                 <FormField
                   control={form.control}
@@ -399,10 +387,7 @@ export function ProjectsManager({
                     <FormItem>
                       <FormLabel>Startdatum</FormLabel>
                       <FormControl>
-                        <Input
-                          type="date"
-                          {...field}
-                        />
+                        <Input type="date" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -416,12 +401,9 @@ export function ProjectsManager({
                     <FormItem>
                       <FormLabel>Enddatum</FormLabel>
                       <FormControl>
-                        <Input
-                          type="date"
-                          {...field}
-                        />
+                        <Input type="date" {...field} />
                       </FormControl>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         Leer lassen falls noch laufend
                       </p>
                       <FormMessage />
@@ -431,15 +413,11 @@ export function ProjectsManager({
               </div>
 
               <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsDialogOpen(false)}
-                >
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Abbrechen
                 </Button>
                 <Button type="submit">
-                  {editingIndex !== null ? 'Aktualisieren' : 'Hinzufügen'}
+                  {editingIndex !== null ? 'Speichern' : 'Hinzufügen'}
                 </Button>
               </DialogFooter>
             </form>
@@ -447,31 +425,19 @@ export function ProjectsManager({
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deleteConfirmIndex !== null}
-        onOpenChange={(open) => !open && setDeleteConfirmIndex(null)}
-      >
+      <Dialog open={deleteConfirmIndex !== null} onOpenChange={(open) => !open && setDeleteConfirmIndex(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Projekt löschen</DialogTitle>
             <DialogDescription>
-              Bist du sicher, dass du dieses Projekt löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.
+              Möchtest du dieses Projekt wirklich löschen?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setDeleteConfirmIndex(null)}
-            >
+            <Button variant="outline" onClick={() => setDeleteConfirmIndex(null)}>
               Abbrechen
             </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={() => deleteConfirmIndex !== null && handleDelete(deleteConfirmIndex)}
-            >
+            <Button variant="destructive" onClick={() => deleteConfirmIndex !== null && handleDelete(deleteConfirmIndex)}>
               Löschen
             </Button>
           </DialogFooter>

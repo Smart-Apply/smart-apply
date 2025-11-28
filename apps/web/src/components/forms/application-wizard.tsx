@@ -14,11 +14,12 @@ import { useJobPostings } from '@/hooks/use-job-postings';
 import { useCreateApplicationWithGeneration } from '@/hooks/use-applications';
 import { useCoverLetterTemplates, useResumeTemplates, getDefaultTemplate } from '@/hooks/use-templates';
 import { TemplateCard } from '@/components/templates/template-card';
-import { Check, ChevronLeft, ChevronRight, X, AlertCircle, Briefcase, User, FileText, Edit, Sparkles } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, X, AlertCircle, Briefcase, User, FileText, Edit, Sparkles, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import type { JobPosting, Profile, Skill, Experience, Template } from '@/types';
 import { toast } from 'sonner';
 import { ApplicationLoading } from '@/components/applications/application-loading';
+import { cn } from '@/lib/utils';
 
 type WizardStep = 'profile' | 'job' | 'templates' | 'review';
 
@@ -32,27 +33,27 @@ interface StepConfig {
 const steps: StepConfig[] = [
   {
     id: 'profile',
-    title: 'Profil auswählen',
-    description: 'Überprüfe dein Profil',
+    title: 'Profil',
+    description: 'Überprüfen',
     icon: User,
   },
   {
     id: 'job',
-    title: 'Stellenanzeige wählen',
-    description: 'Wähle eine Stellenanzeige',
+    title: 'Stelle',
+    description: 'Auswählen',
     icon: Briefcase,
   },
   {
     id: 'templates',
-    title: 'Vorlagen wählen',
-    description: 'Wähle Vorlagen für deine Bewerbung',
+    title: 'Vorlagen',
+    description: 'Design',
     icon: FileText,
   },
   {
     id: 'review',
-    title: 'Überprüfen & Generieren',
-    description: 'Bestätige deine Bewerbung',
-    icon: Check,
+    title: 'Fertig',
+    description: 'Generieren',
+    icon: Sparkles,
   },
 ];
 
@@ -63,7 +64,7 @@ export function ApplicationWizard() {
   const [selectedCoverLetterTemplateId, setSelectedCoverLetterTemplateId] = useState<string | null>(null);
   const [selectedResumeTemplateId, setSelectedResumeTemplateId] = useState<string | null>(null);
   const [generateCoverLetter, setGenerateCoverLetter] = useState<boolean>(true);
-  
+
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { data: jobPostings, isLoading: jobPostingsLoading } = useJobPostings();
   const createApplication = useCreateApplicationWithGeneration();
@@ -118,7 +119,7 @@ export function ApplicationWizard() {
         resumeTemplateId: selectedResumeTemplateId || undefined,
         generateCoverLetter,
       });
-      
+
       // Success! Redirect to edit page
       router.push(`/applications/${application.id}/edit`);
     } catch (error) {
@@ -142,65 +143,39 @@ export function ApplicationWizard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Step Indicator */}
-      <div className="relative">
-        <div className="flex items-center justify-between">
+      <div className="relative mx-auto max-w-2xl">
+        <div className="absolute top-1/2 left-0 w-full h-0.5 bg-border -translate-y-1/2 z-0" />
+        <div className="relative z-10 flex justify-between">
           {steps.map((step, index) => {
             const Icon = step.icon;
             const isActive = currentStep === step.id;
             const isCompleted = index < currentStepIndex;
-            
+
             return (
-              <div key={step.id} className="flex-1">
-                <div className="flex items-center">
-                  {index > 0 && (
-                    <div
-                      className={`flex-1 h-1 mx-2 ${
-                        isCompleted ? 'bg-blue-600' : 'bg-gray-200'
-                      }`}
-                    />
+              <div key={step.id} className="flex flex-col items-center bg-background px-2">
+                <div
+                  className={cn(
+                    "flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-300",
+                    isActive
+                      ? "border-primary bg-primary text-primary-foreground scale-110 shadow-glow"
+                      : isCompleted
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-muted-foreground/30 bg-background text-muted-foreground"
                   )}
-                  <div className="flex flex-col items-center flex-shrink-0">
-                    <div
-                      className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-colors ${
-                        isActive
-                          ? 'border-blue-600 bg-blue-50'
-                          : isCompleted
-                          ? 'border-blue-600 bg-blue-600'
-                          : 'border-gray-200 bg-white'
-                      }`}
-                    >
-                      {isCompleted ? (
-                        <Check className="w-6 h-6 text-white" />
-                      ) : (
-                        <Icon
-                          className={`w-6 h-6 ${
-                            isActive ? 'text-blue-600' : 'text-gray-400'
-                          }`}
-                        />
-                      )}
-                    </div>
-                    <div className="mt-2 text-center">
-                      <p
-                        className={`text-sm font-medium ${
-                          isActive ? 'text-blue-600' : 'text-gray-500'
-                        }`}
-                      >
-                        {step.title}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-1 hidden sm:block">
-                        {step.description}
-                      </p>
-                    </div>
-                  </div>
-                  {index < steps.length - 1 && (
-                    <div
-                      className={`flex-1 h-1 mx-2 ${
-                        index < currentStepIndex ? 'bg-blue-600' : 'bg-gray-200'
-                      }`}
-                    />
-                  )}
+                >
+                  {isCompleted ? <Check className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
+                </div>
+                <div className="mt-2 text-center">
+                  <p
+                    className={cn(
+                      "text-xs font-semibold transition-colors duration-300",
+                      isActive ? "text-primary" : "text-muted-foreground"
+                    )}
+                  >
+                    {step.title}
+                  </p>
                 </div>
               </div>
             );
@@ -208,14 +183,12 @@ export function ApplicationWizard() {
         </div>
       </div>
 
-      <Separator />
-
       {/* Step Content */}
-      <div className="min-h-[400px]">
+      <div className="min-h-[400px] animate-in fade-in slide-in-from-bottom-4 duration-500">
         {currentStep === 'profile' && (
           <ProfileStep profile={profile} isComplete={isProfileComplete()} />
         )}
-        
+
         {currentStep === 'job' && (
           <JobStep
             jobPostings={jobPostings || []}
@@ -223,7 +196,7 @@ export function ApplicationWizard() {
             onSelectJob={setSelectedJobId}
           />
         )}
-        
+
         {currentStep === 'templates' && (
           <TemplateStep
             selectedCoverLetterTemplateId={selectedCoverLetterTemplateId}
@@ -234,10 +207,10 @@ export function ApplicationWizard() {
             onGenerateCoverLetterChange={setGenerateCoverLetter}
           />
         )}
-        
+
         {currentStep === 'review' && (
-          <ReviewStep 
-            profile={profile} 
+          <ReviewStep
+            profile={profile}
             job={selectedJob}
             coverLetterTemplateId={selectedCoverLetterTemplateId}
             resumeTemplateId={selectedResumeTemplateId}
@@ -247,13 +220,12 @@ export function ApplicationWizard() {
       </div>
 
       {/* Navigation Buttons */}
-      <div className="flex items-center justify-between border-t pt-6">
-        <Button variant="ghost" onClick={handleCancel}>
-          <X className="mr-2 h-4 w-4" />
+      <div className="flex items-center justify-between pt-6 border-t border-border/50">
+        <Button variant="ghost" onClick={handleCancel} className="text-muted-foreground hover:text-foreground">
           Abbrechen
         </Button>
 
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           {currentStep !== 'profile' && (
             <Button variant="outline" onClick={handleBack}>
               <ChevronLeft className="mr-2 h-4 w-4" />
@@ -264,15 +236,16 @@ export function ApplicationWizard() {
           {currentStep === 'review' ? (
             <Button
               onClick={handleSubmit}
-              loading={createApplication.isPending}
+              disabled={createApplication.isPending}
+              className="shadow-lg hover:shadow-xl transition-all"
             >
               Bewerbung erstellen
-              <ChevronRight className="ml-2 h-4 w-4" />
+              <Sparkles className="ml-2 h-4 w-4" />
             </Button>
           ) : (
-            <Button onClick={handleNext}>
+            <Button onClick={handleNext} className="shadow-md hover:shadow-lg transition-all">
               Weiter
-              <ChevronRight className="ml-2 h-4 w-4" />
+              <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           )}
         </div>
@@ -291,25 +264,26 @@ interface ProfileStepProps {
 function ProfileStep({ profile, isComplete }: ProfileStepProps) {
   const router = useRouter();
   return (
-    <Card>
+    <Card className="shadow-soft border-border/50">
       <CardHeader>
-        <CardTitle>Dein Profil</CardTitle>
+        <CardTitle>Dein Profil überprüfen</CardTitle>
         <CardDescription>
-          Überprüfe, ob dein Profil vollständig ist. Ein vollständiges Profil führt zu
-          besseren Bewerbungsunterlagen.
+          Stelle sicher, dass dein Profil vollständig ist, um die besten Ergebnisse zu erzielen.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
         {!isComplete && (
-          <div className="flex items-start gap-2 rounded-lg border border-orange-200 bg-orange-50 p-4">
-            <AlertCircle className="h-5 w-5 text-orange-600 mt-0.5" />
-            <div>
-              <p className="font-medium text-orange-900">Profil unvollständig</p>
-              <p className="text-sm text-orange-700 mt-1">
+          <div className="flex items-start gap-4 rounded-xl border border-orange-200 bg-orange-50/50 p-4 dark:bg-orange-950/20 dark:border-orange-900/50">
+            <div className="rounded-full bg-orange-100 p-2 text-orange-600 dark:bg-orange-900/50 dark:text-orange-400">
+              <AlertCircle className="h-5 w-5" />
+            </div>
+            <div className="flex-1">
+              <h4 className="font-medium text-orange-900 dark:text-orange-300">Profil unvollständig</h4>
+              <p className="text-sm text-orange-700 dark:text-orange-400 mt-1 mb-3">
                 Bitte vervollständige dein Profil, um fortzufahren. Füge mindestens eine
                 Zusammenfassung und Skills hinzu.
               </p>
-              <Button variant="outline" size="sm" className="mt-3" onClick={() => router.push('/profile/edit')}>
+              <Button variant="outline" size="sm" onClick={() => router.push('/profile/edit')} className="border-orange-200 hover:bg-orange-100 hover:text-orange-900 dark:border-orange-800 dark:hover:bg-orange-900/50">
                 <Edit className="mr-2 h-4 w-4" />
                 Profil bearbeiten
               </Button>
@@ -318,51 +292,49 @@ function ProfileStep({ profile, isComplete }: ProfileStepProps) {
         )}
 
         {profile && (
-          <div className="space-y-4">
-            <div>
-              <h3 className="font-medium mb-2">Zusammenfassung</h3>
-              <p className="text-sm text-gray-600">
-                {profile.summary || 'Keine Zusammenfassung vorhanden'}
-              </p>
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Zusammenfassung</h3>
+              <div className="p-4 rounded-lg bg-muted/30 border border-border/50">
+                <p className="text-sm leading-relaxed">
+                  {profile.summary || <span className="text-muted-foreground italic">Keine Zusammenfassung vorhanden</span>}
+                </p>
+              </div>
             </div>
 
-            <Separator />
-
-            <div>
-              <h3 className="font-medium mb-2">Skills</h3>
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Skills</h3>
               {profile.skills && profile.skills.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {profile.skills.map((skill: Skill) => (
-                    <Badge key={skill.id || skill.name} variant="secondary">
+                    <Badge key={skill.id || skill.name} variant="secondary" className="px-2 py-1">
                       {skill.name}
                     </Badge>
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500">Keine Skills hinzugefügt</p>
+                <p className="text-sm text-muted-foreground italic">Keine Skills hinzugefügt</p>
               )}
             </div>
 
-            <Separator />
-
-            <div>
-              <h3 className="font-medium mb-2">Berufserfahrung</h3>
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Berufserfahrung</h3>
               {profile.experiences && profile.experiences.length > 0 ? (
-                <div className="space-y-2">
-                  {profile.experiences.slice(0, 3).map((exp: Experience) => (
-                    <div key={exp.id} className="text-sm">
-                      <p className="font-medium">{exp.title}</p>
-                      <p className="text-gray-600">{exp.company}</p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {profile.experiences.slice(0, 4).map((exp: Experience) => (
+                    <div key={exp.id} className="p-3 rounded-lg border border-border/50 bg-card hover:bg-muted/30 transition-colors">
+                      <p className="font-medium truncate">{exp.title}</p>
+                      <p className="text-sm text-muted-foreground truncate">{exp.company}</p>
                     </div>
                   ))}
-                  {profile.experiences.length > 3 && (
-                    <p className="text-sm text-gray-500">
-                      +{profile.experiences.length - 3} weitere
-                    </p>
+                  {profile.experiences.length > 4 && (
+                    <div className="flex items-center justify-center p-3 rounded-lg border border-dashed border-border/50 text-sm text-muted-foreground">
+                      +{profile.experiences.length - 4} weitere
+                    </div>
                   )}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500">Keine Berufserfahrung hinzugefügt</p>
+                <p className="text-sm text-muted-foreground italic">Keine Berufserfahrung hinzugefügt</p>
               )}
             </div>
           </div>
@@ -382,61 +354,74 @@ function JobStep({ jobPostings, selectedJobId, onSelectJob }: JobStepProps) {
   const router = useRouter();
   return (
     <div className="space-y-4">
-      <Card>
+      <Card className="shadow-soft border-border/50">
         <CardHeader>
           <CardTitle>Stellenanzeige wählen</CardTitle>
           <CardDescription>
-            Wähle eine gespeicherte Stellenanzeige aus oder erstelle eine neue.
+            Wähle die Stelle aus, auf die du dich bewerben möchtest.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex justify-end mb-4">
-            <Button variant="outline" size="sm" onClick={() => router.push('/jobs')}>
+          <div className="flex justify-end mb-6">
+            <Button variant="outline" size="sm" onClick={() => router.push('/jobs')} className="shadow-sm">
               <Briefcase className="mr-2 h-4 w-4" />
               Neue Stellenanzeige hinzufügen
             </Button>
           </div>
 
           {jobPostings.length === 0 ? (
-            <div className="text-center py-8">
-              <Briefcase className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-              <p className="text-gray-600 mb-2">Keine Stellenanzeigen gefunden</p>
-              <p className="text-sm text-gray-500 mb-4">
-                Erstelle zuerst eine Stellenanzeige, um fortzufahren.
+            <div className="flex flex-col items-center justify-center py-12 text-center rounded-xl border border-dashed border-border bg-muted/10">
+              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-4">
+                <Briefcase className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <h3 className="font-semibold text-lg mb-1">Keine Stellenanzeigen gefunden</h3>
+              <p className="text-sm text-muted-foreground mb-6 max-w-xs">
+                Du hast noch keine Stellenanzeigen gespeichert.
               </p>
               <Button onClick={() => router.push('/jobs')}>
                 Stellenanzeige erstellen
               </Button>
             </div>
           ) : (
-            <div className="grid gap-3">
+            <div className="grid gap-4">
               {jobPostings.map((job) => (
-                <button
+                <div
                   key={job.id}
                   onClick={() => onSelectJob(job.id)}
-                  className={`text-left rounded-lg border-2 p-4 transition-all hover:border-blue-300 ${
+                  className={cn(
+                    "relative flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200",
                     selectedJobId === job.id
-                      ? 'border-blue-600 bg-blue-50'
-                      : 'border-gray-200 bg-white'
-                  }`}
+                      ? "border-primary bg-primary/5 shadow-md"
+                      : "border-transparent bg-muted/30 hover:bg-muted/50 hover:border-border/50"
+                  )}
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="font-medium">{job.title}</h3>
-                      <p className="text-sm text-gray-600 mt-1">{job.company}</p>
+                  <div className={cn(
+                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-colors",
+                    selectedJobId === job.id
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-background text-muted-foreground"
+                  )}>
+                    {selectedJobId === job.id ? <Check className="h-5 w-5" /> : <Briefcase className="h-5 w-5" />}
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-foreground truncate">{job.title}</h3>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                      <span className="font-medium text-foreground/80">{job.company}</span>
                       {job.location && (
-                        <p className="text-sm text-gray-500 mt-1">{job.location}</p>
+                        <>
+                          <span>•</span>
+                          <span className="truncate">{job.location}</span>
+                        </>
                       )}
                     </div>
-                    {selectedJobId === job.id && (
-                      <div className="flex-shrink-0 ml-4">
-                        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-600">
-                          <Check className="w-4 h-4 text-white" />
-                        </div>
-                      </div>
+                    {job.description && (
+                      <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                        {job.description}
+                      </p>
                     )}
                   </div>
-                </button>
+                </div>
               ))}
             </div>
           )}
@@ -475,7 +460,7 @@ function TemplateStep({
         const matchingCoverLetter = coverLetterTemplates.find(
           (t) => t.category.toLowerCase() === selectedResume.category.toLowerCase()
         );
-        
+
         if (matchingCoverLetter) {
           onSelectCoverLetterTemplate(matchingCoverLetter.id);
         } else {
@@ -506,41 +491,42 @@ function TemplateStep({
   return (
     <div className="space-y-6">
       {/* Cover Letter Generation Option */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Generierungsoptionen</CardTitle>
+      <Card className="shadow-soft border-border/50">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg">Umfang der Bewerbung</CardTitle>
           <CardDescription>
-            Wähle aus, was generiert werden soll
+            Entscheide, welche Dokumente erstellt werden sollen.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center space-x-3">
+          <div className="flex items-start space-x-3 p-4 rounded-lg bg-muted/30 border border-border/50">
             <Checkbox
               id="generateCoverLetter"
               checked={generateCoverLetter}
               onCheckedChange={(checked) => onGenerateCoverLetterChange(checked === true)}
+              className="mt-1"
             />
             <div className="grid gap-1.5 leading-none">
               <Label
                 htmlFor="generateCoverLetter"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                className="text-base font-medium cursor-pointer"
               >
                 Anschreiben generieren
               </Label>
-              <p className="text-sm text-muted-foreground">
-                Deaktiviere diese Option, wenn du nur einen Lebenslauf erstellen möchtest
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Erstellt ein auf die Stelle zugeschnittenes Anschreiben. Deaktiviere dies, wenn du nur einen Lebenslauf benötigst.
               </p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Resume Templates - Only visible section */}
+      {/* Resume Templates */}
       <div>
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold">Vorlagenauswahl</h3>
-          <p className="text-sm text-gray-600 mt-1">
-            Wähle eine Vorlage für deinen Lebenslauf.{generateCoverLetter && ' Das passende Anschreiben-Design wird automatisch ausgewählt.'}
+        <div className="mb-4 px-1">
+          <h3 className="text-lg font-semibold">Design auswählen</h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            Wähle eine Vorlage für deinen Lebenslauf.{generateCoverLetter && ' Das Anschreiben wird automatisch im passenden Design erstellt.'}
           </p>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -554,32 +540,6 @@ function TemplateStep({
           ))}
         </div>
       </div>
-
-      {/* Info box showing selected templates */}
-      {selectedResumeTemplateId && (
-        <div className="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 p-4">
-          <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
-          <div className="flex-1">
-            <p className="font-medium text-blue-900">Ausgewählte Vorlagen</p>
-            <div className="mt-2 space-y-1 text-sm text-blue-700">
-              <p>
-                <span className="font-medium">Lebenslauf:</span>{' '}
-                {resumeTemplates?.find((t) => t.id === selectedResumeTemplateId)?.name}
-              </p>
-              {generateCoverLetter && selectedCoverLetterTemplateId && (
-                <p>
-                  <span className="font-medium">Anschreiben:</span>{' '}
-                  {coverLetterTemplates?.find((t) => t.id === selectedCoverLetterTemplateId)?.name}{' '}
-                  <span className="text-xs opacity-75">(automatisch zugeordnet)</span>
-                </p>
-              )}
-              {!generateCoverLetter && (
-                <p className="text-blue-600 italic">Anschreiben wird nicht generiert</p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -595,121 +555,107 @@ interface ReviewStepProps {
 function ReviewStep({ profile, job, coverLetterTemplateId, resumeTemplateId, generateCoverLetter }: ReviewStepProps) {
   const { data: coverLetterTemplates } = useCoverLetterTemplates();
   const { data: resumeTemplates } = useResumeTemplates();
-  
+
   const selectedCoverLetterTemplate = coverLetterTemplates?.find((t) => t.id === coverLetterTemplateId);
   const selectedResumeTemplate = resumeTemplates?.find((t) => t.id === resumeTemplateId);
+
   return (
-    <div className="space-y-4">
-      <Card>
+    <div className="space-y-6">
+      <Card className="shadow-soft border-border/50">
         <CardHeader>
-          <CardTitle>Überprüfung</CardTitle>
+          <CardTitle>Zusammenfassung</CardTitle>
           <CardDescription>
-            Überprüfe deine Auswahl, bevor die Bewerbung erstellt wird.
+            Überprüfe deine Angaben, bevor die Bewerbung erstellt wird.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Profile Summary */}
-          <div>
-            <h3 className="font-medium text-sm text-gray-500 mb-2">DEIN PROFIL</h3>
-            <div className="rounded-lg border bg-gray-50 p-4">
-              <p className="font-medium mb-2">{profile?.summary?.slice(0, 100)}...</p>
-              <div className="flex flex-wrap gap-2 mt-3">
-                {profile?.skills?.slice(0, 5).map((skill: Skill) => (
-                  <Badge key={skill.id || skill.name} variant="secondary">
-                    {skill.name}
-                  </Badge>
-                ))}
-                {profile?.skills && profile.skills.length > 5 && (
-                  <Badge variant="secondary">+{profile.skills.length - 5} mehr</Badge>
-                )}
-              </div>
-            </div>
-          </div>
-
+        <CardContent className="space-y-8">
           {/* Job Summary */}
-          <div>
-            <h3 className="font-medium text-sm text-gray-500 mb-2">STELLENANZEIGE</h3>
+          <div className="space-y-3">
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+              <Briefcase className="h-3.5 w-3.5" />
+              Stellenanzeige
+            </h3>
             {job ? (
-              <div className="rounded-lg border bg-gray-50 p-4">
-                <h4 className="font-medium">{job.title}</h4>
-                <p className="text-sm text-gray-600 mt-1">{job.company}</p>
-                {job.location && (
-                  <p className="text-sm text-gray-500 mt-1">{job.location}</p>
-                )}
+              <div className="rounded-xl border border-border/50 bg-card p-5 shadow-sm">
+                <h4 className="font-semibold text-lg">{job.title}</h4>
+                <div className="flex items-center gap-2 text-muted-foreground mt-1 mb-3">
+                  <span className="font-medium text-foreground/80">{job.company}</span>
+                  {job.location && (
+                    <>
+                      <span>•</span>
+                      <span>{job.location}</span>
+                    </>
+                  )}
+                </div>
                 {job.description && (
-                  <p className="text-sm text-gray-600 mt-3 line-clamp-3">
-                    {job.description}
-                  </p>
+                  <div className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-lg border border-border/50 line-clamp-3 italic">
+                    &quot;{job.description}&quot;
+                  </div>
                 )}
               </div>
             ) : (
-              <p className="text-sm text-red-600">Keine Stellenanzeige ausgewählt</p>
+              <div className="p-4 rounded-lg border border-destructive/20 bg-destructive/5 text-destructive text-sm font-medium">
+                Keine Stellenanzeige ausgewählt
+              </div>
             )}
           </div>
 
+          <Separator />
+
           {/* Template Summary */}
-          <div>
-            <h3 className="font-medium text-sm text-gray-500 mb-2">AUSGEWÄHLTE VORLAGEN</h3>
-            <div className="space-y-2">
-              {generateCoverLetter && (
-                <div className="rounded-lg border bg-gray-50 p-3">
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-gray-600" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Anschreiben:</p>
-                      <p className="text-sm text-gray-600">
-                        {selectedCoverLetterTemplate?.name || 'Standard Vorlage'}
-                      </p>
-                    </div>
-                    {selectedCoverLetterTemplate && (
-                      <Badge variant="secondary" className="text-xs">
-                        {selectedCoverLetterTemplate.category}
-                      </Badge>
-                    )}
-                  </div>
+          <div className="space-y-3">
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+              <FileText className="h-3.5 w-3.5" />
+              Ausgewählte Designs
+            </h3>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-border/50 bg-card p-4 shadow-sm flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                  <FileText className="h-5 w-5" />
                 </div>
-              )}
-              {!generateCoverLetter && (
-                <div className="rounded-lg border border-gray-200 bg-gray-100 p-3">
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-gray-400" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-500">Anschreiben:</p>
-                      <p className="text-sm text-gray-400 italic">Wird nicht generiert</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-              <div className="rounded-lg border bg-gray-50 p-3">
-                <div className="flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-gray-600" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">Lebenslauf:</p>
-                    <p className="text-sm text-gray-600">
-                      {selectedResumeTemplate?.name || 'Standard Vorlage'}
-                    </p>
-                  </div>
-                  {selectedResumeTemplate && (
-                    <Badge variant="secondary" className="text-xs">
-                      {selectedResumeTemplate.category}
-                    </Badge>
-                  )}
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium uppercase">Lebenslauf</p>
+                  <p className="font-semibold">{selectedResumeTemplate?.name || 'Standard'}</p>
                 </div>
               </div>
+
+              {generateCoverLetter ? (
+                <div className="rounded-xl border border-border/50 bg-card p-4 shadow-sm flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                    <FileText className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground font-medium uppercase">Anschreiben</p>
+                    <p className="font-semibold">{selectedCoverLetterTemplate?.name || 'Automatisch'}</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-dashed border-border bg-muted/30 p-4 flex items-center gap-3 opacity-60">
+                  <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
+                    <X className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground font-medium uppercase">Anschreiben</p>
+                    <p className="font-medium text-muted-foreground">Nicht ausgewählt</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Info Box */}
-          <div className="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 p-4">
-            <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
+          <div className="flex items-start gap-4 rounded-xl border border-blue-200 bg-blue-50/50 p-5 dark:bg-blue-950/20 dark:border-blue-900/50">
+            <div className="rounded-full bg-blue-100 p-2 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400">
+              <Sparkles className="h-5 w-5" />
+            </div>
             <div>
-              <p className="font-medium text-blue-900">Was passiert als nächstes?</p>
-              <p className="text-sm text-blue-700 mt-1">
-                Basierend auf deinem Profil und der ausgewählten Stellenanzeige wird
-                {generateCoverLetter 
-                  ? ' automatisch ein individuelles Anschreiben und ein angepasster Lebenslauf erstellt'
-                  : ' automatisch ein angepasster Lebenslauf erstellt'
-                }. Dies kann einige Minuten dauern.
+              <h4 className="font-medium text-blue-900 dark:text-blue-300">Bereit zur Generierung</h4>
+              <p className="text-sm text-blue-700 dark:text-blue-400 mt-1 leading-relaxed">
+                Wir erstellen jetzt deine maßgeschneiderten Unterlagen. Die KI analysiert deine Erfahrungen und matcht sie mit den Anforderungen der Stelle.
+                {generateCoverLetter
+                  ? ' Es werden Anschreiben und Lebenslauf erstellt.'
+                  : ' Es wird nur ein Lebenslauf erstellt.'
+                }
               </p>
             </div>
           </div>

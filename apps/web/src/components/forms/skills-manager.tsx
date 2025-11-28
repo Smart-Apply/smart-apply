@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { X, Plus } from 'lucide-react';
+import { X, Plus, Code } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Skill } from '@/types';
 
@@ -48,10 +48,10 @@ export function SkillsManager({ skills, onSkillsChange, disabled = false }: Skil
 
     // Add new skill
     const newSkill: Skill = { name: skillName };
-    const updatedSkills = [...skills, newSkill].sort((a, b) => 
+    const updatedSkills = [...skills, newSkill].sort((a, b) =>
       a.name.localeCompare(b.name)
     );
-    
+
     onSkillsChange(updatedSkills);
     setInputValue('');
     toast.success(`Skill "${skillName}" hinzugefügt`);
@@ -73,11 +73,11 @@ export function SkillsManager({ skills, onSkillsChange, disabled = false }: Skil
   return (
     <div className="space-y-4">
       <div>
-        <Label htmlFor="skill-input">Fähigkeiten</Label>
-        <p className="text-sm text-gray-500 mb-2">
+        <Label htmlFor="skill-input" className="text-base">Fähigkeiten</Label>
+        <p className="text-sm text-muted-foreground mb-4">
           Füge deine technischen und fachlichen Kompetenzen hinzu
         </p>
-        
+
         <div className="flex gap-2">
           <Input
             id="skill-input"
@@ -103,8 +103,8 @@ export function SkillsManager({ skills, onSkillsChange, disabled = false }: Skil
 
       {/* Skills Display */}
       {skills.length > 0 ? (
-        <div>
-          <p className="text-sm font-medium text-gray-700 mb-2">
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-foreground">
             Deine Skills ({skills.length})
           </p>
           <div className="flex flex-wrap gap-2">
@@ -112,7 +112,7 @@ export function SkillsManager({ skills, onSkillsChange, disabled = false }: Skil
               <Badge
                 key={`${skill.name}-${index}`}
                 variant="secondary"
-                className="text-sm pl-3 pr-2 py-1.5 gap-1.5"
+                className="text-sm pl-3 pr-2 py-1.5 gap-1.5 hover:bg-secondary/80 transition-colors"
               >
                 <span>{skill.name}</span>
                 {skill.level && (
@@ -122,7 +122,7 @@ export function SkillsManager({ skills, onSkillsChange, disabled = false }: Skil
                   type="button"
                   onClick={() => removeSkill(skill.name)}
                   disabled={disabled}
-                  className="ml-1 rounded-full hover:bg-gray-300/50 p-0.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="ml-1 rounded-full hover:bg-foreground/10 p-0.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label={`Remove ${skill.name}`}
                 >
                   <X className="h-3 w-3" />
@@ -132,8 +132,11 @@ export function SkillsManager({ skills, onSkillsChange, disabled = false }: Skil
           </div>
         </div>
       ) : (
-        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-          <p className="text-sm text-blue-800">
+        <div className="flex flex-col items-center justify-center py-8 text-center rounded-xl border border-dashed border-border bg-muted/20">
+          <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-3">
+            <Code className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <p className="text-sm text-muted-foreground max-w-xs">
             Noch keine Skills hinzugefügt. Beginne mit dem Hinzufügen deiner Fähigkeiten oben.
           </p>
         </div>

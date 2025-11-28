@@ -56,17 +56,6 @@ const certificateSchema = z.object({
 
 type CertificateFormValues = z.infer<typeof certificateSchema>;
 
-/**
- * CertificatesManager Component
- * 
- * Manages certificate entries with add, edit, and delete functionality.
- * - Display list of existing certificates (sorted by issue date, most recent first)
- * - Add new certificate via dialog/modal
- * - Edit existing entries
- * - Delete entries with confirmation
- * - Optional expiration date for certificates that don't expire
- * - URL validation for credential URLs
- */
 export function CertificatesManager({
   certificates,
   onCertificatesChange,
@@ -89,13 +78,11 @@ export function CertificatesManager({
     },
   });
 
-  // Sort certificates by issue date (most recent first)
   const sortedCertificates = [...certificates].sort((a, b) => {
-    // Certificates without issue date go to the end
     if (!a.dateObtained && !b.dateObtained) return 0;
     if (!a.dateObtained) return 1;
     if (!b.dateObtained) return -1;
-    
+
     const dateA = new Date(a.dateObtained);
     const dateB = new Date(b.dateObtained);
     return dateB.getTime() - dateA.getTime();
@@ -134,7 +121,6 @@ export function CertificatesManager({
       issuer: data.issuingOrganization,
       dateObtained: data.issueDate ? new Date(data.issueDate).toISOString() : undefined,
       url: data.credentialUrl?.trim() || undefined,
-      // Store these for future backend support
       expiryDate: data.expirationDate ? new Date(data.expirationDate).toISOString() : null,
       credentialId: data.credentialId?.trim() || undefined,
     };
@@ -142,16 +128,14 @@ export function CertificatesManager({
     let updatedCertificates: Certificate[];
 
     if (editingIndex !== null) {
-      // Update existing certificate - PRESERVE THE ID!
       const existingCertificate = certificates[editingIndex];
       updatedCertificates = [...certificates];
       updatedCertificates[editingIndex] = {
         ...newCertificate,
-        ...(existingCertificate.id && { id: existingCertificate.id }), // Keep existing ID
+        ...(existingCertificate.id && { id: existingCertificate.id }),
       };
       toast.success('Zertifikat aktualisiert');
     } else {
-      // Add new certificate (no ID yet - backend will assign one)
       updatedCertificates = [...certificates, newCertificate];
       toast.success('Zertifikat hinzugefügt');
     }
@@ -181,85 +165,81 @@ export function CertificatesManager({
   };
 
   return (
-    <div className="space-y-4">
-      <div>
-        <Label className="text-base">Zertifikate</Label>
-        <p className="text-sm text-gray-500 mb-4">
-          Füge deine beruflichen Zertifizierungen und Qualifikationen hinzu
-        </p>
-
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-medium">Zertifikate</h3>
+          <p className="text-sm text-muted-foreground">
+            Deine beruflichen Zertifizierungen
+          </p>
+        </div>
         <Button
           type="button"
           onClick={openAddDialog}
           disabled={disabled}
-          variant="outline"
-          className="w-full sm:w-auto"
+          size="sm"
         >
           <Plus className="h-4 w-4 mr-2" />
-          Zertifikat hinzufügen
+          Hinzufügen
         </Button>
       </div>
 
-      {/* Certificates List */}
       {sortedCertificates.length > 0 ? (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {sortedCertificates.map((cert, displayIndex) => {
-            // Find the original index for editing/deleting
             const originalIndex = certificates.findIndex(
               c => c.name === cert.name && c.issuer === cert.issuer && c.dateObtained === cert.dateObtained
             );
-            
+
             const expired = isExpired(cert.expiryDate);
-            
+
             return (
-              <Card key={displayIndex} className="border-gray-200">
-                <CardContent className="p-4">
+              <Card key={displayIndex} className="border-border/50 shadow-sm hover:shadow-md transition-all">
+                <CardContent className="p-5">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-start gap-2">
-                        <Award className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
+                      <div className="flex items-start gap-3">
+                        <div className="mt-1 h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <Award className="h-4 w-4 text-primary" />
+                        </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-gray-900 truncate">{cert.name}</h3>
-                          <p className="text-sm text-gray-700 truncate">{cert.issuer}</p>
-                          
-                          {/* Date information */}
+                          <h4 className="font-semibold text-foreground truncate">{cert.name}</h4>
+                          <p className="text-sm text-muted-foreground truncate">{cert.issuer}</p>
+
                           {cert.dateObtained && (
-                            <div className="flex items-center gap-1 mt-1 text-sm text-gray-500">
-                              <Calendar className="h-3 w-3 flex-shrink-0" />
+                            <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                              <Calendar className="h-3 w-3" />
                               <span>
                                 Ausgestellt: {formatDate(cert.dateObtained)}
                               </span>
                             </div>
                           )}
-                          
-                          {/* Expiration date */}
+
                           {cert.expiryDate && (
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-sm text-gray-500">
+                            <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                              <span>
                                 Läuft ab: {formatDate(cert.expiryDate)}
                               </span>
                               {expired && (
-                                <Badge variant="destructive" className="text-xs py-0 px-1.5">
+                                <Badge variant="destructive" className="text-[10px] py-0 px-1.5 h-4">
                                   Abgelaufen
                                 </Badge>
                               )}
                             </div>
                           )}
-                          
-                          {/* Credential ID */}
+
                           {cert.credentialId && (
-                            <p className="mt-1 text-sm text-gray-600">
+                            <p className="mt-1 text-xs text-muted-foreground font-mono">
                               ID: {cert.credentialId}
                             </p>
                           )}
-                          
-                          {/* Credential URL */}
+
                           {cert.url && (
                             <a
                               href={cert.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 mt-2 text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                              className="inline-flex items-center gap-1 mt-2 text-xs text-primary hover:text-primary/80 hover:underline"
                             >
                               <ExternalLink className="h-3 w-3" />
                               Zertifikat anzeigen
@@ -268,18 +248,17 @@ export function CertificatesManager({
                         </div>
                       </div>
                     </div>
-                    
-                    <div className="flex items-center gap-1 flex-shrink-0">
+
+                    <div className="flex items-center gap-1">
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
                         onClick={() => openEditDialog(originalIndex)}
                         disabled={disabled}
-                        className="h-8 w-8"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
                       >
                         <Edit className="h-4 w-4" />
-                        <span className="sr-only">Bearbeiten</span>
                       </Button>
                       <Button
                         type="button"
@@ -287,10 +266,9 @@ export function CertificatesManager({
                         size="icon"
                         onClick={() => setDeleteConfirmIndex(originalIndex)}
                         disabled={disabled}
-                        className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
                       >
                         <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Löschen</span>
                       </Button>
                     </div>
                   </div>
@@ -300,14 +278,27 @@ export function CertificatesManager({
           })}
         </div>
       ) : (
-        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-          <p className="text-sm text-blue-800">
-            Noch keine Zertifikate hinzugefügt. Beginne mit dem Hinzufügen deiner beruflichen Zertifizierungen.
+        <div className="flex flex-col items-center justify-center py-10 text-center rounded-xl border border-dashed border-border bg-muted/20">
+          <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-4">
+            <Award className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <h3 className="font-medium text-foreground">Keine Zertifikate</h3>
+          <p className="text-sm text-muted-foreground mt-1 max-w-xs">
+            Füge deine beruflichen Zertifizierungen hinzu, um deine Qualifikationen zu belegen.
           </p>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={openAddDialog}
+            disabled={disabled}
+            className="mt-4"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Erstes Zertifikat hinzufügen
+          </Button>
         </div>
       )}
 
-      {/* Add/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -321,7 +312,6 @@ export function CertificatesManager({
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-              {/* Certificate Name */}
               <FormField
                 control={form.control}
                 name="name"
@@ -340,7 +330,6 @@ export function CertificatesManager({
                 )}
               />
 
-              {/* Issuing Organization */}
               <FormField
                 control={form.control}
                 name="issuingOrganization"
@@ -359,7 +348,6 @@ export function CertificatesManager({
                 )}
               />
 
-              {/* Date Range */}
               <div className="grid gap-4 sm:grid-cols-2">
                 <FormField
                   control={form.control}
@@ -399,7 +387,6 @@ export function CertificatesManager({
                 />
               </div>
 
-              {/* Credential ID */}
               <FormField
                 control={form.control}
                 name="credentialId"
@@ -418,7 +405,6 @@ export function CertificatesManager({
                 )}
               />
 
-              {/* Credential URL */}
               <FormField
                 control={form.control}
                 name="credentialUrl"
@@ -439,15 +425,11 @@ export function CertificatesManager({
               />
 
               <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsDialogOpen(false)}
-                >
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Abbrechen
                 </Button>
                 <Button type="submit">
-                  {editingIndex !== null ? 'Aktualisieren' : 'Hinzufügen'}
+                  {editingIndex !== null ? 'Speichern' : 'Hinzufügen'}
                 </Button>
               </DialogFooter>
             </form>
@@ -455,31 +437,19 @@ export function CertificatesManager({
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deleteConfirmIndex !== null}
-        onOpenChange={(open) => !open && setDeleteConfirmIndex(null)}
-      >
+      <Dialog open={deleteConfirmIndex !== null} onOpenChange={(open) => !open && setDeleteConfirmIndex(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Zertifikat löschen</DialogTitle>
             <DialogDescription>
-              Bist du sicher, dass du dieses Zertifikat löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.
+              Möchtest du dieses Zertifikat wirklich löschen?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setDeleteConfirmIndex(null)}
-            >
+            <Button variant="outline" onClick={() => setDeleteConfirmIndex(null)}>
               Abbrechen
             </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={() => deleteConfirmIndex !== null && handleDelete(deleteConfirmIndex)}
-            >
+            <Button variant="destructive" onClick={() => deleteConfirmIndex !== null && handleDelete(deleteConfirmIndex)}>
               Löschen
             </Button>
           </DialogFooter>
