@@ -64,6 +64,7 @@ export function ApplicationWizard() {
   const [selectedCoverLetterTemplateId, setSelectedCoverLetterTemplateId] = useState<string | null>(null);
   const [selectedResumeTemplateId, setSelectedResumeTemplateId] = useState<string | null>(null);
   const [generateCoverLetter, setGenerateCoverLetter] = useState<boolean>(true);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { data: jobPostings, isLoading: jobPostingsLoading } = useJobPostings();
@@ -121,6 +122,7 @@ export function ApplicationWizard() {
       });
 
       // Success! Redirect to edit page
+      setIsRedirecting(true);
       router.push(`/applications/${application.id}/edit`);
     } catch (error) {
       // Error is handled by the mutation's onError
@@ -138,7 +140,7 @@ export function ApplicationWizard() {
   }
 
   // Show loading screen during application creation + LLM generation
-  if (createApplication.isPending) {
+  if (createApplication.isPending || isRedirecting) {
     return <ApplicationLoading message="Bewerbung wird mit KI erstellt..." />;
   }
 

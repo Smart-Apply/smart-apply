@@ -85,8 +85,8 @@ export function PDFPreviewModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
-        <DialogHeader>
+            <DialogContent className="max-w-5xl w-full h-[90vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="px-6 py-4 border-b flex flex-row items-center justify-between space-y-0">
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
 

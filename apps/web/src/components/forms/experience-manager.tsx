@@ -76,9 +76,9 @@ export function ExperienceManager({
   const isCurrentlyWorking = form.watch('current');
 
   const sortedExperiences = [...experiences].sort((a, b) => {
-    const dateA = new Date(a.startDate);
-    const dateB = new Date(b.startDate);
-    return dateB.getTime() - dateA.getTime();
+    const dateA = new Date(a.startDate).getTime() || 0;
+    const dateB = new Date(b.startDate).getTime() || 0;
+    return dateB - dateA;
   });
 
   const openAddDialog = () => {

@@ -14,6 +14,9 @@ export function useProfile() {
     queryKey: ['profile'],
     queryFn: () => api.profile.get(),
     enabled: isAuthenticated,
+    staleTime: Infinity, // Never refetch automatically, only on invalidation or manual refetch
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
+    refetchOnMount: false, // Don't refetch on component mount if data exists
   });
 }
 
@@ -27,8 +30,8 @@ export function useUpdateProfile() {
   return useMutation({
     mutationFn: (data: UpdateProfileDto) => api.profile.update(data),
     onSuccess: (updatedProfile, variables) => {
-      // Invalidate profile query to refetch
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      // Update cache directly with the server response (no refetch)
+      queryClient.setQueryData(['profile'], updatedProfile);
       
       // Update user in auth store if firstName or lastName was changed
       if (variables.firstName || variables.lastName) {

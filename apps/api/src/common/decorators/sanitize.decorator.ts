@@ -24,8 +24,12 @@ import * as validator from 'validator';
 export function Sanitize() {
   return Transform(({ value }) => {
     if (typeof value === 'string') {
-      // Trim whitespace and escape HTML special characters
-      return validator.escape(value.trim());
+      // Trim whitespace
+      // We do NOT escape HTML characters here because:
+      // 1. React escapes by default when rendering
+      // 2. Handlebars escapes by default when generating PDFs
+      // 3. Storing encoded entities (like &#x2F;) causes double-encoding issues in UI
+      return value.trim();
     }
     return value;
   });

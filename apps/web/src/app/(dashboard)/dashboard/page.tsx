@@ -92,7 +92,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
-        const apps = await api.applications.list();
+        const apps = await api.applications.list({ includeJobPosting: true });
         setApplications(apps);
 
         // Calculate stats
@@ -257,7 +257,7 @@ export default function DashboardPage() {
                               {app.title || 'Unbenannte Bewerbung'}
                             </h4>
                             <p className="text-sm text-muted-foreground">
-                              {app.jobPostingId ? 'Job ID: ' + app.jobPostingId.substring(0, 8) : 'Keine Job-Zuordnung'}
+                              {app.jobPosting?.company || app.jobPosting?.location || 'Keine Details'}
                             </p>
                           </div>
                         </div>

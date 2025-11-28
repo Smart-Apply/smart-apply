@@ -20,11 +20,11 @@ const JobPostingSchema = z.object({
   niceToHave: z.array(z.string()).describe('Nice to have qualifications'),
   salary: z
     .string()
-    .nullable()
+    .nullish()
     .describe('Salary information if available, or null if not specified'),
   applicationDeadline: z
     .string()
-    .nullable()
+    .nullish()
     .describe('Application deadline if available, or null if not specified'),
 });
 

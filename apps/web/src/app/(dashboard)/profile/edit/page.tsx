@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, startTransition } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -45,10 +45,23 @@ export default function ProfileEditPage() {
   // State for skills, experiences, education, certificates, and projects management
   const [skills, setSkills] = useState<Skill[]>([]);
   const [experiences, setExperiences] = useState<Experience[]>([]);
-  const [education, setEducation] = useState<Education[]>([]);
+  const [education, setEducation] = useState<EducationWithYears[]>([]);
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [languages, setLanguages] = useState<Language[]>([]);
+  const dataInitializedRef = useRef(false);
+  
+  // Refs to track latest state values (prevent stale closure issues)
+  const experiencesRef = useRef<Experience[]>([]);
+  const educationRef = useRef<EducationWithYears[]>([]);
+  const certificatesRef = useRef<Certificate[]>([]);
+  const projectsRef = useRef<Project[]>([]);
+  
+  // Update refs whenever state changes
+  useEffect(() => { experiencesRef.current = experiences; }, [experiences]);
+  useEffect(() => { educationRef.current = education; }, [education]);
+  useEffect(() => { certificatesRef.current = certificates; }, [certificates]);
+  useEffect(() => { projectsRef.current = projects; }, [projects]);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -81,46 +94,57 @@ export default function ProfileEditPage() {
   }, [user, profile, form]);
 
   // Sync skills, experiences, education, certificates, and projects from profile
+  // ONLY on initial load - never overwrite user's local changes
   useEffect(() => {
-    if (profile) {
-      startTransition(() => {
-        setSkills(profile.skills || []);
-        setExperiences(profile.experiences || []);
-        setCertificates(profile.certificates || []);
-        setProjects(profile.projects || []);
-        setLanguages(profile.languages || []);
+    if (profile && !dataInitializedRef.current) {
+      setSkills(profile.skills || []);
+      setExperiences(profile.experiences || []);
+      setCertificates(profile.certificates || []);
+      setProjects(profile.projects || []);
+      setLanguages(profile.languages || []);
 
-        const educationWithYears = (profile.education || []).map(edu => ({
-          ...edu,
-          startYear: edu.startYear ? new Date(edu.startYear).getFullYear() : undefined,
-          endYear: edu.endYear ? new Date(edu.endYear).getFullYear() : null,
-        }));
-        setEducation(educationWithYears);
-      });
+      const educationWithYears = (profile.education || []).map(edu => ({
+        ...edu,
+        startYear: edu.startYear ? new Date(edu.startYear).getFullYear() : undefined,
+        endYear: edu.endYear ? new Date(edu.endYear).getFullYear() : null,
+      }));
+      setEducation(educationWithYears);
+      dataInitializedRef.current = true;
     }
-  }, [profile?.skills, profile?.experiences, profile?.education, profile?.certificates, profile?.projects, profile?.languages]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile]);
 
   const onSubmit = async (data: ProfileFormValues) => {
     try {
+      // Wait a tiny bit for any pending state updates to propagate
+      // This ensures refs are up-to-date with the latest state changes
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      // Use refs to get the latest values (prevents stale closure issues)
+      const latestExperiences = experiencesRef.current;
+      const latestEducation = educationRef.current;
+      const latestCertificates = certificatesRef.current;
+      const latestProjects = projectsRef.current;
+      
       const skillsForUpdate = skills.map(({ id, name, level }) => ({ ...(id && { id }), name, level }));
-      const experiencesForUpdate = experiences.map(({ id, title, company, location, startDate, endDate, description, current }) => ({
+      const experiencesForUpdate = latestExperiences.map(({ id, title, company, location, startDate, endDate, description, current }) => ({
         ...(id && { id }), title, company, location, startDate, endDate, description, current
       }));
-      const educationForUpdate = education.map(({ id, degree, institution, fieldOfStudy, startYear, endYear, gpa, description }) => ({
+      const educationForUpdate = latestEducation.map(({ id, degree, institution, fieldOfStudy, startYear, endYear, gpa, description }) => ({
         ...(id && { id }), degree, institution, fieldOfStudy,
         startYear: startYear ? `${startYear}-01-01` : undefined,
         endYear: endYear ? `${endYear}-01-01` : undefined,
         gpa, description,
       }));
-      const certificatesForUpdate = certificates.map(({ id, name, issuer, dateObtained, url }) => ({
+      const certificatesForUpdate = latestCertificates.map(({ id, name, issuer, dateObtained, url }) => ({
         ...(id && { id }), name, issuer, dateObtained: dateObtained || undefined, url: url || undefined,
       }));
-      const projectsForUpdate = projects.map(({ id, name, description, technologies, url, startDate, endDate }) => ({
+      const projectsForUpdate = latestProjects.map(({ id, name, description, technologies, url, startDate, endDate }) => ({
         ...(id && { id }), name, description, technologies, url, startDate, endDate,
       }));
       const languagesForUpdate = languages.map(({ id, name, level }) => ({ ...(id && { id }), name, level }));
 
-      await updateProfile.mutateAsync({
+      const savedProfile = await updateProfile.mutateAsync({
         firstName: data.firstName || undefined,
         lastName: data.lastName || undefined,
         phone: data.phone?.trim() || undefined,
@@ -129,12 +153,27 @@ export default function ProfileEditPage() {
         portfolioUrl: data.website?.trim() || undefined,
         summary: data.summary?.trim() || undefined,
         skills: skills.length > 0 ? skillsForUpdate : undefined,
-        experiences: experiences.length > 0 ? experiencesForUpdate : undefined,
-        education: education.length > 0 ? educationForUpdate : undefined,
-        certificates: certificates.length > 0 ? certificatesForUpdate : undefined,
-        projects: projects.length > 0 ? projectsForUpdate : undefined,
+        experiences: experiencesForUpdate.length > 0 ? experiencesForUpdate : undefined,
+        education: educationForUpdate.length > 0 ? educationForUpdate : undefined,
+        certificates: certificatesForUpdate.length > 0 ? certificatesForUpdate : undefined,
+        projects: projectsForUpdate.length > 0 ? projectsForUpdate : undefined,
         languages: languages.length > 0 ? languagesForUpdate : undefined,
       });
+
+      // Update local state with server response (includes IDs for new items)
+      // This ensures new items get their database IDs
+      setSkills(savedProfile.skills || []);
+      setExperiences(savedProfile.experiences || []);
+      setCertificates(savedProfile.certificates || []);
+      setProjects(savedProfile.projects || []);
+      setLanguages(savedProfile.languages || []);
+      
+      const educationWithYears = (savedProfile.education || []).map(edu => ({
+        ...edu,
+        startYear: edu.startYear ? new Date(edu.startYear).getFullYear() : undefined,
+        endYear: edu.endYear ? new Date(edu.endYear).getFullYear() : null,
+      }));
+      setEducation(educationWithYears);
 
     } catch (error) {
       console.error('Failed to update profile:', error);

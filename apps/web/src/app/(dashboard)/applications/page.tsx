@@ -6,7 +6,14 @@ import { useApplications, useDeleteApplication } from '@/hooks/use-applications'
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
@@ -356,52 +363,40 @@ export default function ApplicationsPage() {
         </div>
       ) : applications && applications.length > 0 ? (
         <div className="space-y-6">
-          {/* Controls: Tabs & Sort */}
-          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between bg-card/50 p-1 rounded-xl">
-            <Tabs value={selectedTab} onValueChange={handleTabChange} className="w-full lg:w-auto">
-              <TabsList className="h-auto flex-wrap justify-start bg-transparent p-0 gap-1">
-                {TRACKING_STATUS_TABS.map((tab) => {
-                  const Icon = tab.icon;
-                  const count = statusCounts[tab.value];
-                  const isActive = selectedTab === tab.value;
+          {/* Controls: Filter & Sort */}
+          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between bg-card/50 p-4 rounded-xl border border-border/50">
+            <div className="flex items-center gap-2 w-full lg:w-auto">
+              <span className="text-sm font-medium whitespace-nowrap">
+                Status:
+              </span>
+              <Select value={selectedTab} onValueChange={handleTabChange}>
+                <SelectTrigger className="w-full lg:w-[240px] bg-background">
+                  <SelectValue placeholder="Status filtern" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TRACKING_STATUS_TABS.map((tab) => (
+                    <SelectItem key={tab.value} value={tab.value}>
+                      <div className="flex items-center gap-2 w-full">
+                        <tab.icon className="h-4 w-4 text-muted-foreground" />
+                        <span>{tab.label}</span>
+                        {statusCounts[tab.value] > 0 && (
+                          <Badge variant="secondary" className="ml-auto text-[10px] h-5 px-1.5 min-w-[1.5rem] justify-center">
+                            {statusCounts[tab.value]}
+                          </Badge>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-                  return (
-                    <TabsTrigger
-                      key={tab.value}
-                      value={tab.value}
-                      className={`
-                        flex items-center gap-2 px-3 py-2 rounded-lg border border-transparent
-                        data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:border-border/50
-                        transition-all duration-200
-                      `}
-                    >
-                      <Icon className={`h-4 w-4 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
-                      <span className={isActive ? 'font-medium text-foreground' : 'text-muted-foreground'}>
-                        {tab.label}
-                      </span>
-                      {count > 0 && (
-                        <Badge
-                          variant="secondary"
-                          className={`
-                            ml-1 h-5 min-w-[1.25rem] px-1 justify-center text-[10px]
-                            ${isActive ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}
-                          `}
-                        >
-                          {count}
-                        </Badge>
-                      )}
-                    </TabsTrigger>
-                  );
-                })}
-              </TabsList>
-            </Tabs>
-
-            <div className="flex items-center gap-2 ml-auto">
+            <div className="flex items-center gap-2 ml-auto w-full lg:w-auto">
               <span className="text-sm text-muted-foreground whitespace-nowrap hidden sm:inline-block">
                 Sortieren nach:
               </span>
               <Select value={sortBy} onValueChange={handleSortChange}>
-                <SelectTrigger className="w-[180px] bg-background">
+                <SelectTrigger className="w-full lg:w-[180px] bg-background">
                   <SelectValue placeholder="Sortieren" />
                 </SelectTrigger>
                 <SelectContent>
@@ -428,113 +423,114 @@ export default function ApplicationsPage() {
             )}
           </div>
 
-          {/* Application Cards Grid */}
+          {/* Application List Table */}
           {paginatedApplications.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {paginatedApplications.map((application, index) => {
-                const statusInfo = getGenerationStatusInfo(application.status);
-                const StatusIcon = statusInfo.icon;
-                const jobTitle = application.title || application.jobPosting?.title || `Bewerbung #${application.id.substring(0, APPLICATION_ID_DISPLAY_LENGTH)}`;
-                const company = application.jobPosting?.company;
-                const location = application.jobPosting?.location;
-                const timeAgo = formatDistanceToNow(new Date(application.createdAt), { addSuffix: true, locale: de });
+            <div className="rounded-xl border border-border/50 bg-card overflow-hidden shadow-sm">
+              <Table>
+                <TableHeader className="bg-muted/30">
+                  <TableRow>
+                    <TableHead className="w-[40%]">Job & Unternehmen</TableHead>
+                    <TableHead className="w-[20%]">Status</TableHead>
+                    <TableHead className="w-[20%]">Erstellt</TableHead>
+                    <TableHead className="w-[20%] text-right">Aktionen</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedApplications.map((application, index) => {
+                    const statusInfo = getGenerationStatusInfo(application.status);
+                    const StatusIcon = statusInfo.icon;
+                    const jobTitle = application.title || application.jobPosting?.title || `Bewerbung #${application.id.substring(0, APPLICATION_ID_DISPLAY_LENGTH)}`;
+                    const company = application.jobPosting?.company;
+                    const location = application.jobPosting?.location;
+                    const timeAgo = formatDistanceToNow(new Date(application.createdAt), { addSuffix: true, locale: de });
 
-                return (
-                  <Card
-                    key={application.id}
-                    className="group hover:shadow-soft hover:-translate-y-1 transition-all duration-300 border-border/50 overflow-hidden flex flex-col"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="space-y-1.5">
-                          <CardTitle className="text-lg font-semibold leading-tight line-clamp-1" title={jobTitle}>
-                            {jobTitle}
-                          </CardTitle>
-                          <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-                            {company && (
-                              <div className="flex items-center gap-1.5">
-                                <Building2 className="h-3.5 w-3.5 shrink-0" />
-                                <span className="font-medium text-foreground/80 truncate">{company}</span>
-                              </div>
-                            )}
-                            {location && (
-                              <div className="flex items-center gap-1.5">
-                                <MapPin className="h-3.5 w-3.5 shrink-0" />
-                                <span className="truncate">{location}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 text-muted-foreground hover:text-foreground">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => router.push(`/applications/${application.id}`)}>
-                              Details anzeigen
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => router.push(`/applications/${application.id}/edit`)}>
-                              Bearbeiten
-                            </DropdownMenuItem>
-                            {application.status === 'READY' && application.coverLetterUrl && (
-                              <DropdownMenuItem onClick={() => window.open(application.coverLetterUrl, '_blank')}>
-                                Anschreiben öffnen
-                              </DropdownMenuItem>
-                            )}
-                            {application.status === 'READY' && application.resumeUrl && (
-                              <DropdownMenuItem onClick={() => window.open(application.resumeUrl, '_blank')}>
-                                Lebenslauf öffnen
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              onClick={() => handleDeleteClick(application.id, jobTitle)}
-                            >
-                              Löschen
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </CardHeader>
-
-                    <CardContent className="pb-3 flex-1">
-                      <div className="flex items-center justify-between mb-4">
-                        <Badge variant={statusInfo.variant} className="font-normal text-xs py-0.5 h-6">
-                          <StatusIcon className={`mr-1.5 h-3 w-3 ${application.status === 'GENERATING' ? 'animate-spin' : ''}`} />
-                          {statusInfo.label}
-                        </Badge>
-                        <div className="text-xs text-muted-foreground flex items-center gap-1" title={new Date(application.createdAt).toLocaleString()}>
-                          <Calendar className="h-3 w-3" />
-                          {timeAgo}
-                        </div>
-                      </div>
-
-                      <div className="pt-3 border-t border-border/50">
-                        <div className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">Status</div>
-                        <StatusDropdown
-                          applicationId={application.id}
-                          currentStatus={application.applicationStatus}
-                          variant="dropdown"
-                        />
-                      </div>
-                    </CardContent>
-
-                    <CardFooter className="pt-0 pb-4 px-6 flex gap-2">
-                      <Button
-                        className="w-full shadow-sm group-hover:shadow transition-all"
-                        size="sm"
+                    return (
+                      <TableRow 
+                        key={application.id} 
+                        className="group hover:bg-muted/30 transition-colors cursor-pointer"
                         onClick={() => router.push(`/applications/${application.id}`)}
                       >
-                        Details
-                        <ChevronRight className="h-3.5 w-3.5 ml-1.5 opacity-70" />
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                );
-              })}
+                        <TableCell>
+                          <div className="flex flex-col gap-1">
+                            <span className="font-semibold text-foreground line-clamp-1" title={jobTitle}>
+                              {jobTitle}
+                            </span>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              {company && (
+                                <div className="flex items-center gap-1">
+                                  <Building2 className="h-3 w-3 shrink-0" />
+                                  <span className="truncate max-w-[150px]">{company}</span>
+                                </div>
+                              )}
+                              {location && (
+                                <div className="flex items-center gap-1 hidden sm:flex">
+                                  <span className="text-border">•</span>
+                                  <MapPin className="h-3 w-3 shrink-0" />
+                                  <span className="truncate max-w-[150px]">{location}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-2 items-start" onClick={(e) => e.stopPropagation()}>
+                            <Badge variant={statusInfo.variant} className="font-normal text-xs py-0.5 h-6 whitespace-nowrap">
+                              <StatusIcon className={`mr-1.5 h-3 w-3 ${application.status === 'GENERATING' ? 'animate-spin' : ''}`} />
+                              {statusInfo.label}
+                            </Badge>
+                            <StatusDropdown
+                              applicationId={application.id}
+                              currentStatus={application.applicationStatus}
+                              variant="dropdown"
+                            />
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                            <Calendar className="h-3.5 w-3.5" />
+                            <span>{timeAgo}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => router.push(`/applications/${application.id}`)}>
+                                  Details anzeigen
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => router.push(`/applications/${application.id}/edit`)}>
+                                  Bearbeiten
+                                </DropdownMenuItem>
+                                {application.status === 'READY' && application.coverLetterUrl && (
+                                  <DropdownMenuItem onClick={() => window.open(application.coverLetterUrl, '_blank')}>
+                                    Anschreiben öffnen
+                                  </DropdownMenuItem>
+                                )}
+                                {application.status === 'READY' && application.resumeUrl && (
+                                  <DropdownMenuItem onClick={() => window.open(application.resumeUrl, '_blank')}>
+                                    Lebenslauf öffnen
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem
+                                  className="text-destructive focus:text-destructive"
+                                  onClick={() => handleDeleteClick(application.id, jobTitle)}
+                                >
+                                  Löschen
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-16 text-center rounded-2xl border border-dashed border-border bg-muted/10 animate-in fade-in zoom-in-95 duration-500">

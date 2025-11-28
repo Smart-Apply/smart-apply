@@ -364,7 +364,7 @@ export default function ProfilePage() {
                       <div className="mb-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
                         <h3 className="text-lg font-semibold text-foreground">{edu.degree}</h3>
                         <span className="text-sm text-muted-foreground font-medium bg-muted px-2 py-0.5 rounded">
-                          {edu.startYear} - {edu.endYear || 'Heute'}
+                          {edu.startYear ? new Date(edu.startYear).getFullYear() : ''} - {edu.endYear ? new Date(edu.endYear).getFullYear() : 'Heute'}
                         </span>
                       </div>
 
