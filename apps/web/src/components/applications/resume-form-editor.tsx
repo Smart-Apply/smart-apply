@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2 } from 'lucide-react';
 import type { ResumeData } from '@/types';
 
@@ -96,6 +97,9 @@ interface ResumeFormEditorProps {
 }
 
 export function ResumeFormEditor({ value, onChange, disabled }: ResumeFormEditorProps) {
+  // Section navigation state
+  const [activeSection, setActiveSection] = useState<string>('personal');
+
   const updateField = <K extends keyof ResumeData>(field: K, newValue: ResumeData[K]) => {
     onChange({ ...value, [field]: newValue });
   };
@@ -208,7 +212,26 @@ export function ResumeFormEditor({ value, onChange, disabled }: ResumeFormEditor
 
   return (
     <div className="space-y-6">
+      {/* Section Selector */}
+      <div className="flex items-center gap-4">
+        <Label className="whitespace-nowrap font-medium">Abschnitt bearbeiten:</Label>
+        <Select value={activeSection} onValueChange={setActiveSection}>
+          <SelectTrigger className="w-[300px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="personal">Persönliche Daten</SelectItem>
+            <SelectItem value="skills">Fähigkeiten</SelectItem>
+            <SelectItem value="experience">Berufserfahrung</SelectItem>
+            <SelectItem value="projects">Projekte</SelectItem>
+            <SelectItem value="education">Ausbildung</SelectItem>
+            <SelectItem value="certifications">Zertifikate</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Personal Information */}
+      {activeSection === 'personal' && (
       <Card>
         <CardHeader>
           <CardTitle>Persönliche Daten</CardTitle>
@@ -290,8 +313,10 @@ export function ResumeFormEditor({ value, onChange, disabled }: ResumeFormEditor
           </div>
         </CardContent>
       </Card>
+      )}
 
       {/* Skills */}
+      {activeSection === 'skills' && (
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -346,8 +371,10 @@ export function ResumeFormEditor({ value, onChange, disabled }: ResumeFormEditor
           )}
         </CardContent>
       </Card>
+      )}
 
       {/* Experience */}
+      {activeSection === 'experience' && (
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -421,8 +448,10 @@ export function ResumeFormEditor({ value, onChange, disabled }: ResumeFormEditor
           )}
         </CardContent>
       </Card>
+      )}
 
       {/* Projects */}
+      {activeSection === 'projects' && (
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -491,8 +520,10 @@ export function ResumeFormEditor({ value, onChange, disabled }: ResumeFormEditor
           )}
         </CardContent>
       </Card>
+      )}
 
       {/* Education */}
+      {activeSection === 'education' && (
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -572,8 +603,10 @@ export function ResumeFormEditor({ value, onChange, disabled }: ResumeFormEditor
           )}
         </CardContent>
       </Card>
+      )}
 
       {/* Certifications */}
+      {activeSection === 'certifications' && (
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -629,6 +662,7 @@ export function ResumeFormEditor({ value, onChange, disabled }: ResumeFormEditor
           )}
         </CardContent>
       </Card>
+      )}
     </div>
   );
 }

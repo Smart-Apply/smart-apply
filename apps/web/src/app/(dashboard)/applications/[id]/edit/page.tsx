@@ -78,7 +78,7 @@ export default function ApplicationResumeEditorPage() {
   const [coverInitialized, setCoverInitialized] = useState(false);
   const [coverVersion, setCoverVersion] = useState<string | null>(null);
   const [instructions, setInstructions] = useState('');
-  const [activeTab, setActiveTab] = useState<'resume' | 'cover-letter'>('resume');
+  const [activeTab, setActiveTab] = useState<'resume' | 'cover-letter' | 'ats-score'>('resume');
 
   // Trigger ATS score refresh after saving
   const [atsRefreshTrigger, setAtsRefreshTrigger] = useState(0);
@@ -379,7 +379,7 @@ export default function ApplicationResumeEditorPage() {
 
       <Tabs
         value={activeTab}
-        onValueChange={(value) => setActiveTab(value as 'resume' | 'cover-letter')}
+        onValueChange={(value) => setActiveTab(value as 'resume' | 'cover-letter' | 'ats-score')}
         defaultValue="resume"
         className="space-y-6"
       >
@@ -401,6 +401,13 @@ export default function ApplicationResumeEditorPage() {
                 Anschreiben
               </TabsTrigger>
             )}
+            <TabsTrigger
+              value="ats-score"
+              className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:text-primary border-b-2 border-transparent rounded-none px-2 py-3 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <CheckCircle2 className="h-4 w-4 mr-2" />
+              ATS Score
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -421,7 +428,7 @@ export default function ApplicationResumeEditorPage() {
             </div>
           </div>
 
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(380px,580px)_280px] lg:grid-cols-[minmax(0,1fr)_minmax(380px,580px)]">
+          <div className="grid gap-6 lg:grid-cols-2">
             {/* Form Editor - Scrollable independently */}
             <div className="h-[calc(100vh-280px)] overflow-y-auto pr-2 scrollbar-thin">
               <div className="space-y-6 pb-10">
@@ -435,48 +442,15 @@ export default function ApplicationResumeEditorPage() {
               </div>
             </div>
 
-            {/* Live Preview - Scrollable independently, sticky container */}
-            <div className="sticky top-6 h-[calc(100vh-280px)]">
-              <Card className="h-full flex flex-col shadow-soft border-border/50 overflow-hidden bg-muted/30">
-                <CardHeader className="flex-shrink-0 bg-card border-b border-border/50 py-3 px-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <CardTitle className="text-base">Vorschau</CardTitle>
-                      <CardDescription className="text-xs">A4-Format</CardDescription>
-                    </div>
-                    <Badge variant="outline" className="text-xs font-normal">
-                      Live Preview
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 bg-muted/30 scrollbar-thin">
-                  {parsedResume && (
-                    <div className="w-full shadow-lg mx-auto max-w-[210mm] bg-white min-h-[297mm]">
-                      <ResumeTemplatePreview
-                        resume={parsedResume}
-                        templateId={application?.resumeTemplateId}
-                      />
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+            {/* Live Preview - Full height display */}
+            <div className="sticky top-6 h-[calc(100vh-80px)] bg-gray-100 rounded-lg shadow-2xl overflow-hidden">
+              {parsedResume && (
+                <ResumeTemplatePreview
+                  resume={parsedResume}
+                  templateId={application?.resumeTemplateId}
+                />
+              )}
             </div>
-
-            {/* ATS Score Sidebar - Only visible on xl screens */}
-            <div className="hidden xl:block sticky top-6 h-[calc(100vh-280px)] overflow-y-auto scrollbar-thin">
-              <ATSScoreSidebar
-                applicationId={applicationId}
-                refreshTrigger={atsRefreshTrigger}
-              />
-            </div>
-          </div>
-
-          {/* ATS Score Card - Visible on smaller screens (below xl) */}
-          <div className="xl:hidden">
-            <ATSScoreSidebar
-              applicationId={applicationId}
-              refreshTrigger={atsRefreshTrigger}
-            />
           </div>
         </TabsContent>
 
@@ -498,7 +472,7 @@ export default function ApplicationResumeEditorPage() {
               </div>
             </div>
 
-            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(380px,580px)]">
+            <div className="grid gap-6 lg:grid-cols-2">
               {/* Editor - Scrollable independently */}
               <div className="h-[calc(100vh-280px)] overflow-y-auto pr-2 scrollbar-thin">
                 <Card className="shadow-soft border-border/50">
@@ -537,40 +511,32 @@ export default function ApplicationResumeEditorPage() {
                 </Card>
               </div>
 
-              {/* Live Preview - Scrollable independently, sticky container */}
-              <div className="sticky top-6 h-[calc(100vh-280px)]">
-                <Card className="h-full flex flex-col shadow-soft border-border/50 overflow-hidden bg-muted/30">
-                  <CardHeader className="flex-shrink-0 bg-card border-b border-border/50 py-3 px-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <CardTitle className="text-base">Vorschau</CardTitle>
-                        <CardDescription className="text-xs">A4-Format</CardDescription>
-                      </div>
-                      <Badge variant="outline" className="text-xs font-normal">
-                        Live Preview
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 bg-muted/30 scrollbar-thin">
-                    <div className="w-full shadow-lg mx-auto max-w-[210mm] bg-white min-h-[297mm]">
-                      <CoverLetterTemplatePreview
-                        html={coverLetterValue}
-                        candidateName={parsedResume?.candidateName}
-                        email={parsedResume?.email}
-                        phone={parsedResume?.phone}
-                        location={parsedResume?.location}
-                        linkedin={parsedResume?.linkedin}
-                        github={parsedResume?.github}
-                        companyName={application?.jobPosting?.company}
-                        templateId={application?.coverLetterTemplateId}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
+              {/* Live Preview - Full height display */}
+              <div className="sticky top-6 h-[calc(100vh-80px)] bg-gray-100 rounded-lg shadow-2xl overflow-hidden">
+                <CoverLetterTemplatePreview
+                  html={coverLetterValue}
+                  candidateName={parsedResume?.candidateName}
+                  email={parsedResume?.email}
+                  phone={parsedResume?.phone}
+                  location={parsedResume?.location}
+                  linkedin={parsedResume?.linkedin}
+                  github={parsedResume?.github}
+                  companyName={application?.jobPosting?.company}
+                  templateId={application?.coverLetterTemplateId}
+                />
               </div>
             </div>
           </TabsContent>
         )}
+
+        <TabsContent value="ats-score" className="space-y-6 focus-visible:outline-none mt-0">
+          <div className="max-w-6xl mx-auto">
+            <ATSScoreSidebar
+              applicationId={applicationId}
+              refreshTrigger={atsRefreshTrigger}
+            />
+          </div>
+        </TabsContent>
       </Tabs>
     </div>
   );

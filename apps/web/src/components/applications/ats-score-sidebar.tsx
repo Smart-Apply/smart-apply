@@ -198,37 +198,41 @@ export function ATSScoreSidebar({
           </div>
         </div>
 
-        {/* Missing Technical Keywords */}
-        {topMissing.length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-1.5">
-              <AlertCircle className="h-3.5 w-3.5 text-orange-500" />
-              <span className="text-xs font-medium">Fehlende Tech-Keywords</span>
+        {/* All Keywords Grid - Organized by Category */}
+        <div className="space-y-4">
+          {/* Matched Keywords */}
+          {analysis.matchedKeywords.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                <span className="text-sm font-medium">Gefundene Keywords ({analysis.matchedKeywords.length})</span>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                {analysis.matchedKeywords.map((kw, idx) => (
+                  <KeywordChip key={`matched-${kw.keyword}-${idx}`} keyword={kw} />
+                ))}
+              </div>
             </div>
-            <div className="flex flex-wrap gap-1">
-              {topMissing.map((kw, idx) => (
-                <KeywordChip key={`${kw.keyword}-${idx}`} keyword={kw} />
-              ))}
-            </div>
-            <p className="text-[10px] text-muted-foreground">
-              Füge diese in deinen Lebenslauf ein, um den Score zu erhöhen
-            </p>
-          </div>
-        )}
+          )}
 
-        {/* Other Missing Keywords */}
-        {otherMissing.length > 0 && (
-          <div className="space-y-2">
-            <span className="text-xs font-medium text-muted-foreground">
-              Weitere fehlende Keywords
-            </span>
-            <div className="flex flex-wrap gap-1">
-              {otherMissing.map((kw, idx) => (
-                <KeywordChip key={`${kw.keyword}-${idx}`} keyword={kw} />
-              ))}
+          {/* Missing Keywords by Category */}
+          {analysis.missingKeywords.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5">
+                <XCircle className="h-4 w-4 text-red-500" />
+                <span className="text-sm font-medium">Fehlende Keywords ({analysis.missingKeywords.length})</span>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                {analysis.missingKeywords.map((kw, idx) => (
+                  <KeywordChip key={`missing-${kw.keyword}-${idx}`} keyword={kw} />
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Füge diese Keywords in deinen Lebenslauf ein, um den ATS-Score zu erhöhen
+              </p>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Matched Count */}
         <div className="flex items-center justify-between text-xs pt-2 border-t">

@@ -8,6 +8,8 @@ import { Loader2 } from 'lucide-react';
 
 // A4 width in pixels at 96 DPI (210mm ≈ 794px)
 const A4_WIDTH_PX = 794;
+// A4 height in pixels at 96 DPI (297mm ≈ 1123px)
+const A4_HEIGHT_PX = 1123;
 
 // Extend Handlebars type for our custom flag
 interface HandlebarsWithFlag {
@@ -159,7 +161,7 @@ export function ResumeTemplatePreview({ resume, templateId }: ResumeTemplatePrev
             .preview-scale-wrapper {
               width: ${A4_WIDTH_PX}px;
               transform-origin: top left;
-              transform: scale(var(--scale, 0.7));
+              transform: scale(var(--scale, 1));
             }
             
             /* Preview adjustments */
@@ -183,13 +185,22 @@ export function ResumeTemplatePreview({ resume, templateId }: ResumeTemplatePrev
           <script>
             function updateScale() {
               const wrapper = document.querySelector('.preview-scale-wrapper');
-              if (wrapper) {
-                const containerWidth = document.body.clientWidth - 32; // subtract padding
-                const scale = Math.min(containerWidth / ${A4_WIDTH_PX}, 1);
-                wrapper.style.setProperty('--scale', scale);
-                // Adjust body height to account for scaled content
-                document.body.style.minHeight = (wrapper.scrollHeight * scale + 32) + 'px';
-              }
+              if (!wrapper) return;
+
+              // Use actual iframe container width (the full width available in the right panel)
+              const availableWidth = document.body.clientWidth - 32;
+              
+              // Available height: window height minus minimal spacing
+              const availableHeight = window.innerHeight - 60;
+
+              const scaleWidth = availableWidth / ${A4_WIDTH_PX};
+              const scaleHeight = availableHeight / ${A4_HEIGHT_PX};
+
+              const scale = Math.min(scaleWidth, scaleHeight, 1.2);
+
+              wrapper.style.setProperty('--scale', String(scale));
+              // Adjust body height to account for scaled content
+              document.body.style.minHeight = (wrapper.scrollHeight * scale + 32) + 'px';
             }
             updateScale();
             window.addEventListener('resize', updateScale);
@@ -245,12 +256,12 @@ export function ResumeTemplatePreview({ resume, templateId }: ResumeTemplatePrev
           {isDefaultTemplate && <span className="ml-2 text-blue-600">(Standard)</span>}
         </p>
       </div>
-      <div className="overflow-y-auto overflow-x-hidden" style={{ maxHeight: 'calc(100vh - 400px)' }}>
+      <div className="flex-1 overflow-hidden">
         <iframe
           ref={iframeRef}
-          title="Resume Preview"
-          className="w-full border-0"
-          style={{ minHeight: '800px', background: '#f8fafc' }}
+          title="Cover Letter Preview"
+          className="w-full h-full border-0"
+          style={{ background: '#f8fafc' }}
           sandbox="allow-same-origin allow-scripts"
         />
       </div>
@@ -335,7 +346,7 @@ export function CoverLetterTemplatePreview({
             .preview-scale-wrapper {
               width: ${A4_WIDTH_PX}px;
               transform-origin: top left;
-              transform: scale(var(--scale, 0.7));
+              transform: scale(var(--scale, 1));
             }
             
             /* Preview adjustments */
@@ -359,12 +370,22 @@ export function CoverLetterTemplatePreview({
           <script>
             function updateScale() {
               const wrapper = document.querySelector('.preview-scale-wrapper');
-              if (wrapper) {
-                const containerWidth = document.body.clientWidth - 32;
-                const scale = Math.min(containerWidth / ${A4_WIDTH_PX}, 1);
-                wrapper.style.setProperty('--scale', scale);
-                document.body.style.minHeight = (wrapper.scrollHeight * scale + 32) + 'px';
-              }
+              if (!wrapper) return;
+
+              // Use actual iframe container width (the full width available in the right panel)
+              const availableWidth = document.body.clientWidth - 32;
+              
+              // Available height: window height minus minimal spacing
+              const availableHeight = window.innerHeight - 60;
+
+              const scaleWidth = availableWidth / ${A4_WIDTH_PX};
+              const scaleHeight = availableHeight / ${A4_HEIGHT_PX};
+
+              const scale = Math.min(scaleWidth, scaleHeight, 1.2);
+
+              wrapper.style.setProperty('--scale', String(scale));
+              // Adjust body height to account for scaled content
+              document.body.style.minHeight = (wrapper.scrollHeight * scale + 32) + 'px';
             }
             updateScale();
             window.addEventListener('resize', updateScale);
@@ -427,15 +448,15 @@ export function CoverLetterTemplatePreview({
   }
 
   return (
-    <div className="w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-      <div className="bg-slate-100 px-3 py-2 border-b border-slate-200">
+    <div className="w-full h-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm flex flex-col">
+      <div className="bg-slate-100 px-3 py-2 border-b border-slate-200 flex-shrink-0">
         <p className="text-xs font-medium text-slate-600">
           Template: <span className="text-slate-900">{template.name}</span>
           <span className="ml-2 text-slate-400">({template.category})</span>
           {isDefaultTemplate && <span className="ml-2 text-blue-600">(Standard)</span>}
         </p>
       </div>
-      <div className="overflow-y-auto overflow-x-hidden" style={{ maxHeight: 'calc(100vh - 400px)' }}>
+      <div className="flex-1 overflow-hidden">
         <iframe
           ref={iframeRef}
           title="Cover Letter Preview"
