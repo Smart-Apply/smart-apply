@@ -1,0 +1,365 @@
+/* Tech Modern Template - ATS-Optimized */
+/* Clean developer-focused design with subtle tech aesthetics */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --primary-color: #0f172a;      /* Dark Slate */
+  --secondary-color: #334155;    /* Slate */
+  --accent-color: #0ea5e9;       /* Sky Blue */
+  --accent-dark: #0284c7;        /* Darker Sky */
+  --text-primary: #1e293b;       /* Slate 800 */
+  --text-secondary: #64748b;     /* Slate 500 */
+  --border-color: #e2e8f0;       /* Slate 200 */
+  --code-bg: #f1f5f9;            /* Slate 100 */
+  --background: #ffffff;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 10pt;
+  line-height: 1.55;
+  color: var(--text-primary);
+  background: var(--background);
+  max-width: 8.5in;
+  margin: 0 auto;
+  padding: 0.55in 0.65in;
+}
+
+/* ============================================
+   HEADER - Tech Style
+   ============================================ */
+.resume-header,
+.header {
+  padding-bottom: 0.2in;
+  margin-bottom: 0.18in;
+  border-bottom: 3pt solid var(--primary-color);
+}
+
+h1 {
+  font-size: 22pt;
+  font-weight: 700;
+  color: var(--primary-color);
+  letter-spacing: -0.02em;
+  margin-bottom: 0.08in;
+}
+
+/* Subtle accent bar under name */
+h1::after {
+  content: '';
+  display: block;
+  width: 0.5in;
+  height: 3pt;
+  background: var(--accent-color);
+  margin-top: 0.08in;
+}
+
+.contact-info {
+  font-size: 9pt;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  font-family: 'SF Mono', 'Fira Code', 'Monaco', Consolas, monospace;
+  letter-spacing: 0.01em;
+}
+
+.contact-info a {
+  color: var(--accent-dark);
+  text-decoration: none;
+}
+
+.separator {
+  margin: 0 0.12in;
+  color: var(--text-secondary);
+}
+
+/* ============================================
+   SECTION HEADERS - Tech Style
+   ============================================ */
+h2 {
+  font-size: 10pt;
+  font-weight: 700;
+  color: var(--primary-color);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 0.18in;
+  margin-bottom: 0.1in;
+  padding: 0.06in 0;
+  border-bottom: 1.5pt solid var(--border-color);
+  position: relative;
+}
+
+/* Accent line on left of section headers */
+h2::before {
+  content: '';
+  position: absolute;
+  left: -0.65in;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3pt;
+  height: 100%;
+  background: var(--accent-color);
+}
+
+h3 {
+  font-size: 11pt;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.02in;
+}
+
+/* ============================================
+   PROFESSIONAL SUMMARY
+   ============================================ */
+.summary-section {
+  margin-bottom: 0.15in;
+  padding: 0.12in;
+  background: var(--code-bg);
+  border-left: 3pt solid var(--accent-color);
+}
+
+.summary-section p {
+  color: var(--text-primary);
+  font-size: 10pt;
+  line-height: 1.6;
+}
+
+/* ============================================
+   EXPERIENCE ENTRIES
+   ============================================ */
+.experience-item,
+.education-item,
+.project-item {
+  margin-bottom: 0.16in;
+  page-break-inside: avoid;
+}
+
+.experience-header,
+.project-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.1in;
+}
+
+.experience-title,
+.project-title {
+  font-size: 11pt;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.experience-company {
+  font-size: 10pt;
+  color: var(--accent-dark);
+  font-weight: 500;
+  margin-bottom: 0.02in;
+}
+
+.experience-date,
+.project-date,
+.education-date {
+  font-size: 9pt;
+  color: var(--text-secondary);
+  font-family: 'SF Mono', 'Fira Code', 'Monaco', Consolas, monospace;
+  font-size: 8.5pt;
+}
+
+/* Tech-style bullets */
+ul {
+  margin-left: 0.18in;
+  margin-top: 0.06in;
+  margin-bottom: 0.08in;
+  list-style-type: none;
+}
+
+li {
+  margin-bottom: 0.05in;
+  font-size: 10pt;
+  color: var(--text-primary);
+  line-height: 1.5;
+  padding-left: 0.12in;
+  position: relative;
+}
+
+li::before {
+  content: '›';
+  position: absolute;
+  left: 0;
+  color: var(--accent-color);
+  font-weight: bold;
+  font-size: 12pt;
+}
+
+/* ============================================
+   SKILLS - Tag-like presentation
+   ============================================ */
+.skill-category {
+  margin-bottom: 0.1in;
+}
+
+.skill-category-title {
+  font-weight: 700;
+  color: var(--primary-color);
+  font-size: 9pt;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: inline;
+}
+
+.skill-category-title::after {
+  content: ':';
+  margin-right: 0.08in;
+}
+
+.skill-list {
+  color: var(--text-primary);
+  font-size: 10pt;
+  display: inline;
+}
+
+/* ============================================
+   EDUCATION
+   ============================================ */
+.education-degree {
+  font-size: 11pt;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.education-institution {
+  font-size: 10pt;
+  color: var(--accent-dark);
+}
+
+.education-gpa,
+.education-description {
+  font-size: 9pt;
+  color: var(--text-secondary);
+  margin-top: 0.02in;
+}
+
+/* ============================================
+   PROJECTS - Special styling for tech
+   ============================================ */
+.project-item {
+  border-left: 2pt solid var(--code-bg);
+  padding-left: 0.12in;
+}
+
+.project-description {
+  font-size: 9.5pt;
+  color: var(--text-secondary);
+  margin-top: 0.04in;
+}
+
+/* ============================================
+   CERTIFICATIONS
+   ============================================ */
+.certification-item {
+  margin-bottom: 0.06in;
+}
+
+.certification-name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.certification-issuer {
+  color: var(--accent-dark);
+}
+
+.certification-date {
+  color: var(--text-secondary);
+  font-family: 'SF Mono', 'Fira Code', 'Monaco', Consolas, monospace;
+  font-size: 8.5pt;
+}
+
+/* ============================================
+   COVER LETTER SPECIFIC
+   ============================================ */
+.date-section {
+  text-align: right;
+  margin: 0.25in 0;
+  font-size: 9.5pt;
+  color: var(--text-secondary);
+  font-family: 'SF Mono', 'Fira Code', 'Monaco', Consolas, monospace;
+}
+
+.recipient-section {
+  margin-bottom: 0.2in;
+  line-height: 1.4;
+}
+
+.recipient-section p {
+  margin-bottom: 0.02in;
+  font-size: 10pt;
+}
+
+.salutation {
+  margin-bottom: 0.15in;
+}
+
+.salutation p {
+  font-size: 10.5pt;
+  color: var(--text-primary);
+}
+
+.body-content {
+  text-align: left;
+  line-height: 1.7;
+}
+
+.body-content p {
+  margin-bottom: 0.15in;
+}
+
+.closing {
+  margin-top: 0.25in;
+}
+
+.closing p {
+  margin-bottom: 0.08in;
+}
+
+.signature {
+  margin-top: 0.3in;
+}
+
+.signature p {
+  color: var(--primary-color);
+  font-weight: 700;
+}
+
+/* ============================================
+   PRINT & PAGE CONTROL
+   ============================================ */
+.section {
+  margin-bottom: 0.12in;
+  page-break-inside: avoid;
+}
+
+.no-break {
+  page-break-inside: avoid;
+}
+
+h2, h3 {
+  page-break-after: avoid;
+}
+
+@media print {
+  body {
+    max-width: 100%;
+    padding: 0.5in;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  h2::before {
+    left: -0.5in;
+  }
+}

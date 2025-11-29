@@ -1,0 +1,341 @@
+/* Elegant Minimal Template - ATS-Optimized */
+/* Clean, sophisticated design with lots of whitespace */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --primary-color: #2d3748;      /* Charcoal */
+  --secondary-color: #718096;    /* Slate Gray */
+  --accent-color: #a0aec0;       /* Light Slate */
+  --text-primary: #1a202c;       /* Near Black */
+  --text-secondary: #718096;     /* Medium Gray */
+  --border-color: #cbd5e0;       /* Soft Gray */
+  --background: #ffffff;
+}
+
+body {
+  font-family: Georgia, 'Times New Roman', Times, serif;
+  font-size: 10.5pt;
+  line-height: 1.6;
+  color: var(--text-primary);
+  background: var(--background);
+  max-width: 8.5in;
+  margin: 0 auto;
+  padding: 0.75in 0.85in;
+}
+
+/* ============================================
+   HEADER - Elegant Name Presentation
+   ============================================ */
+.resume-header,
+.header {
+  text-align: center;
+  padding-bottom: 0.3in;
+  margin-bottom: 0.25in;
+}
+
+h1 {
+  font-size: 28pt;
+  font-weight: 400;
+  color: var(--primary-color);
+  letter-spacing: 0.15em;
+  margin-bottom: 0.15in;
+  text-transform: uppercase;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+.contact-info {
+  font-size: 9pt;
+  color: var(--secondary-color);
+  letter-spacing: 0.04em;
+  line-height: 1.8;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+.contact-info a {
+  color: var(--secondary-color);
+  text-decoration: none;
+}
+
+.separator {
+  margin: 0 0.18in;
+  color: var(--accent-color);
+  font-weight: 300;
+}
+
+/* Elegant divider line */
+.resume-header::after,
+.header::after {
+  content: '';
+  display: block;
+  width: 2in;
+  height: 1pt;
+  background: var(--accent-color);
+  margin: 0.2in auto 0;
+}
+
+/* ============================================
+   SECTION HEADERS - Minimal Style
+   ============================================ */
+h2 {
+  font-size: 10pt;
+  font-weight: 400;
+  color: var(--secondary-color);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  margin-top: 0.25in;
+  margin-bottom: 0.12in;
+  padding-bottom: 0.08in;
+  border-bottom: 0.5pt solid var(--border-color);
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+h3 {
+  font-size: 11pt;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.03in;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+/* ============================================
+   PROFESSIONAL SUMMARY
+   ============================================ */
+.summary-section {
+  margin-bottom: 0.2in;
+}
+
+.summary-section p {
+  color: var(--text-secondary);
+  font-size: 10pt;
+  line-height: 1.8;
+  font-style: italic;
+}
+
+/* ============================================
+   EXPERIENCE ENTRIES
+   ============================================ */
+.experience-item,
+.education-item,
+.project-item {
+  margin-bottom: 0.2in;
+  page-break-inside: avoid;
+}
+
+.experience-header,
+.project-header {
+  margin-bottom: 0.04in;
+}
+
+.experience-title,
+.project-title {
+  font-size: 11pt;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+.experience-company {
+  font-size: 10pt;
+  color: var(--primary-color);
+  font-style: italic;
+  margin-bottom: 0.03in;
+}
+
+.experience-date,
+.project-date,
+.education-date {
+  font-size: 9pt;
+  color: var(--secondary-color);
+  letter-spacing: 0.02em;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+/* Refined bullet points */
+ul {
+  margin-left: 0.15in;
+  margin-top: 0.08in;
+  margin-bottom: 0.1in;
+  list-style-type: none;
+}
+
+li {
+  margin-bottom: 0.06in;
+  font-size: 10pt;
+  color: var(--text-primary);
+  line-height: 1.6;
+  padding-left: 0.15in;
+  position: relative;
+}
+
+li::before {
+  content: '—';
+  position: absolute;
+  left: 0;
+  color: var(--accent-color);
+}
+
+/* ============================================
+   SKILLS - Elegant Presentation
+   ============================================ */
+.skill-category {
+  margin-bottom: 0.1in;
+}
+
+.skill-category-title {
+  font-weight: 600;
+  color: var(--primary-color);
+  font-size: 9.5pt;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+.skill-category-title::after {
+  content: ':';
+}
+
+.skill-list {
+  color: var(--text-primary);
+  font-size: 10pt;
+  margin-left: 0.08in;
+}
+
+/* ============================================
+   EDUCATION
+   ============================================ */
+.education-degree {
+  font-size: 11pt;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+.education-institution {
+  font-size: 10pt;
+  color: var(--primary-color);
+  font-style: italic;
+}
+
+.education-gpa,
+.education-description {
+  font-size: 9.5pt;
+  color: var(--secondary-color);
+  margin-top: 0.03in;
+}
+
+/* ============================================
+   CERTIFICATIONS
+   ============================================ */
+.certification-item {
+  margin-bottom: 0.08in;
+}
+
+.certification-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+.certification-issuer {
+  color: var(--secondary-color);
+  font-style: italic;
+}
+
+.certification-date {
+  color: var(--secondary-color);
+  font-size: 9pt;
+}
+
+/* ============================================
+   COVER LETTER SPECIFIC
+   ============================================ */
+.date-section {
+  text-align: right;
+  margin: 0.3in 0;
+  font-size: 10pt;
+  color: var(--secondary-color);
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+.recipient-section {
+  margin-bottom: 0.25in;
+  line-height: 1.5;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+.recipient-section p {
+  margin-bottom: 0.03in;
+  font-size: 10pt;
+}
+
+.salutation {
+  margin-bottom: 0.2in;
+}
+
+.salutation p {
+  font-size: 10.5pt;
+}
+
+.body-content {
+  text-align: left;
+  line-height: 1.8;
+}
+
+.body-content p {
+  margin-bottom: 0.18in;
+  text-indent: 0.25in;
+}
+
+.body-content p:first-child {
+  text-indent: 0;
+}
+
+.closing {
+  margin-top: 0.3in;
+}
+
+.closing p {
+  margin-bottom: 0.1in;
+  font-style: italic;
+}
+
+.signature {
+  margin-top: 0.35in;
+}
+
+.signature p {
+  color: var(--primary-color);
+  font-weight: 600;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-style: normal;
+}
+
+/* ============================================
+   PRINT & PAGE CONTROL
+   ============================================ */
+.section {
+  margin-bottom: 0.15in;
+  page-break-inside: avoid;
+}
+
+.no-break {
+  page-break-inside: avoid;
+}
+
+h2, h3 {
+  page-break-after: avoid;
+}
+
+@media print {
+  body {
+    max-width: 100%;
+    padding: 0.6in;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

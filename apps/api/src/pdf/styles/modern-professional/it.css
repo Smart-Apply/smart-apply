@@ -1,0 +1,299 @@
+/* Modern Professional Template - ATS-Optimized */
+/* Clean design with navy blue accents */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --primary-color: #1e3a5f;      /* Navy Blue */
+  --secondary-color: #2c5282;    /* Lighter Blue */
+  --accent-color: #3182ce;       /* Bright Blue for subtle highlights */
+  --text-primary: #1a202c;       /* Dark Gray - almost black */
+  --text-secondary: #4a5568;     /* Medium Gray */
+  --border-color: #e2e8f0;       /* Light Gray */
+  --background: #ffffff;
+}
+
+body {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 10.5pt;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background: var(--background);
+  max-width: 8.5in;
+  margin: 0 auto;
+  padding: 0.6in 0.7in;
+}
+
+/* ============================================
+   HEADER - Name & Contact
+   ============================================ */
+.resume-header,
+.header {
+  text-align: center;
+  padding-bottom: 0.2in;
+  margin-bottom: 0.2in;
+  border-bottom: 2pt solid var(--primary-color);
+}
+
+h1 {
+  font-size: 24pt;
+  font-weight: 700;
+  color: var(--primary-color);
+  letter-spacing: 0.02em;
+  margin-bottom: 0.1in;
+  text-transform: uppercase;
+}
+
+.contact-info {
+  font-size: 9.5pt;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.contact-info a {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.separator {
+  margin: 0 0.12in;
+  color: var(--primary-color);
+}
+
+/* ============================================
+   SECTION HEADERS
+   ============================================ */
+h2 {
+  font-size: 11pt;
+  font-weight: 700;
+  color: var(--primary-color);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 0.18in;
+  margin-bottom: 0.1in;
+  padding-bottom: 0.06in;
+  border-bottom: 1.5pt solid var(--primary-color);
+}
+
+h3 {
+  font-size: 11pt;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.02in;
+}
+
+/* ============================================
+   PROFESSIONAL SUMMARY
+   ============================================ */
+.summary-section {
+  margin-bottom: 0.15in;
+}
+
+.summary-section p {
+  color: var(--text-secondary);
+  font-size: 10pt;
+  line-height: 1.6;
+}
+
+/* ============================================
+   EXPERIENCE
+   ============================================ */
+.experience-item,
+.education-item,
+.project-item {
+  margin-bottom: 0.15in;
+  page-break-inside: avoid;
+}
+
+.experience-header,
+.project-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.experience-title,
+.project-title {
+  font-size: 11pt;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.experience-company {
+  font-size: 10pt;
+  color: var(--secondary-color);
+  font-weight: 500;
+  margin-bottom: 0.02in;
+}
+
+.experience-date,
+.project-date,
+.education-date {
+  font-size: 9.5pt;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Achievement bullets */
+ul {
+  margin-left: 0.2in;
+  margin-top: 0.06in;
+  margin-bottom: 0.08in;
+  list-style-type: disc;
+}
+
+li {
+  margin-bottom: 0.04in;
+  font-size: 10pt;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+li::marker {
+  color: var(--primary-color);
+}
+
+/* ============================================
+   SKILLS
+   ============================================ */
+.skill-category {
+  margin-bottom: 0.08in;
+}
+
+.skill-category-title {
+  font-weight: 600;
+  color: var(--primary-color);
+  display: inline;
+  font-size: 10pt;
+}
+
+.skill-list {
+  display: inline;
+  color: var(--text-primary);
+  font-size: 10pt;
+}
+
+/* ============================================
+   EDUCATION
+   ============================================ */
+.education-degree {
+  font-size: 11pt;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.education-institution {
+  font-size: 10pt;
+  color: var(--secondary-color);
+}
+
+.education-gpa,
+.education-description {
+  font-size: 9.5pt;
+  color: var(--text-secondary);
+}
+
+/* ============================================
+   CERTIFICATIONS
+   ============================================ */
+.certification-item {
+  margin-bottom: 0.06in;
+}
+
+.certification-name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.certification-issuer {
+  color: var(--text-secondary);
+}
+
+.certification-date {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* ============================================
+   COVER LETTER SPECIFIC
+   ============================================ */
+.date-section {
+  text-align: right;
+  margin: 0.25in 0;
+  font-size: 10pt;
+  color: var(--text-secondary);
+}
+
+.recipient-section {
+  margin-bottom: 0.2in;
+  line-height: 1.4;
+}
+
+.recipient-section p {
+  margin-bottom: 0.02in;
+}
+
+.salutation {
+  margin-bottom: 0.15in;
+}
+
+.salutation p {
+  font-size: 10.5pt;
+}
+
+.body-content {
+  text-align: left;
+  line-height: 1.7;
+}
+
+.body-content p {
+  margin-bottom: 0.15in;
+  text-indent: 0;
+}
+
+.closing {
+  margin-top: 0.25in;
+}
+
+.closing p {
+  margin-bottom: 0.08in;
+}
+
+.signature {
+  margin-top: 0.3in;
+}
+
+.signature p {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+/* ============================================
+   PRINT & PAGE CONTROL
+   ============================================ */
+.section {
+  margin-bottom: 0.12in;
+  page-break-inside: avoid;
+}
+
+.no-break {
+  page-break-inside: avoid;
+}
+
+h2, h3 {
+  page-break-after: avoid;
+}
+
+@media print {
+  body {
+    max-width: 100%;
+    padding: 0.5in;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

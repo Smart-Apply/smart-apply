@@ -296,6 +296,11 @@ model Template {
   description       String?
   type              TemplateType
   category          String   // e.g., "Professional", "Modern", "Creative", "Minimal", "Technical"
+  
+  // Multilingual support
+  language          String   @default("en") // ISO 639-1: "de", "en", "fr", "es", "it"
+  baseTemplateId    String?  // Groups language variants of same design (e.g., all "Modern Professional" templates)
+  
   thumbnailUrl      String?
   previewImageKey   String?  // Storage key for cached preview image
   htmlTemplate      String   @db.Text
@@ -312,6 +317,8 @@ model Template {
   
   @@index([type, isActive])
   @@index([isDefault])
+  @@index([category, language, isActive])
+  @@index([baseTemplateId])
   @@map("templates")
 }
 

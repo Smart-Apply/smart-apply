@@ -16,6 +16,7 @@ import { JobType } from '../jobs/interfaces/queue.interface';
 import { LLMService, KeywordMatch } from '../llm/llm.service';
 import { TitleGeneratorService } from './title-generator.service';
 import { KeywordsService } from '../keywords/keywords.service';
+import { TemplatesService } from '../templates/templates.service';
 import { ATSAgentOutput } from '../agents/agents.interface';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { ApplicationResponseDto, ApplicationStatus } from './dto/application-response.dto';
@@ -41,6 +42,7 @@ export class ApplicationsService {
     private readonly llmService: LLMService,
     private readonly titleGenerator: TitleGeneratorService,
     private readonly keywordsService: KeywordsService,
+    private readonly templatesService: TemplatesService,
   ) {}
 
   private async getProfileWithRelations(userId: string): Promise<ProfileWithRelations> {
@@ -513,6 +515,62 @@ Summary: ${resume.summary || 'Not provided'}
   }
 
   /**
+   * Resolve template ID to language-specific variant based on detected language
+   * If templateId is provided, find the matching language variant from the same design family
+   */
+  private async resolveTemplateForLanguage(
+    templateId: string | null | undefined,
+    language: string,
+    type: 'COVER_LETTER' | 'RESUME',
+  ): Promise<string | null> {
+    if (!templateId) {
+      return null;
+    }
+
+    try {
+      // Get the selected template to find its category
+      const selectedTemplate = await this.prisma.template.findUnique({
+        where: { id: templateId },
+        select: { category: true, language: true },
+      });
+
+      if (!selectedTemplate) {
+        this.logger.warn(`Template ${templateId} not found, using default`);
+        return null;
+      }
+
+      // If template already matches the language, use it
+      if (selectedTemplate.language === language) {
+        this.logger.debug(`Template ${templateId} already matches language ${language}`);
+        return templateId;
+      }
+
+      // Find the same design in the target language
+      const languageVariant = await this.templatesService.findByCategoryAndLanguage(
+        selectedTemplate.category,
+        language,
+        type === 'COVER_LETTER' ? 'COVER_LETTER' : 'RESUME',
+      );
+
+      if (languageVariant) {
+        this.logger.log(
+          `Resolved template ${templateId} (${selectedTemplate.category}) to language variant ${languageVariant.id} (${language})`,
+        );
+        return languageVariant.id;
+      }
+
+      // Fallback: keep original template if no language variant found
+      this.logger.warn(
+        `No ${language} variant found for template ${templateId} (${selectedTemplate.category}), using original`,
+      );
+      return templateId;
+    } catch (error) {
+      this.logger.error(`Failed to resolve template for language ${language}:`, error);
+      return templateId; // Fallback to original
+    }
+  }
+
+  /**
    * Create a new application and trigger background processing
    */
   async create(userId: string, dto: CreateApplicationDto): Promise<ApplicationResponseDto> {
@@ -661,7 +719,17 @@ Summary: ${resume.summary || 'Not provided'}
       this.logger.log('Skipping cover letter generation (user opted out)');
     }
 
-    // 6. Create application with generated content (status: READY for editing)
+    // 6. Resolve templates to match detected language
+    const resolvedResumeTemplateId = await this.resolveTemplateForLanguage(
+      dto.resumeTemplateId,
+      detectedLanguage,
+      'RESUME',
+    );
+    const resolvedCoverLetterTemplateId = shouldGenerateCoverLetter
+      ? await this.resolveTemplateForLanguage(dto.coverLetterTemplateId, detectedLanguage, 'COVER_LETTER')
+      : null;
+
+    // 7. Create application with generated content (status: READY for editing)
     const application = await this.prisma.application.create({
       data: {
         userId,
@@ -672,8 +740,8 @@ Summary: ${resume.summary || 'Not provided'}
         notes: dto.notes,
         resumeText: JSON.stringify(resumeTemplate),
         coverLetterText: sanitizedCoverLetter,
-        coverLetterTemplateId: shouldGenerateCoverLetter ? dto.coverLetterTemplateId : null,
-        resumeTemplateId: dto.resumeTemplateId,
+        coverLetterTemplateId: resolvedCoverLetterTemplateId,
+        resumeTemplateId: resolvedResumeTemplateId,
       },
       include: {
         jobPosting: true,

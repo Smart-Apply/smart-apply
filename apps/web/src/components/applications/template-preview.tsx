@@ -49,6 +49,71 @@ function registerHandlebarsHelpers() {
       }
     });
 
+    // Translation helper for multilingual templates
+    // Usage: {{t "resume.summary" language}}
+    Handlebars.registerHelper('t', function (this: unknown, key: string, language?: string) {
+      // If language is not provided or is an object (Handlebars context), try to extract from @root
+      if (!language || typeof language === 'object') {
+        const context = this as Record<string, unknown>;
+        language = (context?.language as string) || 'en';
+      }
+      
+      const lang = language || 'en';
+      const translations: Record<string, Record<string, string>> = {
+        'resume.summary': {
+          en: 'Professional Summary',
+          de: 'Profil',
+          fr: 'Résumé Professionnel',
+          es: 'Resumen Profesional',
+          it: 'Sommario Professionale',
+        },
+        'resume.skills': {
+          en: 'Skills',
+          de: 'Fähigkeiten',
+          fr: 'Compétences',
+          es: 'Habilidades',
+          it: 'Competenze',
+        },
+        'resume.experience': {
+          en: 'Professional Experience',
+          de: 'Berufserfahrung',
+          fr: 'Expérience Professionnelle',
+          es: 'Experiencia Profesional',
+          it: 'Esperienza Professionale',
+        },
+        'resume.education': {
+          en: 'Education',
+          de: 'Ausbildung',
+          fr: 'Formation',
+          es: 'Educación',
+          it: 'Istruzione',
+        },
+        'resume.certifications': {
+          en: 'Certifications',
+          de: 'Zertifikate',
+          fr: 'Certifications',
+          es: 'Certificaciones',
+          it: 'Certificazioni',
+        },
+        'resume.languages': {
+          en: 'Languages',
+          de: 'Sprachen',
+          fr: 'Langues',
+          es: 'Idiomas',
+          it: 'Lingue',
+        },
+        'resume.projects': {
+          en: 'Projects',
+          de: 'Projekte',
+          fr: 'Projets',
+          es: 'Proyectos',
+          it: 'Progetti',
+        },
+      };
+
+      return translations[key]?.[lang] || translations[key]?.['en'] || key;
+    });
+
     hbs.__helpersRegistered = true;
   }
 }

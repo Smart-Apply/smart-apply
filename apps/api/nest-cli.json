@@ -9,12 +9,12 @@
     "assets": [
       {
         "include": "pdf/templates/**/*.hbs",
-        "outDir": "dist/templates",
+        "outDir": "dist",
         "watchAssets": true
       },
       {
         "include": "pdf/styles/**/*.css",
-        "outDir": "dist/styles",
+        "outDir": "dist",
         "watchAssets": true
       }
     ]

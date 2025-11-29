@@ -16,9 +16,11 @@ export class TemplatesService {
 
   /**
    * Get all active templates, optionally filtered by type
+   * Returns one template per design (grouped by baseTemplateId or category)
+   * For UI display in wizard - shows only distinct designs, not language variants
    */
   async findAll(type?: TemplateType): Promise<TemplateResponseDto[]> {
-    const templates = await this.prisma.template.findMany({
+    const allTemplates = await this.prisma.template.findMany({
       where: {
         isActive: true,
         ...(type && { type }),
@@ -30,6 +32,8 @@ export class TemplatesService {
         description: true,
         type: true,
         category: true,
+        language: true,
+        baseTemplateId: true,
         thumbnailUrl: true,
         isActive: true,
         isDefault: true,
@@ -38,7 +42,87 @@ export class TemplatesService {
       },
     });
 
-    return templates;
+    // Group by baseTemplateId (or category if no baseTemplateId)
+    // Return only one template per design family (preferring English as default)
+    const templateMap = new Map<string, typeof allTemplates[0]>();
+    
+    for (const template of allTemplates) {
+      const groupKey = template.baseTemplateId || template.category;
+      const existing = templateMap.get(groupKey);
+      
+      if (!existing) {
+        templateMap.set(groupKey, template);
+      } else if (template.language === 'en' && existing.language !== 'en') {
+        // Prefer English variant for display
+        templateMap.set(groupKey, template);
+      }
+    }
+
+    return Array.from(templateMap.values());
+  }
+
+  /**
+   * Find template by category and language
+   * Used for automatic selection based on job posting language
+   */
+  async findByCategoryAndLanguage(
+    category: string,
+    language: string,
+    type?: TemplateType,
+  ): Promise<TemplateWithContentResponseDto | null> {
+    const template = await this.prisma.template.findFirst({
+      where: {
+        category,
+        language,
+        isActive: true,
+        ...(type && { type: { in: [type, TemplateType.BOTH] } }),
+      },
+    });
+
+    if (!template) {
+      // Fallback to English if specific language not found
+      this.logger.warn(`Template not found for category ${category} and language ${language}, falling back to English`);
+      return this.prisma.template.findFirst({
+        where: {
+          category,
+          language: 'en',
+          isActive: true,
+          ...(type && { type: { in: [type, TemplateType.BOTH] } }),
+        },
+      });
+    }
+
+    return template;
+  }
+
+  /**
+   * Get all language variants of a template design
+   */
+  async findLanguageVariants(baseTemplateId: string): Promise<TemplateResponseDto[]> {
+    return this.prisma.template.findMany({
+      where: {
+        OR: [
+          { baseTemplateId },
+          { id: baseTemplateId }, // Include the base template itself
+        ],
+        isActive: true,
+      },
+      orderBy: { language: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        type: true,
+        category: true,
+        language: true,
+        baseTemplateId: true,
+        thumbnailUrl: true,
+        isActive: true,
+        isDefault: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
   }
 
   /**

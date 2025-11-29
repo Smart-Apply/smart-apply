@@ -25,6 +25,20 @@ export class CreateTemplateDto {
   @IsNotEmpty()
   category: string;
 
+  @ApiProperty({ example: 'en', description: 'ISO 639-1 language code (de, en, fr, es, it)' })
+  @IsString()
+  @IsOptional()
+  language?: string;
+
+  @ApiProperty({
+    example: 'clx1y2z3a4b5c6d7e8f9g0h1',
+    required: false,
+    description: 'Groups language variants of the same design',
+  })
+  @IsString()
+  @IsOptional()
+  baseTemplateId?: string;
+
   @ApiProperty({
     example: 'https://storage.example.com/thumbnails/professional-cover-letter.png',
     required: false,

@@ -486,7 +486,7 @@ export default function ApplicationResumeEditorPage() {
 
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Form Editor - Scrollable independently */}
-            <div className="h-[calc(100vh-280px)] overflow-y-auto pr-2 scrollbar-thin">
+            <div className="h-[calc(100vh-200px)] overflow-y-auto pr-2 scrollbar-thin">
               <div className="space-y-6 pb-10">
                 {parsedResume && (
                   <ResumeFormEditor
@@ -498,8 +498,8 @@ export default function ApplicationResumeEditorPage() {
               </div>
             </div>
 
-            {/* Live Preview - Full height display */}
-            <div className="sticky top-6 h-[calc(100vh-80px)] bg-gray-100 rounded-lg shadow-2xl overflow-hidden">
+            {/* Live Preview - Scrollable independently */}
+            <div className="h-[calc(100vh-200px)] overflow-y-auto bg-gray-100 rounded-lg shadow-2xl">
               {parsedResume && (
                 <ResumeTemplatePreview
                   resume={parsedResume}
@@ -530,7 +530,7 @@ export default function ApplicationResumeEditorPage() {
 
             <div className="grid gap-6 lg:grid-cols-2">
               {/* Editor - Scrollable independently */}
-              <div className="h-[calc(100vh-280px)] overflow-y-auto pr-2 scrollbar-thin">
+              <div className="h-[calc(100vh-200px)] overflow-y-auto pr-2 scrollbar-thin">
                 <Card className="shadow-soft border-border/50">
                   <CardHeader className="pb-4">
                     <CardTitle className="text-lg">Anschreiben bearbeiten</CardTitle>
@@ -586,8 +586,8 @@ export default function ApplicationResumeEditorPage() {
                 </Card>
               </div>
 
-              {/* Live Preview - Full height display */}
-              <div className="sticky top-6 h-[calc(100vh-80px)] bg-gray-100 rounded-lg shadow-2xl overflow-hidden">
+              {/* Live Preview - Scrollable independently */}
+              <div className="h-[calc(100vh-200px)] overflow-y-auto bg-gray-100 rounded-lg shadow-2xl">
                 <CoverLetterTemplatePreview
                   html={coverLetterValue}
                   candidateName={parsedResume?.candidateName}

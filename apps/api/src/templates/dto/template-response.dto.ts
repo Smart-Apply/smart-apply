@@ -21,6 +21,17 @@ export class TemplateResponseDto {
   @ApiProperty({ example: 'Professional' })
   category: string;
 
+  @ApiProperty({ example: 'en', description: 'ISO 639-1 language code' })
+  language: string;
+
+  @ApiProperty({
+    example: 'clx1y2z3a4b5c6d7e8f9g0h1',
+    required: false,
+    nullable: true,
+    description: 'Groups language variants of the same design',
+  })
+  baseTemplateId?: string | null;
+
   @ApiProperty({
     example: 'https://storage.example.com/thumbnails/professional-cover-letter.png',
     required: false,
