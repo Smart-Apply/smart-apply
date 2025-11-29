@@ -9,14 +9,23 @@ import { PromptService } from '../../common/services';
 // Simplified schema: only core fields + fullText (no structured arrays)
 const JobPostingSchema = z.object({
   title: z.string().describe('The job title'),
-  company: z.string().describe('The company name (NEVER use job board names like Workwise/LinkedIn)'),
-  location: z.string().nullable().describe('The job location (city, country), or null if not specified'),
+  company: z
+    .string()
+    .describe('The company name (NEVER use job board names like Workwise/LinkedIn)'),
+  location: z
+    .string()
+    .nullable()
+    .describe('The job location (city, country), or null if not specified'),
   language: z
     .string()
-    .describe('ISO 639-1 language code (e.g., "de", "en", "fr", "es", "it", "pt", "nl", "pl", "tr", "ar", "zh", "ja")'),
+    .describe(
+      'ISO 639-1 language code (e.g., "de", "en", "fr", "es", "it", "pt", "nl", "pl", "tr", "ar", "zh", "ja")',
+    ),
   fullText: z
     .string()
-    .describe('Complete job posting text including description, requirements, responsibilities, benefits, salary, etc. Keep original language and formatting.'),
+    .describe(
+      'Complete job posting text including description, requirements, responsibilities, benefits, salary, etc. Keep original language and formatting.',
+    ),
 });
 
 export type JobPostingExtraction = z.infer<typeof JobPostingSchema>;
@@ -54,8 +63,8 @@ export class AgentUrlParser {
       azureOpenAIApiDeploymentName: azureDeployment,
       azureOpenAIApiVersion: azureApiVersion,
       azureOpenAIEndpoint: azureEndpoint,
-      temperature: 0.2, // Lower temperature for more consistent extraction
-      maxTokens: 4000,
+      temperature: 0.0, // Zero temperature = deterministic, no creativity, no translation
+      maxTokens: 16000, // High limit for long job postings (GPT-4o-mini supports up to 16k output tokens)
     });
 
     this.logger.log('AgentUrlParser initialized with Azure OpenAI');
@@ -585,13 +594,26 @@ export class AgentUrlParser {
     this.logger.log(
       `📤 Sending to LLM with company hint: "${companyHint || 'Not detected - extract from content'}"`,
     );
-    this.logger.debug(
-      `📤 First 800 chars of structured content sent to LLM:\n${structuredContent.substring(0, 800)}`,
+    this.logger.log(
+      `📤 FULL CONTENT SENT TO LLM (${structuredContent.length} chars):\n${'='.repeat(80)}\n${structuredContent}\n${'='.repeat(80)}`,
     );
 
     try {
-      // Invoke LLM with prompt string directly
-      const response = await this.llm.invoke(prompt);
+      // Invoke LLM with strict system message to prevent translation/rewriting
+      const response = await this.llm.invoke([
+        {
+          role: 'system',
+          content:
+            'You are a precise data extraction assistant. Your ONLY job is to COPY text exactly as written. ' +
+            'DO NOT translate, rewrite, summarize, or paraphrase. ' +
+            'If the text is in German, keep it in German. If English, keep English. ' +
+            'COPY EXACTLY - word for word, character for character.',
+        },
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ]);
 
       // Parse the response - handle both JSON and text responses
       let jsonText = response.content.toString();

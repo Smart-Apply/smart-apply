@@ -6,6 +6,21 @@ URL: {{url}}
 
 **🏢 COMPANY HINT: {{companyHint}}**
 
+---
+
+⚠️ **CRITICAL INSTRUCTION: DO NOT REWRITE OR PARAPHRASE THE JOB POSTING**
+
+Your job is to **EXTRACT and COPY** the original text, NOT to summarize, rewrite, translate, or improve it.
+
+- ✅ Copy the exact wording from the original
+- ✅ Keep the original language (German stays German, English stays English)
+- ✅ Preserve all specific details (years of experience, tools, frameworks, percentages, etc.)
+- ❌ Do NOT translate or rewrite in your own words
+- ❌ Do NOT add information that isn't in the original
+- ❌ Do NOT create generic descriptions
+
+---
+
 ## TASK
 
 Extract these 5 fields from the job posting:
@@ -14,7 +29,7 @@ Extract these 5 fields from the job posting:
 2. **title** - The position name (e.g., "Senior Software Engineer", "Marketing Manager")
 3. **location** - City and country (e.g., "Berlin, Germany", "Remote")
 4. **language** - ISO 639-1 code ("de", "en", "fr", "es", "it", "pt", "nl", "pl", "tr", "ar", "zh", "ja")
-5. **fullText** - ALL job content as clean, readable text (see instructions below)
+5. **fullText** - ALL job content as clean, readable text (**EXACT COPY - see instructions below**)
 
 ## EXTRACTION RULES
 
@@ -28,6 +43,8 @@ Extract these 5 fields from the job posting:
 
 ### What to EXTRACT for fullText
 
+**🚨 CRITICAL: COPY EXACTLY - DO NOT REWRITE, SUMMARIZE, OR PARAPHRASE 🚨**
+
 Extract ALL relevant job posting content including:
 - Job description/overview
 - Requirements/qualifications
@@ -37,33 +54,31 @@ Extract ALL relevant job posting content including:
 - Company information
 - Team/culture information
 - Application deadline (if mentioned)
+- Start date, employment type, working hours
 
 **Format Rules:**
-- Keep the original language (don't translate)
-- Preserve section structure with headers (if they exist)
-- Keep bullet points and formatting
-- Remove duplicate information
-- Clean up formatting (no excessive line breaks)
+- **COPY EXACTLY AS WRITTEN** - Do NOT rewrite, summarize, or paraphrase
+- Keep the EXACT original language and wording
+- Preserve ALL section headers exactly as they appear
+- Keep ALL bullet points and formatting
+- Keep ALL details and specifics (numbers, percentages, years of experience, etc.)
+- Only remove: duplicate sections, job board UI elements, navigation menus
+- Clean up excessive line breaks, but preserve paragraph structure
 
-**Example fullText structure:**
+**❌ WRONG (Rewritten/Summarized):**
 ```
-Über das Unternehmen
-Wir sind ein führendes Tech-Unternehmen...
+Your Responsibilities
+- Design and implement cloud solutions
+- Collaborate with teams
+```
 
-Deine Aufgaben
-- Design und Implementierung von Cloud-Lösungen
-- Zusammenarbeit mit Kunden
-- Optimierung bestehender Systeme
+**✅ CORRECT (Exact Copy):**
+```
+Deine Mission bei uns
 
-Dein Profil
-- 5+ Jahre Erfahrung mit AWS
-- Sehr gute Deutsch- und Englischkenntnisse
-- Bachelor in Informatik oder vergleichbar
-
-Benefits
-- Flexible Arbeitszeiten und Remote-Option
-- 30 Tage Urlaub
-- Weiterbildungsbudget
+Du konzipierst und betreibst skalierbare Infrastruktur, die KI-Workflows und Automatisierungen sicher und performant ermöglicht
+Du baust und betreibst eine zentrale Automatisierungsplattform (z. B. N8n)
+Du entwickelst und wartest Infrastructure as Code (IaC) mit Terraform, Ansible
 ```
 
 ## Company Name Detection
@@ -86,33 +101,62 @@ If you see these sections, prioritize them:
 
 {{content}}
 
-## EXAMPLE
+## EXAMPLES
+
+### Example 1: German Job Posting (Keep Original Wording)
 
 Input content:
 ```
-Über SAPERED GmbH
-Wir sind eine Agentur für Learning & Development...
+Start: ab sofort | Level: Mid-Senior | Location: Deutschland, remote
 
-Was erwartet dich?
-Du verantwortest den Betrieb unserer Learning & Development Plattformen.
-Du analysierst und optimierst unsere bestehende Systemlandschaft.
+Als Cloud & AI Engineer (gn) gestaltest du die Zukunft unserer digital-technischen Landschaft.
 
-Was solltest du mitbringen?
-Du hast ein sehr gutes Verständnis für Plattformarchitekturen und APIs.
-Du hast idealerweise Erfahrung mit digitalen Lernplattformen.
+Deine Mission bei uns
+Du konzipierst und betreibst skalierbare Infrastruktur, die KI-Workflows ermöglicht
+Du baust eine zentrale Automatisierungsplattform (z. B. N8n)
+Du entwickelst Infrastructure as Code (z. B. mit Terraform, Ansible)
 
-Bonuspunkte
-Erfahrung im Learning & Development Umfeld
+Deine Erfahrung & Skills
+Du hast Erfahrung mit Cloud-Infrastruktur
+Du bist mit IaC-Tools vertraut
+Du hast Interesse an KI/ML-Integration
 ```
 
-Expected output:
+Expected output (EXACT COPY):
+```json
+{
+  "company": "The Quality Group",
+  "title": "Cloud & AI Engineer",
+  "location": "Deutschland, remote",
+  "language": "de",
+  "fullText": "Start: ab sofort | Level: Mid-Senior | Location: Deutschland, remote\n\nAls Cloud & AI Engineer (gn) gestaltest du die Zukunft unserer digital-technischen Landschaft.\n\nDeine Mission bei uns\nDu konzipierst und betreibst skalierbare Infrastruktur, die KI-Workflows ermöglicht\nDu baust eine zentrale Automatisierungsplattform (z. B. N8n)\nDu entwickelst Infrastructure as Code (z. B. mit Terraform, Ansible)\n\nDeine Erfahrung & Skills\nDu hast Erfahrung mit Cloud-Infrastruktur\nDu bist mit IaC-Tools vertraut\nDu hast Interesse an KI/ML-Integration"
+}
+```
+
+### Example 2: English Job Posting (Keep Original Wording)
+
+Input content:
+```
+About SAPERED GmbH
+We are an agency for Learning & Development...
+
+What awaits you?
+You will be responsible for operating our Learning & Development platforms.
+You will analyze and optimize our existing system landscape.
+
+What should you bring?
+You have a very good understanding of platform architectures and APIs.
+You ideally have experience with digital learning platforms.
+```
+
+Expected output (EXACT COPY):
 ```json
 {
   "company": "SAPERED GmbH",
-  "title": "Platform Architect - AWS / APIs / Cloud",
+  "title": "Platform Architect",
   "location": "Berlin, Germany",
-  "language": "de",
-  "fullText": "Über SAPERED GmbH\nWir sind eine Agentur für Learning & Development...\n\nWas erwartet dich?\n- Du verantwortest den Betrieb unserer Learning & Development Plattformen.\n- Du analysierst und optimierst unsere bestehende Systemlandschaft.\n\nWas solltest du mitbringen?\n- Du hast ein sehr gutes Verständnis für Plattformarchitekturen und APIs.\n- Du hast idealerweise Erfahrung mit digitalen Lernplattformen.\n\nBonuspunkte\n- Erfahrung im Learning & Development Umfeld"
+  "language": "en",
+  "fullText": "About SAPERED GmbH\nWe are an agency for Learning & Development...\n\nWhat awaits you?\nYou will be responsible for operating our Learning & Development platforms.\nYou will analyze and optimize our existing system landscape.\n\nWhat should you bring?\nYou have a very good understanding of platform architectures and APIs.\nYou ideally have experience with digital learning platforms."
 }
 ```
 
