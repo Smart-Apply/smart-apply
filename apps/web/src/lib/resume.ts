@@ -69,9 +69,8 @@ export function buildResumeFromProfile(
       startDate: experience.startDate,
       endDate: experience.endDate || undefined,
       dateRange: formatRange(experience.startDate, experience.endDate),
-      achievements: experience.description
-        ? experience.description.split('\n').filter(Boolean)
-        : [],
+      description: experience.description || undefined,
+      achievements: experience.achievements || [],
     })),
     projects: (profile.projects || []).map((project) => ({
       id: project.id || createClientId(),
@@ -116,9 +115,16 @@ export function parseResumeDraft(resumeText?: string | null): ResumeData | null 
 }
 
 function withDateRange(experience: ResumeExperience): ResumeExperience {
+  const trim = (value?: string) => value?.trim() || undefined;
+  const trimPreservingNewlines = (value?: string) => {
+    if (!value) return undefined;
+    // Trim each line individually but preserve newlines
+    return value.split('\n').map(line => line.trim()).join('\n').trim() || undefined;
+  };
   return {
     ...experience,
     dateRange: experience.dateRange || formatRange(experience.startDate, experience.endDate),
+    description: trimPreservingNewlines(experience.description),
     achievements: experience.achievements?.filter(Boolean),
   };
 }

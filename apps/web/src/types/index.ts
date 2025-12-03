@@ -100,6 +100,7 @@ export interface ResumeExperience {
   dateRange: string;
   startDate?: string;
   endDate?: string;
+  description?: string;
   achievements?: string[];
 }
 

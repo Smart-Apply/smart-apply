@@ -124,6 +124,14 @@ export class TemplateRendererService {
       return str ? str.toLowerCase().replace(/\s+/g, '-') : '';
     });
 
+    // Helper to convert newlines to <br> tags for HTML rendering
+    Handlebars.registerHelper('nl2br', (text: string) => {
+      if (!text) return '';
+      // Convert newlines to <br> tags and return as SafeString (allows HTML)
+      const html = text.replace(/\n/g, '<br>');
+      return new Handlebars.SafeString(html);
+    });
+
     // Helper for conditional rendering
     Handlebars.registerHelper('ifCond', function (v1, operator, v2, options) {
       switch (operator) {

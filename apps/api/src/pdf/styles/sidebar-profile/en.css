@@ -395,3 +395,32 @@ body {
   size: A4 portrait;
   margin: 0;
 }
+
+/* Languages Section */
+.languages-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.08in;
+  margin-bottom: 0.1in;
+}
+
+.language-item {
+  padding: 0.06in 0.1in;
+  background: var(--background-light, #f7fafc);
+  border-radius: 3pt;
+  border-left: 2pt solid var(--primary-color, #1e3a5f);
+  page-break-inside: avoid;
+}
+
+.language-name {
+  font-weight: 600;
+  font-size: 10pt;
+  color: var(--text-primary, #1a1a1a);
+}
+
+.language-level {
+  font-size: 9pt;
+  color: var(--text-secondary, #4a5568);
+  font-style: italic;
+}
+

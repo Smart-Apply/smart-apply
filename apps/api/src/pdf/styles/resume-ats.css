@@ -113,6 +113,14 @@
   font-size: 11pt;
 }
 
+.experience-description {
+  margin-top: 0.04in;
+  margin-bottom: 0.06in;
+  font-size: 11pt;
+  color: #000000;
+  line-height: 1.5;
+}
+
 .experience-item ul {
   margin-left: 0.25in;
   margin-bottom: 0;
@@ -219,6 +227,26 @@
 .certification-date {
   font-size: 10pt;
   color: #000000;
+  font-style: italic;
+}
+
+/* Languages Section - Simple list */
+.languages-container {
+  margin-bottom: 0.1in;
+}
+
+.language-item {
+  margin-bottom: 0.05in;
+  page-break-inside: avoid;
+  font-size: 11pt;
+  color: #000000;
+}
+
+.language-name {
+  font-weight: bold;
+}
+
+.language-level {
   font-style: italic;
 }
 

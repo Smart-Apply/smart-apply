@@ -25,6 +25,14 @@ function registerHandlebarsHelpers() {
       return str ? str.toLowerCase().replace(/\s+/g, '-') : '';
     });
 
+    // Helper to convert newlines to <br> tags for HTML rendering
+    Handlebars.registerHelper('nl2br', (text: string) => {
+      if (!text) return '';
+      // Convert newlines to <br> tags and return as SafeString (allows HTML)
+      const html = text.replace(/\n/g, '<br>');
+      return new Handlebars.SafeString(html);
+    });
+
     // Helper for conditional rendering
     Handlebars.registerHelper('ifCond', function (this: unknown, v1: unknown, operator: string, v2: unknown, options: Handlebars.HelperOptions) {
       switch (operator) {
@@ -199,6 +207,7 @@ export function ResumeTemplatePreview({ resume, templateId, language = 'en' }: R
       company: exp.company,
       location: exp.location,
       dateRange: exp.dateRange,
+      description: exp.description,
       achievements: exp.achievements,
     })),
     projects: resume.projects?.map(proj => ({

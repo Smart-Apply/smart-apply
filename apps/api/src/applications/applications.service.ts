@@ -243,6 +243,7 @@ export class ApplicationsService {
         company: experience.company.trim(),
         location: trim(experience.location),
         dateRange: experience.dateRange.trim(),
+        description: trim(experience.description),
         achievements: (experience.achievements || []).map((item) => item.trim()).filter(Boolean),
       })),
       projects: (resume.projects || []).map((project) => ({

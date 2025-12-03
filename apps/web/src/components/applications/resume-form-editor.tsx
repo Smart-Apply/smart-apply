@@ -129,7 +129,7 @@ export function ResumeFormEditor({ value, onChange, disabled }: ResumeFormEditor
       ...value,
       experiences: [
         ...value.experiences,
-        { title: '', company: '', location: '', dateRange: '', achievements: [] },
+        { title: '', company: '', location: '', dateRange: '', description: '', achievements: [] },
       ],
     });
   };
@@ -422,13 +422,17 @@ export function ResumeFormEditor({ value, onChange, disabled }: ResumeFormEditor
                       placeholder="Zeitraum (z.B. Jan 2020 - Dez 2023)"
                     />
                   </div>
-                  <NewlineSeparatedTextarea
-                    value={exp.achievements || []}
-                    onChange={(achievements) => updateExperience(index, 'achievements', achievements)}
-                    disabled={disabled}
-                    placeholder="Erfolge & Aufgaben (eine pro Zeile)"
-                    rows={4}
-                  />
+                  <div>
+                    <Label htmlFor={`exp-description-${index}`}>Beschreibung</Label>
+                    <Textarea
+                      id={`exp-description-${index}`}
+                      value={exp.description || ''}
+                      onChange={(e) => updateExperience(index, 'description', e.target.value)}
+                      disabled={disabled}
+                      placeholder="Beschreiben Sie Ihre Aufgaben, Verantwortlichkeiten und Erfolge bei dieser Position"
+                      rows={6}
+                    />
+                  </div>
                 </div>
                 <Button
                   type="button"

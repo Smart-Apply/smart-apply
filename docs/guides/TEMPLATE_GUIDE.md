@@ -5,6 +5,7 @@ Diese Anleitung erklärt, wie du neue Templates mit komplett eigenem Design zum 
 ## Übersicht
 
 Das Template-System besteht aus drei Komponenten:
+
 1. **HTML Template** (Handlebars `.hbs`) - Die Struktur des Dokuments
 2. **CSS Styles** - Das visuelle Design
 3. **Database Entry** - Metadaten und Registrierung
