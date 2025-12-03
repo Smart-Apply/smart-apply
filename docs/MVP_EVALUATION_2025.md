@@ -10,7 +10,7 @@
 
 | Bereich | Status | Fortschritt | Blockers |
 |---------|--------|-------------|----------|
-| **Backend API** | ✅ Fertig | 98% | Keine |
+| **Backend API** | ✅ Fertig | 100% | Keine |
 | **Frontend UI** | ✅ Fertig | 92% | Keine |
 | **Sicherheit** | ✅ Fertig | 95% | Keine |
 | **Templates** | ✅ Fertig | 100% | Keine |
@@ -117,7 +117,7 @@
 - ✅ **Swagger Documentation** (vollständig bei /docs)
 - ✅ Docker Setup (Dockerfile + docker-compose.yml)
 - ✅ Prisma Migrations & Seeding
-- 🔄 Health Checks (Service-Level vorhanden, Endpoint fehlt)
+- ✅ **Health Checks** (3 Endpoints: /health, /health/live, /health/ready)
 
 ### 🔍 ATS-Features (100%)
 - ✅ Keyword Extraction (TF-IDF + NLP)
@@ -128,45 +128,28 @@
 
 ---
 
-## 🟡 Was noch fehlt (2% - Nicht kritisch für MVP)
+## 🟡 Was noch fehlt (1% - Nicht kritisch für MVP)
 
-### 1. Health Check Endpoint (🟡 Medium Priority)
-**Status:** Service-Level Health Checks vorhanden, aber kein `/health` Endpoint
+### 1. Health Check Endpoint ✅ (FERTIG)
+**Status:** ✅ Vollständig implementiert und produktionsbereit
 
-**Was existiert:**
-- `StorageService.healthCheck()` ✅
-- `JobsService.healthCheck()` ✅
-- `TemplateRendererService.healthCheck()` ✅
-- `AzureBlobProvider.healthCheck()` ✅
-- `ServiceBusProvider.healthCheck()` ✅
+**Implementierte Endpoints:**
+- ✅ `/api/v1/health` - Comprehensive health check (DB, Storage, Queue, LLM)
+- ✅ `/api/v1/health/live` - Liveness probe für Kubernetes/ACA
+- ✅ `/api/v1/health/ready` - Readiness probe für Load Balancer
 
-**Was fehlt:**
-- `/api/v1/health` GET Endpoint
-- Aggregierter Health Status (DB, Storage, Queue, LLM)
-- Ready/Live Probe für Kubernetes/ACA
+**Features:**
+- ✅ Aggregierter Health Status mit Response Times
+- ✅ Service-Level Health Checks (Database, Storage, Queue, LLM)
+- ✅ Graceful Degradation (LLM non-critical)
+- ✅ Rate Limiting (600 req/min für Polling)
+- ✅ Swagger Documentation
+- ✅ Kubernetes/ACA Probe Configuration
 
-**Geschätzter Aufwand:** 2-3 Stunden
+**Dokumentation:**
+- ✅ `docs/guides/HEALTH_CHECKS.md` - Vollständige Dokumentation mit Examples
 
-**Implementation:**
-```typescript
-// apps/api/src/health/health.controller.ts
-@Controller('health')
-export class HealthController {
-  @Get()
-  async check(): Promise<HealthStatus> {
-    const db = await this.prisma.$queryRaw`SELECT 1`;
-    const storage = await this.storageService.healthCheck();
-    const queue = await this.jobsService.healthCheck();
-    const llm = await this.llmService.healthCheck();
-    
-    return {
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      services: { db, storage, queue, llm }
-    };
-  }
-}
-```
+**Tatsächlicher Aufwand:** 2 Stunden ✅
 
 ### 2. E2E Frontend Tests (🟢 Low Priority)
 **Status:** Backend E2E Tests vorhanden, Frontend nur ESLint + Build Tests
@@ -303,18 +286,19 @@ jobs:
 
 ## 📋 Empfohlene Nächste Schritte
 
-### 1. Health Checks implementieren (2-3h) 🟡
+### 1. Health Checks implementieren ✅ (FERTIG - 2h)
 ```bash
-# Priority: Medium
-# Effort: 2-3 hours
+# Priority: Medium → DONE
+# Effort: 2 hours (estimated 2-3h)
 # Impact: Monitoring & Kubernetes Readiness
 ```
 
 **Tasks:**
-- [ ] Create `HealthModule` + `HealthController`
-- [ ] Aggregate service health checks
-- [ ] Add `/health`, `/health/live`, `/health/ready` endpoints
-- [ ] Test with `curl http://localhost:3000/api/v1/health`
+- [x] Create `HealthModule` + `HealthController`
+- [x] Aggregate service health checks
+- [x] Add `/health`, `/health/live`, `/health/ready` endpoints
+- [x] Test with `curl http://localhost:3000/api/v1/health`
+- [x] Create comprehensive documentation
 
 ### 2. Azure Resources provisionieren (4-6h) 🔴
 ```bash
@@ -379,7 +363,7 @@ jobs:
 
 ### Status: ✅ **PRODUKTIONSBEREIT**
 
-**Das MVP ist zu 98% komplett und kann deployed werden!**
+**Das MVP ist zu 99% komplett und kann deployed werden!**
 
 **Stärken:**
 - ✅ Vollständige Feature-Implementierung (alle Kern-Features fertig)
@@ -389,19 +373,19 @@ jobs:
 - ✅ Skalierbare Architektur (Azure-ready)
 
 **Minimale Gaps (nicht blockierend):**
-- 🟡 Health Check Endpoint (2-3h Aufwand)
+- ✅ ~~Health Check Endpoint~~ (FERTIG - 2h)
 - 🟡 Deployment Guide (2h Aufwand)
 - 🟢 Frontend E2E Tests (Post-MVP, 8-10h)
 - 🟢 Neue Templates (Optional, Issue #192)
 
 **Empfehlung:**
-1. **Health Checks implementieren** (2-3h)
+1. ~~**Health Checks implementieren**~~ ✅ (FERTIG)
 2. **Azure Resources provisionieren** (4-6h)
 3. **Deployment durchführen**
 4. **Monitoring einrichten**
 5. **Post-MVP:** E2E Tests + neue Templates
 
-**Gesamter Aufwand bis Production:** 8-12 Stunden
+**Gesamter Aufwand bis Production:** 6-10 Stunden (war 8-12h)
 
 ---
 

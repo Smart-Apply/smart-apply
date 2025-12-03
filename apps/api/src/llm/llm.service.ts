@@ -376,6 +376,24 @@ Geändertes Anschreiben:`;
       languageName: language === 'de' ? 'German' : 'English',
     };
   }
+
+  /**
+   * Health check - verifies LLM provider is available
+   */
+  async healthCheck(): Promise<boolean> {
+    try {
+      // Simple test prompt to verify provider is responsive
+      await this.provider.generateText('Test', {
+        temperature: 0.1,
+        maxTokens: 10,
+        systemMessage: 'Respond with OK',
+      });
+      return true;
+    } catch (error) {
+      this.logger.error('LLM health check failed', error);
+      return false;
+    }
+  }
 }
 
 /**

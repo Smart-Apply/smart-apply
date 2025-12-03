@@ -14,6 +14,7 @@ import { JobsModule } from './jobs/jobs.module';
 import { ApplicationsModule } from './applications/applications.module';
 import { TemplatesModule } from './templates/templates.module';
 import { UserPreferencesModule } from './user-preferences/user-preferences.module';
+import { HealthModule } from './health/health.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
 import { ConfigService } from './config/config.service';
@@ -80,6 +81,7 @@ import { CSPViolationController } from './common/csp/csp-violation.controller';
     ApplicationsModule,
     TemplatesModule,
     UserPreferencesModule,
+    HealthModule,
   ],
   controllers: [CSPViolationController],
   providers: [
