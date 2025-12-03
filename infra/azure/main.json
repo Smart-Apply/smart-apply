@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.39.26.7824",
-      "templateHash": "5316267059230316203"
+      "templateHash": "4111205001572108051"
     }
   },
   "parameters": {
@@ -1206,7 +1206,7 @@
             "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', 'acr-deployment'), '2025-04-01').outputs.registryName.value]"
           },
           "databaseUrl": {
-            "value": "[format('postgresql://{0}@{1}:{2}@{3}:5432/{4}?sslmode=require', parameters('postgresAdminUsername'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', 'postgres-deployment'), '2025-04-01').outputs.serverName.value, parameters('postgresAdminPassword'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', 'postgres-deployment'), '2025-04-01').outputs.fqdn.value, reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', 'postgres-deployment'), '2025-04-01').outputs.databaseName.value)]"
+            "value": "[format('postgresql://{0}:{1}@{2}:5432/{3}?sslmode=require', parameters('postgresAdminUsername'), parameters('postgresAdminPassword'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', 'postgres-deployment'), '2025-04-01').outputs.fqdn.value, reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', 'postgres-deployment'), '2025-04-01').outputs.databaseName.value)]"
           },
           "storageConnectionString": {
             "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', 'storage-deployment'), '2025-04-01').outputs.connectionString.value]"
@@ -1752,7 +1752,7 @@
             "value": "[parameters('postgresAdminPassword')]"
           },
           "databaseUrl": {
-            "value": "[format('postgresql://{0}@{1}:{2}@{3}:5432/{4}?sslmode=require', parameters('postgresAdminUsername'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', 'postgres-deployment'), '2025-04-01').outputs.serverName.value, parameters('postgresAdminPassword'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', 'postgres-deployment'), '2025-04-01').outputs.fqdn.value, reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', 'postgres-deployment'), '2025-04-01').outputs.databaseName.value)]"
+            "value": "[format('postgresql://{0}:{1}@{2}:5432/{3}?sslmode=require', parameters('postgresAdminUsername'), parameters('postgresAdminPassword'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', 'postgres-deployment'), '2025-04-01').outputs.fqdn.value, reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', 'postgres-deployment'), '2025-04-01').outputs.databaseName.value)]"
           },
           "storageConnectionString": {
             "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('resourceGroupName')), 'Microsoft.Resources/deployments', 'storage-deployment'), '2025-04-01').outputs.connectionString.value]"

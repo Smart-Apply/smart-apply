@@ -176,7 +176,8 @@ module containerEnv './modules/container-environment.bicep' = {
 }
 
 // Variables for connection strings
-var databaseConnectionString = 'postgresql://${postgresAdminUsername}@${postgres.outputs.serverName}:${postgresAdminPassword}@${postgres.outputs.fqdn}:5432/${postgres.outputs.databaseName}?sslmode=require'
+// Azure PostgreSQL Flexible Server format: postgresql://username:password@host:5432/database?sslmode=require
+var databaseConnectionString = 'postgresql://${postgresAdminUsername}:${postgresAdminPassword}@${postgres.outputs.fqdn}:5432/${postgres.outputs.databaseName}?sslmode=require'
 
 // Frontend (Static Web App) - Deploy first to get URL
 // Note: Static Web Apps not available in North Europe, using West Europe
