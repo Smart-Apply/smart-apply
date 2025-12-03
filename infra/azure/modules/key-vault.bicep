@@ -11,7 +11,7 @@ param appName string
 @description('Resource tags')
 param tags object
 
-var keyVaultName = '${appName}-${environment}-kv'
+var keyVaultName = '${appName}-${environment}-vault'
 
 resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
   name: keyVaultName

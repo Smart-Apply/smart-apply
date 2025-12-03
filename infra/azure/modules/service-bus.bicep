@@ -11,7 +11,7 @@ param appName string
 @description('Resource tags')
 param tags object
 
-var namespaceName = '${appName}-${environment}-sb'
+var namespaceName = '${appName}-${environment}-servicebus'
 var queueName = 'applications'
 
 resource serviceBusNamespace 'Microsoft.ServiceBus/namespaces@2023-01-01-preview' = {

@@ -11,7 +11,7 @@ param appName string
 @description('Container Apps Environment ID')
 param containerEnvironmentId string
 
-@description('Container Registry Name')
+@description('Container Registry Name (unused in initial deployment)')
 param containerRegistryName string
 
 @description('Database connection string')
@@ -50,7 +50,8 @@ param enableAzureOpenAI bool
 param tags object
 
 var containerAppName = '${appName}-${environment}-api'
-var containerImage = '${containerRegistryName}.azurecr.io/smart-apply-api:latest'
+// Use a public dummy image for initial deployment (will be replaced by GitHub Actions)
+var containerImage = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
 
 resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
   name: containerAppName
@@ -75,12 +76,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
           }
         ]
       }
-      registries: [
-        {
-          server: '${containerRegistryName}.azurecr.io'
-          identity: 'system' // Use Managed Identity after initial setup
-        }
-      ]
+      // Registry will be configured by GitHub Actions on first deployment
       secrets: [
         {
           name: 'database-url'

@@ -18,7 +18,7 @@ resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
   location: location
   tags: tags
   sku: {
-    name: 'Basic' // Use 'Standard' or 'Premium' for production with geo-replication
+    name: 'Premium' // Premium for all regions support
   }
   properties: {
     adminUserEnabled: true // Enable for GitHub Actions, use Managed Identity in production
