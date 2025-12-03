@@ -7,31 +7,38 @@
 | **Profile** | Profile CRUD | Manage user info (name, contact, summary) | ✅ Done | ✅ Done (view + edit pages) | MVP |
 | **Profile** | Experience / Education / Projects / Certificates | Structured profile sections with 1-N relations | ✅ Done | ✅ Done (5 manager components) | MVP |
 | **Profile** | Profile Persistence | Store profile data in PostgreSQL | ✅ Done | — | MVP |
+| **Profile** | Experience Description Field | Rich text descriptions for each experience | ✅ Done | ✅ Done (with nl2br formatting) | MVP |
+| **Profile** | Languages Section | Language proficiency tracking | ✅ Done | ✅ Done (in all templates) | MVP |
 | **Job Postings** | Job Parsing via URL | Parse job data from LinkedIn / Indeed | ✅ Done | ✅ Done (parser + list view) | MVP |
-| **Job Postings** | Manual Job Input | Paste job description manually if parsing fails | 🧩 Partial (backend) | 🔄 Backend POST endpoint needed | MVP |
+| **Job Postings** | Manual Job Input | Create job posting manually with all fields | ✅ Done | ✅ Done (backend + frontend) | MVP |
 | **Job Postings** | Job Storage | Save parsed or pasted job postings in DB | ✅ Done | — | MVP |
 | **Applications** | Create Application | Start generation pipeline with `jobPostingId` | ✅ Done | ✅ Done (3-step wizard) | MVP |
 | **Applications** | Application Queue (Service Bus) | Background job processing for generation | ✅ Done | — | MVP |
 | **Applications** | Application Status Updates | Track `PENDING → GENERATING → READY → FAILED` | ✅ Done | ✅ Done (with status badges) | MVP |
 | **Applications** | Application List | List all user applications | ✅ Done | ✅ Done (with filtering) | MVP |
 | **Applications** | Application Detail View | Show job + generated CL + CV + status | ✅ Done | ✅ Done (full UI) | MVP |
-| **AI / LLM** | Cover Letter Generation | Generate personalized text using template | ✅ Done | 🔄 Polish prompt template | MVP |
-| **AI / LLM** | Resume Generation | Generate resume markdown from profile | ✅ Done | 🔄 Polish prompt template | MVP |
+| **Applications** | Resume Editing | Edit resume content before PDF generation | ✅ Done | ✅ Done (with live preview) | MVP |
+| **Applications** | Cover Letter Editing | Edit cover letter with Tiptap editor | ✅ Done | ✅ Done (rich text editor) | MVP |
+| **AI / LLM** | Cover Letter Generation | Generate personalized text using template | ✅ Done | ✅ Done (with language detection) | MVP |
+| **AI / LLM** | Resume Generation | Generate resume markdown from profile | ✅ Done | ✅ Done (with language detection) | MVP |
+| **AI / LLM** | Automatic Language Detection | Detect job posting language (de/en) | ✅ Done | ✅ Done (scoring algorithm) | MVP |
 | **AI / LLM** | Template Rendering Engine | Handlebars/Markdown template rendering | ✅ Done | — | MVP |
-| **PDF** | PDF Generation | Puppeteer converts markdown → PDF | ✅ Done | — | MVP |
-| **PDF** | PDF Styling Templates | Default HTML/CSS for layout | ✅ Done | 🔄 Review visual consistency | MVP |
+| **PDF** | PDF Generation | Puppeteer converts HTML → PDF | ✅ Done | — | MVP |
+| **PDF** | ATS-Optimized Templates | 5 professional templates × 5 languages | ✅ Done | ✅ Done (50 templates seeded) | MVP |
+| **PDF** | Template Selection | Choose from multiple resume designs | ✅ Done | ✅ Done (in wizard) | MVP |
+| **PDF** | Newline Formatting | Convert line breaks to readable format | ✅ Done | ✅ Done (nl2br helper) | MVP |
 | **Storage** | Azure Blob Upload | Upload PDFs & generate SAS URLs | ✅ Done | — | MVP |
 | **Storage** | File Retrieval | Return time-limited URLs for user download | ✅ Done | ✅ Done (download + ZIP) | MVP |
 | **Frontend / UX** | Dashboard | Overview of all applications | ✅ Done | ✅ Done (stats + recent apps) | MVP |
 | **Frontend / UX** | Form Wizard | Step 1: Profile → Step 2: Job → Step 3: Generate | ✅ Done | ✅ Done (ApplicationWizard) | MVP |
-| **Frontend / UX** | Loading & Error States | Indicate generation progress & errors | ✅ Done | ✅ Done (Real-time updates polling/SSE) | MVP |
+| **Frontend / UX** | Loading & Error States | Indicate generation progress & errors | ✅ Done | ✅ Done (Real-time updates) | MVP |
 | **Frontend / UX** | Download PDFs | Buttons for CL/CV | ✅ Done | ✅ Done (+ PDF preview modal) | MVP |
 | **Frontend / UX** | PDF Preview | Preview PDFs before download | ✅ Done | ✅ Done (react-pdf modal) | MVP |
-| **Frontend / UX** | PDF Editing | Edit PDFs with Tiptap | ✅ Done | 🟢 Optional (Post-MVP) | Phase 2 |
 | **System / DevOps** | Environment Config & Key Vault | Managed secrets for DB, LLM, Blob, Service Bus | ✅ Done | — | MVP |
 | **System / DevOps** | Rate Limiting | Prevent abuse of free tier | ✅ Done | — | MVP |
 | **System / DevOps** | Logging & Error Tracking | Centralized error filter + logs | ✅ Done | — | MVP |
-| **System / DevOps** | Swagger Docs | Document all public endpoints | 🧩 Optional | 🔄 Enable for dev/testing | MVP |
+| **System / DevOps** | Swagger Docs | Document all public endpoints | ✅ Done | ✅ Done (full API docs at /docs) | MVP |
+| **System / DevOps** | Health Checks | Monitor service health (DB, Storage, LLM) | 🔄 Partial | 🟡 Need /health endpoint | MVP |
 | **Security** | Strong JWT Secret | Generate secure JWT secret (64+ chars) | ✅ Done (#91) | 🔴 Critical for Production | MVP |
 | **Security** | Restrictive CORS | Limit origins to frontend domain only | ✅ Done (#92) | 🔴 Critical for Production | MVP |
 | **Security** | HttpOnly Cookies | Move JWT from localStorage to secure cookies | ✅ Done (#93) | 🔴 Critical (XSS protection) | MVP |
@@ -45,7 +52,8 @@
 | **Security** | Session Management | Track active sessions for multi-device logout | ✅ Done (#146) | 🟢 Medium Priority | MVP |
 | **Security** | Content Security Policy (CSP) | Prevent XSS with strict CSP headers | ✅ Done (#144) | 🟢 Medium Priority | MVP |
 | **Security** | Two-Factor Authentication (2FA) | TOTP-based 2FA (Google Authenticator) | ❌ Not yet | 🟢 Low Priority | Post-MVP |
-| **Post-MVP** | ATS Keyword Matching | Evaluate profile/job overlap semantically | ❌ Not yet | — | Phase 2 |
+| **Post-MVP** | ATS Keyword Matching | Evaluate profile/job overlap semantically | ✅ Done | ✅ Done (with scoring) | MVP |
+| **Post-MVP** | Additional Resume Templates | New designs (Creative, Academic, Executive) | ❌ Not yet | 🟢 Optional (Issue #192) | Phase 2 |
 | **Post-MVP** | Gmail/Outlook Integration | Track application responses | ❌ Not yet | — | Phase 2 |
 | **Post-MVP** | Analytics Dashboard | Show metrics (applications, success rates) | ❌ Not yet | — | Phase 2 |
 | **Post-MVP** | White-Label / API Tier | Partner integrations (job boards, agencies) | ❌ Not yet | — | Phase 3 |
@@ -86,13 +94,15 @@
 
 ## ✅ Implementation Summary
 
-**Backend:** 95% complete (all core modules done)
+**Backend:** ✅ 98% complete (all core modules done, health checks needed)
 
-**Security:** 95% complete (all critical, high & medium priority done ✅)
+**Security:** ✅ 95% complete (all critical, high & medium priority done)
 
-**Frontend:** 85% complete (auth, profile, jobs, applications, PDF preview ✅)
+**Frontend:** ✅ 92% complete (auth, profile, jobs, applications, editing, preview all done)
 
-**MVP gaps:** Real-time status updates (polling/SSE), manual job input backend, optional PDF editing
+**Templates:** ✅ 100% complete (5 designs × 5 languages = 50 templates with description field + languages section)
+
+**MVP Status:** 🎯 **READY FOR PRODUCTION** (nur Health Checks + neue Templates optional)
 
 **Infrastructure:** Production-grade (Azure, LLM, Queue, Storage)
 
