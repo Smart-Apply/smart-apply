@@ -5,14 +5,10 @@ const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
   
-  // Standalone output for optimized Azure deployment
-  output: 'standalone',
-  
   // Set workspace root for file tracing (monorepo setup)
   outputFileTracingRoot: path.join(__dirname, "../../"),
 
   // Image configuration for external template preview images
-  // Note: Static export requires unoptimized images
   images: {
     unoptimized: true,
     remotePatterns: [
