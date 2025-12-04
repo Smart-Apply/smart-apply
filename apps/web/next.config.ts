@@ -5,11 +5,16 @@ const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
   
+  // Static export for Azure Static Web Apps (faster deployment, no warm-up issues)
+  output: 'export',
+  
   // Set workspace root for file tracing (monorepo setup)
   outputFileTracingRoot: path.join(__dirname, "../../"),
 
   // Image configuration for external template preview images
+  // Note: Static export requires unoptimized images
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'http',
