@@ -179,23 +179,7 @@ module containerEnv './modules/container-environment.bicep' = {
 // Azure PostgreSQL Flexible Server format: postgresql://username:password@host:5432/database?sslmode=require
 var databaseConnectionString = 'postgresql://${postgresAdminUsername}:${postgresAdminPassword}@${postgres.outputs.fqdn}:5432/${postgres.outputs.databaseName}?sslmode=require'
 
-// Frontend (Static Web App) - Deploy first to get URL
-// Note: Static Web Apps not available in North Europe, using West Europe
-module web './modules/static-web-app.bicep' = {
-  name: 'web-deployment'
-  scope: rg
-  params: {
-    location: 'westeurope'  // Static Web Apps only available in: westus2, centralus, eastus2, westeurope, eastasia
-    environment: environment
-    appName: appName
-    apiUrl: 'https://${appName}-${environment}-api.${location}.azurecontainerapps.io'
-    repositoryUrl: repositoryUrl
-    repositoryBranch: repositoryBranch
-    tags: tags
-  }
-}
-
-// Backend API (Container App) - Deploy after frontend to use its URL
+// Backend API (Container App) - Deploy first to get URL
 module api './modules/container-app.bicep' = {
   name: 'api-deployment'
   scope: rg
@@ -211,7 +195,7 @@ module api './modules/container-app.bicep' = {
     keyVaultName: keyVault.outputs.keyVaultName
     jwtSecret: jwtSecret
     refreshTokenSecret: refreshTokenSecret
-    frontendUrl: web.outputs.url
+    frontendUrl: 'https://${appName}-${environment}-web.${location}.azurecontainerapps.io'
     openAiDeploymentName: openAiDeploymentName
     openAiEndpoint: openAiEndpoint
     openAiApiKey: openAiApiKey
@@ -228,6 +212,23 @@ module api './modules/container-app.bicep' = {
     tags: tags
   }
 }
+
+// Frontend (Container App) - Deploy after backend to use its URL
+module web './modules/container-app-web.bicep' = {
+  name: 'web-deployment'
+  scope: rg
+  params: {
+    location: location
+    containerAppName: '${appName}-${environment}-web'
+    environmentId: containerEnv.outputs.environmentId
+    containerRegistryServer: acr.outputs.loginServer
+    containerImage: '${acr.outputs.loginServer}/smart-apply-web:latest'
+    backendApiUrl: 'https://${api.outputs.fqdn}/api/v1'
+    tags: tags
+  }
+}
+
+// ACR Pull role for frontend managed identity (assigned via Azure CLI in workflow)
 
 // Store secrets in Key Vault
 module secrets './modules/key-vault-secrets.bicep' = {
@@ -249,7 +250,7 @@ output resourceGroupName string = rg.name
 output containerRegistryLoginServer string = acr.outputs.loginServer
 output containerRegistryName string = acr.outputs.registryName
 output apiUrl string = api.outputs.fqdn
-output webUrl string = web.outputs.url
+output webUrl string = web.outputs.containerAppUrl
 output postgresServerName string = postgres.outputs.serverName
 output storageAccountName string = storage.outputs.storageAccountName
 output serviceBusNamespace string = serviceBus.outputs.namespaceName

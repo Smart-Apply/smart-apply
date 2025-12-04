@@ -1,26 +1,16 @@
-name: Deploy Frontend to Azure Static Web Apps
+name: Deploy Frontend to Azure Container Apps
 
 on:
-  push:
-    branches:
-      - mvp
-    paths:
-      - 'apps/web/**'
-      - '.github/workflows/azure-deploy-frontend.yml'
-  pull_request:
-    branches:
-      - mvp
-    paths:
-      - 'apps/web/**'
   workflow_dispatch:
 
 env:
-  AZURE_STATIC_WEB_APP_NAME: smartapply-dev-web
+  AZURE_CONTAINER_REGISTRY: ${{ secrets.AZURE_CONTAINER_REGISTRY }}
+  CONTAINER_APP_NAME: smartapply-dev-web
+  RESOURCE_GROUP: smartapply-dev-rg
 
 permissions:
   id-token: write
   contents: read
-  pull-requests: write
 
 jobs:
   build-and-deploy:
@@ -30,15 +20,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          submodules: true
-
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: '**/package-lock.json'
 
       - name: Log in to Azure
         uses: azure/login@v2
@@ -47,37 +28,35 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Get Static Web App deployment token
-        id: get-token
+      - name: Log in to Azure Container Registry
+        run: az acr login --name ${{ env.AZURE_CONTAINER_REGISTRY }}
+
+      - name: Build and push Docker image
         run: |
-          DEPLOYMENT_TOKEN=$(az staticwebapp secrets list \
-            --name ${{ env.AZURE_STATIC_WEB_APP_NAME }} \
-            --resource-group smartapply-dev-rg \
-            --query properties.apiKey -o tsv)
-          echo "::add-mask::$DEPLOYMENT_TOKEN"
-          echo "DEPLOYMENT_TOKEN=$DEPLOYMENT_TOKEN" >> $GITHUB_OUTPUT
+          docker build \
+            --platform linux/amd64 \
+            --target runner \
+            -t ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/smart-apply-web:${{ github.sha }} \
+            -t ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/smart-apply-web:latest \
+            -f infra/Dockerfile.web \
+            .
+          docker push ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/smart-apply-web:${{ github.sha }}
+          docker push ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/smart-apply-web:latest
 
-      - name: Build and Deploy
-        uses: Azure/static-web-apps-deploy@v1
-        env:
-          NODE_VERSION: '20'
+      - name: Deploy to Azure Container Apps
+        uses: azure/container-apps-deploy-action@v1
         with:
-          azure_static_web_apps_api_token: ${{ steps.get-token.outputs.DEPLOYMENT_TOKEN }}
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          action: 'upload'
-          app_location: '/apps/web'
-          api_location: ''
-          output_location: 'out'
-          skip_app_build: false
-          app_build_command: 'npm run build'
+          containerAppName: ${{ env.CONTAINER_APP_NAME }}
+          resourceGroup: ${{ env.RESOURCE_GROUP }}
+          imageToDeploy: ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/smart-apply-web:${{ github.sha }}
 
-      - name: Get Static Web App URL
+      - name: Get Container App URL
         id: get-url
         run: |
-          URL=$(az staticwebapp show \
-            --name ${{ env.AZURE_STATIC_WEB_APP_NAME }} \
-            --resource-group smartapply-dev-rg \
-            --query defaultHostname -o tsv)
+          URL=$(az containerapp show \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --query properties.configuration.ingress.fqdn -o tsv)
           echo "url=https://$URL" >> $GITHUB_OUTPUT
 
       - name: Deployment Summary
@@ -86,17 +65,9 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Frontend URL:** ${{ steps.get-url.outputs.url }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Next Steps:" >> $GITHUB_STEP_SUMMARY
-          echo "1. Update CORS in backend Container App" >> $GITHUB_STEP_SUMMARY
-          echo "2. Test frontend → backend connection" >> $GITHUB_STEP_SUMMARY
-
-  close_pull_request:
-    if: github.event_name == 'pull_request' && github.event.action == 'closed'
-    runs-on: ubuntu-latest
-    name: Close Pull Request Job
-    steps:
-      - name: Close Pull Request
-        uses: Azure/static-web-apps-deploy@v1
-        with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APP_DEPLOYMENT_TOKEN }}
-          action: 'close'
+          echo "1. Verify frontend is accessible" >> $GITHUB_STEP_SUMMARY
+          echo "2. Update backend CORS if needed" >> $GITHUB_STEP_SUMMARY
+          echo "3. Test frontend → backend connection" >> $GITHUB_STEP_SUMMARY

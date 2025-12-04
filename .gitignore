@@ -59,3 +59,4 @@ temp/
 
 # Uploaded files (disk storage)
 uploads/
+.vercel
