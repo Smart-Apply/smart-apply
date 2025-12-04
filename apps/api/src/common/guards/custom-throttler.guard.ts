@@ -25,7 +25,7 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
   }
 
   /**
-   * Override canActivate to skip rate limiting in development
+   * Override canActivate to skip rate limiting in development and for health checks
    */
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // Skip rate limiting entirely in development for easier testing
@@ -33,8 +33,14 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
       return true;
     }
 
-    const response = context.switchToHttp().getResponse();
     const request = context.switchToHttp().getRequest();
+    
+    // Skip rate limiting for health check endpoints (needed for Container Apps probes)
+    if (request.url?.startsWith('/api/v1/health/')) {
+      return true;
+    }
+
+    const response = context.switchToHttp().getResponse();
 
     try {
       // Call parent implementation which handles the actual rate limiting
