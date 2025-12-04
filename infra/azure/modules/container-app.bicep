@@ -149,8 +149,8 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
           name: 'api'
           image: containerImage
           resources: {
-            cpu: json('0.5') // 0.5 vCPU
-            memory: '1Gi' // 1GB RAM
+            cpu: json('1.25') // 1.25 vCPU (increased for NestJS + Prisma + Puppeteer)
+            memory: '2.5Gi' // 2.5GB RAM (increased for container stability)
           }
           env: [
             {

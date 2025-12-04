@@ -41,6 +41,10 @@ COPY apps/web/package*.json ./apps/web/
 # Install all dependencies including workspace packages (needed for Swagger and other runtime deps in main.ts)
 RUN npm ci && npm cache clean --force
 
+# Copy Prisma schema and generate client (needed for runtime Prisma enums)
+COPY apps/api/prisma ./apps/api/prisma
+RUN npm run prisma:generate
+
 # Stage 3: Development
 FROM node:20-alpine AS development
 
