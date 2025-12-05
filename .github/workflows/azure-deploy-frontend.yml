@@ -1,6 +1,24 @@
 name: Deploy Frontend to Azure Container Apps
 
 on:
+  push:
+    branches:
+      - mvp
+    paths:
+      - 'apps/web/**'
+      - 'infra/Dockerfile.web'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/azure-deploy-frontend.yml'
+  pull_request:
+    branches:
+      - mvp
+    paths:
+      - 'apps/web/**'
+      - 'infra/Dockerfile.web'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/azure-deploy-frontend.yml'
   workflow_dispatch:
 
 env:
@@ -16,13 +34,13 @@ jobs:
   build-and-deploy:
     name: Build and Deploy Frontend
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Log in to Azure
-        uses: azure/login@v2
+        uses: azure/login@v1
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -44,11 +62,11 @@ jobs:
           docker push ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/smart-apply-web:latest
 
       - name: Deploy to Azure Container Apps
-        uses: azure/container-apps-deploy-action@v1
-        with:
-          containerAppName: ${{ env.CONTAINER_APP_NAME }}
-          resourceGroup: ${{ env.RESOURCE_GROUP }}
-          imageToDeploy: ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/smart-apply-web:${{ github.sha }}
+        run: |
+          az containerapp update \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --image ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/smart-apply-web:${{ github.sha }}
 
       - name: Get Container App URL
         id: get-url

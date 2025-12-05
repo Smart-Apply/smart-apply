@@ -121,8 +121,11 @@ async function bootstrap() {
   // Only allows specified origins from CORS_ORIGINS environment variable
   // For production, set CORS_ORIGINS to your deployed frontend URLs
   // Example: CORS_ORIGINS=https://smartapply.azurewebsites.net,https://www.smartapply.com
+  const corsOrigins = configService.corsOrigins;
+  logger.log(`🌐 CORS enabled for origins: ${JSON.stringify(corsOrigins)}`);
+  
   app.enableCors({
-    origin: configService.corsOrigins,
+    origin: corsOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'], // Allow CSRF header

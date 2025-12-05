@@ -195,7 +195,7 @@ module api './modules/container-app.bicep' = {
     keyVaultName: keyVault.outputs.keyVaultName
     jwtSecret: jwtSecret
     refreshTokenSecret: refreshTokenSecret
-    frontendUrl: 'https://${appName}-${environment}-web.${location}.azurecontainerapps.io'
+    frontendUrl: 'https://smartapply-dev-web.ashycliff-786e35b4.northeurope.azurecontainerapps.io'
     openAiDeploymentName: openAiDeploymentName
     openAiEndpoint: openAiEndpoint
     openAiApiKey: openAiApiKey
@@ -213,14 +213,16 @@ module api './modules/container-app.bicep' = {
   }
 }
 
-// Frontend (App Service) - Deploy after backend to use its URL
-module web './modules/app-service-web.bicep' = {
+// Frontend (Container App) - Deploy after backend to use its URL
+module web './modules/container-app-web.bicep' = {
   name: 'web-deployment'
   scope: rg
   params: {
     location: location
-    appServicePlanName: '${appName}-${environment}-web-plan'
-    appServiceName: '${appName}-${environment}-web'
+    containerAppName: '${appName}-${environment}-web'
+    environmentId: containerEnv.outputs.environmentId
+    containerRegistryServer: acr.outputs.loginServer
+    containerImage: '${acr.outputs.loginServer}/smart-apply-web:latest'
     backendApiUrl: 'https://${api.outputs.fqdn}/api/v1'
     tags: tags
   }
@@ -246,7 +248,7 @@ output resourceGroupName string = rg.name
 output containerRegistryLoginServer string = acr.outputs.loginServer
 output containerRegistryName string = acr.outputs.registryName
 output apiUrl string = api.outputs.fqdn
-output webUrl string = web.outputs.appServiceUrl
+output webUrl string = web.outputs.containerAppUrl
 output postgresServerName string = postgres.outputs.serverName
 output storageAccountName string = storage.outputs.storageAccountName
 output serviceBusNamespace string = serviceBus.outputs.namespaceName

@@ -56,6 +56,13 @@ temp/
 
 # Azure
 .azure/
+.azure-secrets-*.tmp
+.azure-outputs-*.txt
+.github-secrets-*.sh
+
+# Next.js
+.next/
+out/
 
 # Uploaded files (disk storage)
 uploads/

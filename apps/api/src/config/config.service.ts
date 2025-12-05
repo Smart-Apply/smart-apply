@@ -154,7 +154,7 @@ export class ConfigService {
 
   // Security
   get corsOrigins(): string[] {
-    return this.nestConfig.get('CORS_ORIGINS', { infer: true }).split(',');
+    return this.nestConfig.get('CORS_ORIGINS', { infer: true }).split(',').map(origin => origin.trim());
   }
 
   get enableCsrf(): boolean {

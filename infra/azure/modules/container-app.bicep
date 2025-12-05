@@ -259,7 +259,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             }
             {
               name: 'CORS_ORIGINS'
-              value: frontendUrl
+              value: 'http://localhost:3000,http://localhost:3001,${frontendUrl}'
             }
             {
               name: 'RATE_LIMIT_TTL'
@@ -267,7 +267,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             }
             {
               name: 'RATE_LIMIT_MAX'
-              value: '100'
+              value: '1000'
             }
             {
               name: 'RATE_LIMIT_AUTH_TTL'
@@ -275,7 +275,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             }
             {
               name: 'RATE_LIMIT_AUTH_MAX'
-              value: '5'
+              value: '50'
             }
             {
               name: 'ENABLE_CSRF'
