@@ -59,8 +59,12 @@ COPY apps/api/package.json ./apps/api/
 # Copy Prisma schema BEFORE npm install (needed for postinstall hooks)
 COPY apps/api/prisma ./apps/api/prisma
 
-# Install dependencies - workspace aware but full monorepo needed for build tools
-RUN --mount=type=cache,target=/root/.npm npm ci --legacy-peer-deps && npm cache clean --force
+# Install only API workspace dependencies to save memory in CI/CD
+# Note: This installs API deps + shared root deps (like @nestjs/cli)
+RUN --mount=type=cache,target=/root/.npm \
+    NODE_OPTIONS="--max-old-space-size=4096" \
+    npm ci --workspace=apps/api --include-workspace-root --legacy-peer-deps && \
+    npm cache clean --force
 
 # Copy API source code and config
 COPY apps/api/src ./apps/api/src
