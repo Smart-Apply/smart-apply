@@ -22,6 +22,9 @@
     },
     "refreshTokenSecret": {
       "value": "r+XjYGOWK07OEISFC9sluraQTYRvlntGY6xSq+D5d5PXjj47H/YiZ4rMxM90gwRe"
+    },
+    "openAiApiKey": {
+      "value": "BYYHbmL2SsdfPRXnnHA2VuKW8GymK3nEcAZrqIiL3eRlqfndij7TJQQJ99BKACYeBjFXJ3w3AAAAACOGzQKD"
     }
   }
 }

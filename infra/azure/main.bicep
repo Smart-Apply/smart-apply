@@ -213,22 +213,18 @@ module api './modules/container-app.bicep' = {
   }
 }
 
-// Frontend (Container App) - Deploy after backend to use its URL
-module web './modules/container-app-web.bicep' = {
+// Frontend (App Service) - Deploy after backend to use its URL
+module web './modules/app-service-web.bicep' = {
   name: 'web-deployment'
   scope: rg
   params: {
     location: location
-    containerAppName: '${appName}-${environment}-web'
-    environmentId: containerEnv.outputs.environmentId
-    containerRegistryServer: acr.outputs.loginServer
-    containerImage: '${acr.outputs.loginServer}/smart-apply-web:latest'
+    appServicePlanName: '${appName}-${environment}-web-plan'
+    appServiceName: '${appName}-${environment}-web'
     backendApiUrl: 'https://${api.outputs.fqdn}/api/v1'
     tags: tags
   }
 }
-
-// ACR Pull role for frontend managed identity (assigned via Azure CLI in workflow)
 
 // Store secrets in Key Vault
 module secrets './modules/key-vault-secrets.bicep' = {
@@ -250,7 +246,7 @@ output resourceGroupName string = rg.name
 output containerRegistryLoginServer string = acr.outputs.loginServer
 output containerRegistryName string = acr.outputs.registryName
 output apiUrl string = api.outputs.fqdn
-output webUrl string = web.outputs.containerAppUrl
+output webUrl string = web.outputs.appServiceUrl
 output postgresServerName string = postgres.outputs.serverName
 output storageAccountName string = storage.outputs.storageAccountName
 output serviceBusNamespace string = serviceBus.outputs.namespaceName
