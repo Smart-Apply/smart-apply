@@ -24,18 +24,18 @@ Smart Apply ist **produktionsbereit für einen Soft Launch**. Die Core-Features 
 
 #### Vollständig implementiert ✅
 
-| Modul | Status | Beschreibung |
-|-------|--------|--------------|
-| **Auth** | ✅ 100% | JWT (HttpOnly cookies), Argon2, Refresh Tokens, Session Management |
-| **Profile** | ✅ 100% | CRUD mit Skills, Experiences, Education, Certificates, Projects |
-| **Job Postings** | ✅ 95% | URL Parsing (Agent + Cheerio), Storage, List/Detail |
-| **Applications** | ✅ 100% | Pipeline (PENDING → GENERATING → READY/FAILED), Status Tracking |
-| **Templates** | ✅ 100% | 7 Templates (3 Cover Letter, 4 Resume), Preview Caching |
-| **LLM** | ✅ 100% | Azure OpenAI, Hugging Face, Mock Provider |
-| **PDF** | ✅ 100% | Puppeteer + Handlebars, Template Rendering |
-| **Storage** | ✅ 100% | Disk (dev) + Azure Blob (prod), SAS URLs |
-| **Jobs/Queue** | ✅ 100% | In-Memory (dev) + Azure Service Bus (prod) |
-| **Security** | ✅ 95% | Alle Critical/High Priority Issues gelöst (siehe unten) |
+| Modul            | Status  | Beschreibung                                                       |
+| ---------------- | ------- | ------------------------------------------------------------------ |
+| **Auth**         | ✅ 100% | JWT (HttpOnly cookies), Argon2, Refresh Tokens, Session Management |
+| **Profile**      | ✅ 100% | CRUD mit Skills, Experiences, Education, Certificates, Projects    |
+| **Job Postings** | ✅ 95%  | URL Parsing (Agent + Cheerio), Storage, List/Detail                |
+| **Applications** | ✅ 100% | Pipeline (PENDING → GENERATING → READY/FAILED), Status Tracking    |
+| **Templates**    | ✅ 100% | 7 Templates (3 Cover Letter, 4 Resume), Preview Caching            |
+| **LLM**          | ✅ 100% | Azure OpenAI, Hugging Face, Mock Provider                          |
+| **PDF**          | ✅ 100% | Puppeteer + Handlebars, Template Rendering                         |
+| **Storage**      | ✅ 100% | Disk (dev) + Azure Blob (prod), SAS URLs                           |
+| **Jobs/Queue**   | ✅ 100% | In-Memory (dev) + Azure Service Bus (prod)                         |
+| **Security**     | ✅ 95%  | Alle Critical/High Priority Issues gelöst (siehe unten)            |
 
 #### Offene Punkte 🔄
 
@@ -50,20 +50,20 @@ Smart Apply ist **produktionsbereit für einen Soft Launch**. Die Core-Features 
 
 #### Vollständig implementiert ✅
 
-| Page/Feature | Status | Beschreibung |
-|--------------|--------|--------------|
-| **Landing Page** | ✅ 100% | Hero, Features, CTA |
-| **Auth** | ✅ 100% | Login, Register mit Validation |
-| **Dashboard** | ✅ 100% | Stats Cards, Recent Applications |
-| **Profile View** | ✅ 100% | Display all profile data |
-| **Profile Edit** | ✅ 100% | 5 Manager Components (Skills, Experiences, Education, Certificates, Projects) |
-| **Job Postings** | ✅ 90% | List View, URL Parser Integration |
-| **Applications List** | ✅ 100% | Filtering, Status Badges, Search |
-| **Application Detail** | ✅ 100% | Job Info, Status, PDF Download, Preview Modal |
-| **Application Wizard** | ✅ 100% | 3-Step: Profile Check → Job Input → Template Selection |
-| **PDF Preview** | ✅ 100% | react-pdf Modal mit Download |
-| **Settings** | ✅ 100% | Session Management, Device Tracking, Remote Logout |
-| **Real-time Updates** | ✅ 100% | SSE (Server-Sent Events) für Real-time Status Updates |
+| Page/Feature           | Status  | Beschreibung                                                                  |
+| ---------------------- | ------- | ----------------------------------------------------------------------------- |
+| **Landing Page**       | ✅ 100% | Hero, Features, CTA                                                           |
+| **Auth**               | ✅ 100% | Login, Register mit Validation                                                |
+| **Dashboard**          | ✅ 100% | Stats Cards, Recent Applications                                              |
+| **Profile View**       | ✅ 100% | Display all profile data                                                      |
+| **Profile Edit**       | ✅ 100% | 5 Manager Components (Skills, Experiences, Education, Certificates, Projects) |
+| **Job Postings**       | ✅ 90%  | List View, URL Parser Integration                                             |
+| **Applications List**  | ✅ 100% | Filtering, Status Badges, Search                                              |
+| **Application Detail** | ✅ 100% | Job Info, Status, PDF Download, Preview Modal                                 |
+| **Application Wizard** | ✅ 100% | 3-Step: Profile Check → Job Input → Template Selection                        |
+| **PDF Preview**        | ✅ 100% | react-pdf Modal mit Download                                                  |
+| **Settings**           | ✅ 100% | Session Management, Device Tracking, Remote Logout                            |
+| **Real-time Updates**  | ✅ 100% | SSE (Server-Sent Events) für Real-time Status Updates                         |
 
 #### Offene Punkte 🔄
 
@@ -79,19 +79,19 @@ Smart Apply ist **produktionsbereit für einen Soft Launch**. Die Core-Features 
 
 #### Vollständig implementiert ✅ (Issues #91-#98, #129, #144, #146)
 
-| Security Feature | Priority | Status | Issue |
-|------------------|----------|--------|-------|
-| **Strong JWT Secret** | 🔴 Critical | ✅ Done | #91 |
-| **Restrictive CORS** | 🔴 Critical | ✅ Done | #92 |
-| **HttpOnly Cookies** | 🔴 Critical | ✅ Done | #93 |
-| **Password Strength** | 🟡 High | ✅ Done | #94 |
-| **Rate Limiting (Dual-Tier)** | 🟡 High | ✅ Done | #95 |
-| **CSRF Protection** | 🟡 High | ✅ Done (optional) | #96 |
-| **XSS Protection (@Sanitize)** | 🟡 High | ✅ Done | #97 |
-| **Refresh Tokens** | 🟡 High | ✅ Done | #98 |
-| **Audit Logging** | 🟢 Medium | ✅ Done | #129 |
-| **Frontend Security Headers** | 🟢 Medium | ✅ Done | #144 |
-| **Session Management** | 🟢 Medium | ✅ Done | #146 |
+| Security Feature               | Priority    | Status             | Issue |
+| ------------------------------ | ----------- | ------------------ | ----- |
+| **Strong JWT Secret**          | 🔴 Critical | ✅ Done            | #91   |
+| **Restrictive CORS**           | 🔴 Critical | ✅ Done            | #92   |
+| **HttpOnly Cookies**           | 🔴 Critical | ✅ Done            | #93   |
+| **Password Strength**          | 🟡 High     | ✅ Done            | #94   |
+| **Rate Limiting (Dual-Tier)**  | 🟡 High     | ✅ Done            | #95   |
+| **CSRF Protection**            | 🟡 High     | ✅ Done (optional) | #96   |
+| **XSS Protection (@Sanitize)** | 🟡 High     | ✅ Done            | #97   |
+| **Refresh Tokens**             | 🟡 High     | ✅ Done            | #98   |
+| **Audit Logging**              | 🟢 Medium   | ✅ Done            | #129  |
+| **Frontend Security Headers**  | 🟢 Medium   | ✅ Done            | #144  |
+| **Session Management**         | 🟢 Medium   | ✅ Done            | #146  |
 
 #### Offene Punkte 🔄
 
@@ -107,14 +107,14 @@ Smart Apply ist **produktionsbereit für einen Soft Launch**. Die Core-Features 
 
 #### Vollständig implementiert ✅
 
-| Component | Status | Beschreibung |
-|-----------|--------|--------------|
-| **Docker** | ✅ 100% | Dockerfile, docker-compose.yml |
-| **PostgreSQL** | ✅ 100% | Docker (dev), Azure Database (prod ready) |
-| **Environment Config** | ✅ 100% | .env mit Zod validation |
-| **Logging** | ✅ 100% | Winston (daily rotation, 90-day retention) |
-| **Health Checks** | ✅ 100% | /health endpoint (Nest Terminus) |
-| **Error Handling** | ✅ 100% | Global exception filter |
+| Component              | Status  | Beschreibung                               |
+| ---------------------- | ------- | ------------------------------------------ |
+| **Docker**             | ✅ 100% | Dockerfile, docker-compose.yml             |
+| **PostgreSQL**         | ✅ 100% | Docker (dev), Azure Database (prod ready)  |
+| **Environment Config** | ✅ 100% | .env mit Zod validation                    |
+| **Logging**            | ✅ 100% | Winston (daily rotation, 90-day retention) |
+| **Health Checks**      | ✅ 100% | /health endpoint (Nest Terminus)           |
+| **Error Handling**     | ✅ 100% | Global exception filter                    |
 
 #### Offene Punkte 🔄
 
@@ -256,19 +256,19 @@ Smart Apply ist **produktionsbereit für einen Soft Launch**. Die Core-Features 
 
 ## 📊 Feature Completion Matrix
 
-| Feature Category | Implemented | Tested | Documented | MVP-Ready |
-|------------------|-------------|--------|------------|-----------|
-| Authentication | 100% | ✅ Yes | ✅ Yes | ✅ Yes |
-| Profile Management | 100% | ✅ Yes | ✅ Yes | ✅ Yes |
-| Job Postings | 95% | ✅ Yes | ✅ Yes | ✅ Yes |
-| Applications | 100% | ✅ Yes | ✅ Yes | ✅ Yes |
-| Templates | 100% | ✅ Yes | ✅ Yes | ✅ Yes |
-| LLM Integration | 100% | ✅ Yes | ✅ Yes | ✅ Yes |
-| PDF Generation | 100% | ✅ Yes | ✅ Yes | ✅ Yes |
-| Storage | 100% | ✅ Yes | ✅ Yes | ✅ Yes |
-| Security | 95% | ✅ Yes | ✅ Yes | ✅ Yes |
-| Frontend UI | 85% | 🟡 Partial | 🟡 Partial | ✅ Yes |
-| DevOps | 90% | 🟡 Partial | ✅ Yes | 🟡 Almost |
+| Feature Category   | Implemented | Tested     | Documented | MVP-Ready |
+| ------------------ | ----------- | ---------- | ---------- | --------- |
+| Authentication     | 100%        | ✅ Yes     | ✅ Yes     | ✅ Yes    |
+| Profile Management | 100%        | ✅ Yes     | ✅ Yes     | ✅ Yes    |
+| Job Postings       | 95%         | ✅ Yes     | ✅ Yes     | ✅ Yes    |
+| Applications       | 100%        | ✅ Yes     | ✅ Yes     | ✅ Yes    |
+| Templates          | 100%        | ✅ Yes     | ✅ Yes     | ✅ Yes    |
+| LLM Integration    | 100%        | ✅ Yes     | ✅ Yes     | ✅ Yes    |
+| PDF Generation     | 100%        | ✅ Yes     | ✅ Yes     | ✅ Yes    |
+| Storage            | 100%        | ✅ Yes     | ✅ Yes     | ✅ Yes    |
+| Security           | 95%         | ✅ Yes     | ✅ Yes     | ✅ Yes    |
+| Frontend UI        | 85%         | 🟡 Partial | 🟡 Partial | ✅ Yes    |
+| DevOps             | 90%         | 🟡 Partial | ✅ Yes     | 🟡 Almost |
 
 **Gesamt MVP-Readiness:** 92% ✅
 
@@ -277,16 +277,19 @@ Smart Apply ist **produktionsbereit für einen Soft Launch**. Die Core-Features 
 ## 🔧 Technische Schulden (Post-MVP)
 
 ### Code Quality
+
 - **TypeScript Strict Mode:** Frontend noch nicht 100% strict
 - **Test Coverage:** Backend E2E Tests vorhanden, Frontend Unit Tests fehlen
 - **Error Messages:** Noch nicht alle User-facing (teilweise noch Dev-Errors)
 
 ### Performance
+
 - **Puppeteer Memory:** PDF-Generierung kann bei vielen parallelen Requests memory-intensive werden
 - **Database Indexing:** Noch nicht alle Performance-kritischen Queries optimiert
 - **Caching:** Noch kein Redis für Session/LLM-Response Caching
 
 ### Skalierbarkeit
+
 - **Rate Limiting:** Aktuell In-Memory (nicht clusterfähig ohne Redis)
 - **Job Queue:** Azure Service Bus gut skalierbar, aber noch nicht getestet unter Last
 - **File Storage:** Azure Blob gut skalierbar
@@ -297,25 +300,25 @@ Smart Apply ist **produktionsbereit für einen Soft Launch**. Die Core-Features 
 
 ### MVP Phase (10-50 Nutzer)
 
-| Service | Tier | Monatliche Kosten |
-|---------|------|-------------------|
-| Azure Container Apps | Consumption Plan | ~10€ |
-| Azure Database for PostgreSQL | Basic (1 vCore) | ~25€ |
-| Azure Blob Storage | Standard (LRS) | ~5€ |
-| Azure Service Bus | Basic | ~5€ |
-| Azure OpenAI | Pay-as-you-go | ~20-50€ |
-| **Gesamt** | | **~65-95€/Monat** |
+| Service                       | Tier             | Monatliche Kosten |
+| ----------------------------- | ---------------- | ----------------- |
+| Azure Container Apps          | Consumption Plan | ~10€              |
+| Azure Database for PostgreSQL | Basic (1 vCore)  | ~25€              |
+| Azure Blob Storage            | Standard (LRS)   | ~5€               |
+| Azure Service Bus             | Basic            | ~5€               |
+| Azure OpenAI                  | Pay-as-you-go    | ~20-50€           |
+| **Gesamt**                    |                  | **~65-95€/Monat** |
 
 ### Production Phase (1000+ Nutzer)
 
-| Service | Tier | Monatliche Kosten |
-|---------|------|-------------------|
-| Azure Container Apps | Dedicated Plan | ~100€ |
-| Azure Database for PostgreSQL | General Purpose (2 vCores) | ~100€ |
-| Azure Blob Storage | Standard (LRS) | ~20€ |
-| Azure Service Bus | Standard | ~15€ |
-| Azure OpenAI | Pay-as-you-go | ~200-500€ |
-| **Gesamt** | | **~435-735€/Monat** |
+| Service                       | Tier                       | Monatliche Kosten   |
+| ----------------------------- | -------------------------- | ------------------- |
+| Azure Container Apps          | Dedicated Plan             | ~100€               |
+| Azure Database for PostgreSQL | General Purpose (2 vCores) | ~100€               |
+| Azure Blob Storage            | Standard (LRS)             | ~20€                |
+| Azure Service Bus             | Standard                   | ~15€                |
+| Azure OpenAI                  | Pay-as-you-go              | ~200-500€           |
+| **Gesamt**                    |                            | **~435-735€/Monat** |
 
 ---
 

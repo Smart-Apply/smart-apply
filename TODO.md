@@ -8,10 +8,12 @@
 ## 🔴 Kritisch für Production (8-12 Stunden)
 
 ### 1. Health Check Endpoint erstellen
+
 **Aufwand:** 2-3 Stunden  
 **Status:** 🔄 Service-Level Health Checks vorhanden, Endpoint fehlt
 
 **Was zu tun ist:**
+
 ```bash
 # 1. Modul erstellen
 cd apps/api/src
@@ -19,11 +21,13 @@ mkdir health
 ```
 
 **Dateien:**
+
 - `apps/api/src/health/health.module.ts`
 - `apps/api/src/health/health.controller.ts`
 - `apps/api/src/health/health.service.ts`
 
 **Implementation:**
+
 ```typescript
 // health.controller.ts
 @Controller('health')
@@ -38,15 +42,15 @@ export class HealthController {
         storage: await this.storageService.healthCheck(),
         queue: await this.jobsService.healthCheck(),
         llm: await this.llmService.healthCheck(),
-      }
+      },
     };
   }
-  
+
   @Get('live')
   async liveness() {
     return { status: 'ok' };
   }
-  
+
   @Get('ready')
   async readiness() {
     // Check if all services are ready
@@ -57,6 +61,7 @@ export class HealthController {
 ```
 
 **Testing:**
+
 ```bash
 curl http://localhost:3000/api/v1/health
 curl http://localhost:3000/api/v1/health/live
@@ -66,10 +71,12 @@ curl http://localhost:3000/api/v1/health/ready
 ---
 
 ### 2. Azure Resources provisionieren
+
 **Aufwand:** 4-6 Stunden  
 **Status:** ❌ Noch nicht gestartet
 
 **Azure Portal Setup:**
+
 1. **Resource Group** erstellen
    - Name: `rg-smartapply-prod`
    - Region: `West Europe`
@@ -113,6 +120,7 @@ curl http://localhost:3000/api/v1/health/ready
    - Admin enabled
 
 **Geschätzte Kosten (Monat):**
+
 - PostgreSQL B1ms: ~€30
 - Storage Account (100 GB): ~€2
 - Service Bus Basic: ~€0.05
@@ -124,6 +132,7 @@ curl http://localhost:3000/api/v1/health/ready
 ---
 
 ### 3. CI/CD Pipeline einrichten
+
 **Aufwand:** 3-4 Stunden  
 **Status:** 🔄 Workflow-Datei existiert, muss angepasst werden
 
@@ -138,6 +147,7 @@ curl http://localhost:3000/api/v1/health/ready
    - `AZURE_SUBSCRIPTION_ID`
 
 2. **Service Principal erstellen:**
+
 ```bash
 az ad sp create-for-rbac \
   --name "sp-smartapply-github" \
@@ -147,6 +157,7 @@ az ad sp create-for-rbac \
 ```
 
 3. **Workflow anpassen:**
+
 ```yaml
 # .github/workflows/deployment.yml
 name: Deploy to Azure
@@ -161,19 +172,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      
+
       - name: Login to ACR
         uses: azure/docker-login@v1
         with:
           login-server: acrsmartapplyprod.azurecr.io
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
-      
+
       - name: Build and Push
         run: |
           docker build -t acrsmartapplyprod.azurecr.io/smartapply-api:${{ github.sha }} .
           docker push acrsmartapplyprod.azurecr.io/smartapply-api:${{ github.sha }}
-      
+
       - name: Deploy to Container Apps
         uses: azure/CLI@v1
         with:
@@ -182,7 +193,7 @@ jobs:
               --name ca-smartapply-api \
               --resource-group rg-smartapply-prod \
               --image acrsmartapplyprod.azurecr.io/smartapply-api:${{ github.sha }}
-      
+
       - name: Run Migrations
         run: |
           az containerapp exec \
@@ -192,6 +203,7 @@ jobs:
 ```
 
 4. **Frontend deployen (Vercel):**
+
 ```bash
 # Vercel CLI installieren
 npm i -g vercel
@@ -202,6 +214,7 @@ vercel --prod
 ```
 
 **Environment Variables in Vercel:**
+
 - `NEXT_PUBLIC_API_URL=https://api.smartapply.com`
 
 ---
@@ -209,11 +222,13 @@ vercel --prod
 ## 🟡 Medium Priority (4-6 Stunden)
 
 ### 4. Deployment Guide schreiben
+
 **Aufwand:** 2 Stunden
 
 **Datei erstellen:** `docs/guides/DEPLOYMENT.md`
 
 **Inhalt:**
+
 - Azure Setup (Schritt-für-Schritt)
 - Environment Variables (Production)
 - CI/CD Pipeline (GitHub Actions)
@@ -224,12 +239,15 @@ vercel --prod
 ---
 
 ### 5. Monitoring & Logging einrichten
+
 **Aufwand:** 2-3 Stunden
 
 **Azure Monitor:**
+
 1. Application Insights erstellen
 2. Connection String → Environment Variable
 3. Integration in NestJS:
+
 ```typescript
 import { ApplicationInsights } from '@nestjs/azure-app-insights';
 
@@ -253,10 +271,12 @@ import { ApplicationInsights } from '@nestjs/azure-app-insights';
 ## 🟢 Optional / Post-MVP (18+ Stunden)
 
 ### 6. Frontend E2E Tests
+
 **Aufwand:** 8-10 Stunden  
 **Tools:** Playwright oder Cypress
 
 **Test Cases:**
+
 1. User Registration & Login
 2. Profile CRUD Operations
 3. Job Posting Creation (Manual + Parser)
@@ -265,6 +285,7 @@ import { ApplicationInsights } from '@nestjs/azure-app-insights';
 6. Session Management (Logout, Refresh)
 
 **Setup:**
+
 ```bash
 cd apps/web
 npm install -D @playwright/test
@@ -278,23 +299,24 @@ touch tests/e2e/application-flow.spec.ts
 ---
 
 ### 7. Neue CV-Templates (Issue #192)
+
 **Aufwand:** 10-15 Stunden pro Template-Set  
 **Status:** ✅ Issue erstellt
 
 **Templates geplant:**
+
 1. **Creative Professional**
    - Für Designer, Marketing, Kreative
    - Mehr visuelle Elemente, Farbakzente
-   
 2. **Academic/Research**
    - Für wissenschaftliche Positionen
    - Publikationen, Forschungsprojekte prominent
-   
 3. **Executive Leadership**
    - Für C-Level Positionen
    - Fokus auf strategische Erfolge, Board Experience
 
 **Was zu tun ist:**
+
 - Handlebars Template erstellen (`.hbs`)
 - CSS für 5 Sprachen (de, en, fr, es, it)
 - Seeding Script updaten
@@ -303,10 +325,12 @@ touch tests/e2e/application-flow.spec.ts
 ---
 
 ### 8. Performance Optimierungen
+
 **Aufwand:** 4-6 Stunden  
 **Nicht kritisch, aber nice-to-have**
 
 **Mögliche Verbesserungen:**
+
 1. **PDF Generation Caching**
    - Cache generierte PDFs für 24h
    - Redis oder Azure Cache for Redis
@@ -328,6 +352,7 @@ touch tests/e2e/application-flow.spec.ts
 ## 📋 Empfohlene Reihenfolge
 
 ### Phase 1: Production-Ready (8-12h) 🔴
+
 1. ✅ Health Check Endpoint (2-3h)
 2. ✅ Azure Resources provisionieren (4-6h)
 3. ✅ CI/CD Pipeline einrichten (3-4h)
@@ -337,6 +362,7 @@ touch tests/e2e/application-flow.spec.ts
 ---
 
 ### Phase 2: Stabilisierung (4-6h) 🟡
+
 4. ✅ Deployment Guide schreiben (2h)
 5. ✅ Monitoring & Logging einrichten (2-3h)
 
@@ -345,6 +371,7 @@ touch tests/e2e/application-flow.spec.ts
 ---
 
 ### Phase 3: Quality & Features (18+h) 🟢
+
 6. ⏳ Frontend E2E Tests (8-10h)
 7. ⏳ Neue CV-Templates (10-15h)
 8. ⏳ Performance Optimierungen (4-6h)
@@ -356,6 +383,7 @@ touch tests/e2e/application-flow.spec.ts
 ## 🎯 Zusammenfassung
 
 ### Was funktioniert bereits (98%):
+
 - ✅ Komplettes Backend API (45+ Endpoints)
 - ✅ Vollständiges Frontend UI (15+ Pages)
 - ✅ 50 Templates (5 Designs × 5 Sprachen × 2 Typen)
@@ -368,11 +396,13 @@ touch tests/e2e/application-flow.spec.ts
 - ✅ Swagger Dokumentation
 
 ### Was fehlt für Production (2%):
+
 - 🔴 Health Check Endpoint (2-3h)
 - 🔴 Azure Resources (4-6h)
 - 🔴 CI/CD Pipeline (3-4h)
 
 ### Was fehlt für Enterprise (Post-MVP):
+
 - 🟢 Frontend E2E Tests (8-10h)
 - 🟢 Neue Templates (10-15h)
 - 🟢 Performance Optimierungen (4-6h)

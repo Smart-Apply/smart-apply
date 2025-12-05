@@ -67,8 +67,12 @@ jobs:
 
       - name: Build and push Docker image
         run: |
+          export DOCKER_BUILDKIT=1
           docker build \
             --platform linux/amd64 \
+            --target production \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.IMAGE_NAME }}:latest \
             -t ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} \
             -t ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.IMAGE_NAME }}:latest \
             -f infra/Dockerfile \

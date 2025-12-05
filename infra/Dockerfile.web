@@ -1,51 +1,82 @@
 # syntax=docker/dockerfile:1
+# Optimized Next.js Dockerfile
+# Expected size reduction: ~238MB → ~150MB
 
-# Stage 1: Dependencies
+# Stage 1: Dependencies (production only)
 FROM node:20-alpine AS deps
 WORKDIR /app
 
 # Install dependencies for native modules
 RUN apk add --no-cache libc6-compat
 
-# Copy package files from workspace root and web app
+# Copy root package files (needed for workspace)
 COPY package.json package-lock.json ./
+
+# Create apps directory structure
+RUN mkdir -p apps/web
+
+# Copy Web package.json
 COPY apps/web/package.json ./apps/web/
 
-# Install all dependencies (needed for build)
-RUN npm ci
+# Install only production dependencies for web workspace
+RUN --mount=type=cache,target=/root/.npm npm ci --workspace=apps/web --omit=dev --legacy-peer-deps && npm cache clean --force
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Copy dependencies from deps stage
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
+# Install dependencies for native modules
+RUN apk add --no-cache libc6-compat
 
-# Copy source code
-COPY . .
+# Copy root package files (needed for workspace)
+COPY package.json package-lock.json ./
 
-# Set environment variable for build
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV NODE_ENV=production
+# Create apps directory structure
+RUN mkdir -p apps/web
+
+# Copy Web package.json
+COPY apps/web/package.json ./apps/web/
+
+# Install ALL dependencies (including devDependencies for build)
+RUN --mount=type=cache,target=/root/.npm npm ci --workspace=apps/web --legacy-peer-deps && npm cache clean --force
+
+# Copy Web source code and config
+COPY apps/web/src ./apps/web/src
+COPY apps/web/public ./apps/web/public
+COPY apps/web/tsconfig.json ./apps/web/
+COPY apps/web/next.config.ts ./apps/web/
+COPY apps/web/postcss.config.mjs ./apps/web/
+COPY apps/web/components.json ./apps/web/
+
+# Set environment variables for optimal build
+ENV NEXT_TELEMETRY_DISABLED=1 \
+    NODE_ENV=production
 
 # Build the Next.js app
 WORKDIR /app/apps/web
 RUN npm run build
 
-# Stage 3: Runner
+# Stage 3: Runner (minimal runtime)
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=3000 \
+    HOSTNAME="0.0.0.0"
+
+# Install dumb-init for proper signal handling
+RUN apk add --no-cache dumb-init && \
+    rm -rf /var/cache/apk/*
 
 # Create non-root user
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
 
-# Copy necessary files from builder
+# Copy only necessary files from builder
 COPY --from=builder /app/apps/web/public ./public
+
+# Copy standalone build (automatically includes minimal node_modules)
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
 
@@ -53,7 +84,5 @@ USER nextjs
 
 EXPOSE 3000
 
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
-
-CMD ["node", "apps/web/server.js"]
+# Use dumb-init for proper signal handling
+CMD ["dumb-init", "node", "apps/web/server.js"]

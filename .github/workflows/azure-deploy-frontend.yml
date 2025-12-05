@@ -51,9 +51,12 @@ jobs:
 
       - name: Build and push Docker image
         run: |
+          export DOCKER_BUILDKIT=1
           docker build \
             --platform linux/amd64 \
             --target runner \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/smart-apply-web:latest \
             -t ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/smart-apply-web:${{ github.sha }} \
             -t ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/smart-apply-web:latest \
             -f infra/Dockerfile.web \

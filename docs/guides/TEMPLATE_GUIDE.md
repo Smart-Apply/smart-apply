@@ -48,88 +48,87 @@ Erstelle eine neue `.hbs` Datei in `apps/api/src/pdf/templates/`
 **Beispiel:** `apps/api/src/pdf/templates/creative-resume.hbs`
 
 ```handlebars
-<!DOCTYPE html>
 <html>
-<head>
-  <meta charset="UTF-8">
-</head>
-<body>
-  <div class="resume-container">
-    <!-- Header mit Name und Kontakt -->
-    <header class="header">
-      <h1 class="name">{{candidateName}}</h1>
-      <div class="contact-info">
-        {{#if email}}<span>{{email}}</span>{{/if}}
-        {{#if phone}}<span>{{phone}}</span>{{/if}}
-        {{#if location}}<span>{{location}}</span>{{/if}}
-      </div>
-    </header>
-
-    <!-- Zusammenfassung -->
-    {{#if summary}}
-    <section class="summary">
-      <h2>Profil</h2>
-      <p>{{summary}}</p>
-    </section>
-    {{/if}}
-
-    <!-- Skills -->
-    {{#if skillCategories}}
-    <section class="skills">
-      <h2>Kompetenzen</h2>
-      {{#each skillCategories}}
-      <div class="skill-category">
-        <h3>{{this.type}}</h3>
-        <ul class="skill-list">
-          {{#each this.skills}}
-          <li>{{this}}</li>
-          {{/each}}
-        </ul>
-      </div>
-      {{/each}}
-    </section>
-    {{/if}}
-
-    <!-- Berufserfahrung -->
-    {{#if experiences}}
-    <section class="experience">
-      <h2>Berufserfahrung</h2>
-      {{#each experiences}}
-      <div class="experience-item">
-        <div class="experience-header">
-          <h3>{{this.title}}</h3>
-          <span class="date">{{this.dateRange}}</span>
+  <head>
+    <meta charset='UTF-8' />
+  </head>
+  <body>
+    <div class='resume-container'>
+      <!-- Header mit Name und Kontakt -->
+      <header class='header'>
+        <h1 class='name'>{{candidateName}}</h1>
+        <div class='contact-info'>
+          {{#if email}}<span>{{email}}</span>{{/if}}
+          {{#if phone}}<span>{{phone}}</span>{{/if}}
+          {{#if location}}<span>{{location}}</span>{{/if}}
         </div>
-        <div class="company">{{this.company}} • {{this.location}}</div>
-        {{#if this.achievements}}
-        <ul class="achievements">
-          {{#each this.achievements}}
-          <li>{{this}}</li>
-          {{/each}}
-        </ul>
-        {{/if}}
-      </div>
-      {{/each}}
-    </section>
-    {{/if}}
+      </header>
 
-    <!-- Ausbildung -->
-    {{#if education}}
-    <section class="education">
-      <h2>Ausbildung</h2>
-      {{#each education}}
-      <div class="education-item">
-        <h3>{{this.degree}}</h3>
-        <div class="institution">{{this.institution}} • {{this.year}}</div>
-        {{#if this.fieldOfStudy}}
-        <div class="field">{{this.fieldOfStudy}}</div>
-        {{/if}}
-      </div>
-      {{/each}}
-    </section>
-    {{/if}}
-  </div>
-</body>
+      <!-- Zusammenfassung -->
+      {{#if summary}}
+        <section class='summary'>
+          <h2>Profil</h2>
+          <p>{{summary}}</p>
+        </section>
+      {{/if}}
+
+      <!-- Skills -->
+      {{#if skillCategories}}
+        <section class='skills'>
+          <h2>Kompetenzen</h2>
+          {{#each skillCategories}}
+            <div class='skill-category'>
+              <h3>{{this.type}}</h3>
+              <ul class='skill-list'>
+                {{#each this.skills}}
+                  <li>{{this}}</li>
+                {{/each}}
+              </ul>
+            </div>
+          {{/each}}
+        </section>
+      {{/if}}
+
+      <!-- Berufserfahrung -->
+      {{#if experiences}}
+        <section class='experience'>
+          <h2>Berufserfahrung</h2>
+          {{#each experiences}}
+            <div class='experience-item'>
+              <div class='experience-header'>
+                <h3>{{this.title}}</h3>
+                <span class='date'>{{this.dateRange}}</span>
+              </div>
+              <div class='company'>{{this.company}} • {{this.location}}</div>
+              {{#if this.achievements}}
+                <ul class='achievements'>
+                  {{#each this.achievements}}
+                    <li>{{this}}</li>
+                  {{/each}}
+                </ul>
+              {{/if}}
+            </div>
+          {{/each}}
+        </section>
+      {{/if}}
+
+      <!-- Ausbildung -->
+      {{#if education}}
+        <section class='education'>
+          <h2>Ausbildung</h2>
+          {{#each education}}
+            <div class='education-item'>
+              <h3>{{this.degree}}</h3>
+              <div class='institution'>{{this.institution}} • {{this.year}}</div>
+              {{#if this.fieldOfStudy}}
+                <div class='field'>{{this.fieldOfStudy}}</div>
+              {{/if}}
+            </div>
+          {{/each}}
+        </section>
+      {{/if}}
+    </div>
+  </body>
 </html>
 ```
 
@@ -290,7 +289,9 @@ h3 {
   height: 12px;
   background: #8b5cf6;
   border-radius: 50%;
-  box-shadow: 0 0 0 3px white, 0 0 0 5px #e2e8f0;
+  box-shadow:
+    0 0 0 3px white,
+    0 0 0 5px #e2e8f0;
 }
 
 .experience-header {
@@ -360,7 +361,7 @@ h3 {
   .resume-container {
     padding: 15mm;
   }
-  
+
   section {
     page-break-inside: avoid;
   }
@@ -432,6 +433,7 @@ Das war's! Das neue Template ist jetzt verfügbar. 🎉
 Templates erhalten automatisch Beispieldaten bei der Preview-Generierung:
 
 ### Cover Letter Daten
+
 ```typescript
 {
   candidateName: 'Max Mustermann',
@@ -448,6 +450,7 @@ Templates erhalten automatisch Beispieldaten bei der Preview-Generierung:
 ```
 
 ### Resume Daten
+
 ```typescript
 {
   candidateName: 'Max Mustermann',
@@ -486,6 +489,7 @@ Templates erhalten automatisch Beispieldaten bei der Preview-Generierung:
 ## Best Practices
 
 ### 1. **Responsive für A4-Format**
+
 ```css
 @page {
   size: A4;
@@ -499,12 +503,13 @@ Templates erhalten automatisch Beispieldaten bei der Preview-Generierung:
 ```
 
 ### 2. **Print-optimiert**
+
 ```css
 @media print {
   section {
     page-break-inside: avoid; /* Keine Section-Umbrüche */
   }
-  
+
   .experience-item {
     page-break-inside: avoid; /* Keine Item-Umbrüche */
   }
@@ -512,13 +517,16 @@ Templates erhalten automatisch Beispieldaten bei der Preview-Generierung:
 ```
 
 ### 3. **Lesbare Schriftgrößen**
+
 - Body Text: 10-11pt
 - Überschriften H2: 14-16pt
 - Überschriften H3: 11-13pt
 - Kleintext: 9-10pt
 
 ### 4. **Konsistente Farben**
+
 Definiere Farben einmal und verwende sie konsequent:
+
 ```css
 :root {
   --primary-color: #667eea;
@@ -528,7 +536,9 @@ Definiere Farben einmal und verwende sie konsequent:
 ```
 
 ### 5. **Category Matching**
+
 Verwende passende Categories für Auto-Matching:
+
 - Professional → Professional
 - Modern → Modern
 - Creative → Creative
@@ -538,30 +548,35 @@ Verwende passende Categories für Auto-Matching:
 ## Template-Kategorien
 
 ### Professional
+
 - Klassisch, formal
 - Dunkle Farben (Navy, Schwarz)
 - Serifenschriften oder klassische Sans-Serif
 - Konservatives Layout
 
 ### Modern
+
 - Clean, zeitgemäß
 - Helle Akzentfarben (Blau, Grün)
 - Sans-Serif Schriften
 - Viel Weißraum
 
 ### Creative
+
 - Mutig, auffällig
 - Lebendige Farben (Lila, Orange)
 - Moderne Schriften
 - Asymmetrisches Layout
 
 ### Minimal
+
 - Reduziert, schlicht
 - Monochromatisch
 - Viel Weißraum
 - Klare Hierarchie
 
 ### Technical
+
 - Strukturiert, präzise
 - Monospace-Elemente
 - Code-inspiriertes Design
@@ -570,6 +585,7 @@ Verwende passende Categories für Auto-Matching:
 ## Preview-System
 
 Previews werden automatisch:
+
 1. Beim ersten Laden generiert (Puppeteer)
 2. Im Storage gecacht (`uploads/templates/{id}/preview.png`)
 3. Bei jedem weiteren Request aus dem Cache geladen
@@ -586,18 +602,21 @@ Beim nächsten Laden werden alle Previews neu generiert.
 ## Troubleshooting
 
 ### Template wird nicht angezeigt
+
 1. ✅ Seed-Script erfolgreich ausgeführt?
 2. ✅ `isActive: true` gesetzt?
 3. ✅ Richtiger `TemplateType`?
 4. ✅ Backend neu gestartet?
 
 ### Preview-Fehler
+
 1. ✅ CSS-Syntax korrekt?
 2. ✅ Handlebars-Syntax korrekt?
 3. ✅ Alle verwendeten Felder in Beispieldaten vorhanden?
 4. ✅ Puppeteer-Fehler in Backend-Logs prüfen
 
 ### Layout-Probleme im PDF
+
 1. ✅ `page-break-inside: avoid` verwendet?
 2. ✅ A4-Format berücksichtigt (210mm x 297mm)?
 3. ✅ Ausreichend Padding/Margin?
@@ -629,6 +648,7 @@ Mit derselben `category: 'Elegant'` werden sie automatisch zusammen verwendet.
 ## Support
 
 Bei Fragen oder Problemen:
+
 - Backend-Logs prüfen: `apps/api/` Terminal
 - Frontend DevTools: Console für Fehler
 - Seed-Script neu ausführen bei Datenbankproblemen

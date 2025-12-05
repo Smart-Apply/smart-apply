@@ -1,0 +1,23 @@
+{
+  "displayName": "unit",
+  "preset": "ts-jest",
+  "testEnvironment": "node",
+  "rootDir": "../src",
+  "testRegex": ".*\\.unit\\.spec\\.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "collectCoverageFrom": [
+    "**/*.(t|j)s",
+    "!**/*.spec.ts",
+    "!**/*.e2e-spec.ts",
+    "!**/node_modules/**",
+    "!**/dist/**",
+    "!**/coverage/**"
+  ],
+  "coverageDirectory": "../coverage/unit",
+  "moduleNameMapper": {
+    "^@/(.*)$": "<rootDir>/$1"
+  },
+  "setupFilesAfterEnv": ["<rootDir>/../test/setup.ts"]
+}

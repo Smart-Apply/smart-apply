@@ -24,16 +24,19 @@ smart-apply/
 ## 🎯 Workspace-Konzept
 
 ### Root package.json
+
 - **Zweck:** Workspace Manager & gemeinsame DevDependencies
 - **Enthält:** TypeScript, ESLint, Jest, Prettier, Prisma CLI
 - **Scripts:** Orchestriert alle Workspace-Commands
 
 ### apps/api/package.json
+
 - **Name:** `@smart-apply/api`
 - **Enthält:** NestJS, Prisma Client, Azure SDKs, Puppeteer, etc.
 - **Scripts:** Backend-spezifische Commands (build, test, prisma)
 
 ### apps/web/package.json
+
 - **Name:** `@smart-apply/web`
 - **Enthält:** Next.js, React, Tailwind, shadcn/ui, etc.
 - **Scripts:** Frontend-spezifische Commands (dev, build, lint)
@@ -159,40 +162,48 @@ node_modules/@smart-apply/web -> ../../apps/web
 ### Shared Dependencies
 
 Dependencies, die in BEIDEN Apps verwendet werden, werden ins Root gehoben:
+
 - `typescript` ✅ (beide brauchen es)
 - `@types/node` ✅ (beide brauchen es)
 - `zod` ✅ (beide brauchen es)
 
 App-spezifische Dependencies bleiben in ihrem Workspace:
+
 - `@nestjs/*` → nur in `apps/api/node_modules/`
 - `next` → nur in `apps/web/node_modules/`
 
 ## 🎨 Vorteile
 
 ### 1. Saubere Trennung
+
 - Backend-Code und Dependencies isoliert
 - Frontend-Code und Dependencies isoliert
 - Klare Verantwortlichkeiten
 
 ### 2. Schnellere Installs
+
 - Shared Dependencies werden nur einmal installiert
 - Nur relevante Dependencies pro App
 
 ### 3. Bessere IDE-Performance
+
 - TypeScript muss nur relevante Dependencies prüfen
 - Schnellere Auto-Completion
 
 ### 4. Einfacheres Deployment
+
 - Jede App kann separat deployed werden
 - Docker-Images können kleiner sein (nur relevante Dependencies)
 
 ### 5. Bessere Skalierbarkeit
+
 - Neue Workspaces einfach hinzufügen (z.B. `apps/mobile`)
 - Shared Libraries möglich (`packages/shared`)
 
 ## 📝 Migration von alter Struktur
 
 ### Vorher (Problematisch)
+
 ```
 smart-apply/
 ├── package.json              # ALLE Dependencies gemischt
@@ -204,6 +215,7 @@ smart-apply/
 ```
 
 ### Nachher (Clean)
+
 ```
 smart-apply/
 ├── package.json              # Workspace Manager
