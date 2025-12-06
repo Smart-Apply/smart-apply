@@ -24,7 +24,8 @@ COPY packages/shared/tsconfig.json ./packages/shared/
 COPY packages/shared/src ./packages/shared/src
 
 # Install only production dependencies for web workspace
-RUN --mount=type=cache,target=/root/.npm npm ci --workspace=apps/web --workspace=packages/shared --omit=dev --legacy-peer-deps && npm cache clean --force
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --workspace=apps/web --workspace=packages/shared --omit=dev --legacy-peer-deps
 
 # Build shared package (needed at runtime)
 RUN npm run shared:build
@@ -51,7 +52,8 @@ COPY packages/shared/tsconfig.json ./packages/shared/
 COPY packages/shared/src ./packages/shared/src
 
 # Install ALL dependencies (including devDependencies for build)
-RUN --mount=type=cache,target=/root/.npm npm ci --workspace=apps/web --workspace=packages/shared --legacy-peer-deps && npm cache clean --force
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --workspace=apps/web --workspace=packages/shared --legacy-peer-deps
 
 # Copy Web source code and config
 COPY apps/web/src ./apps/web/src

@@ -34,10 +34,7 @@ COPY apps/api/prisma ./apps/api/prisma
 # Prisma client will be generated via postinstall hook
 ENV NODE_OPTIONS="--max-old-space-size=6144"
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --workspace=apps/api --workspace=packages/shared --omit=dev --legacy-peer-deps && \
-    npm cache clean --force && \
-    rm -rf /root/.npm/_logs && \
-    rm -rf /tmp/*
+    npm ci --workspace=apps/api --workspace=packages/shared --omit=dev --legacy-peer-deps
 
 # Build shared package (needed at runtime)
 RUN npm run shared:build
@@ -77,8 +74,7 @@ COPY apps/api/prisma ./apps/api/prisma
 # Note: This installs API deps + shared root deps (like @nestjs/cli)
 ENV NODE_OPTIONS="--max-old-space-size=6144"
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --workspace=apps/api --workspace=packages/shared --include-workspace-root --legacy-peer-deps && \
-    npm cache clean --force
+    npm ci --workspace=apps/api --workspace=packages/shared --include-workspace-root --legacy-peer-deps
 
 # Copy API source code and config
 COPY apps/api/src ./apps/api/src
