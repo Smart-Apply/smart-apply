@@ -17,10 +17,15 @@ RUN apk add --no-cache openssl python3 make g++
 COPY package.json package-lock.json ./
 
 # Create apps directory structure
-RUN mkdir -p apps/api
+RUN mkdir -p apps/api packages/shared
 
 # Copy API package.json
 COPY apps/api/package.json ./apps/api/
+
+# Copy packages/shared (required dependency)
+COPY packages/shared/package.json ./packages/shared/
+COPY packages/shared/tsconfig.json ./packages/shared/
+COPY packages/shared/src ./packages/shared/src
 
 # Copy Prisma schema (needed for production dependencies)
 COPY apps/api/prisma ./apps/api/prisma
@@ -28,7 +33,8 @@ COPY apps/api/prisma ./apps/api/prisma
 # Install ONLY API production dependencies (no dev deps, no web packages)
 # Prisma client will be generated via postinstall hook
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --workspace=apps/api --omit=dev --legacy-peer-deps && \
+    NODE_OPTIONS="--max-old-space-size=6144" \
+    npm ci --workspace=apps/api --workspace=packages/shared --omit=dev --legacy-peer-deps && \
     npm cache clean --force && \
     rm -rf /root/.npm/_logs && \
     rm -rf /tmp/*
@@ -51,10 +57,15 @@ COPY tsconfig*.json ./
 COPY nest-cli.json ./
 
 # Create apps directory structure
-RUN mkdir -p apps/api
+RUN mkdir -p apps/api packages/shared
 
 # Copy API package.json
 COPY apps/api/package.json ./apps/api/
+
+# Copy packages/shared (required dependency)
+COPY packages/shared/package.json ./packages/shared/
+COPY packages/shared/tsconfig.json ./packages/shared/
+COPY packages/shared/src ./packages/shared/src
 
 # Copy Prisma schema BEFORE npm install (needed for postinstall hooks)
 COPY apps/api/prisma ./apps/api/prisma
@@ -62,8 +73,8 @@ COPY apps/api/prisma ./apps/api/prisma
 # Install only API workspace dependencies to save memory in CI/CD
 # Note: This installs API deps + shared root deps (like @nestjs/cli)
 RUN --mount=type=cache,target=/root/.npm \
-    NODE_OPTIONS="--max-old-space-size=4096" \
-    npm ci --workspace=apps/api --include-workspace-root --legacy-peer-deps && \
+    NODE_OPTIONS="--max-old-space-size=6144" \
+    npm ci --workspace=apps/api --workspace=packages/shared --include-workspace-root --legacy-peer-deps && \
     npm cache clean --force
 
 # Copy API source code and config

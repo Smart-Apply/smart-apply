@@ -169,7 +169,14 @@ export interface TemplateWithContent extends Template {
 // ============================================
 
 export type ApplicationGenerationStatus = 'PENDING' | 'GENERATING' | 'READY' | 'FAILED';
-export type ApplicationTrackingStatus = 'CREATED' | 'APPLIED' | 'INTERVIEW' | 'OFFER' | 'ACCEPTED' | 'REJECTED' | 'WITHDRAWN';
+export type ApplicationTrackingStatus =
+  | 'CREATED'
+  | 'APPLIED'
+  | 'INTERVIEW'
+  | 'OFFER'
+  | 'ACCEPTED'
+  | 'REJECTED'
+  | 'WITHDRAWN';
 export type ApplicationStatus = ApplicationGenerationStatus;
 
 export interface Application {
@@ -329,14 +336,14 @@ export interface ATSKeywords {
   miscKeywords: string[];
 }
 
-export type KeywordCategory = 
-  | 'technical' 
-  | 'soft' 
-  | 'responsibility' 
-  | 'requirement' 
-  | 'tool' 
-  | 'industry' 
-  | 'seniority' 
+export type KeywordCategory =
+  | 'technical'
+  | 'soft'
+  | 'responsibility'
+  | 'requirement'
+  | 'tool'
+  | 'industry'
+  | 'seniority'
   | 'misc';
 
 export interface KeywordMatch {
@@ -371,13 +378,13 @@ export interface ApplicationKeywordsResponse {
   analyzedAt: string;
 }
 
-export type PipelineStage = 
-  | 'pending' 
-  | 'extracting-keywords' 
-  | 'generating-cv' 
-  | 'generating-cl' 
-  | 'finalizing' 
-  | 'complete' 
+export type PipelineStage =
+  | 'pending'
+  | 'extracting-keywords'
+  | 'generating-cv'
+  | 'generating-cl'
+  | 'finalizing'
+  | 'complete'
   | 'failed';
 
 export interface PipelineStatus {

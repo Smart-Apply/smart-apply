@@ -13,13 +13,18 @@ RUN apk add --no-cache libc6-compat
 COPY package.json package-lock.json ./
 
 # Create apps directory structure
-RUN mkdir -p apps/web
+RUN mkdir -p apps/web packages/shared
 
 # Copy Web package.json
 COPY apps/web/package.json ./apps/web/
 
+# Copy packages/shared (required dependency)
+COPY packages/shared/package.json ./packages/shared/
+COPY packages/shared/tsconfig.json ./packages/shared/
+COPY packages/shared/src ./packages/shared/src
+
 # Install only production dependencies for web workspace
-RUN --mount=type=cache,target=/root/.npm npm ci --workspace=apps/web --omit=dev --legacy-peer-deps && npm cache clean --force
+RUN --mount=type=cache,target=/root/.npm npm ci --workspace=apps/web --workspace=packages/shared --omit=dev --legacy-peer-deps && npm cache clean --force
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder
@@ -32,13 +37,18 @@ RUN apk add --no-cache libc6-compat
 COPY package.json package-lock.json ./
 
 # Create apps directory structure
-RUN mkdir -p apps/web
+RUN mkdir -p apps/web packages/shared
 
 # Copy Web package.json
 COPY apps/web/package.json ./apps/web/
 
+# Copy packages/shared (required dependency)
+COPY packages/shared/package.json ./packages/shared/
+COPY packages/shared/tsconfig.json ./packages/shared/
+COPY packages/shared/src ./packages/shared/src
+
 # Install ALL dependencies (including devDependencies for build)
-RUN --mount=type=cache,target=/root/.npm npm ci --workspace=apps/web --legacy-peer-deps && npm cache clean --force
+RUN --mount=type=cache,target=/root/.npm npm ci --workspace=apps/web --workspace=packages/shared --legacy-peer-deps && npm cache clean --force
 
 # Copy Web source code and config
 COPY apps/web/src ./apps/web/src
