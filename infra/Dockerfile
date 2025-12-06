@@ -128,6 +128,11 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
+# Install Playwright browsers (needed for URL parsing with JavaScript rendering)
+# Use chromium only to save space (~180MB vs ~500MB for all browsers)
+RUN npx playwright install --with-deps chromium && \
+    rm -rf /root/.cache
+
 # Remove symlink and create real directory for shared package
 RUN rm -rf ./node_modules/@smart-apply/shared && \
     mkdir -p ./node_modules/@smart-apply/shared
