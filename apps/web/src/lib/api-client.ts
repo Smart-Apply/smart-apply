@@ -22,8 +22,7 @@ import type {
 } from '@/types';
 import { ApiError, NetworkError, shouldRetry, getRetryDelay, isPermanentAuthFailure } from './errors';
 import { getCsrfToken, refreshCsrfToken } from './csrf';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
+import { getApiBaseUrl } from './config';
 
 interface RequestOptions extends RequestInit {
   retry?: boolean;
@@ -78,7 +77,8 @@ async function refreshAccessToken(): Promise<boolean> {
   isRefreshing = true;
   refreshPromise = (async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      const baseUrl = await getApiBaseUrl();
+      const response = await fetch(`${baseUrl}/auth/refresh`, {
         method: 'POST',
         credentials: 'include', // Send refresh token cookie
       });
@@ -129,7 +129,8 @@ async function apiRequest<T>(
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      const baseUrl = await getApiBaseUrl();
+      const response = await fetch(`${baseUrl}${endpoint}`, {
         ...fetchOptions,
         headers,
         credentials: 'include', // Include cookies with requests

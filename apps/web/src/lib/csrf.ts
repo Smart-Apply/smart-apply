@@ -6,7 +6,7 @@
  * Stored in memory (not localStorage) for security.
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
+import { getApiBaseUrl } from './config';
 
 // Storage keys
 const CSRF_TOKEN_KEY = 'csrf_token';
@@ -72,7 +72,8 @@ export async function fetchCsrfToken(): Promise<void> {
   // Create new fetch promise
   tokenFetchPromise = (async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/csrf-token`, {
+      const baseUrl = await getApiBaseUrl();
+      const response = await fetch(`${baseUrl}/auth/csrf-token`, {
         method: 'GET',
         credentials: 'include', // Include cookies
         signal: AbortSignal.timeout(5000), // 5 second timeout
