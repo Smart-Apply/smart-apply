@@ -64,6 +64,9 @@ temp/
 .next/
 out/
 
+# Turborepo
+.turbo/
+
 # Uploaded files (disk storage)
 uploads/
 .vercel
