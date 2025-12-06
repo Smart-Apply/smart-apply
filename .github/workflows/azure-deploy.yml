@@ -101,10 +101,28 @@ jobs:
 
       - name: Deploy to Container Apps
         run: |
+          echo "Deploying to Container App: ${{ env.CONTAINER_APP_NAME }}"
+          echo "Resource Group: ${{ env.RESOURCE_GROUP }}"
+          echo "Image: ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          
+          # Verify Container App exists
+          if ! az containerapp show \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --query name -o tsv; then
+            echo "❌ ERROR: Container App '${{ env.CONTAINER_APP_NAME }}' not found in resource group '${{ env.RESOURCE_GROUP }}'"
+            echo "Available Container Apps:"
+            az containerapp list --resource-group ${{ env.RESOURCE_GROUP }} --query "[].name" -o tsv
+            exit 1
+          fi
+          
+          # Update Container App with new image
           az containerapp update \
             --name ${{ env.CONTAINER_APP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --image ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          
+          echo "✅ Container App updated successfully"
 
   migrate-database:
     name: Run Database Migrations
