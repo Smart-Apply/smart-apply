@@ -3,7 +3,7 @@ name: Deploy Frontend to Azure Container Apps
 on:
   push:
     branches:
-      - mvp
+      - main
     paths:
       - 'apps/web/**'
       - 'infra/Dockerfile.web'
@@ -12,7 +12,7 @@ on:
       - '.github/workflows/azure-deploy-frontend.yml'
   pull_request:
     branches:
-      - mvp
+      - main
     paths:
       - 'apps/web/**'
       - 'infra/Dockerfile.web'
