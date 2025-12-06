@@ -51,11 +51,14 @@ jobs:
 
       - name: Log in to Azure Container Registry
         run: |
+          echo "Logging into ACR: ${{ env.AZURE_CONTAINER_REGISTRY }}"
           az acr login --name ${{ env.AZURE_CONTAINER_REGISTRY }}
+          echo "✅ ACR login successful"
 
       - name: Build and push Docker image
         run: |
           export DOCKER_BUILDKIT=1
+          echo "Building image: ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/smart-apply-web:${{ github.sha }}"
           docker build \
             --platform linux/amd64 \
             --target runner \
@@ -65,8 +68,10 @@ jobs:
             -t ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/smart-apply-web:latest \
             -f infra/Dockerfile.web \
             .
+          echo "Pushing images to ACR..."
           docker push ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/smart-apply-web:${{ github.sha }}
           docker push ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/smart-apply-web:latest
+          echo "✅ Images pushed successfully"
 
       - name: Deploy to Azure Container Apps
         run: |

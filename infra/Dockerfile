@@ -36,9 +36,6 @@ ENV NODE_OPTIONS="--max-old-space-size=6144"
 RUN --mount=type=cache,target=/root/.npm \
     npm ci --workspace=apps/api --workspace=packages/shared --omit=dev --legacy-peer-deps
 
-# Build shared package (needed at runtime)
-RUN npm run shared:build
-
 # Stage 2: Build application
 FROM node:20-alpine AS builder
 
@@ -131,9 +128,9 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=deps /app/node_modules/@prisma ./node_modules/@prisma
 
-# Copy built shared package from deps (required at runtime)
-COPY --from=deps /app/packages/shared/dist ./node_modules/@smart-apply/shared/dist
-COPY --from=deps /app/packages/shared/package.json ./node_modules/@smart-apply/shared/
+# Copy built shared package from builder (required at runtime)
+COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
+COPY --from=builder /app/packages/shared/package.json ./packages/shared/
 
 # Copy built application (compiled JS only)
 COPY --from=builder /app/dist ./dist
