@@ -5,9 +5,11 @@
   "author": "Smart Apply Team",
   "private": true,
   "license": "MIT",
+  "packageManager": "npm@10.1.0",
   "workspaces": [
     "apps/api",
-    "apps/web"
+    "apps/web",
+    "packages/shared"
   ],
   "scripts": {
     "api:dev": "npm run start:dev --workspace=apps/api",
@@ -16,11 +18,15 @@
     "web:dev": "npm run dev --workspace=apps/web",
     "web:build": "npm run build --workspace=apps/web",
     "web:lint": "npm run lint --workspace=apps/web",
-    "dev": "concurrently \"npm run api:dev\" \"npm run web:dev\"",
-    "build": "npm run api:build && npm run web:build",
+    "shared:build": "npm run build --workspace=packages/shared",
+    "shared:watch": "npm run watch --workspace=packages/shared",
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "build:legacy": "npm run shared:build && npm run api:build && npm run web:build",
     "format": "prettier --write \"apps/**/*.{ts,tsx,js,jsx,json,md}\"",
     "lint": "eslint \"apps/**/*.{ts,tsx}\" --fix",
-    "test": "npm run test --workspace=apps/api",
+    "test": "turbo run test",
+    "test:legacy": "npm run test --workspace=apps/api",
     "test:unit": "npm run test:unit --workspace=apps/api",
     "test:unit:watch": "npm run test:unit:watch --workspace=apps/api",
     "test:unit:cov": "npm run test:unit:cov --workspace=apps/api",
@@ -59,6 +65,7 @@
     "ts-loader": "^9.5.1",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
+    "turbo": "^2.6.3",
     "typescript": "^5.9.3"
   },
   "engines": {

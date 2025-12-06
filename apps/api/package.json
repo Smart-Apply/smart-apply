@@ -38,6 +38,7 @@
     "create-agents": "ts-node -r tsconfig-paths/register scripts/create-agents.ts"
   },
   "dependencies": {
+    "@smart-apply/shared": "1.0.0",
     "@azure/ai-agents": "^1.0.0",
     "@azure/identity": "^4.0.0",
     "@azure/keyvault-secrets": "^4.8.0",

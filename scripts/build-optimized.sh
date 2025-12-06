@@ -14,6 +14,10 @@ set -e
 # - Automatisches Cleanup von dangling images
 # - Build-Metriken (Größe, Build-Zeit)
 
+# Change to repository root (script can be called from anywhere)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/.." || exit 1
+
 # Colors for output
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
