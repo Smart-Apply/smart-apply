@@ -92,13 +92,22 @@ const envSchema = z.object({
 export type EnvConfig = z.infer<typeof envSchema>;
 
 export function validateEnv(config: Record<string, unknown>): EnvConfig {
+  console.log('🔍 Validating environment config:', {
+    configKeys: config ? Object.keys(config).length : 0,
+    hasDatabase: !!config?.DATABASE_URL,
+    hasJwtSecret: !!config?.JWT_SECRET,
+  });
+  
   try {
     return envSchema.parse(config);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const missingVars = error.errors.map((e) => `${e.path.join('.')}: ${e.message}`).join('\n');
+      const missingVars = error.errors
+        ? error.errors.map((e) => `${e.path.join('.')}: ${e.message}`).join('\n')
+        : 'Unknown validation error';
       throw new Error(`❌ Environment validation failed:\n${missingVars}`);
     }
+    console.error('❌ Environment validation error (not ZodError):', error);
     throw error;
   }
 }
