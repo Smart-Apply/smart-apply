@@ -183,17 +183,11 @@ export function ATSScoreSidebar({
         </div>
 
         {/* Category Breakdown - Compact */}
-        <div className="grid grid-cols-2 gap-2 text-xs">
+        <div className="grid grid-cols-1 gap-2 text-xs">
           <div className="flex items-center justify-between p-2 rounded bg-[#E5E9F2]">
-            <span className="text-[#6B6969]">Kern</span>
+            <span className="text-[#6B6969]">Kern (Hard Skills)</span>
             <span className={cn('font-medium', getScoreColor(analysis.matchAnalysis.categoryScores.core))}>
               {Math.round(analysis.matchAnalysis.categoryScores.core)}%
-            </span>
-          </div>
-          <div className="flex items-center justify-between p-2 rounded bg-[#E5E9F2]">
-            <span className="text-[#6B6969]">Soft</span>
-            <span className={cn('font-medium', getScoreColor(analysis.matchAnalysis.categoryScores.soft))}>
-              {Math.round(analysis.matchAnalysis.categoryScores.soft)}%
             </span>
           </div>
         </div>

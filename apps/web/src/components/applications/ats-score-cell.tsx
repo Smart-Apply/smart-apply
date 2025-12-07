@@ -66,8 +66,7 @@ export function ATSScoreCell({ applicationId, status }: ATSScoreCellProps) {
         <TooltipContent>
           <div className="text-xs space-y-1">
             <div className="font-medium mb-1">Kategorie-Scores:</div>
-            <div>Kern: {Math.round(analysis.matchAnalysis.categoryScores.core)}%</div>
-            <div>Soft: {Math.round(analysis.matchAnalysis.categoryScores.soft)}%</div>
+            <div>Kern (Hard Skills): {Math.round(analysis.matchAnalysis.categoryScores.core)}%</div>
             <div>Erfahrung: {Math.round(analysis.matchAnalysis.categoryScores.experience)}%</div>
             <div>Branche: {Math.round(analysis.matchAnalysis.categoryScores.industry)}%</div>
           </div>

@@ -355,8 +355,8 @@ export interface KeywordMatch {
 }
 
 export interface CategoryScores {
-  core: number;        // Core competencies (domain-specific skills)
-  soft: number;        // Interpersonal skills
+  core: number;        // Core competencies (hard skills only)
+  soft: number;        // Deprecated - no longer extracted (always 0)
   experience: number;  // Professional experience
   industry: number;    // Domain/sector knowledge
 }

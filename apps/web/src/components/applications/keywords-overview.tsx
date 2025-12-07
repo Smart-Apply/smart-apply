@@ -33,7 +33,7 @@ const categoryConfig: Record<
   { label: string; icon: React.ElementType; color: string }
 > = {
   technical: { label: 'Technisch', icon: Code2, color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
-  soft: { label: 'Soft Skills', icon: Heart, color: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200' },
+  soft: { label: 'Skills', icon: Heart, color: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200' }, // Legacy, no longer extracted
   responsibility: { label: 'Aufgaben', icon: Target, color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' },
   requirement: { label: 'Anforderungen', icon: Award, color: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200' },
   tool: { label: 'Tools', icon: Wrench, color: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200' },

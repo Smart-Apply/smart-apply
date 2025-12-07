@@ -45,14 +45,9 @@ const getScoreLabel = (score: number): string => {
 
 const categoryConfig = {
   core: {
-    label: 'Kernkompetenzen',
+    label: 'Kernkompetenzen (Hard Skills)',
     icon: Briefcase,
     description: 'Fachliche Qualifikationen und Expertise',
-  },
-  soft: {
-    label: 'Soft Skills',
-    icon: Users,
-    description: 'Zwischenmenschliche Fähigkeiten',
   },
   experience: {
     label: 'Erfahrung',

@@ -28,7 +28,7 @@ interface SuggestionsCardProps {
 const categoryToSection: Record<KeywordCategory, { section: string; label: string; icon: React.ElementType }> = {
   technical: { section: 'skills', label: 'Skills hinzufügen', icon: Code2 },
   tool: { section: 'skills', label: 'Tools hinzufügen', icon: Code2 },
-  soft: { section: 'skills', label: 'Soft Skills hinzufügen', icon: Code2 },
+  soft: { section: 'skills', label: 'Skills hinzufügen', icon: Code2 }, // Legacy, no longer extracted
   responsibility: { section: 'experiences', label: 'Aufgaben ergänzen', icon: Briefcase },
   seniority: { section: 'experiences', label: 'Erfahrung aktualisieren', icon: Briefcase },
   industry: { section: 'experiences', label: 'Branchenerfahrung', icon: Briefcase },
@@ -103,9 +103,6 @@ export function SuggestionsCard({
       case 'tool':
         suggestion = `Füge diese technischen Skills zu deinem Profil hinzu`;
         break;
-      case 'soft':
-        suggestion = `Erwähne diese Soft Skills in deiner Zusammenfassung`;
-        break;
       case 'experience':
       case 'responsibility':
         suggestion = `Beschreibe diese Aufgaben in deinen Berufserfahrungen`;
@@ -132,7 +129,7 @@ export function SuggestionsCard({
   });
 
   // Get top priority categories (technical first)
-  const priorityOrder: KeywordCategory[] = ['technical', 'tool', 'soft', 'responsibility', 'requirement', 'industry', 'seniority', 'misc'];
+  const priorityOrder: KeywordCategory[] = ['technical', 'tool', 'responsibility', 'requirement', 'industry', 'seniority', 'misc'];
   const sortedActions = [...categoryActions].sort(
     (a, b) => priorityOrder.indexOf(a.category) - priorityOrder.indexOf(b.category)
   );
