@@ -30,6 +30,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ApplicationCardSkeleton } from '@/components/shared/skeletons';
+import { ATSScoreCell } from '@/components/applications/ats-score-cell';
 import {
   Plus,
   FileText,
@@ -429,9 +430,10 @@ export default function ApplicationsPage() {
               <Table>
                 <TableHeader className="bg-muted/30">
                   <TableRow>
-                    <TableHead className="w-[40%]">Job & Unternehmen</TableHead>
-                    <TableHead className="w-[20%]">Status</TableHead>
-                    <TableHead className="w-[20%]">Erstellt</TableHead>
+                    <TableHead className="w-[35%]">Job & Unternehmen</TableHead>
+                    <TableHead className="w-[15%]">Status</TableHead>
+                    <TableHead className="w-[12%] text-center">ATS Score</TableHead>
+                    <TableHead className="w-[18%]">Erstellt</TableHead>
                     <TableHead className="w-[20%] text-right">Aktionen</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -484,6 +486,9 @@ export default function ApplicationsPage() {
                               variant="dropdown"
                             />
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          <ATSScoreCell applicationId={application.id} status={application.status} />
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">

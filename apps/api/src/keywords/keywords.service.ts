@@ -1,8 +1,8 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { ATSKeywordAgent } from '../agents/ats/ats-keyword.agent';
-import { ATSAgentOutput, ATSAgentInput, ProfileData } from '../agents/agents.interface';
+import { ATSAgentOutput, ProfileData } from '../agents/agents.interface';
 import { KeywordMatchDto, MatchAnalysisResponseDto, ExtractedKeywordsDto } from './dto';
+import { LLMService } from '../llm/llm.service';
 
 interface JobPostingData {
   title: string;
@@ -19,31 +19,41 @@ export class KeywordsService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly atsAgent: ATSKeywordAgent,
+    private readonly llmService: LLMService,
   ) {}
 
   /**
-   * Extract keywords from job posting using ATS Agent
+   * Extract keywords from job posting using LLM
    */
   async extractKeywords(jobPosting: JobPostingData): Promise<ATSAgentOutput> {
     this.logger.log(`Extracting keywords for: ${jobPosting.title} at ${jobPosting.company}`);
 
-    // Build the input for the ATS Agent (simplified with fullText)
-    const input: ATSAgentInput = {
-      jobPosting: {
-        title: jobPosting.title,
-        company: jobPosting.company,
-        location: jobPosting.location || null,
-        fullText: jobPosting.fullText,
-        language: (jobPosting.language as 'de' | 'en') || this.detectLanguage(jobPosting.fullText),
-      },
+    const language =
+      (jobPosting.language as 'de' | 'en') || this.detectLanguage(jobPosting.fullText);
+
+    // Use LLM to extract keywords
+    const keywords = await this.llmService.callJson<ATSAgentOutput>('v1/ats-keywords-extract.md', {
+      jobTitle: jobPosting.title,
+      company: jobPosting.company,
+      location: jobPosting.location || '',
+      fullText: jobPosting.fullText,
+      language,
+    });
+
+    // Ensure all required arrays exist (defensive programming)
+    const normalizedKeywords: ATSAgentOutput = {
+      coreCompetencies: keywords.coreCompetencies || [],
+      softSkills: keywords.softSkills || [],
+      responsibilityKeywords: keywords.responsibilityKeywords || [],
+      requirementKeywords: keywords.requirementKeywords || [],
+      methodologies: keywords.methodologies || [],
+      industryKeywords: keywords.industryKeywords || [],
+      senioritySignals: keywords.senioritySignals || [],
+      miscKeywords: keywords.miscKeywords || [],
     };
 
-    // Execute the ATS Agent
-    const keywords = await this.atsAgent.execute(input);
-
-    this.logger.log(`Extracted ${this.countKeywords(keywords)} keywords`);
-    return keywords;
+    this.logger.log(`Extracted ${this.countKeywords(normalizedKeywords)} keywords`);
+    return normalizedKeywords;
   }
 
   /**
@@ -52,7 +62,7 @@ export class KeywordsService {
    */
   convertToLegacyFormat(keywords: ATSAgentOutput): ExtractedKeywordsDto {
     return {
-      technical: [...keywords.technicalSkills, ...keywords.toolsAndTechnologies],
+      core: [...keywords.coreCompetencies, ...keywords.methodologies],
       soft: keywords.softSkills,
       experience: keywords.senioritySignals,
       industry: keywords.industryKeywords,
@@ -121,7 +131,7 @@ export class KeywordsService {
     const missingKeywords: KeywordMatchDto[] = [];
 
     const categoryStats = {
-      technical: { matched: 0, total: 0 },
+      core: { matched: 0, total: 0 },
       soft: { matched: 0, total: 0 },
       experience: { matched: 0, total: 0 },
       other: { matched: 0, total: 0 },
@@ -181,7 +191,7 @@ export class KeywordsService {
       strengths,
       weaknesses,
       categoryBreakdown: {
-        technical: this.calculateCategoryPercentage(categoryStats.technical),
+        core: this.calculateCategoryPercentage(categoryStats.core),
         soft: this.calculateCategoryPercentage(categoryStats.soft),
         experience: this.calculateCategoryPercentage(categoryStats.experience),
         other: this.calculateCategoryPercentage(categoryStats.other),
@@ -215,34 +225,37 @@ export class KeywordsService {
   }
 
   /**
-   * Count total keywords
+   * Count total keywords (with defensive checks for undefined arrays)
    */
   private countKeywords(keywords: ATSAgentOutput): number {
     return (
-      keywords.technicalSkills.length +
-      keywords.softSkills.length +
-      keywords.responsibilityKeywords.length +
-      keywords.requirementKeywords.length +
-      keywords.toolsAndTechnologies.length +
-      keywords.industryKeywords.length +
-      keywords.senioritySignals.length +
-      keywords.miscKeywords.length
+      (keywords.coreCompetencies?.length || 0) +
+      (keywords.softSkills?.length || 0) +
+      (keywords.responsibilityKeywords?.length || 0) +
+      (keywords.requirementKeywords?.length || 0) +
+      (keywords.methodologies?.length || 0) +
+      (keywords.industryKeywords?.length || 0) +
+      (keywords.senioritySignals?.length || 0) +
+      (keywords.miscKeywords?.length || 0)
     );
   }
 
   /**
-   * Flatten keywords with category information
+   * Flatten keywords with category information (with defensive checks for undefined arrays)
    */
   private flattenKeywords(keywords: ATSAgentOutput): { keyword: string; category: string }[] {
     return [
-      ...keywords.technicalSkills.map((k) => ({ keyword: k, category: 'technical' })),
-      ...keywords.softSkills.map((k) => ({ keyword: k, category: 'soft' })),
-      ...keywords.responsibilityKeywords.map((k) => ({ keyword: k, category: 'responsibility' })),
-      ...keywords.requirementKeywords.map((k) => ({ keyword: k, category: 'requirement' })),
-      ...keywords.toolsAndTechnologies.map((k) => ({ keyword: k, category: 'tool' })),
-      ...keywords.industryKeywords.map((k) => ({ keyword: k, category: 'industry' })),
-      ...keywords.senioritySignals.map((k) => ({ keyword: k, category: 'seniority' })),
-      ...keywords.miscKeywords.map((k) => ({ keyword: k, category: 'misc' })),
+      ...(keywords.coreCompetencies || []).map((k) => ({ keyword: k, category: 'core' })),
+      ...(keywords.softSkills || []).map((k) => ({ keyword: k, category: 'soft' })),
+      ...(keywords.responsibilityKeywords || []).map((k) => ({
+        keyword: k,
+        category: 'responsibility',
+      })),
+      ...(keywords.requirementKeywords || []).map((k) => ({ keyword: k, category: 'requirement' })),
+      ...(keywords.methodologies || []).map((k) => ({ keyword: k, category: 'methodology' })),
+      ...(keywords.industryKeywords || []).map((k) => ({ keyword: k, category: 'industry' })),
+      ...(keywords.senioritySignals || []).map((k) => ({ keyword: k, category: 'seniority' })),
+      ...(keywords.miscKeywords || []).map((k) => ({ keyword: k, category: 'misc' })),
     ];
   }
 
@@ -450,11 +463,11 @@ export class KeywordsService {
   /**
    * Map category to main category for statistics
    */
-  private mapToMainCategory(category: string): 'technical' | 'soft' | 'experience' | 'other' {
+  private mapToMainCategory(category: string): 'core' | 'soft' | 'experience' | 'other' {
     switch (category) {
-      case 'technical':
-      case 'tool':
-        return 'technical';
+      case 'core':
+      case 'methodology':
+        return 'core';
       case 'soft':
         return 'soft';
       case 'seniority':
@@ -470,18 +483,11 @@ export class KeywordsService {
    */
   private mapToLegacyCategory(
     category: string,
-  ):
-    | 'technical'
-    | 'soft'
-    | 'experience'
-    | 'industry'
-    | 'methodology'
-    | 'education'
-    | 'certification' {
+  ): 'core' | 'soft' | 'experience' | 'industry' | 'methodology' | 'education' | 'certification' {
     switch (category) {
-      case 'technical':
-      case 'tool':
-        return 'technical';
+      case 'core':
+      case 'methodology':
+        return 'core';
       case 'soft':
         return 'soft';
       case 'seniority':
@@ -491,7 +497,7 @@ export class KeywordsService {
       case 'requirement':
         return 'education';
       default:
-        return 'technical';
+        return 'core';
     }
   }
 
@@ -511,14 +517,14 @@ export class KeywordsService {
   }
 
   /**
-   * Calculate weighted ATS score based on category importance
-   * Weights: Hard Skills (40%), Soft Skills (20%), Experience (30%), Other/Certificates (10%)
+   * Calculate weighted match percentage based on category importance
+   * Weights: Core Competencies (40%), Soft Skills (20%), Experience (30%), Other/Certificates (10%)
    */
   private calculateWeightedScore(
     categoryStats: Record<string, { matched: number; total: number }>,
   ): number {
     const weights = {
-      technical: 0.4, // Hard Skills - 40%
+      core: 0.4, // Core Competencies - 40%
       soft: 0.2, // Soft Skills - 20%
       experience: 0.3, // Experience - 30%
       other: 0.1, // Certificates, Education, etc. - 10%
@@ -547,7 +553,7 @@ export class KeywordsService {
   }
 
   /**
-   * Generate improvement suggestions
+   * Generate improvement suggestions (German, soft recommendations)
    */
   private generateSuggestions(
     missingKeywords: KeywordMatchDto[],
@@ -555,61 +561,75 @@ export class KeywordsService {
   ): string[] {
     const suggestions: string[] = [];
 
-    // Technical skill suggestions
-    const missingTechnical = missingKeywords.filter((k) => k.category === 'technical').slice(0, 3);
-    if (missingTechnical.length > 0) {
-      const skills = missingTechnical.map((k) => `'${k.keyword}'`).join(', ');
-      suggestions.push(`Add ${skills} to your skills if you have experience with them`);
+    // Core competency suggestions
+    const missingCore = missingKeywords.filter((k) => k.category === 'core').slice(0, 3);
+    if (missingCore.length > 0) {
+      const skills = missingCore.map((k) => k.keyword).join(', ');
+      suggestions.push(`Relevante Kompetenzen könnten ergänzt werden: ${skills}`);
     }
 
     // Low category match suggestions
     if (
-      categoryStats.technical.total > 0 &&
-      categoryStats.technical.matched / categoryStats.technical.total < 0.5
+      categoryStats.core.total > 0 &&
+      categoryStats.core.matched / categoryStats.core.total < 0.5
     ) {
-      suggestions.push('Consider highlighting more technical skills in your profile');
+      suggestions.push('Eventuell könnten weitere Fachkompetenzen im Profil hervorgehoben werden');
     }
 
     if (
       categoryStats.soft.total > 0 &&
       categoryStats.soft.matched / categoryStats.soft.total < 0.5
     ) {
-      suggestions.push('Add more soft skills to your profile summary or experience descriptions');
+      suggestions.push(
+        'Ggf. könnten mehr Soft Skills in der Zusammenfassung oder Berufserfahrung genannt werden',
+      );
+    }
+
+    if (
+      categoryStats.experience.total > 0 &&
+      categoryStats.experience.matched / categoryStats.experience.total < 0.3
+    ) {
+      suggestions.push('Die Berufserfahrung könnte detaillierter beschrieben werden');
     }
 
     return suggestions.slice(0, 5);
   }
 
   /**
-   * Identify profile strengths
+   * Identify profile strengths (German)
    */
   private identifyStrengths(matchedKeywords: KeywordMatchDto[]): string[] {
     const strengths: string[] = [];
 
-    const technicalMatches = matchedKeywords.filter((k) => k.category === 'technical');
-    if (technicalMatches.length >= 3) {
-      const topSkills = technicalMatches
+    const coreMatches = matchedKeywords.filter((k) => k.category === 'core');
+    if (coreMatches.length >= 3) {
+      const topSkills = coreMatches
         .slice(0, 3)
         .map((k) => k.keyword)
         .join(', ');
-      strengths.push(`Strong technical match for ${topSkills}`);
+      strengths.push(`Gute Übereinstimmung bei: ${topSkills}`);
     }
 
     const expMatches = matchedKeywords.filter((k) => k.category === 'experience');
     if (expMatches.length > 0) {
-      strengths.push('Experience level aligns with job requirements');
+      strengths.push('Berufserfahrung entspricht den Anforderungen');
     }
 
     const highConfidence = matchedKeywords.filter((k) => k.confidence >= 0.9);
     if (highConfidence.length >= 2) {
-      strengths.push('Multiple keywords found in relevant sections');
+      strengths.push('Mehrere Keywords in relevanten Abschnitten gefunden');
+    }
+
+    const softMatches = matchedKeywords.filter((k) => k.category === 'soft');
+    if (softMatches.length >= 2) {
+      strengths.push('Soft Skills gut repräsentiert');
     }
 
     return strengths.slice(0, 3);
   }
 
   /**
-   * Identify profile weaknesses
+   * Identify profile weaknesses (German, soft language)
    */
   private identifyWeaknesses(
     missingKeywords: KeywordMatchDto[],
@@ -618,18 +638,22 @@ export class KeywordsService {
     const weaknesses: string[] = [];
 
     const criticalMissing = missingKeywords.filter(
-      (k) => k.category === 'technical' && (k.frequency || 0) >= 2,
+      (k) => k.category === 'core' && (k.frequency || 0) >= 2,
     );
     if (criticalMissing.length > 0) {
       const skills = criticalMissing
         .slice(0, 2)
         .map((k) => k.keyword)
         .join(', ');
-      weaknesses.push(`Missing frequently mentioned skills: ${skills}`);
+      weaknesses.push(`Häufig genannte Qualifikationen nicht gefunden: ${skills}`);
     }
 
-    if (categoryStats.technical.total > 0 && categoryStats.technical.matched === 0) {
-      weaknesses.push('No technical skill matches found');
+    if (categoryStats.core.total > 0 && categoryStats.core.matched === 0) {
+      weaknesses.push('Keine Übereinstimmung bei Kernkompetenzen');
+    }
+
+    if (categoryStats.soft.total > 0 && categoryStats.soft.matched === 0) {
+      weaknesses.push('Soft Skills könnten stärker betont werden');
     }
 
     return weaknesses.slice(0, 3);

@@ -4,8 +4,8 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
  * ATS Agent extracted keywords response
  */
 export class ATSKeywordsResponseDto {
-  @ApiProperty({ description: 'Technical skills extracted', type: [String] })
-  technicalSkills: string[];
+  @ApiProperty({ description: 'Core competencies (domain-agnostic skills)', type: [String] })
+  coreCompetencies: string[];
 
   @ApiProperty({ description: 'Soft skills extracted', type: [String] })
   softSkills: string[];
@@ -16,8 +16,8 @@ export class ATSKeywordsResponseDto {
   @ApiProperty({ description: 'Requirement keywords extracted', type: [String] })
   requirementKeywords: string[];
 
-  @ApiProperty({ description: 'Tools and technologies extracted', type: [String] })
-  toolsAndTechnologies: string[];
+  @ApiProperty({ description: 'Methodologies, tools, and frameworks', type: [String] })
+  methodologies: string[];
 
   @ApiProperty({ description: 'Industry-specific keywords', type: [String] })
   industryKeywords: string[];
@@ -39,11 +39,11 @@ export class KeywordMatchDetailDto {
   @ApiProperty({
     description: 'Category of the keyword',
     enum: [
-      'technical',
+      'core',
       'soft',
       'responsibility',
       'requirement',
-      'tool',
+      'methodology',
       'industry',
       'seniority',
       'misc',
@@ -68,8 +68,8 @@ export class KeywordMatchDetailDto {
  * Category score breakdown
  */
 export class CategoryScoreDto {
-  @ApiProperty({ description: 'Technical skills match percentage' })
-  technical: number;
+  @ApiProperty({ description: 'Core competencies match percentage' })
+  core: number;
 
   @ApiProperty({ description: 'Soft skills match percentage' })
   soft: number;

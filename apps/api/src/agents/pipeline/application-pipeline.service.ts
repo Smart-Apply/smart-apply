@@ -211,14 +211,14 @@ export class ApplicationPipelineService {
     coverLetter: CLAgentOutput,
   ): PipelineResult['matchAnalysis'] {
     // Count total keywords by category
-    const totalTechnical = keywords.technicalSkills.length + keywords.toolsAndTechnologies.length;
+    const totalTechnical = keywords.coreCompetencies.length + keywords.methodologies.length;
     const totalSoft = keywords.softSkills.length;
     const totalExperience = keywords.senioritySignals.length + keywords.requirementKeywords.length;
     const totalIndustry = keywords.industryKeywords.length;
 
     // Count matched keywords from CV
     const matchedTechnical = cv.keywordMatches.filter(
-      (k) => k.found && (k.category === 'technical' || k.category === 'tool'),
+      (k) => k.found && (k.category === 'core' || k.category === 'methodology'),
     ).length;
     const matchedSoft = cv.keywordMatches.filter((k) => k.found && k.category === 'soft').length;
     const matchedExperience = cv.keywordMatches.filter(
@@ -252,30 +252,30 @@ export class ApplicationPipelineService {
     const weaknesses: string[] = [];
 
     if (technicalScore >= 70) {
-      strengths.push('Strong technical skill alignment');
+      strengths.push('Gute Übereinstimmung bei Kernkompetenzen');
     } else if (technicalScore < 50) {
-      const missingTech = keywords.technicalSkills
+      const missingTech = keywords.coreCompetencies
         .filter((k) => !cv.keywordMatches.some((m) => m.keyword === k && m.found))
         .slice(0, 3);
       if (missingTech.length > 0) {
-        suggestions.push(`Consider adding ${missingTech.join(', ')} to your profile`);
-        weaknesses.push('Missing key technical skills');
+        suggestions.push(`Relevante Qualifikationen könnten ergänzt werden: ${missingTech.join(', ')}`);
+        weaknesses.push('Einige Kernkompetenzen nicht gefunden');
       }
     }
 
     if (softScore >= 70) {
-      strengths.push('Good soft skills match');
+      strengths.push('Soft Skills gut repräsentiert');
     } else if (softScore < 50 && totalSoft > 0) {
-      suggestions.push('Highlight more soft skills in your experience descriptions');
-      weaknesses.push('Soft skills could be better emphasized');
+      suggestions.push('Ggf. könnten mehr Soft Skills in der Berufserfahrung hervorgehoben werden');
+      weaknesses.push('Soft Skills könnten stärker betont werden');
     }
 
     if (cv.matchScore >= 75) {
-      strengths.push('Profile well-aligned with job requirements');
+      strengths.push('Profil passt gut zur Stellenausschreibung');
     }
 
     if (coverLetter.keyHighlights.length >= 3) {
-      strengths.push('Cover letter effectively highlights your qualifications');
+      strengths.push('Anschreiben hebt Qualifikationen gut hervor');
     }
 
     return {
@@ -323,11 +323,11 @@ export class ApplicationPipelineService {
    */
   private countKeywords(keywords: ATSAgentOutput): number {
     return (
-      keywords.technicalSkills.length +
+      keywords.coreCompetencies.length +
       keywords.softSkills.length +
       keywords.responsibilityKeywords.length +
       keywords.requirementKeywords.length +
-      keywords.toolsAndTechnologies.length +
+      keywords.methodologies.length +
       keywords.industryKeywords.length +
       keywords.senioritySignals.length +
       keywords.miscKeywords.length

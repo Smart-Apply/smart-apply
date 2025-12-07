@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { KeywordsService } from './keywords.service';
 import { PrismaModule } from '../prisma/prisma.module';
-import { AgentsModule } from '../agents/agents.module';
+import { LLMModule } from '../llm/llm.module';
 
 @Module({
-  imports: [PrismaModule, AgentsModule],
+  imports: [PrismaModule, LLMModule],
   providers: [KeywordsService],
   exports: [KeywordsService],
 })

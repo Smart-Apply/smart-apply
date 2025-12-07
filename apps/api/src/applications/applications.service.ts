@@ -251,21 +251,23 @@ export class ApplicationsService {
           skills: (category.skills || []).map((skill) => skill.trim()).filter(Boolean),
         }))
         .filter((category) => category.type && category.skills.length),
-      experiences: (resume.experiences || []).map((experience) => ({
-        title: experience.title.trim(),
-        company: experience.company.trim(),
-        location: trim(experience.location),
-        dateRange: experience.dateRange.trim(),
-        description: trim(experience.description),
-        achievements: (experience.achievements || []).map((item) => item.trim()).filter(Boolean),
-      })),
-      projects: (resume.projects || []).map((project) => ({
+      experiences: (resume.experiences || []).map(
+        ({ id: _id, startDate: _startDate, endDate: _endDate, ...experience }) => ({
+          title: experience.title.trim(),
+          company: experience.company.trim(),
+          location: trim(experience.location),
+          dateRange: experience.dateRange.trim(),
+          description: trim(experience.description),
+          achievements: (experience.achievements || []).map((item) => item.trim()).filter(Boolean),
+        }),
+      ),
+      projects: (resume.projects || []).map(({ id: _id, ...project }) => ({
         name: project.name.trim(),
         description: trim(project.description),
         date: trim(project.date),
         highlights: (project.highlights || []).map((item) => item.trim()).filter(Boolean),
       })),
-      education: (resume.education || []).map((edu) => ({
+      education: (resume.education || []).map(({ id: _id, ...edu }) => ({
         degree: edu.degree.trim(),
         institution: edu.institution.trim(),
         year: edu.year.trim(),
@@ -273,7 +275,7 @@ export class ApplicationsService {
         gpa: trim(edu.gpa),
         description: trim(edu.description),
       })),
-      certifications: (resume.certifications || []).map((cert) => ({
+      certifications: (resume.certifications || []).map(({ id: _id, ...cert }) => ({
         name: cert.name.trim(),
         issuer: cert.issuer.trim(),
         date: trim(cert.date),
@@ -481,10 +483,10 @@ Summary: ${resume.summary || 'Not provided'}
       }
     };
 
-    // Check all keyword categories from ATSAgentOutput
-    keywords.technicalSkills.forEach((k) => checkKeyword(k, 'technical'));
+    // Check all keyword categories from ATSAgentOutput (using domain-neutral names)
+    keywords.coreCompetencies.forEach((k) => checkKeyword(k, 'core'));
     keywords.softSkills.forEach((k) => checkKeyword(k, 'soft'));
-    keywords.toolsAndTechnologies.forEach((k) => checkKeyword(k, 'tool'));
+    keywords.methodologies.forEach((k) => checkKeyword(k, 'methodology'));
     keywords.industryKeywords.forEach((k) => checkKeyword(k, 'industry'));
     keywords.senioritySignals.forEach((k) => checkKeyword(k, 'seniority'));
     keywords.requirementKeywords.forEach((k) => checkKeyword(k, 'requirement'));
@@ -972,20 +974,38 @@ Summary: ${resume.summary || 'Not provided'}
 
   /**
    * Convert new atsKeywords format (from single-LLM pipeline) to old ATSAgentOutput format
-   * New format (SIMPLIFIED): { hard_skills: [{keyword, source, priority}], soft_skills: [...] }
-   * Old format: { technicalSkills: [], softSkills: [], toolsAndTechnologies: [], ... }
-   * IMPORTANT: Only populate ONE field to avoid duplicates in matchKeywords()
+   * New format (SIMPLIFIED): { hard_skills: [{keyword, source, priority}] }
+   * Old format: { coreCompetencies: [], softSkills: [], methodologies: [], ... }
+   * IMPORTANT: Preserve metadata (keyword, source, priority) for proper matching
+   * Note: Only hard_skills are extracted now, soft_skills removed
    */
   private convertAtsKeywordsToOldFormat(atsKeywords: any): ATSAgentOutput {
-    const hardSkills = (atsKeywords.hard_skills || []).map((kw: any) => kw.keyword);
-    const softSkills = (atsKeywords.soft_skills || []).map((kw: any) => kw.keyword);
+    this.logger.debug(
+      `Converting ATS keywords to old format. Input keys: ${Object.keys(atsKeywords).join(', ')}`,
+    );
+
+    // Preserve full keyword objects with metadata (source, priority)
+    const hardSkills = (atsKeywords.hard_skills || []).map((kw: any) => {
+      if (typeof kw === 'string') {
+        return { keyword: kw, source: 'job', priority: 2 };
+      }
+      return kw; // Already has { keyword, source, priority }
+    });
+
+    this.logger.debug(`Converted: ${hardSkills.length} hard skills`);
+    this.logger.debug(
+      `Hard skills: ${hardSkills
+        .slice(0, 5)
+        .map((k) => k.keyword)
+        .join(', ')}${hardSkills.length > 5 ? '...' : ''}`,
+    );
 
     return {
-      technicalSkills: hardSkills, // All technical keywords go here ONLY
-      softSkills: softSkills, // Soft skills (usually empty)
+      coreCompetencies: hardSkills, // All hard skills go here with metadata
+      softSkills: [], // No longer extracting soft skills
       responsibilityKeywords: [], // Empty to avoid duplicates
       requirementKeywords: [], // Empty to avoid duplicates
-      toolsAndTechnologies: [], // Empty to avoid duplicates
+      methodologies: [], // Empty to avoid duplicates
       industryKeywords: [], // Empty to avoid duplicates
       senioritySignals: [], // Empty to avoid duplicates
       miscKeywords: [], // Empty to avoid duplicates
@@ -996,7 +1016,7 @@ Summary: ${resume.summary || 'Not provided'}
    * Deterministically match extracted keywords against profile data
    * Returns keywords with "source" field: "job" (missing) or "both" (matched)
    * Also deduplicates keywords (case-insensitive)
-   * SIMPLIFIED: Only 2 categories now: hard_skills and soft_skills
+   * SIMPLIFIED: Only hard_skills now (soft skills removed)
    */
   private matchKeywordsAgainstProfile(extractedKeywords: any, profile: ProfileWithRelations): any {
     const matchKeyword = (kw: any): any => {
@@ -1054,35 +1074,29 @@ Summary: ${resume.summary || 'Not provided'}
       return Array.from(seen.values());
     };
 
-    // Match keywords against profile
+    // Match keywords against profile (only hard_skills now)
     const hard_skills = (extractedKeywords.hard_skills || []).map(matchKeyword);
-    const soft_skills = (extractedKeywords.soft_skills || []).map(matchKeyword);
 
-    this.logger.debug(
-      `Before deduplication: ${hard_skills.length} hard_skills, ${soft_skills.length} soft_skills`,
-    );
+    this.logger.debug(`Before deduplication: ${hard_skills.length} hard_skills`);
     this.logger.debug(`Hard skills: ${JSON.stringify(hard_skills.map((k) => k.keyword))}`);
 
-    // Deduplicate within each category (LLM might return duplicates)
+    // Deduplicate (LLM might return duplicates)
     const deduplicatedHard = deduplicateKeywords(hard_skills);
-    const deduplicatedSoft = deduplicateKeywords(soft_skills);
 
-    this.logger.debug(
-      `After deduplication: ${deduplicatedHard.length} hard_skills, ${deduplicatedSoft.length} soft_skills`,
-    );
+    this.logger.debug(`After deduplication: ${deduplicatedHard.length} hard_skills`);
 
     return {
       hard_skills: deduplicatedHard,
-      soft_skills: deduplicatedSoft,
+      soft_skills: [], // No longer extracting soft skills
     };
   }
 
   /**
    * Count how many keywords are matched in profile
-   * SIMPLIFIED: Only 2 categories now: hard_skills and soft_skills
+   * SIMPLIFIED: Only hard_skills now (soft skills removed)
    */
   private countMatchedKeywords(keywords: any): number {
-    const allKeywords = [...(keywords.hard_skills || []), ...(keywords.soft_skills || [])];
+    const allKeywords = keywords.hard_skills || [];
     return allKeywords.filter((kw) => kw.source === 'both').length;
   }
 
@@ -1867,7 +1881,9 @@ Summary: ${resume.summary || 'Not provided'}
   }
 
   /**
-   * Analyze keywords for an application using ATS Agent
+   * Analyze keywords for an application
+   * SMART: Uses cached keywords from atsKeywords field if available
+   * Only re-extracts from job posting if no cached keywords exist
    */
   async analyzeKeywords(
     userId: string,
@@ -1888,15 +1904,28 @@ Summary: ${resume.summary || 'Not provided'}
 
     const jobPosting = application.jobPosting;
 
-    // Extract keywords using ATS Agent (simplified with fullText)
-    const keywords = await this.keywordsService.extractKeywords({
-      title: jobPosting.title,
-      company: jobPosting.company,
-      location: jobPosting.location || undefined,
-      language: jobPosting.language || undefined,
-      fullText: jobPosting.fullText,
-      rawText: jobPosting.rawText || undefined,
-    });
+    // SMART: Check if we have cached keywords from single-LLM pipeline
+    let keywords: any;
+    if (application.atsKeywords) {
+      this.logger.log(
+        `Using cached keywords from atsKeywords for application ${applicationId}, re-matching against updated resume`,
+      );
+      // Convert new format to old format for matching
+      keywords = this.convertAtsKeywordsToOldFormat(application.atsKeywords as any);
+    } else {
+      // No cached keywords - extract from job posting using LLM
+      this.logger.log(
+        `No cached keywords found for application ${applicationId}, extracting from job posting`,
+      );
+      keywords = await this.keywordsService.extractKeywords({
+        title: jobPosting.title,
+        company: jobPosting.company,
+        location: jobPosting.location || undefined,
+        language: jobPosting.language || undefined,
+        fullText: jobPosting.fullText,
+        rawText: jobPosting.rawText || undefined,
+      });
+    }
 
     // Extract keywords from application's resume (not profile!)
     // This allows ATS score to reflect edits made in the application
@@ -2035,6 +2064,9 @@ Summary: ${resume.summary || 'Not provided'}
       if (resume.skillCategories && Array.isArray(resume.skillCategories)) {
         resume.skillCategories.forEach((category: { type?: string; skills?: string[] }) => {
           if (category.skills && Array.isArray(category.skills)) {
+            this.logger.debug(
+              `extractResumeKeywords: Category "${category.type}" has ${category.skills.length} skills: ${category.skills.join(', ')}`,
+            );
             category.skills.forEach((skill: string) => {
               // Add full skill name (e.g., "React.js", "Node.js", "C++")
               addKeyword(skill);
@@ -2048,11 +2080,17 @@ Summary: ${resume.summary || 'Not provided'}
         });
       }
 
-      // Experience titles and achievements
+      // Experience titles, descriptions, and achievements
       if (resume.experiences && Array.isArray(resume.experiences)) {
         resume.experiences.forEach(
-          (exp: { title?: string; company?: string; achievements?: string[] }) => {
+          (exp: {
+            title?: string;
+            company?: string;
+            description?: string;
+            achievements?: string[];
+          }) => {
             if (exp.title) extractWords(exp.title);
+            if (exp.description) extractWords(exp.description);
             if (exp.achievements && Array.isArray(exp.achievements)) {
               exp.achievements.forEach((achievement: string) => extractWords(achievement));
             }
@@ -2073,19 +2111,23 @@ Summary: ${resume.summary || 'Not provided'}
         );
       }
 
-      // Certifications
+      // Certifications (name and issuer are both important for ATS)
       if (resume.certifications && Array.isArray(resume.certifications)) {
         resume.certifications.forEach((cert: { name?: string; issuer?: string }) => {
           if (cert.name) extractWords(cert.name);
+          if (cert.issuer) extractWords(cert.issuer); // Include issuer (e.g., "Microsoft", "AWS")
         });
       }
 
-      // Education
+      // Education (degree, field of study, and description)
       if (resume.education && Array.isArray(resume.education)) {
-        resume.education.forEach((edu: { degree?: string; fieldOfStudy?: string }) => {
-          if (edu.degree) extractWords(edu.degree);
-          if (edu.fieldOfStudy) extractWords(edu.fieldOfStudy);
-        });
+        resume.education.forEach(
+          (edu: { degree?: string; fieldOfStudy?: string; description?: string }) => {
+            if (edu.degree) extractWords(edu.degree);
+            if (edu.fieldOfStudy) extractWords(edu.fieldOfStudy);
+            if (edu.description) extractWords(edu.description); // Include education description
+          },
+        );
       }
 
       // Languages
@@ -2109,6 +2151,7 @@ Summary: ${resume.summary || 'Not provided'}
 
   /**
    * Match extracted keywords against profile
+   * Handles both string[] (old format) and {keyword, source}[] (new format with metadata)
    */
   private matchKeywords(
     keywords: any,
@@ -2117,40 +2160,70 @@ Summary: ${resume.summary || 'Not provided'}
     const matched: any[] = [];
     const missing: any[] = [];
 
-    const checkKeyword = (keyword: string, category: string) => {
-      const normalized = keyword.toLowerCase().trim();
+    const checkKeyword = (kwInput: string | any, category: string) => {
+      // Handle both string and object formats
+      let keywordText: string;
+      let precomputedSource: string | undefined;
 
-      // Strategy 1: Exact match (case-insensitive)
-      let found = profileKeywords.has(normalized);
-      let confidence = 1.0;
-
-      // Strategy 2: Partial match with word boundaries (e.g., "React" in "React.js")
-      if (!found) {
-        const wordPattern = new RegExp(`\\b${this.escapeRegex(normalized)}\\b`, 'i');
-        found = [...profileKeywords].some((pk) => wordPattern.test(pk));
-        confidence = 0.9;
+      if (typeof kwInput === 'string') {
+        keywordText = kwInput;
+        precomputedSource = undefined;
+      } else {
+        keywordText = kwInput.keyword;
+        precomputedSource = kwInput.source; // 'job', 'profile', or 'both'
       }
 
-      // Strategy 3: Fuzzy match for common variations (e.g., "TypeScript" vs "Typescript")
-      if (!found) {
-        const withoutSpaces = normalized.replace(/[\s\-_.]/g, '');
-        found = [...profileKeywords].some((pk) => {
-          const pkNormalized = pk.toLowerCase().replace(/[\s\-_.]/g, '');
-          return pkNormalized === withoutSpaces;
-        });
-        confidence = 0.85;
-      }
+      const normalized = keywordText.toLowerCase().trim();
 
-      // Strategy 4: Substring match (only if keyword is >4 chars to avoid false positives)
-      if (!found && normalized.length > 4) {
-        found = [...profileKeywords].some(
-          (pk) => pk.includes(normalized) || normalized.includes(pk),
-        );
-        confidence = 0.7;
+      // If we have precomputed source from matchKeywordsAgainstProfile, use it
+      let found: boolean;
+      let confidence: number;
+
+      if (precomputedSource === 'both') {
+        // Keyword was already matched against profile during generation
+        found = true;
+        confidence = 1.0;
+      } else if (precomputedSource === 'job') {
+        // Keyword only exists in job posting, not in profile
+        found = false;
+        confidence = 0;
+      } else {
+        // Legacy path: compute match dynamically
+        // Strategy 1: Exact match (case-insensitive)
+        found = profileKeywords.has(normalized);
+        confidence = 1.0;
+
+        // Strategy 2: Partial match with word boundaries (e.g., "React" in "React.js")
+        if (!found) {
+          const wordPattern = new RegExp(`\\b${this.escapeRegex(normalized)}\\b`, 'i');
+          found = [...profileKeywords].some((pk) => wordPattern.test(pk));
+          confidence = 0.9;
+        }
+
+        // Strategy 3: Fuzzy match for common variations (e.g., "TypeScript" vs "Typescript")
+        if (!found) {
+          const withoutSpaces = normalized.replace(/[\s\-_.]/g, '');
+          found = [...profileKeywords].some((pk) => {
+            const pkNormalized = pk.toLowerCase().replace(/[\s\-_.]/g, '');
+            return pkNormalized === withoutSpaces;
+          });
+          confidence = 0.85;
+        }
+
+        // Strategy 4: Substring match (avoid false positives with very short keywords)
+        // Check if either keyword contains the other (e.g., "C++" matches "C++17/20")
+        if (!found && (normalized.length > 2 || [...profileKeywords].some((pk) => pk.length > 2))) {
+          found = [...profileKeywords].some((pk) => {
+            // Check bidirectional: job keyword contains resume keyword OR vice versa
+            // e.g., "c++17/20" contains "c++" OR "c++" is in "c++17/20"
+            return pk.includes(normalized) || normalized.includes(pk);
+          });
+          confidence = 0.7;
+        }
       }
 
       const match = {
-        keyword,
+        keyword: keywordText,
         category,
         found,
         confidence: found ? confidence : 0,
@@ -2164,13 +2237,19 @@ Summary: ${resume.summary || 'Not provided'}
       }
     };
 
-    // Check all keyword categories
-    keywords.technicalSkills?.forEach((k: string) => checkKeyword(k, 'technical'));
-    keywords.softSkills?.forEach((k: string) => checkKeyword(k, 'soft'));
-    keywords.toolsAndTechnologies?.forEach((k: string) => checkKeyword(k, 'tool'));
-    keywords.industryKeywords?.forEach((k: string) => checkKeyword(k, 'industry'));
-    keywords.senioritySignals?.forEach((k: string) => checkKeyword(k, 'seniority'));
-    keywords.requirementKeywords?.forEach((k: string) => checkKeyword(k, 'requirement'));
+    // Check all keyword categories (support both old and new field names)
+    // OLD format: technicalSkills, toolsAndTechnologies, etc.
+    // NEW format: coreCompetencies, softSkills
+    (keywords.technicalSkills || keywords.coreCompetencies || []).forEach((k: any) =>
+      checkKeyword(k, 'technical'),
+    );
+    keywords.softSkills?.forEach((k: any) => checkKeyword(k, 'soft'));
+    (keywords.toolsAndTechnologies || []).forEach((k: any) => checkKeyword(k, 'tool'));
+    (keywords.industryKeywords || []).forEach((k: any) => checkKeyword(k, 'industry'));
+    (keywords.senioritySignals || []).forEach((k: any) => checkKeyword(k, 'seniority'));
+    (keywords.requirementKeywords || []).forEach((k: any) => checkKeyword(k, 'requirement'));
+    (keywords.responsibilityKeywords || []).forEach((k: any) => checkKeyword(k, 'responsibility'));
+    (keywords.methodologies || []).forEach((k: any) => checkKeyword(k, 'methodology'));
 
     return { matchedKeywords: matched, missingKeywords: missing };
   }
@@ -2190,17 +2269,24 @@ Summary: ${resume.summary || 'Not provided'}
     missingKeywords: any[],
     keywords: any,
   ): any {
+    // Support both old and new field names for counting totals
+    // Only count hard skills (technical) - soft skills removed
     const totalTechnical =
-      (keywords.technicalSkills?.length || 0) + (keywords.toolsAndTechnologies?.length || 0);
-    const totalSoft = keywords.softSkills?.length || 0;
+      (keywords.technicalSkills?.length || 0) +
+      (keywords.toolsAndTechnologies?.length || 0) +
+      (keywords.coreCompetencies?.length || 0); // NEW format
     const totalExperience =
       (keywords.senioritySignals?.length || 0) + (keywords.requirementKeywords?.length || 0);
     const totalIndustry = keywords.industryKeywords?.length || 0;
 
+    // Count matched keywords by category (support both 'technical' and 'core')
     const matchedTechnical = matchedKeywords.filter(
-      (k) => k.category === 'technical' || k.category === 'tool',
+      (k) =>
+        k.category === 'core' ||
+        k.category === 'methodology' ||
+        k.category === 'technical' || // NEW format uses 'technical'
+        k.category === 'tool',
     ).length;
-    const matchedSoft = matchedKeywords.filter((k) => k.category === 'soft').length;
     const matchedExperience = matchedKeywords.filter(
       (k) => k.category === 'seniority' || k.category === 'requirement',
     ).length;
@@ -2208,51 +2294,52 @@ Summary: ${resume.summary || 'Not provided'}
 
     const technicalScore =
       totalTechnical > 0 ? Math.round((matchedTechnical / totalTechnical) * 100) : 0;
-    const softScore = totalSoft > 0 ? Math.round((matchedSoft / totalSoft) * 100) : 0;
     const experienceScore =
       totalExperience > 0 ? Math.round((matchedExperience / totalExperience) * 100) : 0;
     const industryScore =
       totalIndustry > 0 ? Math.round((matchedIndustry / totalIndustry) * 100) : 0;
 
-    // Weighted average
-    const weights = { technical: 0.4, soft: 0.2, experience: 0.25, industry: 0.15 };
-    const overallScore = Math.round(
-      technicalScore * weights.technical +
-        softScore * weights.soft +
-        experienceScore * weights.experience +
-        industryScore * weights.industry,
-    );
+    // Overall score is now 100% based on technical score (hard skills only)
+    // No more soft skills weighting
+    const overallScore = technicalScore;
 
     const suggestions: string[] = [];
     const strengths: string[] = [];
     const weaknesses: string[] = [];
 
     if (technicalScore >= 70) {
-      strengths.push('Strong technical skill alignment');
+      strengths.push('Gute Übereinstimmung bei Kernkompetenzen');
     } else if (technicalScore < 50) {
-      const missingTech = missingKeywords
-        .filter((k) => k.category === 'technical' || k.category === 'tool')
+      const missingCore = missingKeywords
+        .filter(
+          (k) =>
+            k.category === 'core' || k.category === 'methodology' || k.category === 'technical',
+        )
         .slice(0, 3)
         .map((k) => k.keyword);
-      if (missingTech.length > 0) {
-        suggestions.push(`Consider adding: ${missingTech.join(', ')}`);
-        weaknesses.push('Missing key technical skills');
+      if (missingCore.length > 0) {
+        suggestions.push(
+          `Relevante Qualifikationen könnten ergänzt werden: ${missingCore.join(', ')}`,
+        );
+        weaknesses.push('Einige Kernkompetenzen nicht gefunden');
       }
     }
 
-    if (softScore >= 70) {
-      strengths.push('Good soft skills match');
+    if (experienceScore >= 70) {
+      strengths.push('Berufserfahrung entspricht den Anforderungen');
     }
 
     if (overallScore >= 75) {
-      strengths.push('Profile well-aligned with job requirements');
+      strengths.push('Profil passt gut zur Stellenausschreibung');
+    } else if (overallScore < 50) {
+      suggestions.push('Das Profil könnte detaillierter auf die Stelle zugeschnitten werden');
     }
 
     return {
       overallScore,
       categoryScores: {
-        technical: technicalScore,
-        soft: softScore,
+        core: technicalScore,
+        soft: 0, // Soft skills no longer extracted
         experience: experienceScore,
         industry: industryScore,
       },

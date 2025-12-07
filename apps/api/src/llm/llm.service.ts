@@ -591,7 +591,7 @@ Geändertes Anschreiben:`;
 
     // Extract keywords by category
     const technicalKeywords = context.matchedKeywords
-      .filter((k) => k.category === 'technical' || k.category === 'tool')
+      .filter((k) => k.category === 'core' || k.category === 'methodology')
       .map((k) => k.keyword)
       .join(', ');
 
@@ -641,9 +641,9 @@ Geändertes Anschreiben:`;
       .map((k) => `- ${k.keyword} (${k.category})`)
       .join('\n');
 
-    // Priority keywords are matched technical skills and tools (most important for ATS)
+    // Priority keywords are matched core skills and methodologies (most important for ATS)
     const priorityKeywords = context.matchedKeywords
-      .filter((k) => k.category === 'technical' || k.category === 'tool')
+      .filter((k) => k.category === 'core' || k.category === 'methodology')
       .slice(0, 7)
       .map((k) => k.keyword)
       .join(', ');
@@ -695,7 +695,7 @@ export interface ResumeContext {
  */
 export interface KeywordMatch {
   keyword: string;
-  category: 'technical' | 'soft' | 'tool' | 'industry' | 'seniority' | 'requirement' | 'misc';
+  category: 'core' | 'soft' | 'methodology' | 'industry' | 'seniority' | 'requirement' | 'misc';
   found: boolean;
   confidence: number;
 }

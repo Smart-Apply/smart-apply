@@ -156,9 +156,23 @@ export class ATSKeywordAgent implements Agent<ATSAgentInput, ATSAgentOutput> {
 
       const parsed = JSON.parse(cleanedText);
 
+      // Backward compatibility: Support both old field names (technicalSkills, toolsAndTechnologies)
+      // and new field names (coreCompetencies, methodologies)
+      const coreCompetencies = Array.isArray(parsed.coreCompetencies)
+        ? parsed.coreCompetencies
+        : Array.isArray(parsed.technicalSkills)
+          ? parsed.technicalSkills
+          : [];
+
+      const methodologies = Array.isArray(parsed.methodologies)
+        ? parsed.methodologies
+        : Array.isArray(parsed.toolsAndTechnologies)
+          ? parsed.toolsAndTechnologies
+          : [];
+
       // Validate and return with defaults for any missing arrays
       return {
-        technicalSkills: Array.isArray(parsed.technicalSkills) ? parsed.technicalSkills : [],
+        coreCompetencies,
         softSkills: Array.isArray(parsed.softSkills) ? parsed.softSkills : [],
         responsibilityKeywords: Array.isArray(parsed.responsibilityKeywords)
           ? parsed.responsibilityKeywords
@@ -166,9 +180,7 @@ export class ATSKeywordAgent implements Agent<ATSAgentInput, ATSAgentOutput> {
         requirementKeywords: Array.isArray(parsed.requirementKeywords)
           ? parsed.requirementKeywords
           : [],
-        toolsAndTechnologies: Array.isArray(parsed.toolsAndTechnologies)
-          ? parsed.toolsAndTechnologies
-          : [],
+        methodologies,
         industryKeywords: Array.isArray(parsed.industryKeywords) ? parsed.industryKeywords : [],
         senioritySignals: Array.isArray(parsed.senioritySignals) ? parsed.senioritySignals : [],
         miscKeywords: Array.isArray(parsed.miscKeywords) ? parsed.miscKeywords : [],
@@ -184,11 +196,11 @@ export class ATSKeywordAgent implements Agent<ATSAgentInput, ATSAgentOutput> {
    */
   private countKeywords(keywords: ATSAgentOutput): number {
     return (
-      keywords.technicalSkills.length +
+      keywords.coreCompetencies.length +
       keywords.softSkills.length +
       keywords.responsibilityKeywords.length +
       keywords.requirementKeywords.length +
-      keywords.toolsAndTechnologies.length +
+      keywords.methodologies.length +
       keywords.industryKeywords.length +
       keywords.senioritySignals.length +
       keywords.miscKeywords.length

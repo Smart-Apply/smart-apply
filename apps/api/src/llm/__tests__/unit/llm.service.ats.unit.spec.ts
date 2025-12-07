@@ -32,13 +32,13 @@ describe('LLMService - ATS Methods', () => {
       jobDescription:
         'We are looking for a Senior Frontend Developer with React and TypeScript experience.',
       matchedKeywords: [
-        { keyword: 'React', category: 'technical', found: true, confidence: 0.95 },
-        { keyword: 'TypeScript', category: 'technical', found: true, confidence: 0.9 },
-        { keyword: 'Frontend', category: 'technical', found: true, confidence: 0.85 },
+        { keyword: 'React', category: 'core', found: true, confidence: 0.95 },
+        { keyword: 'TypeScript', category: 'core', found: true, confidence: 0.9 },
+        { keyword: 'Frontend', category: 'core', found: true, confidence: 0.85 },
       ],
       missingKeywords: [
-        { keyword: 'Vue.js', category: 'technical', found: false, confidence: 0 },
-        { keyword: 'GraphQL', category: 'tool', found: false, confidence: 0 },
+        { keyword: 'Vue.js', category: 'core', found: false, confidence: 0 },
+        { keyword: 'GraphQL', category: 'methodology', found: false, confidence: 0 },
       ],
     };
 
@@ -111,13 +111,13 @@ describe('LLMService - ATS Methods', () => {
       jobDescription:
         'Looking for an experienced Full Stack Developer with React and Node.js skills.',
       matchedKeywords: [
-        { keyword: 'React', category: 'technical', found: true, confidence: 0.95 },
-        { keyword: 'Node.js', category: 'technical', found: true, confidence: 0.9 },
-        { keyword: 'TypeScript', category: 'technical', found: true, confidence: 0.85 },
+        { keyword: 'React', category: 'core', found: true, confidence: 0.95 },
+        { keyword: 'Node.js', category: 'core', found: true, confidence: 0.9 },
+        { keyword: 'TypeScript', category: 'core', found: true, confidence: 0.85 },
       ],
       missingKeywords: [
-        { keyword: 'Docker', category: 'tool', found: false, confidence: 0 },
-        { keyword: 'AWS', category: 'tool', found: false, confidence: 0 },
+        { keyword: 'Docker', category: 'methodology', found: false, confidence: 0 },
+        { keyword: 'AWS', category: 'methodology', found: false, confidence: 0 },
       ],
     };
 

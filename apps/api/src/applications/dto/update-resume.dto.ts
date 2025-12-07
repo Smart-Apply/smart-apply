@@ -3,6 +3,11 @@ import { Type } from 'class-transformer';
 import { IsArray, IsOptional, IsString, ValidateNested } from 'class-validator';
 
 class SkillCategoryDto {
+  @ApiPropertyOptional({ example: 'skill-cat-123' })
+  @IsOptional()
+  @IsString()
+  id?: string;
+
   @ApiProperty({ example: 'Frameworks' })
   @IsString()
   type: string;
@@ -14,6 +19,11 @@ class SkillCategoryDto {
 }
 
 class ExperienceEntryDto {
+  @ApiPropertyOptional({ example: 'exp-123' })
+  @IsOptional()
+  @IsString()
+  id?: string;
+
   @ApiProperty({ example: 'Senior Software Engineer' })
   @IsString()
   title: string;
@@ -31,6 +41,16 @@ class ExperienceEntryDto {
   @IsString()
   dateRange: string;
 
+  @ApiPropertyOptional({ example: '2023-01-15' })
+  @IsOptional()
+  @IsString()
+  startDate?: string;
+
+  @ApiPropertyOptional({ example: '2024-12-31' })
+  @IsOptional()
+  @IsString()
+  endDate?: string;
+
   @ApiPropertyOptional({ example: 'Verantwortlich für die Entwicklung von Cloud-Lösungen...' })
   @IsOptional()
   @IsString()
@@ -44,6 +64,11 @@ class ExperienceEntryDto {
 }
 
 class ProjectEntryDto {
+  @ApiPropertyOptional({ example: 'proj-123' })
+  @IsOptional()
+  @IsString()
+  id?: string;
+
   @ApiProperty({ example: 'Automatisierter Lebenslauf-Generator' })
   @IsString()
   name: string;
@@ -66,6 +91,11 @@ class ProjectEntryDto {
 }
 
 class EducationEntryDto {
+  @ApiPropertyOptional({ example: 'edu-123' })
+  @IsOptional()
+  @IsString()
+  id?: string;
+
   @ApiProperty({ example: 'B.Sc. Wirtschaftsinformatik' })
   @IsString()
   degree: string;
@@ -95,6 +125,11 @@ class EducationEntryDto {
 }
 
 class CertificationEntryDto {
+  @ApiPropertyOptional({ example: 'cert-123' })
+  @IsOptional()
+  @IsString()
+  id?: string;
+
   @ApiProperty({ example: 'Microsoft Azure Architect Expert' })
   @IsString()
   name: string;

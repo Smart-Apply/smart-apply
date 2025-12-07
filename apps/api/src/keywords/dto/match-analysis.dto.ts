@@ -10,7 +10,7 @@ export class KeywordMatchDto {
   @ApiProperty({
     description: 'Category of the keyword',
     enum: [
-      'technical',
+      'core',
       'soft',
       'experience',
       'industry',
@@ -20,7 +20,7 @@ export class KeywordMatchDto {
     ],
   })
   category:
-    | 'technical'
+    | 'core'
     | 'soft'
     | 'experience'
     | 'industry'
@@ -74,7 +74,7 @@ export class MatchAnalysisResponseDto {
 
   @ApiProperty({ description: 'Breakdown of match by category' })
   categoryBreakdown: {
-    technical: { matched: number; total: number; percentage: number };
+    core: { matched: number; total: number; percentage: number };
     soft: { matched: number; total: number; percentage: number };
     experience: { matched: number; total: number; percentage: number };
     other: { matched: number; total: number; percentage: number };
@@ -85,8 +85,8 @@ export class MatchAnalysisResponseDto {
  * Extracted keywords from a job posting
  */
 export class ExtractedKeywordsDto {
-  @ApiProperty({ description: 'Technical skills extracted', type: [String] })
-  technical: string[];
+  @ApiProperty({ description: 'Core competencies extracted', type: [String] })
+  core: string[];
 
   @ApiProperty({ description: 'Soft skills extracted', type: [String] })
   soft: string[];

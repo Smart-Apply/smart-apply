@@ -34,11 +34,11 @@ export interface ATSAgentInput {
  * Extracted keywords from ATS Agent
  */
 export interface ATSAgentOutput {
-  technicalSkills: string[];
+  coreCompetencies: string[];      // Core skills (profession-specific)
   softSkills: string[];
   responsibilityKeywords: string[];
   requirementKeywords: string[];
-  toolsAndTechnologies: string[];
+  methodologies: string[];         // Methods, tools, frameworks
   industryKeywords: string[];
   senioritySignals: string[];
   miscKeywords: string[];
@@ -198,11 +198,11 @@ export interface SelectedEducation {
 export interface KeywordMatch {
   keyword: string;
   category:
-    | 'technical'
+    | 'core'
     | 'soft'
     | 'responsibility'
     | 'requirement'
-    | 'tool'
+    | 'methodology'
     | 'industry'
     | 'seniority'
     | 'misc';

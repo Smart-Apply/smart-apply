@@ -335,8 +335,8 @@ Return ONLY the JSON object.
 
     // Simple keyword matching for fallback
     const technicalKeywords = new Set([
-      ...keywords.technicalSkills.map((k) => k.toLowerCase()),
-      ...keywords.toolsAndTechnologies.map((k) => k.toLowerCase()),
+      ...keywords.coreCompetencies.map((k) => k.toLowerCase()),
+      ...keywords.methodologies.map((k) => k.toLowerCase()),
     ]);
 
     const matchedSkills = profile.skills.filter((s) => technicalKeywords.has(s.name.toLowerCase()));

@@ -27,17 +27,17 @@ interface ATSScoreSidebarProps {
 }
 
 const getScoreColor = (score: number): string => {
-  if (score >= 80) return 'text-green-600 dark:text-green-400';
-  if (score >= 60) return 'text-yellow-600 dark:text-yellow-400';
-  if (score >= 40) return 'text-orange-600 dark:text-orange-400';
-  return 'text-red-600 dark:text-red-400';
+  if (score >= 80) return 'text-[#16A34A]';  // success
+  if (score >= 60) return 'text-[#EAB308]';  // warning
+  if (score >= 40) return 'text-[#EAB308]';  // warning
+  return 'text-[#DC2626]';                   // error
 };
 
 const getScoreBg = (score: number): string => {
-  if (score >= 80) return 'bg-green-100 dark:bg-green-900/30';
-  if (score >= 60) return 'bg-yellow-100 dark:bg-yellow-900/30';
-  if (score >= 40) return 'bg-orange-100 dark:bg-orange-900/30';
-  return 'bg-red-100 dark:bg-red-900/30';
+  if (score >= 80) return 'bg-[#D1FADF]';  // successSoft
+  if (score >= 60) return 'bg-[#FEF3C7]';  // warningSoft
+  if (score >= 40) return 'bg-[#FEF3C7]';  // warningSoft
+  return 'bg-[#FEE2E2]';                   // errorSoft
 };
 
 interface KeywordChipProps {
@@ -51,8 +51,8 @@ function KeywordChip({ keyword }: KeywordChipProps) {
       className={cn(
         'text-xs py-0.5 px-1.5',
         keyword.found
-          ? 'border-green-300 bg-green-50 text-green-700 dark:border-green-700 dark:bg-green-950 dark:text-green-300'
-          : 'border-red-300 bg-red-50 text-red-700 dark:border-red-700 dark:bg-red-950 dark:text-red-300'
+          ? 'border-[#16A34A] bg-[#D1FADF] text-[#16A34A]'
+          : 'border-[#DC2626] bg-[#FEE2E2] text-[#DC2626]'
       )}
     >
       {keyword.found ? (
@@ -146,10 +146,10 @@ export function ATSScoreSidebar({
 
   const score = analysis.matchAnalysis.overallScore;
   const topMissing = analysis.missingKeywords
-    .filter((k) => k.category === 'technical' || k.category === 'tool')
+    .filter((k) => k.category === 'core' || k.category === 'methodology')
     .slice(0, 8);
   const otherMissing = analysis.missingKeywords
-    .filter((k) => k.category !== 'technical' && k.category !== 'tool')
+    .filter((k) => k.category !== 'core' && k.category !== 'methodology')
     .slice(0, 4);
 
   return (
@@ -184,14 +184,14 @@ export function ATSScoreSidebar({
 
         {/* Category Breakdown - Compact */}
         <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="flex items-center justify-between p-2 rounded bg-muted/50">
-            <span className="text-muted-foreground">Tech</span>
-            <span className={cn('font-medium', getScoreColor(analysis.matchAnalysis.categoryScores.technical))}>
-              {Math.round(analysis.matchAnalysis.categoryScores.technical)}%
+          <div className="flex items-center justify-between p-2 rounded bg-[#E5E9F2]">
+            <span className="text-[#6B6969]">Kern</span>
+            <span className={cn('font-medium', getScoreColor(analysis.matchAnalysis.categoryScores.core))}>
+              {Math.round(analysis.matchAnalysis.categoryScores.core)}%
             </span>
           </div>
-          <div className="flex items-center justify-between p-2 rounded bg-muted/50">
-            <span className="text-muted-foreground">Soft</span>
+          <div className="flex items-center justify-between p-2 rounded bg-[#E5E9F2]">
+            <span className="text-[#6B6969]">Soft</span>
             <span className={cn('font-medium', getScoreColor(analysis.matchAnalysis.categoryScores.soft))}>
               {Math.round(analysis.matchAnalysis.categoryScores.soft)}%
             </span>
@@ -245,17 +245,17 @@ export function ATSScoreSidebar({
 
         {/* Low Score Warning */}
         {score < 50 && (
-          <div className="text-xs p-2 rounded bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-300 flex items-start gap-2">
+          <div className="text-xs p-2 rounded bg-[#FEF3C7] text-[#EAB308] flex items-start gap-2">
             <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
             <span>
-              Niedriger Score. Ergänze die fehlenden Keywords in Skills oder Erfahrungen.
+              Ausbaufähiger Score. Ergänze die fehlenden Keywords in deinem Profil.
             </span>
           </div>
         )}
 
         {/* All Good Message */}
         {score >= 80 && (
-          <div className="text-xs p-2 rounded bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-300 flex items-start gap-2">
+          <div className="text-xs p-2 rounded bg-[#D1FADF] text-[#16A34A] flex items-start gap-2">
             <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 shrink-0" />
             <span>
               Ausgezeichnete Übereinstimmung! Dein Profil passt sehr gut.

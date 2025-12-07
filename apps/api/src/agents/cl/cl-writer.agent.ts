@@ -302,9 +302,9 @@ Return ONLY the JSON object.
           .join(', ')}`,
         `Motivated to join ${jobPosting.company}`,
       ],
-      keywordUsage: keywords.technicalSkills.slice(0, 5).map((k) => ({
+      keywordUsage: keywords.coreCompetencies.slice(0, 5).map((k) => ({
         keyword: k,
-        category: 'technical' as const,
+        category: 'core' as const,
         found: coverLetter.toLowerCase().includes(k.toLowerCase()),
         usedIn: ['cover-letter'] as const,
         confidence: 0.7,
