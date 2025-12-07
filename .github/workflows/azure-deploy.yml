@@ -148,9 +148,24 @@ jobs:
             --vault-name smartapply-dev-vault \
             --query value -o tsv)
           
-          # Install dependencies (including devDependencies for ts-node)
+          # Install dependencies (including devDependencies for TypeScript)
           cd apps/api
           npm ci --include=dev
+          
+          # Compile seed scripts to JavaScript
+          echo "Compiling seed scripts..."
+          npx tsc \
+            prisma/seed.ts \
+            prisma/seed-all.ts \
+            prisma/seed-multilingual-templates.ts \
+            --module commonjs \
+            --target ES2021 \
+            --outDir prisma/dist \
+            --moduleResolution node \
+            --esModuleInterop \
+            --skipLibCheck \
+            --resolveJsonModule \
+            --allowSyntheticDefaultImports
           
           # Run migrations
           echo "Running database migrations..."
