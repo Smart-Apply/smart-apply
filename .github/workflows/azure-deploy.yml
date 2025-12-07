@@ -140,7 +140,7 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Run Prisma migrations
+      - name: Run Prisma migrations and seed
         run: |
           # Get Database URL from Key Vault
           DATABASE_URL=$(az keyvault secret show \
@@ -153,7 +153,12 @@ jobs:
           npm ci
           
           # Run migrations
+          echo "Running database migrations..."
           DATABASE_URL=$DATABASE_URL npx prisma migrate deploy
+          
+          # Run seeds (templates + demo data)
+          echo "Seeding database..."
+          DATABASE_URL=$DATABASE_URL npx prisma db seed
         env:
           DATABASE_URL: '' # Will be set from Key Vault
 
