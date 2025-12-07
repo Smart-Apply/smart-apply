@@ -326,25 +326,25 @@ export interface ErrorResponse {
 // ============================================
 
 export interface ATSKeywords {
-  coreCompetencies: string[];     // Core skills relevant to profession
+  coreCompetencies: string[]; // Core skills relevant to profession
   softSkills: string[];
   responsibilityKeywords: string[];
   requirementKeywords: string[];
-  methodologies: string[];        // Methods, tools, frameworks
+  methodologies: string[]; // Methods, tools, frameworks
   industryKeywords: string[];
   senioritySignals: string[];
   miscKeywords: string[];
 }
 
 export type KeywordCategory =
-  | 'core'           // Core competencies (profession-specific skills)
-  | 'soft'           // Soft skills
+  | 'core' // Core competencies (profession-specific skills)
+  | 'soft' // Soft skills
   | 'responsibility' // Job responsibilities
-  | 'requirement'    // Job requirements
-  | 'methodology'    // Methods, tools, techniques
-  | 'industry'       // Industry/domain knowledge
-  | 'seniority'      // Experience level
-  | 'misc';          // Miscellaneous
+  | 'requirement' // Job requirements
+  | 'methodology' // Methods, tools, techniques
+  | 'industry' // Industry/domain knowledge
+  | 'seniority' // Experience level
+  | 'misc'; // Miscellaneous
 
 export interface KeywordMatch {
   keyword: string;
@@ -355,10 +355,10 @@ export interface KeywordMatch {
 }
 
 export interface CategoryScores {
-  core: number;        // Core competencies (hard skills only)
-  soft: number;        // Deprecated - no longer extracted (always 0)
-  experience: number;  // Professional experience
-  industry: number;    // Domain/sector knowledge
+  core: number; // Core competencies (hard skills only)
+  soft: number; // Deprecated - no longer extracted (always 0)
+  experience: number; // Professional experience
+  industry: number; // Domain/sector knowledge
 }
 
 export interface MatchAnalysis {
