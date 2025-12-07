@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
+// Next.js 16 requires "proxy" named export instead of "middleware"
+export function proxy(request: NextRequest) {
   const response = NextResponse.next();
   
   // Get API URL from environment variable (available at runtime in Container Apps)
@@ -34,7 +35,7 @@ export function middleware(request: NextRequest) {
   return response;
 }
 
-// Apply middleware to all routes
+// Apply proxy to all routes
 export const config = {
   matcher: '/:path*',
 };
