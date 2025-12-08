@@ -90,6 +90,10 @@ model Profile {
   // Languages
   languages     Language[]
   
+  // Cached ATS keywords (pre-extracted from profile for faster matching)
+  profileKeywords       Json?     // AtsKeywordsOutputDto format
+  lastKeywordsExtractedAt DateTime? // Cache invalidation timestamp
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

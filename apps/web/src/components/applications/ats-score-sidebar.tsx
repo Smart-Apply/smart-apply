@@ -87,7 +87,7 @@ export function ATSScoreSidebar({
   // Refresh analysis when refreshTrigger changes
   useEffect(() => {
     if (refreshTrigger && refreshTrigger > 0) {
-      refetch().then(() => {
+      refetch({ cancelRefetch: true }).then(() => {
         onAnalysisUpdate?.();
       });
     }

@@ -21,6 +21,8 @@ export type ProfileWithRelations = Profile & {
   education: Education[];
   certificates: Certificate[];
   languages: Language[];
+  profileKeywords?: any; // AtsKeywordsOutputDto cached keywords
+  lastKeywordsExtractedAt?: Date | null;
 };
 
 const DEFAULT_CATEGORY = 'Skills';

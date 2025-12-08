@@ -124,6 +124,7 @@ export function useUpdateApplicationResume(applicationId: string) {
     mutationFn: (resume: ResumeData) => api.applications.updateResume(applicationId, { resume }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['applications', applicationId] });
+      queryClient.invalidateQueries({ queryKey: ['applications', applicationId, 'keywords'] });
       toastSuccess('Lebenslauf gespeichert');
     },
     onError: (error: unknown) => {
@@ -192,7 +193,7 @@ export function useKeywordsAnalysis(applicationId: string) {
     queryKey: ['applications', applicationId, 'keywords'],
     queryFn: () => api.applications.getKeywordsAnalysis(applicationId),
     enabled: isAuthenticated && !!applicationId,
-    staleTime: 10 * 60 * 1000, // Keywords don't change often
+    staleTime: 30 * 1000, // 30 seconds - allow fresh refetch after resume changes
     gcTime: 30 * 60 * 1000,
     refetchOnWindowFocus: false,
   });

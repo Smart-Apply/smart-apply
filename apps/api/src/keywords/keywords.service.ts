@@ -57,6 +57,86 @@ export class KeywordsService {
   }
 
   /**
+   * Extract keywords from profile using LLM (pre-extraction for caching)
+   * Returns AtsKeywordsOutputDto format for direct storage in profileKeywords field
+   */
+  async extractAndCacheProfileKeywords(profile: ProfileData): Promise<any> {
+    this.logger.log(
+      `Extracting keywords from profile for: ${profile.firstName} ${profile.lastName}`,
+    );
+
+    try {
+      // Use LLM to extract keywords from profile data
+      const keywords = await this.llmService.callJson<any>('v1/profile-keywords.md', {
+        profile: {
+          summary: profile.summary,
+          skills: profile.skills,
+          experiences: profile.experiences?.map((exp) => ({
+            title: exp.title,
+            company: exp.company,
+            description: exp.description,
+            startDate: exp.startDate,
+            endDate: exp.endDate,
+          })),
+          education: profile.education?.map((edu) => ({
+            degree: edu.degree,
+            institution: edu.institution,
+            fieldOfStudy: edu.fieldOfStudy,
+          })),
+          certificates: profile.certificates?.map((cert) => ({
+            name: cert.name,
+            issuer: cert.issuer,
+          })),
+          projects: profile.projects?.map((proj) => ({
+            name: proj.name,
+            description: proj.description,
+            technologies: proj.technologies,
+          })),
+          languages: profile.languages,
+        },
+      });
+
+      // Ensure all required arrays exist and mark as 'profile' source
+      const normalizedKeywords = {
+        hard_skills: (keywords.hard_skills || []).map((k: any) => ({
+          ...k,
+          source: 'profile',
+        })),
+        tools_and_tech: (keywords.tools_and_tech || []).map((k: any) => ({
+          ...k,
+          source: 'profile',
+        })),
+        domains: (keywords.domains || []).map((k: any) => ({
+          ...k,
+          source: 'profile',
+        })),
+        methodologies: (keywords.methodologies || []).map((k: any) => ({
+          ...k,
+          source: 'profile',
+        })),
+      };
+
+      const totalKeywords =
+        (normalizedKeywords.hard_skills?.length || 0) +
+        (normalizedKeywords.tools_and_tech?.length || 0) +
+        (normalizedKeywords.domains?.length || 0) +
+        (normalizedKeywords.methodologies?.length || 0);
+
+      this.logger.log(`Extracted ${totalKeywords} profile keywords`);
+      return normalizedKeywords;
+    } catch (error) {
+      this.logger.error(`Failed to extract profile keywords: ${error.message}`, error.stack);
+      // Return empty keywords on failure
+      return {
+        hard_skills: [],
+        tools_and_tech: [],
+        domains: [],
+        methodologies: [],
+      };
+    }
+  }
+
+  /**
    * Convert ATSAgentOutput to legacy ExtractedKeywordsDto format
    * For backwards compatibility with existing code
    */

@@ -1,15 +1,19 @@
-import { Injectable, NotFoundException, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, NotFoundException, InternalServerErrorException, Logger } from '@nestjs/common';
 import { Request } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ProfileResponseDto } from './dto/profile-response.dto';
 import { AuditLoggerService } from '../common/audit-logger';
+import { KeywordsService } from '../keywords/keywords.service';
 
 @Injectable()
 export class ProfileService {
+  private readonly logger = new Logger(ProfileService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditLogger: AuditLoggerService,
+    private readonly keywordsService: KeywordsService,
   ) {}
 
   async getProfile(userId: string): Promise<ProfileResponseDto> {
@@ -376,6 +380,11 @@ export class ProfileService {
         });
       }
 
+      // Extract and cache profile keywords asynchronously (non-blocking)
+      this.extractAndCacheKeywordsAsync(userId, updatedProfile).catch((error) => {
+        this.logger.warn(`Failed to extract profile keywords for user ${userId}: ${error.message}`);
+      });
+
       return this.mapToResponseDto(updatedProfile);
     } catch (error) {
       if (error instanceof NotFoundException) {
@@ -444,5 +453,92 @@ export class ProfileService {
       createdAt: profile.createdAt,
       updatedAt: profile.updatedAt,
     };
+  }
+
+  /**
+   * Extract and cache profile keywords asynchronously (non-blocking)
+   * Called after profile create/update to pre-compute keywords for ATS matching
+   */
+  private async extractAndCacheKeywordsAsync(userId: string, profile: any): Promise<void> {
+    try {
+      this.logger.log(`Extracting keywords for profile ${profile.id}...`);
+
+      // Get user info for logging
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { firstName: true, lastName: true, email: true },
+      });
+
+      // Map profile to ProfileData format for keyword extraction
+      const profileData = {
+        firstName: user?.firstName || '',
+        lastName: user?.lastName || '',
+        email: user?.email || '',
+        phone: profile.phone || undefined,
+        summary: profile.summary || undefined,
+        skills: profile.skills?.map((s: any) => ({
+          id: s.id,
+          name: s.name,
+          level: s.level || undefined,
+        })) || [],
+        experiences: profile.experiences?.map((e: any) => ({
+          id: e.id,
+          title: e.title,
+          company: e.company,
+          location: e.location || undefined,
+          startDate: e.startDate?.toISOString() || '',
+          endDate: e.endDate?.toISOString() || undefined,
+          current: e.isCurrent,
+          description: e.description || undefined,
+        })) || [],
+        education: profile.education?.map((e: any) => ({
+          id: e.id,
+          degree: e.degree,
+          institution: e.institution,
+          fieldOfStudy: e.fieldOfStudy || undefined,
+          startDate: e.startYear?.toISOString() || undefined,
+          endDate: e.endYear?.toISOString() || undefined,
+        })) || [],
+        certificates: profile.certificates?.map((c: any) => ({
+          id: c.id,
+          name: c.name,
+          issuer: c.issuer,
+          issueDate: c.issueDate?.toISOString() || undefined,
+          expiryDate: c.expiryDate?.toISOString() || undefined,
+        })) || [],
+        projects: profile.projects?.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          description: p.description || undefined,
+          url: p.url || undefined,
+          technologies: p.technologies || [],
+        })) || [],
+        languages: profile.languages?.map((l: any) => ({
+          id: l.id,
+          name: l.name,
+          level: l.level,
+        })) || [],
+      };
+
+      // Extract keywords using LLM
+      const keywords = await this.keywordsService.extractAndCacheProfileKeywords(profileData);
+
+      // Update profile with extracted keywords
+      await this.prisma.profile.update({
+        where: { id: profile.id },
+        data: {
+          profileKeywords: keywords as any,
+          lastKeywordsExtractedAt: new Date(),
+        },
+      });
+
+      this.logger.log(`Successfully cached keywords for profile ${profile.id}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to extract/cache keywords for profile ${profile.id}: ${error.message}`,
+        error.stack,
+      );
+      // Don't throw - this is a background operation
+    }
   }
 }

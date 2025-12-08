@@ -72,6 +72,76 @@ export class ApplicationsService {
   }
 
   /**
+   * Match job keywords against pre-extracted profile keywords (deterministic matching)
+   * @param jobKeywords Keywords extracted from job posting
+   * @param profileKeywords Pre-extracted keywords from profile (cached)
+   * @returns Merged keywords with 'source' field indicating match status
+   */
+  private matchJobAndProfileKeywords(
+    jobKeywords: any,
+    profileKeywords: any,
+  ): { matched: any; unmatched: any; matchCount: number } {
+    if (!jobKeywords || !profileKeywords) {
+      return { matched: jobKeywords || {}, unmatched: {}, matchCount: 0 };
+    }
+
+    const matched: any = {
+      hard_skills: [],
+      tools_and_tech: [],
+      domains: [],
+      methodologies: [],
+    };
+
+    const unmatched: any = {
+      hard_skills: [],
+      tools_and_tech: [],
+      domains: [],
+      methodologies: [],
+    };
+
+    let matchCount = 0;
+
+    // Helper to normalize keywords for comparison
+    const normalizeKeyword = (kw: string) => kw.toLowerCase().trim();
+
+    // Build profile keyword sets for fast lookup
+    const profileKeywordSets = {
+      hard_skills: new Set(
+        (profileKeywords.hard_skills || []).map((k: any) => normalizeKeyword(k.keyword)),
+      ),
+      tools_and_tech: new Set(
+        (profileKeywords.tools_and_tech || []).map((k: any) => normalizeKeyword(k.keyword)),
+      ),
+      domains: new Set(
+        (profileKeywords.domains || []).map((k: any) => normalizeKeyword(k.keyword)),
+      ),
+      methodologies: new Set(
+        (profileKeywords.methodologies || []).map((k: any) => normalizeKeyword(k.keyword)),
+      ),
+    };
+
+    // Match each category
+    for (const category of ['hard_skills', 'tools_and_tech', 'domains', 'methodologies']) {
+      const jobCategoryKeywords = jobKeywords[category] || [];
+      const profileSet = profileKeywordSets[category as keyof typeof profileKeywordSets];
+
+      for (const jobKw of jobCategoryKeywords) {
+        const normalized = normalizeKeyword(jobKw.keyword);
+        const isMatch = profileSet.has(normalized);
+
+        if (isMatch) {
+          matched[category].push({ ...jobKw, source: 'both' });
+          matchCount++;
+        } else {
+          unmatched[category].push({ ...jobKw, source: 'job' });
+        }
+      }
+    }
+
+    return { matched, unmatched, matchCount };
+  }
+
+  /**
    * Intelligently categorize skills using LLM based on candidate profile
    * Uses in-memory cache to avoid re-categorizing the same skill set
    */
@@ -916,23 +986,54 @@ Summary: ${resume.summary || 'Not provided'}
         this.logger.log('Skipping cover letter generation');
       }
 
-      // 6. Extract ATS keywords (optional but recommended)
-      this.logger.log('Step 4: Extracting ATS keywords...');
+      // 6. Extract ATS keywords with optimized two-phase matching
+      this.logger.log('Step 4: Extracting and matching ATS keywords...');
       let atsKeywords: AtsKeywordsOutputDto | null = null;
       try {
-        atsKeywords = await this.llmService.callJson<AtsKeywordsOutputDto>('v1/ats-keywords.md', {
-          job: this.serializeJobPosting(jobPosting),
-          tailoredProfile,
-          userId,
-          jobPostingId: jobPosting.id,
-        });
+        // Phase 1: Extract job keywords using LLM
+        const jobKeywords = await this.llmService.callJson<AtsKeywordsOutputDto>(
+          'v1/ats-keywords.md',
+          {
+            job: this.serializeJobPosting(jobPosting),
+            tailoredProfile,
+            userId,
+            jobPostingId: jobPosting.id,
+          },
+        );
 
-        const totalKeywords =
-          (atsKeywords.hard_skills?.length || 0) +
-          (atsKeywords.tools_and_tech?.length || 0) +
-          (atsKeywords.domains?.length || 0) +
-          (atsKeywords.methodologies?.length || 0);
-        this.logger.log(`Extracted ${totalKeywords} ATS keywords`);
+        const jobKeywordCount =
+          (jobKeywords.hard_skills?.length || 0) +
+          (jobKeywords.tools_and_tech?.length || 0) +
+          (jobKeywords.domains?.length || 0) +
+          (jobKeywords.methodologies?.length || 0);
+        this.logger.log(`Extracted ${jobKeywordCount} job keywords`);
+
+        // Phase 2: Load cached profile keywords (pre-extracted on profile update)
+        const cachedProfileKeywords = profile.profileKeywords as any;
+
+        if (cachedProfileKeywords) {
+          // Deterministic keyword matching (no LLM needed)
+          const { matched, unmatched, matchCount } = this.matchJobAndProfileKeywords(
+            jobKeywords,
+            cachedProfileKeywords,
+          );
+
+          // Merge matched and unmatched keywords for final result
+          atsKeywords = {
+            hard_skills: [...matched.hard_skills, ...unmatched.hard_skills],
+            tools_and_tech: [...matched.tools_and_tech, ...unmatched.tools_and_tech],
+            domains: [...matched.domains, ...unmatched.domains],
+            methodologies: [...matched.methodologies, ...unmatched.methodologies],
+          };
+
+          this.logger.log(
+            `Matched ${matchCount}/${jobKeywordCount} keywords from cached profile keywords`,
+          );
+        } else {
+          // Fallback: No cached profile keywords, use job keywords as-is
+          this.logger.warn('No cached profile keywords found, skipping matching');
+          atsKeywords = jobKeywords;
+        }
       } catch (error) {
         this.logger.warn('Failed to extract ATS keywords, continuing without them', error);
       }
@@ -1858,7 +1959,32 @@ Summary: ${resume.summary || 'Not provided'}
       throw new BadRequestException('Application has no associated job posting');
     }
 
-    // PRIORITY 1: Use new single-LLM pipeline keywords (atsKeywords field)
+    // PRIORITY 1: Check cached keywords from resume updates (keywordsData field)
+    // This ensures we use the most recent analysis after manual resume edits
+    if (application.keywordsData) {
+      try {
+        const cached = JSON.parse(application.keywordsData as string);
+        // Only use cache if it has the expected structure
+        if (cached.keywords && cached.matchAnalysis) {
+          this.logger.log(
+            `Using cached keywords analysis for application ${applicationId} (score: ${cached.matchAnalysis.overallScore}%)`,
+          );
+          return {
+            applicationId,
+            keywords: cached.keywords,
+            matchAnalysis: cached.matchAnalysis,
+            matchedKeywords: cached.matchedKeywords || [],
+            missingKeywords: cached.missingKeywords || [],
+            analyzedAt: cached.analyzedAt ? new Date(cached.analyzedAt) : new Date(),
+          };
+        }
+      } catch (error) {
+        this.logger.warn(`Failed to parse cached keywords for application ${applicationId}`, error);
+      }
+    }
+
+    // PRIORITY 2: Use new single-LLM pipeline keywords (atsKeywords field)
+    // Only used if no cached keywordsData exists (e.g., fresh application)
     if (application.atsKeywords) {
       try {
         const atsKeywords = application.atsKeywords as any;
@@ -1889,6 +2015,10 @@ Summary: ${resume.summary || 'Not provided'}
           keywords,
         );
 
+        this.logger.log(
+          `Calculated live keywords analysis for application ${applicationId} (score: ${matchAnalysis.overallScore}%)`,
+        );
+
         return {
           applicationId,
           keywords,
@@ -1902,26 +2032,9 @@ Summary: ${resume.summary || 'Not provided'}
       }
     }
 
-    // PRIORITY 2: Check old cached keywords (keywordsData field)
-    if (application.keywordsData) {
-      try {
-        const cached = JSON.parse(application.keywordsData as string);
-        return {
-          applicationId,
-          keywords: cached.keywords,
-          matchAnalysis: cached.matchAnalysis,
-          matchedKeywords: cached.matchedKeywords || [],
-          missingKeywords: cached.missingKeywords || [],
-          analyzedAt: cached.analyzedAt ? new Date(cached.analyzedAt) : new Date(),
-        };
-      } catch {
-        this.logger.warn(`Failed to parse cached keywords for application ${applicationId}`);
-      }
-    }
-
-    // PRIORITY 3: No cached data, trigger old ATS Agent analysis as fallback
+    // PRIORITY 3: No cached data (legacy fallback - should rarely happen)
     this.logger.warn(
-      `No atsKeywords found for application ${applicationId}, using old ATS Agent system`,
+      `No atsKeywords or keywordsData found for application ${applicationId}, using old ATS Agent system`,
     );
     return this.analyzeKeywords(userId, applicationId);
   }
@@ -2225,16 +2338,14 @@ Summary: ${resume.summary || 'Not provided'}
       let found: boolean;
       let confidence: number;
 
-      if (precomputedSource === 'both') {
+      if (precomputedSource === 'both' || precomputedSource === 'profile') {
         // Keyword was already matched against profile during generation
         found = true;
         confidence = 1.0;
-      } else if (precomputedSource === 'job') {
-        // Keyword only exists in job posting, not in profile
-        found = false;
-        confidence = 0;
       } else {
-        // Legacy path: compute match dynamically
+        // For 'job' source or legacy path: compute match dynamically
+        // This allows detecting keywords added to resume AFTER initial generation
+        
         // Strategy 1: Exact match (case-insensitive)
         found = profileKeywords.has(normalized);
         confidence = 1.0;

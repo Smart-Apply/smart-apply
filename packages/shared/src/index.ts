@@ -84,8 +84,27 @@ export interface Profile {
   certificates?: Certificate[];
   projects?: Project[];
   languages?: Language[];
+  profileKeywords?: ProfileKeywordsDto; // Cached ATS keywords
+  lastKeywordsExtractedAt?: string; // Cache timestamp
   createdAt: string;
   updatedAt: string;
+}
+
+// ============================================
+// Profile Keywords Types (ATS Optimization)
+// ============================================
+
+export interface ProfileKeywordDto {
+  keyword: string;
+  source: 'job' | 'profile' | 'both';
+  priority: 1 | 2 | 3;
+}
+
+export interface ProfileKeywordsDto {
+  hard_skills: ProfileKeywordDto[];
+  tools_and_tech: ProfileKeywordDto[];
+  domains: ProfileKeywordDto[];
+  methodologies: ProfileKeywordDto[];
 }
 
 // ============================================
