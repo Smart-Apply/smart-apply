@@ -62,6 +62,7 @@ export function JobPostingForm({ onSave, onCancel }: JobPostingFormProps) {
         company: data.company,
         location: data.location || undefined,
         url: data.url || undefined,
+        description: data.fullText, // Use fullText as description
         fullText: data.fullText,
         salary: data.salary || undefined,
         employmentType: data.employmentType || undefined,

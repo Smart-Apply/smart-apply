@@ -67,7 +67,7 @@
       <p class="experience-company">{{company}}{{#if location}}, {{location}}{{/if}}</p>
       <p class="experience-date">{{dateRange}}</p>
       {{#if description}}
-      <p class="experience-description">{{nl2br description}}</p>
+      <div class="experience-description">{{{description}}}</div>
       {{/if}}
       {{#if achievements}}
       <ul>
@@ -94,7 +94,7 @@
       <p class="education-gpa">GPA: {{gpa}}</p>
       {{/if}}
       {{#if description}}
-      <p class="education-description">{{description}}</p>
+      <div class="education-description">{{{description}}}</div>
       {{/if}}
     </div>
     {{/each}}
@@ -114,7 +114,7 @@
         {{/if}}
       </div>
       {{#if description}}
-      <p class="project-description">{{description}}</p>
+      <div class="project-description">{{{description}}}</div>
       {{/if}}
       {{#if highlights}}
       <ul>

@@ -1,4 +1,5 @@
 import type { Profile, ResumeData, ResumeExperience, ResumeSkillCategory } from '@/types';
+import { htmlToPlainText, plainTextToHtml } from './sanitize';
 
 const DEFAULT_CATEGORY = 'Kompetenzen';
 const monthFormatter = new Intl.DateTimeFormat('de-DE', {
@@ -59,7 +60,7 @@ export function buildResumeFromProfile(
     location: profile.location || '',
     linkedin: profile.linkedinUrl || '',
     github: profile.githubUrl || '',
-    summary: profile.summary || '',
+    summary: profile.summary ? htmlToPlainText(profile.summary) : '',
     skillCategories: buildSkillCategories(profile),
     experiences: (profile.experiences || []).map((experience) => ({
       id: experience.id || createClientId(),
@@ -69,13 +70,13 @@ export function buildResumeFromProfile(
       startDate: experience.startDate,
       endDate: experience.endDate || undefined,
       dateRange: formatRange(experience.startDate, experience.endDate),
-      description: experience.description || undefined,
+      description: experience.description ? htmlToPlainText(experience.description) : undefined,
       achievements: [],
     })),
     projects: (profile.projects || []).map((project) => ({
       id: project.id || createClientId(),
       name: project.name,
-      description: project.description || undefined,
+      description: project.description ? htmlToPlainText(project.description) : undefined,
       date: project.startDate || undefined,
       highlights: project.technologies || [],
     })),
@@ -85,7 +86,7 @@ export function buildResumeFromProfile(
       institution: education.institution,
       fieldOfStudy: education.fieldOfStudy || undefined,
       gpa: education.gpa || undefined,
-      description: education.description || undefined,
+      description: education.description ? htmlToPlainText(education.description) : undefined,
       year: formatRange(education.startYear, education.endYear),
     })),
     certifications: (profile.certificates || []).map((cert) => ({
@@ -121,16 +122,26 @@ function withDateRange(experience: ResumeExperience): ResumeExperience {
     // Trim each line individually but preserve newlines
     return value.split('\n').map(line => line.trim()).join('\n').trim() || undefined;
   };
+  const toHtml = (value?: string) => {
+    if (!value) return undefined;
+    const trimmed = trimPreservingNewlines(value);
+    return trimmed ? plainTextToHtml(trimmed) : undefined;
+  };
   return {
     ...experience,
     dateRange: experience.dateRange || formatRange(experience.startDate, experience.endDate),
-    description: trimPreservingNewlines(experience.description),
+    description: toHtml(experience.description),
     achievements: experience.achievements?.filter(Boolean),
   };
 }
 
 export function normalizeResumeForSave(resume: ResumeData): ResumeData {
   const trim = (value?: string) => value?.trim() || undefined;
+  const toHtml = (value?: string) => {
+    if (!value) return undefined;
+    const trimmed = value.trim();
+    return trimmed ? plainTextToHtml(trimmed) : undefined;
+  };
 
   return {
     ...resume,
@@ -140,7 +151,7 @@ export function normalizeResumeForSave(resume: ResumeData): ResumeData {
     location: trim(resume.location),
     linkedin: trim(resume.linkedin),
     github: trim(resume.github),
-    summary: trim(resume.summary),
+    summary: toHtml(resume.summary),
     skillCategories: (resume.skillCategories || [])
       .map((category) => ({
         id: category.id,
@@ -160,7 +171,7 @@ export function normalizeResumeForSave(resume: ResumeData): ResumeData {
       ?.map((project) => ({
         ...project,
         name: project.name.trim(),
-        description: trim(project.description),
+        description: toHtml(project.description),
         highlights: project.highlights?.map((item) => item.trim()).filter(Boolean),
       }))
       .filter((project) => project.name),
@@ -171,7 +182,7 @@ export function normalizeResumeForSave(resume: ResumeData): ResumeData {
         institution: education.institution.trim(),
         fieldOfStudy: trim(education.fieldOfStudy),
         gpa: trim(education.gpa),
-        description: trim(education.description),
+        description: toHtml(education.description),
         year: education.year.trim(),
       }))
       .filter((education) => education.degree && education.institution),

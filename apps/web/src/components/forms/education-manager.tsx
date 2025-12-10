@@ -424,7 +424,7 @@ export function EducationManager({
                     <FormLabel>Beschreibung</FormLabel>
                     <FormControl>
                       <RichTextEditor
-                        value={field.value || ''}
+                        value={(field.value as string) || ''}
                         onChange={field.onChange}
                         placeholder="Relevante Kurse, Projekte oder Auszeichnungen..."
                         minHeight="120px"

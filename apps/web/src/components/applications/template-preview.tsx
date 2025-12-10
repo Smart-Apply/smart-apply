@@ -196,7 +196,8 @@ export function ResumeTemplatePreview({ resume, templateId, language = 'en' }: R
     linkedin: resume.linkedin,
     github: resume.github,
     location: resume.location,
-    summary: resume.summary,
+    // Wrap summary in SafeString to render HTML formatting
+    summary: resume.summary ? new Handlebars.SafeString(resume.summary) : undefined,
     language, // Use selected language from prop
     skillCategories: resume.skillCategories?.map(cat => ({
       type: cat.type,
@@ -207,12 +208,14 @@ export function ResumeTemplatePreview({ resume, templateId, language = 'en' }: R
       company: exp.company,
       location: exp.location,
       dateRange: exp.dateRange,
-      description: exp.description,
+      // Wrap description in SafeString to render HTML formatting
+      description: exp.description ? new Handlebars.SafeString(exp.description) : undefined,
       achievements: exp.achievements,
     })),
     projects: resume.projects?.map(proj => ({
       name: proj.name,
-      description: proj.description,
+      // Wrap description in SafeString to render HTML formatting
+      description: proj.description ? new Handlebars.SafeString(proj.description) : undefined,
       date: proj.date,
       highlights: proj.highlights,
     })),
@@ -222,7 +225,8 @@ export function ResumeTemplatePreview({ resume, templateId, language = 'en' }: R
       year: edu.year,
       fieldOfStudy: edu.fieldOfStudy,
       gpa: edu.gpa,
-      description: edu.description,
+      // Wrap description in SafeString to render HTML formatting
+      description: edu.description ? new Handlebars.SafeString(edu.description) : undefined,
     })),
     certifications: resume.certifications?.map(cert => ({
       name: cert.name,
@@ -409,7 +413,9 @@ export function CoverLetterTemplatePreview({
     linkedin,
     github,
     companyName,
-    content: html,
+    // Wrap content in SafeString to ensure HTML is not escaped by Handlebars
+    // This is critical - even with {{{content}}}, Handlebars needs to know this is safe HTML
+    content: new Handlebars.SafeString(html || ''),
     language, // Use selected language from prop
     date: new Date().toLocaleDateString('de-DE', {
       year: 'numeric',
@@ -425,8 +431,23 @@ export function CoverLetterTemplatePreview({
     registerHandlebarsHelpers();
 
     try {
+      // Debug: Log the content being passed to template
+      const contentString = html || '';
+      console.log('📄 CoverLetter Preview - Input:', {
+        contentLength: contentString.length,
+        contentPreview: contentString.substring(0, 200),
+        hasHtmlTags: /<[^>]+>/.test(contentString),
+      });
+
       const compiledTemplate = Handlebars.compile(template.htmlTemplate);
       const renderedHtml = compiledTemplate(templateData);
+      
+      // Debug: Log rendered HTML to check if content is escaped
+      console.log('📄 CoverLetter Preview - Rendered:', {
+        renderedLength: renderedHtml.length,
+        renderedPreview: renderedHtml.substring(0, 500),
+        hasEscapedTags: /&lt;|&gt;/.test(renderedHtml),
+      });
 
       // Wrap with CSS - scale PDF to fit container width
       const fullHtml = `
@@ -446,6 +467,39 @@ export function CoverLetterTemplatePreview({
             
             /* Template CSS */
             ${template.cssStyles}
+            
+            /* Enhanced list styling for proper rendering */
+            ul {
+              list-style-type: disc !important;
+              margin-left: 20pt !important;
+              margin-bottom: 10pt !important;
+              padding-left: 0 !important;
+            }
+            
+            ol {
+              list-style-type: decimal !important;
+              margin-left: 20pt !important;
+              margin-bottom: 10pt !important;
+              padding-left: 0 !important;
+            }
+            
+            li {
+              margin-bottom: 4pt !important;
+              padding-left: 4pt !important;
+              display: list-item !important;
+            }
+            
+            li p {
+              margin: 0 !important;
+              display: inline !important;
+            }
+            
+            /* Ensure block elements don't break list rendering */
+            .body-content ul,
+            .body-content ol {
+              margin-top: 8pt;
+              margin-bottom: 12pt;
+            }
             
             /* Preview container that scales to fit */
             .preview-scale-wrapper {

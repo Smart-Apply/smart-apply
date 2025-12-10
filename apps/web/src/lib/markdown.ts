@@ -109,6 +109,53 @@ export function isHtml(text: string): boolean {
 }
 
 /**
+ * Clean and normalize HTML content
+ * Removes redundant nested tags and normalizes structure
+ */
+function cleanHtml(html: string): string {
+  let cleaned = html;
+  
+  // Step 1: Remove redundant paragraph wrappings around block elements
+  // e.g., <p><ul>...</ul></p> -> <ul>...</ul>
+  cleaned = cleaned.replace(/<p>\s*(<(?:ul|ol|blockquote|div|h[1-6])[^>]*>)/gi, '$1');
+  cleaned = cleaned.replace(/<\/(ul|ol|blockquote|div|h[1-6])>\s*<\/p>/gi, '</$1>');
+  
+  // Step 2: Remove paragraph tags wrapping lists (more aggressive)
+  // e.g., <p><ul> or </ul></p>
+  cleaned = cleaned.replace(/<p>\s*<(ul|ol)/gi, '<$1');
+  cleaned = cleaned.replace(/<\/(ul|ol)>\s*<\/p>/gi, '</$1>');
+  
+  // Step 3: Remove redundant paragraph tags inside list items
+  // e.g., <li><p>text</p></li> -> <li>text</li>
+  cleaned = cleaned.replace(/<li>\s*<p>([\s\S]*?)<\/p>\s*<\/li>/gi, '<li>$1</li>');
+  
+  // Step 4: Handle deeply nested paragraphs in lists
+  // e.g., <li><p><ul>... becomes <li><ul>...
+  cleaned = cleaned.replace(/<li>\s*<p>\s*<(ul|ol)/gi, '<li><$1');
+  
+  // Step 5: Remove empty paragraphs
+  cleaned = cleaned.replace(/<p>\s*<\/p>/g, '');
+  
+  // Step 6: Clean up excessive whitespace while preserving line breaks
+  cleaned = cleaned.replace(/\s{2,}/g, ' ');
+  
+  // Step 7: Normalize line breaks
+  cleaned = cleaned.replace(/>\s+</g, '><');
+  
+  // Ensure at least one paragraph if completely empty
+  if (!cleaned.trim() || cleaned === '') {
+    return '<p></p>';
+  }
+  
+  // If content doesn't start with a block element, wrap in paragraph
+  if (!/^\s*<(p|ul|ol|h[1-6]|blockquote|div)/.test(cleaned)) {
+    return `<p>${cleaned}</p>`;
+  }
+  
+  return cleaned;
+}
+
+/**
  * Smart convert: Detect format and convert to HTML for Tiptap
  * Handles both Markdown and HTML inputs
  */
@@ -125,12 +172,13 @@ export function toTiptapHtml(content: string): string {
   
   // If it has markdown syntax, always convert (even if it also has some HTML)
   if (hasMarkdownLists || hasMarkdownHeaders || hasMarkdownFormatting || isMarkdown(content)) {
-    return markdownToHtml(content);
+    const html = markdownToHtml(content);
+    return cleanHtml(html);
   }
 
-  // If it's already clean HTML without markdown, return as-is
+  // If it's already HTML, clean and normalize it
   if (isHtml(content)) {
-    return content;
+    return cleanHtml(content);
   }
 
   // Plain text - wrap in paragraphs

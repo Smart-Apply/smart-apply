@@ -26,9 +26,9 @@ interface SuggestionsCardProps {
 
 // Map keyword categories to profile sections
 const categoryToSection: Record<KeywordCategory, { section: string; label: string; icon: React.ElementType }> = {
-  technical: { section: 'skills', label: 'Skills hinzufügen', icon: Code2 },
-  tool: { section: 'skills', label: 'Tools hinzufügen', icon: Code2 },
-  soft: { section: 'skills', label: 'Skills hinzufügen', icon: Code2 }, // Legacy, no longer extracted
+  core: { section: 'skills', label: 'Kernkompetenzen hinzufügen', icon: Code2 },
+  methodology: { section: 'skills', label: 'Methoden & Tools hinzufügen', icon: Code2 },
+  soft: { section: 'skills', label: 'Soft Skills hinzufügen', icon: Code2 },
   responsibility: { section: 'experiences', label: 'Aufgaben ergänzen', icon: Briefcase },
   seniority: { section: 'experiences', label: 'Erfahrung aktualisieren', icon: Briefcase },
   industry: { section: 'experiences', label: 'Branchenerfahrung', icon: Briefcase },
@@ -128,8 +128,8 @@ export function SuggestionsCard({
     };
   });
 
-  // Get top priority categories (technical first)
-  const priorityOrder: KeywordCategory[] = ['technical', 'tool', 'responsibility', 'requirement', 'industry', 'seniority', 'misc'];
+  // Get top priority categories (core competencies first)
+  const priorityOrder: KeywordCategory[] = ['core', 'methodology', 'responsibility', 'requirement', 'industry', 'seniority', 'soft', 'misc'];
   const sortedActions = [...categoryActions].sort(
     (a, b) => priorityOrder.indexOf(a.category) - priorityOrder.indexOf(b.category)
   );

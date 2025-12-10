@@ -32,11 +32,11 @@ const categoryConfig: Record<
   KeywordCategory,
   { label: string; icon: React.ElementType; color: string }
 > = {
-  technical: { label: 'Technisch', icon: Code2, color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
-  soft: { label: 'Skills', icon: Heart, color: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200' }, // Legacy, no longer extracted
+  core: { label: 'Kernkompetenzen', icon: Code2, color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
+  soft: { label: 'Soft Skills', icon: Heart, color: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200' },
   responsibility: { label: 'Aufgaben', icon: Target, color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' },
   requirement: { label: 'Anforderungen', icon: Award, color: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200' },
-  tool: { label: 'Tools', icon: Wrench, color: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200' },
+  methodology: { label: 'Methoden & Tools', icon: Wrench, color: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200' },
   industry: { label: 'Branche', icon: Building2, color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' },
   seniority: { label: 'Level', icon: Award, color: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200' },
   misc: { label: 'Sonstiges', icon: Tag, color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200' },

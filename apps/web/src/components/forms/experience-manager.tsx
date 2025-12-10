@@ -387,10 +387,11 @@ export function ExperienceManager({
                   <FormItem>
                     <FormLabel>Beschreibung (optional)</FormLabel>
                     <FormControl>
-                      <Textarea
-                        placeholder="Beschreibe deine Hauptverantwortlichkeiten und Tätigkeiten&#10;&#10;💡 Hinweis: Diese Beschreibung wird im Lebenslauf angezeigt. Wenn du dich auf englische Stellen bewirbst, schreibe die Beschreibung auf Englisch."
-                        className="min-h-[120px] resize-none"
-                        {...field}
+                      <RichTextEditor
+                        value={field.value || ''}
+                        onChange={field.onChange}
+                        placeholder="Beschreibe deine Hauptverantwortlichkeiten und Erfolge..."
+                        minHeight="120px"
                       />
                     </FormControl>
                     <p className="text-sm text-muted-foreground mt-2">

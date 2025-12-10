@@ -121,6 +121,156 @@ export function stripHtml(html: string): string {
 }
 
 /**
+ * Convert HTML to readable plain text with formatting preserved.
+ * Converts:
+ * - <ul><li> to bullet points (- )
+ * - <ol><li> to numbered list (1. 2. etc)
+ * - <p> to paragraphs with line breaks
+ * - <br> to line breaks
+ * - <strong>/<b> preserved as text
+ * 
+ * Use this when editing HTML content in plain text fields.
+ * 
+ * @param html - HTML string to convert
+ * @returns Plain text with readable formatting
+ * 
+ * @example
+ * ```tsx
+ * <Textarea value={htmlToPlainText(description)} />
+ * ```
+ */
+export function htmlToPlainText(html: string): string {
+  if (typeof html !== 'string' || !html.trim()) return '';
+  
+  let text = html;
+  
+  // Convert <br> and <br/> to newlines
+  text = text.replace(/<br\s*\/?>/gi, '\n');
+  
+  // Convert closing </p> tags to double newlines (paragraph breaks)
+  text = text.replace(/<\/p>/gi, '\n\n');
+  
+  // Convert list items to bullet points
+  text = text.replace(/<li[^>]*>/gi, '\n- ');
+  text = text.replace(/<\/li>/gi, '');
+  
+  // Remove all remaining HTML tags
+  text = stripHtml(text);
+  
+  // Clean up extra whitespace
+  text = text
+    .split('\n')
+    .map(line => line.trim())
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n') // Max 2 consecutive newlines
+    .trim();
+  
+  return text;
+}
+
+/**
+ * Convert plain text to HTML with basic formatting.
+ * Converts:
+ * - Lines starting with "- " to <ul><li> bullets
+ * - Lines starting with "1. ", "2. " etc to <ol><li> numbers
+ * - Empty lines to paragraph breaks
+ * - Single newlines to <br> tags
+ * 
+ * Use this when saving plain text to HTML format.
+ * 
+ * @param text - Plain text string
+ * @returns HTML string with formatting
+ * 
+ * @example
+ * ```tsx
+ * const html = plainTextToHtml(textareaValue);
+ * ```
+ */
+export function plainTextToHtml(text: string): string {
+  if (typeof text !== 'string' || !text.trim()) return '';
+  
+  const lines = text.split('\n');
+  const result: string[] = [];
+  let inUl = false;
+  let inOl = false;
+  let paragraphBuffer: string[] = [];
+  
+  const flushParagraph = () => {
+    if (paragraphBuffer.length > 0) {
+      result.push(`<p>${paragraphBuffer.join('<br>')}</p>`);
+      paragraphBuffer = [];
+    }
+  };
+  
+  for (const line of lines) {
+    const trimmed = line.trim();
+    
+    // Empty line - close lists and flush paragraph
+    if (!trimmed) {
+      if (inUl) {
+        result.push('</ul>');
+        inUl = false;
+      }
+      if (inOl) {
+        result.push('</ol>');
+        inOl = false;
+      }
+      flushParagraph();
+      continue;
+    }
+    
+    // Bullet point
+    if (trimmed.startsWith('- ')) {
+      flushParagraph();
+      if (!inUl) {
+        if (inOl) {
+          result.push('</ol>');
+          inOl = false;
+        }
+        result.push('<ul>');
+        inUl = true;
+      }
+      result.push(`<li>${trimmed.substring(2)}</li>`);
+      continue;
+    }
+    
+    // Numbered list (1. 2. 3. etc)
+    const numberMatch = trimmed.match(/^(\d+)\.\s+(.+)$/);
+    if (numberMatch) {
+      flushParagraph();
+      if (!inOl) {
+        if (inUl) {
+          result.push('</ul>');
+          inUl = false;
+        }
+        result.push('<ol>');
+        inOl = true;
+      }
+      result.push(`<li>${numberMatch[2]}</li>`);
+      continue;
+    }
+    
+    // Regular text line
+    if (inUl) {
+      result.push('</ul>');
+      inUl = false;
+    }
+    if (inOl) {
+      result.push('</ol>');
+      inOl = false;
+    }
+    paragraphBuffer.push(trimmed);
+  }
+  
+  // Close any open lists
+  if (inUl) result.push('</ul>');
+  if (inOl) result.push('</ol>');
+  flushParagraph();
+  
+  return result.join('');
+}
+
+/**
  * Sanitize an array of strings.
  * Applies text sanitization to each element.
  * 

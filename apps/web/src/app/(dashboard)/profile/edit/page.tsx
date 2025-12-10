@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SkillsManager } from '@/components/forms/skills-manager';
@@ -335,18 +334,17 @@ export default function ProfileEditPage() {
                       <FormItem>
                         <FormLabel>Über mich</FormLabel>
                         <FormControl>
-                          <RichTextEditor
-                            value={field.value || ''}
-                            onChange={field.onChange}
+                          <Textarea
                             placeholder="Erzähle kurz etwas über dich..."
-                            minHeight="150px"
+                            className="min-h-[150px] resize-none"
+                            {...field}
                           />
                         </FormControl>
-                        <FormDescription>Eine kurze Zusammenfassung für dein Profil mit Formatierung.</FormDescription>
+                        <FormDescription>Eine kurze Zusammenfassung für dein Profil.</FormDescription>
                         <FormMessage />
                       </FormItem>
-                    )
-                  }/>
+                    )}
+                  />
                 </CardContent>
               </Card>
             </TabsContent>

@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2 } from 'lucide-react';
 import type { ResumeData } from '@/types';
+import { DescriptionEditor } from './description-editor';
 
 /**
  * Textarea that converts comma-separated text to array only on blur
@@ -302,13 +303,12 @@ export function ResumeFormEditor({ value, onChange, disabled }: ResumeFormEditor
           </div>
           <div className="space-y-2">
             <Label htmlFor="summary">Zusammenfassung</Label>
-            <Textarea
-              id="summary"
+            <DescriptionEditor
               value={value.summary || ''}
-              onChange={(e) => updateField('summary', e.target.value)}
+              onChange={(html) => updateField('summary', html)}
               disabled={disabled}
-              placeholder="Kurze Zusammenfassung deiner Qualifikationen..."
-              rows={3}
+              placeholder="Kurze Zusammenfassung deiner Qualifikationen und wichtigsten Fähigkeiten. Nutzen Sie - + Leerzeichen für Aufzählungen."
+              minHeight="140px"
             />
           </div>
         </CardContent>
@@ -424,13 +424,12 @@ export function ResumeFormEditor({ value, onChange, disabled }: ResumeFormEditor
                   </div>
                   <div>
                     <Label htmlFor={`exp-description-${index}`}>Beschreibung</Label>
-                    <Textarea
-                      id={`exp-description-${index}`}
+                    <DescriptionEditor
                       value={exp.description || ''}
-                      onChange={(e) => updateExperience(index, 'description', e.target.value)}
+                      onChange={(html) => updateExperience(index, 'description', html)}
                       disabled={disabled}
-                      placeholder="Beschreiben Sie Ihre Aufgaben, Verantwortlichkeiten und Erfolge bei dieser Position"
-                      rows={6}
+                      placeholder="Beschreiben Sie Ihre Aufgaben, Verantwortlichkeiten und Erfolge bei dieser Position. Nutzen Sie - + Leerzeichen für Aufzählungen."
+                      minHeight="160px"
                     />
                   </div>
                 </div>
@@ -491,12 +490,12 @@ export function ResumeFormEditor({ value, onChange, disabled }: ResumeFormEditor
                       placeholder="Zeitraum"
                     />
                   </div>
-                  <Textarea
+                  <DescriptionEditor
                     value={project.description || ''}
-                    onChange={(e) => updateProject(index, 'description', e.target.value)}
+                    onChange={(html) => updateProject(index, 'description', html)}
                     disabled={disabled}
-                    placeholder="Beschreibung"
-                    rows={2}
+                    placeholder="Beschreiben Sie das Projekt, Ihre Rolle und erreichte Ergebnisse. Nutzen Sie - + Leerzeichen für Aufzählungen."
+                    minHeight="120px"
                   />
                   <NewlineSeparatedTextarea
                     value={project.highlights || []}
@@ -581,12 +580,12 @@ export function ResumeFormEditor({ value, onChange, disabled }: ResumeFormEditor
                     disabled={disabled}
                     placeholder="Note/GPA"
                   />
-                  <Textarea
+                  <DescriptionEditor
                     value={edu.description || ''}
-                    onChange={(e) => updateEducation(index, 'description', e.target.value)}
+                    onChange={(html) => updateEducation(index, 'description', html)}
                     disabled={disabled}
-                    placeholder="Beschreibung"
-                    rows={2}
+                    placeholder="Weitere Details wie Schwerpunkte, relevante Kurse oder Auszeichnungen. Nutzen Sie - + Leerzeichen für Aufzählungen."
+                    minHeight="100px"
                   />
                 </div>
                 <Button

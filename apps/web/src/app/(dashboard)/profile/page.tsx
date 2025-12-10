@@ -283,9 +283,10 @@ export default function ProfilePage() {
                 <CardTitle className="text-xl">Über mich</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-base text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                  {profile.summary}
-                </p>
+                <div 
+                  className="text-base text-muted-foreground leading-relaxed prose prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{ __html: profile.summary }}
+                />
               </CardContent>
             </Card>
           )}
@@ -324,9 +325,10 @@ export default function ProfilePage() {
                       </div>
 
                       {exp.description && (
-                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                          {exp.description}
-                        </p>
+                        <div 
+                          className="text-sm text-muted-foreground prose prose-sm max-w-none"
+                          dangerouslySetInnerHTML={{ __html: exp.description }}
+                        />
                       )}
                     </div>
                   ))}
@@ -374,9 +376,10 @@ export default function ProfilePage() {
                       </div>
 
                       {edu.description && (
-                        <p className="text-sm text-muted-foreground mt-2">
-                          {edu.description}
-                        </p>
+                        <div 
+                          className="text-sm text-muted-foreground mt-2 prose prose-sm max-w-none"
+                          dangerouslySetInnerHTML={{ __html: edu.description }}
+                        />
                       )}
                     </div>
                   ))}
@@ -408,9 +411,10 @@ export default function ProfilePage() {
                       <div key={index} className="rounded-lg border border-border/50 bg-card p-4 hover:shadow-sm transition-shadow">
                         <h4 className="font-semibold text-foreground">{project.name}</h4>
                         {project.description && (
-                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                            {project.description}
-                          </p>
+                          <div 
+                            className="text-sm text-muted-foreground mt-1 line-clamp-2 prose prose-sm max-w-none"
+                            dangerouslySetInnerHTML={{ __html: project.description }}
+                          />
                         )}
                         {project.url && (
                           <a
