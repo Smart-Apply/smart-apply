@@ -1,0 +1,114 @@
+version: '3.9'
+
+# ================================================================
+# Smart Apply - Production Docker Compose Configuration
+# ================================================================
+# Optimized for VM deployment with:
+# - Health checks and auto-restart
+# - Resource limits
+# - Log rotation
+# - Security hardening
+# ================================================================
+
+services:
+  # ================================================================
+  # Backend API (NestJS + PostgreSQL + Azure services)
+  # ================================================================
+  api:
+    image: ${DOCKER_IMAGE_API:-smart-apply-api:latest}
+    container_name: smart-apply-api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      # Override specific env vars if needed
+      - NODE_ENV=production
+      - PORT=3000
+    volumes:
+      # Persistent logs (Winston audit logs)
+      - /opt/smart-apply/logs:/app/logs
+      # Temporary uploads (optional - can use Azure Blob directly)
+      - /opt/smart-apply/uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/v1/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s # Allow time for Prisma migrations + app startup
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+        labels: "service=api"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5' # Leave 0.5 vCPU for system/Nginx on B2s
+          memory: 2.5G # Leave 1.5GB for system on B2s (4GB total)
+        reservations:
+          cpus: '0.5'
+          memory: 768M
+    security_opt:
+      - no-new-privileges:true # Prevent privilege escalation
+    read_only: false # Chromium needs write access to /tmp
+    tmpfs:
+      - /tmp:size=512M,mode=1777 # Temporary files (Chromium, Puppeteer)
+
+  # ================================================================
+  # Frontend (Next.js)
+  # ================================================================
+  # Deployed on same VM for simplified architecture
+  
+  web:
+    image: ${DOCKER_IMAGE_WEB:-smart-apply-web:latest}
+    container_name: smart-apply-web
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3000/api/v1}
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=web"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 768M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64M,mode=1777
+      - /app/.next/cache:size=128M,mode=1777
+
+# ================================================================
+# Networks
+# ================================================================
+
+networks:
+  default:
+    name: smart-apply-network
+    driver: bridge
+
+# ================================================================
+# Volume Cleanup
+# ================================================================
+# Run periodically to clean up unused volumes:
+# docker volume prune -f

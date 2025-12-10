@@ -1,0 +1,465 @@
+#cloud-config
+# ================================================================
+# Cloud-Init Configuration for Smart Apply VM
+# ================================================================
+# This script runs once on VM first boot to set up:
+# - Docker + Docker Compose
+# - Node.js 20 LTS
+# - Azure CLI
+# - Nginx reverse proxy with SSL
+# - systemd service for docker-compose auto-start
+# - Key Vault secret retrieval via Managed Identity
+# ================================================================
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - gnupg
+  - lsb-release
+  - software-properties-common
+  - nginx
+  - certbot
+  - python3-certbot-nginx
+  - git
+  - jq
+  - unzip
+
+# ================================================================
+# Write Files (Configuration Templates)
+# ================================================================
+
+write_files:
+  # Nginx reverse proxy configuration
+  - path: /etc/nginx/sites-available/smart-apply
+    content: |
+      # Smart Apply Nginx Configuration
+      # Reverse proxy: Port 80/443 -> Docker container port 3000
+      
+      # Rate limiting zones
+      limit_req_zone $binary_remote_addr zone=api_limit:10m rate=100r/m;
+      limit_req_zone $binary_remote_addr zone=auth_limit:10m rate=5r/m;
+      
+      # Upstream API server
+      upstream api_backend {
+          server localhost:3000 max_fails=3 fail_timeout=30s;
+          keepalive 32;
+      }
+      
+      # HTTP -> HTTPS redirect
+      server {
+          listen 80;
+          server_name _;
+          
+          # Allow Let's Encrypt ACME challenge
+          location /.well-known/acme-challenge/ {
+              root /var/www/html;
+          }
+          
+          # Redirect all other traffic to HTTPS
+          location / {
+              return 301 https://$host$request_uri;
+          }
+      }
+      
+      # HTTPS server
+      server {
+          listen 443 ssl http2;
+          server_name _;
+          
+          # SSL certificates (configured by certbot)
+          # ssl_certificate /etc/letsencrypt/live/<domain>/fullchain.pem;
+          # ssl_certificate_key /etc/letsencrypt/live/<domain>/privkey.pem;
+          
+          # SSL configuration (Mozilla Intermediate)
+          ssl_protocols TLSv1.2 TLSv1.3;
+          ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384';
+          ssl_prefer_server_ciphers off;
+          ssl_session_cache shared:SSL:10m;
+          ssl_session_timeout 10m;
+          
+          # Security headers
+          add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+          add_header X-Frame-Options "SAMEORIGIN" always;
+          add_header X-Content-Type-Options "nosniff" always;
+          add_header X-XSS-Protection "1; mode=block" always;
+          add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+          
+          # Logging
+          access_log /var/log/nginx/smart-apply-access.log;
+          error_log /var/log/nginx/smart-apply-error.log warn;
+          
+          # Health check endpoint (no rate limit)
+          location /api/v1/health {
+              proxy_pass http://api_backend;
+              proxy_http_version 1.1;
+              proxy_set_header Connection "";
+              access_log off;
+          }
+          
+          # Auth endpoints (strict rate limit)
+          location ~ ^/api/v1/auth/(register|login) {
+              limit_req zone=auth_limit burst=2 nodelay;
+              limit_req_status 429;
+              
+              proxy_pass http://api_backend;
+              proxy_http_version 1.1;
+              proxy_set_header Upgrade $http_upgrade;
+              proxy_set_header Connection 'upgrade';
+              proxy_set_header Host $host;
+              proxy_cache_bypass $http_upgrade;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto $scheme;
+              proxy_read_timeout 60s;
+              proxy_connect_timeout 10s;
+          }
+          
+          # All other API endpoints (standard rate limit)
+          location /api/ {
+              limit_req zone=api_limit burst=20 nodelay;
+              limit_req_status 429;
+              
+              proxy_pass http://api_backend;
+              proxy_http_version 1.1;
+              proxy_set_header Upgrade $http_upgrade;
+              proxy_set_header Connection 'upgrade';
+              proxy_set_header Host $host;
+              proxy_cache_bypass $http_upgrade;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto $scheme;
+              proxy_read_timeout 120s;
+              proxy_connect_timeout 10s;
+          }
+          
+          # Frontend (Next.js on port 3001)
+          location / {
+              proxy_pass http://localhost:3001;
+              proxy_http_version 1.1;
+              proxy_set_header Upgrade $http_upgrade;
+              proxy_set_header Connection 'upgrade';
+              proxy_set_header Host $host;
+              proxy_cache_bypass $http_upgrade;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto $scheme;
+              proxy_read_timeout 60s;
+              proxy_connect_timeout 10s;
+          }
+      }
+    permissions: '0644'
+  
+  # systemd service for docker-compose
+  - path: /etc/systemd/system/smart-apply.service
+    content: |
+      [Unit]
+      Description=Smart Apply Application (Docker Compose)
+      Requires=docker.service
+      After=docker.service network-online.target
+      Wants=network-online.target
+      
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      WorkingDirectory=/opt/smart-apply
+      User=azureuser
+      Group=docker
+      
+      # Pull latest secrets from Key Vault before starting
+      ExecStartPre=/opt/smart-apply/scripts/update-secrets.sh
+      
+      # Start containers
+      ExecStart=/usr/bin/docker-compose up -d --remove-orphans
+      
+      # Stop containers
+      ExecStop=/usr/bin/docker-compose down
+      
+      # Restart policy
+      Restart=on-failure
+      RestartSec=10s
+      
+      # Security hardening
+      ProtectSystem=full
+      ProtectHome=yes
+      NoNewPrivileges=true
+      
+      [Install]
+      WantedBy=multi-user.target
+    permissions: '0644'
+  
+  # Secret update script (pulls from Key Vault)
+  - path: /opt/smart-apply/scripts/update-secrets.sh
+    content: |
+      #!/bin/bash
+      # ================================================================
+      # Update Secrets from Azure Key Vault
+      # ================================================================
+      # Uses VM's Managed Identity to retrieve secrets
+      
+      set -euo pipefail
+      
+      VAULT_NAME="${VAULT_NAME:-}"
+      ENV_FILE="/opt/smart-apply/.env"
+      
+      if [ -z "$VAULT_NAME" ]; then
+          echo "ERROR: VAULT_NAME environment variable not set"
+          exit 1
+      fi
+      
+      echo "🔑 Retrieving secrets from Key Vault: $VAULT_NAME"
+      
+      # Login using Managed Identity
+      az login --identity --allow-no-subscriptions > /dev/null 2>&1
+      
+      # Retrieve secrets and write to .env file
+      cat > "$ENV_FILE" <<EOF
+      # ================================================================
+      # Smart Apply Environment Variables
+      # Auto-generated from Azure Key Vault: $VAULT_NAME
+      # Last updated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+      # ================================================================
+      
+      # Database
+      DATABASE_URL=$(az keyvault secret show --vault-name "$VAULT_NAME" --name database-url --query value -o tsv)
+      
+      # Security - JWT
+      JWT_SECRET=$(az keyvault secret show --vault-name "$VAULT_NAME" --name jwt-secret --query value -o tsv)
+      REFRESH_TOKEN_SECRET=$(az keyvault secret show --vault-name "$VAULT_NAME" --name refresh-token-secret --query value -o tsv)
+      
+      # Azure Services
+      AZURE_STORAGE_CONNECTION_STRING=$(az keyvault secret show --vault-name "$VAULT_NAME" --name storage-connection-string --query value -o tsv)
+      SERVICE_BUS_CONNECTION_STRING=$(az keyvault secret show --vault-name "$VAULT_NAME" --name service-bus-connection-string --query value -o tsv)
+      AZURE_OPENAI_API_KEY=$(az keyvault secret show --vault-name "$VAULT_NAME" --name azure-openai-api-key --query value -o tsv)
+      
+      # Application Settings
+      STORAGE_DRIVER=azure
+      JOBS_PROVIDER=service-bus
+      LLM_PROVIDER=azure-openai
+      AZURE_OPENAI_ENDPOINT=https://smart-apply-ai.openai.azure.com/
+      AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4o
+      
+      # Security Settings (Production)
+      CORS_ORIGINS=https://app.smartapply.com
+      ENABLE_CSRF=true
+      RATE_LIMIT_MAX=300
+      RATE_LIMIT_AUTH_MAX=5
+      
+      # Chromium
+      PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+      EOF
+      
+      chmod 600 "$ENV_FILE"
+      chown azureuser:azureuser "$ENV_FILE"
+      
+      echo "✅ Secrets updated successfully"
+    permissions: '0750'
+  
+  # Docker Compose configuration
+  - path: /opt/smart-apply/docker-compose.yml
+    content: |
+      version: '3.9'
+      
+      services:
+        api:
+          image: ${DOCKER_IMAGE_API:-smart-apply-api:latest}
+          container_name: smart-apply-api
+          restart: unless-stopped
+          ports:
+            - "3000:3000"
+          env_file:
+            - .env
+          volumes:
+            - /opt/smart-apply/logs:/app/logs
+            - /opt/smart-apply/uploads:/app/uploads
+          healthcheck:
+            test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/v1/health/live"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 40s
+          logging:
+            driver: "json-file"
+            options:
+              max-size: "10m"
+              max-file: "3"
+          deploy:
+            resources:
+              limits:
+                cpus: '1.5'
+                memory: 2G
+              reservations:
+                cpus: '0.5'
+                memory: 512M
+        
+        # Frontend (Next.js)
+        web:
+          image: ${DOCKER_IMAGE_WEB:-smart-apply-web:latest}
+          container_name: smart-apply-web
+          restart: unless-stopped
+          ports:
+            - "3001:3000"
+          environment:
+            - NODE_ENV=production
+            - NEXT_PUBLIC_API_URL=/api/v1
+          healthcheck:
+            test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 30s
+          logging:
+            driver: "json-file"
+            options:
+              max-size: "10m"
+              max-file: "3"
+          deploy:
+            resources:
+              limits:
+                cpus: '0.5'
+                memory: 768M
+              reservations:
+                cpus: '0.25'
+                memory: 256M
+      
+      networks:
+        default:
+          name: smart-apply-network
+    permissions: '0644'
+
+# ================================================================
+# Run Commands (Sequential Execution)
+# ================================================================
+
+runcmd:
+  # ================================================================
+  # 1. Install Docker
+  # ================================================================
+  - echo "📦 Installing Docker..."
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+  - echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+  - apt-get update
+  - apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  - systemctl enable docker
+  - systemctl start docker
+  - usermod -aG docker azureuser
+  
+  # Create docker-compose symlink for compatibility
+  - ln -sf /usr/libexec/docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
+  
+  # ================================================================
+  # 2. Install Node.js 20 LTS
+  # ================================================================
+  - echo "📦 Installing Node.js 20 LTS..."
+  - curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+  - apt-get install -y nodejs
+  - node --version
+  - npm --version
+  
+  # ================================================================
+  # 3. Install Azure CLI
+  # ================================================================
+  - echo "📦 Installing Azure CLI..."
+  - curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+  - az version
+  
+  # ================================================================
+  # 4. Create Application Directory Structure
+  # ================================================================
+  - echo "📁 Creating application directories..."
+  - mkdir -p /opt/smart-apply/{scripts,logs,uploads}
+  - chown -R azureuser:azureuser /opt/smart-apply
+  - chmod 750 /opt/smart-apply
+  
+  # ================================================================
+  # 5. Configure Nginx
+  # ================================================================
+  - echo "🔧 Configuring Nginx..."
+  - rm -f /etc/nginx/sites-enabled/default
+  - ln -sf /etc/nginx/sites-available/smart-apply /etc/nginx/sites-enabled/
+  - nginx -t
+  - systemctl enable nginx
+  - systemctl reload nginx
+  
+  # ================================================================
+  # 6. Enable systemd Service
+  # ================================================================
+  - echo "🚀 Enabling Smart Apply systemd service..."
+  - systemctl daemon-reload
+  - systemctl enable smart-apply.service
+  
+  # ================================================================
+  # 7. Configure Automatic Security Updates
+  # ================================================================
+  - echo "🔒 Configuring automatic security updates..."
+  - apt-get install -y unattended-upgrades
+  - dpkg-reconfigure -plow unattended-upgrades
+  
+  # ================================================================
+  # 8. Configure Log Rotation
+  # ================================================================
+  - |
+    cat > /etc/logrotate.d/smart-apply <<EOF
+    /opt/smart-apply/logs/*.log {
+        daily
+        rotate 90
+        compress
+        delaycompress
+        notifempty
+        missingok
+        create 0644 azureuser azureuser
+        sharedscripts
+        postrotate
+            docker exec smart-apply-api kill -USR1 1 2>/dev/null || true
+        endscript
+    }
+    EOF
+  
+  # ================================================================
+  # 9. Setup Firewall (ufw)
+  # ================================================================
+  - echo "🔥 Configuring firewall..."
+  - ufw --force enable
+  - ufw default deny incoming
+  - ufw default allow outgoing
+  - ufw allow 22/tcp comment 'SSH'
+  - ufw allow 80/tcp comment 'HTTP'
+  - ufw allow 443/tcp comment 'HTTPS'
+  - ufw status verbose
+  
+  # ================================================================
+  # 10. Final Setup Messages
+  # ================================================================
+  - echo "✅ Cloud-init setup completed successfully!"
+  - echo "📝 Next steps:"
+  - echo "  1. Set VAULT_NAME environment variable in /opt/smart-apply/scripts/update-secrets.sh"
+  - echo "  2. Run: sudo -u azureuser /opt/smart-apply/scripts/update-secrets.sh"
+  - echo "  3. Deploy application: sudo systemctl start smart-apply"
+  - echo "  4. Configure SSL: sudo certbot --nginx -d <your-domain>"
+
+# ================================================================
+# Final Message
+# ================================================================
+
+final_message: |
+  ════════════════════════════════════════════════════════════════
+  Smart Apply VM Setup Complete!
+  ════════════════════════════════════════════════════════════════
+  
+  ✅ Docker installed and running
+  ✅ Node.js 20 LTS installed
+  ✅ Azure CLI configured
+  ✅ Nginx reverse proxy configured
+  ✅ systemd service enabled
+  ✅ Security updates enabled
+  ✅ Firewall configured
+  
+  📁 Application directory: /opt/smart-apply
+  🔐 Secrets script: /opt/smart-apply/scripts/update-secrets.sh
+  📊 Logs directory: /opt/smart-apply/logs
+  
+  Next: SSH to VM and complete setup
+  ════════════════════════════════════════════════════════════════
