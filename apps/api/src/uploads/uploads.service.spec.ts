@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { UploadsService } from './uploads.service';
 import { StorageService } from '../storage/storage.service';
 
@@ -15,6 +16,13 @@ describe('UploadsService', () => {
     healthCheck: jest.fn(),
   };
 
+  const mockConfigService = {
+    get: jest.fn((key: string, defaultValue?: string) => {
+      if (key === 'MAX_FILE_SIZE_MB') return '10';
+      return defaultValue;
+    }),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -22,6 +30,10 @@ describe('UploadsService', () => {
         {
           provide: StorageService,
           useValue: mockStorageService,
+        },
+        {
+          provide: ConfigService,
+          useValue: mockConfigService,
         },
       ],
     }).compile();
@@ -120,8 +132,8 @@ describe('UploadsService', () => {
         originalname: 'large.pdf',
         encoding: '7bit',
         mimetype: 'application/pdf',
-        size: 6 * 1024 * 1024, // 6 MB
-        buffer: Buffer.alloc(6 * 1024 * 1024),
+        size: 11 * 1024 * 1024, // 11 MB (exceeds 10MB limit)
+        buffer: Buffer.alloc(11 * 1024 * 1024),
         stream: null as any,
         destination: '',
         filename: '',
@@ -129,7 +141,7 @@ describe('UploadsService', () => {
       };
 
       await expect(service.uploadFile(userId, mockFile)).rejects.toThrow(BadRequestException);
-      await expect(service.uploadFile(userId, mockFile)).rejects.toThrow('File too large');
+      await expect(service.uploadFile(userId, mockFile)).rejects.toThrow('File size exceeds');
     });
 
     it('should sanitize dangerous filenames', async () => {

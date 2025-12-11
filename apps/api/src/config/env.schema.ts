@@ -67,6 +67,10 @@ const envSchema = z.object({
   // PDF Generation
   PUPPETEER_EXECUTABLE_PATH: z.string().optional(),
 
+  // File Upload
+  MAX_FILE_SIZE_MB: z.string().default('10'),
+  MAX_PROFILE_PHOTO_SIZE_MB: z.string().default('5'),
+
   // OAuth (Optional)
   AZURE_AD_CLIENT_ID: z.string().optional(),
   AZURE_AD_CLIENT_SECRET: z.string().optional(),

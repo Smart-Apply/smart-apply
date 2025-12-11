@@ -14,9 +14,9 @@ describe('UploadsController (e2e)', () => {
   let authToken: string;
   let userId: string;
 
-  const testPdfPath = path.join(__dirname, 'fixtures', 'test-resume.pdf');
-  const testDocxPath = path.join(__dirname, 'fixtures', 'test-resume.docx');
-  const largeFilePath = path.join(__dirname, 'fixtures', 'large-file.pdf');
+  const testPdfPath = path.join(__dirname, '../../fixtures', 'test-resume.pdf');
+  const testDocxPath = path.join(__dirname, '../../fixtures', 'test-resume.docx');
+  const largeFilePath = path.join(__dirname, '../../fixtures', 'large-file.pdf');
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -91,19 +91,20 @@ describe('UploadsController (e2e)', () => {
         .expect(400);
     });
 
-    it('should reject file larger than 5MB', async () => {
+    it('should reject file larger than 10MB', async () => {
       const response = await request(app.getHttpServer())
         .post('/api/v1/uploads')
         .set('Authorization', `Bearer ${authToken}`)
         .attach('file', largeFilePath)
         .expect(400);
 
-      expect(response.body.message).toContain('File too large');
+      expect(response.body.message).toContain('File size exceeds');
+      expect(response.body.message).toContain('10MB');
     });
 
     it('should reject unsupported file type', async () => {
       // Create a temporary text file
-      const txtFilePath = path.join(__dirname, 'fixtures', 'test.txt');
+      const txtFilePath = path.join(__dirname, '../../fixtures', 'test.txt');
       fs.writeFileSync(txtFilePath, 'This is a test file');
 
       try {
@@ -124,7 +125,7 @@ describe('UploadsController (e2e)', () => {
 
     it('should sanitize dangerous filenames', async () => {
       // Create a file with a dangerous name
-      const safeTempPath = path.join(__dirname, 'fixtures', 'temp-dangerous.pdf');
+      const safeTempPath = path.join(__dirname, '../../fixtures', 'temp-dangerous.pdf');
 
       // Copy test PDF to temp file
       fs.copyFileSync(testPdfPath, safeTempPath);
