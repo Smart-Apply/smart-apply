@@ -220,6 +220,7 @@ model JobPosting {
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+  @@index([userId, createdAt(sort: Desc)])
   @@index([company])
   @@map("job_postings")
 }
@@ -276,8 +277,10 @@ model Application {
   @@index([userId])
   @@index([status])
   @@index([userId, applicationStatus])
+  @@index([userId, createdAt(sort: Desc)])
   @@index([coverLetterTemplateId])
   @@index([resumeTemplateId])
+  @@unique([userId, jobPostingId])
   @@map("applications")
 }
 
@@ -350,6 +353,7 @@ model RefreshToken {
   ipAddress String?
   
   @@index([userId])
+  @@index([userId, expiresAt])
   @@index([token])
   @@map("refresh_tokens")
 }
@@ -386,6 +390,7 @@ model Session {
   
   @@index([userId, isActive])
   @@index([userId, lastActiveAt])
+  @@index([userId, expiresAt])
   @@index([expiresAt])
   @@map("sessions")
 }
@@ -404,6 +409,7 @@ model AuditLog {
   createdAt DateTime @default(now())
   
   @@index([userId])
+  @@index([userId, createdAt(sort: Desc)])
   @@index([eventType])
   @@index([createdAt])
   @@index([severity])
