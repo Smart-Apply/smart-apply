@@ -375,12 +375,16 @@ export class TemplatesService {
     const browser = await puppeteer.launch({
       headless: 'new', // Use new headless mode (Chrome 109+)
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      timeout: 120000, // 2 minutes for browser launch
+      protocolTimeout: 120000, // 2 minutes for protocol operations
     });
 
     try {
       const page = await browser.newPage();
+      page.setDefaultNavigationTimeout(120000); // 2 minutes
+      page.setDefaultTimeout(120000); // 2 minutes
       await page.setViewport({ width: 595, height: 842 }); // A4 size at 72 DPI
-      await page.setContent(html, { waitUntil: 'networkidle0' });
+      await page.setContent(html, { waitUntil: 'networkidle0', timeout: 120000 });
 
       const screenshot = await page.screenshot({
         type: 'png',
