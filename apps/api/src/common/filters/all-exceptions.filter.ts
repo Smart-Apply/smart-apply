@@ -39,10 +39,19 @@ export class AllExceptionsFilter implements ExceptionFilter {
     // Extract detailed validation errors if available
     let message: any;
     let errors: any;
+    let additionalData: any = {};
 
     if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
       message = (exceptionResponse as any).message || exceptionResponse;
       errors = (exceptionResponse as any).errors;
+      
+      // Extract any additional metadata (e.g., applicationId for conflict errors)
+      if (exception instanceof HttpException) {
+        const exceptionObj = exception as any;
+        if (exceptionObj.applicationId) {
+          additionalData.applicationId = exceptionObj.applicationId;
+        }
+      }
     } else {
       message = exceptionResponse;
     }
@@ -54,6 +63,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       method: request.method,
       message,
       ...(errors && { errors }), // Include detailed errors if available
+      ...additionalData, // Include additional metadata (e.g., applicationId)
     };
 
     // Log error details with validation errors

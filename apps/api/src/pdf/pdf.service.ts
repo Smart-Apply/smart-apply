@@ -137,6 +137,10 @@ export class PdfService implements OnModuleDestroy {
   async generatePDF(html: string, options: PdfGenerationOptions = {}): Promise<Buffer> {
     const browser = await this.initializeBrowser();
     const page = await browser.newPage();
+    
+    // Increase navigation timeout
+    page.setDefaultNavigationTimeout(120000); // 2 minutes
+    page.setDefaultTimeout(120000); // 2 minutes
 
     try {
       // Set HTML content

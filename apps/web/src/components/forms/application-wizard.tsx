@@ -124,8 +124,40 @@ export function ApplicationWizard() {
       // Success! Redirect to edit page
       setIsRedirecting(true);
       router.push(`/applications/${application.id}/edit`);
-    } catch (error) {
-      // Error is handled by the mutation's onError
+    } catch (error: any) {
+      // Show compact toast with action button to navigate to existing application
+      let message = 'Ein unbekannter Fehler ist aufgetreten';
+      let applicationId: string | null = null;
+      
+      // Extract error message and application ID from backend
+      if (error && typeof error === 'object') {
+        if ('data' in error && error.data?.message) {
+          message = error.data.message;
+        } else if ('message' in error && error.message) {
+          message = error.message;
+        }
+        
+        // Check if backend provided the existing application ID
+        if ('applicationId' in error) {
+          applicationId = error.applicationId;
+        } else if ('data' in error && error.data?.applicationId) {
+          applicationId = error.data.applicationId;
+        }
+      }
+      
+      // Show toast with action button if we have the application ID
+      if (applicationId) {
+        toast.error(message, {
+          duration: 8000,
+          action: {
+            label: 'Zur Bewerbung',
+            onClick: () => router.push(`/applications/${applicationId}`),
+          },
+        });
+      } else {
+        toast.error(message);
+      }
+      
       console.error('Failed to create application:', error);
     }
   };
@@ -666,3 +698,4 @@ function ReviewStep({ profile, job, coverLetterTemplateId, resumeTemplateId, gen
     </div>
   );
 }
+

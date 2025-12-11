@@ -21,6 +21,16 @@ import { stripHtml } from '@/lib/sanitize';
 import { toTiptapHtml } from '@/lib/markdown';
 import { cn } from '@/lib/utils';
 
+/**
+ * Normalize HTML to ensure consistent comparison.
+ * Tiptap may format HTML differently than the input.
+ */
+function normalizeHtml(html: string): string {
+  if (!html) return '';
+  // Remove extra whitespace between tags and normalize
+  return html.trim().replace(/>\s+</g, '><');
+}
+
 const EMPTY_RESUME: ResumeData = {
   candidateName: 'Vorname Nachname',
   email: 'du@example.com',
@@ -90,8 +100,39 @@ export default function ApplicationResumeEditorPage() {
   const coverLetterText = application ? application.coverLetterText ?? '' : null;
 
   const hasResumeChanges = JSON.stringify(parsedResume) !== JSON.stringify(lastSavedResume);
-  const hasCoverChanges = coverLetterValue !== lastSavedCoverLetter;
+  const hasCoverChanges = normalizeHtml(coverLetterValue) !== normalizeHtml(lastSavedCoverLetter);
   const coverHasContent = stripHtml(coverLetterValue).trim().length > 0;
+
+  // Debug state to identify false positives
+  useEffect(() => {
+    console.log('📊 Resume State:', {
+      hasResumeChanges,
+      currentKeys: parsedResume ? Object.keys(parsedResume).length : 0,
+      savedKeys: lastSavedResume ? Object.keys(lastSavedResume).length : 0,
+      currentJSON: JSON.stringify(parsedResume)?.substring(0, 100),
+      savedJSON: JSON.stringify(lastSavedResume)?.substring(0, 100),
+    });
+  }, [parsedResume, lastSavedResume, hasResumeChanges]);
+
+  useEffect(() => {
+    console.log('📊 Cover Letter State:', {
+      hasCoverChanges,
+      valueLength: coverLetterValue?.length || 0,
+      savedLength: lastSavedCoverLetter?.length || 0,
+      normalizedValueLength: normalizeHtml(coverLetterValue)?.length || 0,
+      normalizedSavedLength: normalizeHtml(lastSavedCoverLetter)?.length || 0,
+      areEqual: coverLetterValue === lastSavedCoverLetter,
+      normalizedAreEqual: normalizeHtml(coverLetterValue) === normalizeHtml(lastSavedCoverLetter),
+      valuePreview: coverLetterValue?.substring(0, 50),
+      savedPreview: lastSavedCoverLetter?.substring(0, 50),
+    });
+  }, [coverLetterValue, lastSavedCoverLetter, hasCoverChanges]);
+
+  // Handle tab switching with unsaved changes warning
+  const handleTabChange = (newTab: 'resume' | 'cover-letter' | 'ats-score') => {
+    // Allow free tab switching - no confirmation dialogs
+    setActiveTab(newTab);
+  };
 
   useEffect(() => {
     if (resumeText === null) {
@@ -110,6 +151,7 @@ export default function ApplicationResumeEditorPage() {
     const normalized = normalizeResumeForSave(draft);
 
     startTransition(() => {
+      // CRITICAL: Set both to the exact same reference, not clones
       setParsedResume(normalized);
       setLastSavedResume(normalized);
       setResumeVersion(resumeSource);
@@ -133,6 +175,7 @@ export default function ApplicationResumeEditorPage() {
     }
 
     startTransition(() => {
+      // CRITICAL: Set both to the exact same value
       setCoverLetterValue(incoming);
       setLastSavedCoverLetter(incoming);
       setCoverVersion(incoming);
@@ -164,12 +207,11 @@ export default function ApplicationResumeEditorPage() {
     try {
       const normalized = normalizeResumeForSave(parsedResume);
       await updateResume.mutateAsync(normalized);
+      
+      // Simply mark the current state as saved - no complex re-parsing
       setLastSavedResume(normalized);
       setParsedResume(normalized);
-      setResumeVersion(JSON.stringify(normalized));
-      setResumeInitialized(true);
       toast.success('Lebenslauf gespeichert');
-      // Trigger ATS score refresh after saving
       setAtsRefreshTrigger((prev) => prev + 1);
     } catch (err) {
       const message = (err as Error).message;
@@ -190,18 +232,12 @@ export default function ApplicationResumeEditorPage() {
     }
 
     try {
-      const updated = await upsertCoverLetter.mutateAsync({ content: coverLetterValue });
-      const sanitized = updated.coverLetterText || '';
-
-      // Use startTransition to batch state updates and prevent intermediate "changes detected" state
-      startTransition(() => {
-        setCoverLetterValue(sanitized);
-        setLastSavedCoverLetter(sanitized);
-        setCoverVersion(sanitized);
-        setCoverInitialized(true);
-      });
-
+      await upsertCoverLetter.mutateAsync({ content: coverLetterValue });
+      
+      // Simply mark current state as saved
+      setLastSavedCoverLetter(coverLetterValue);
       toast.success('Anschreiben gespeichert');
+      setAtsRefreshTrigger((prev) => prev + 1);
     } catch (err) {
       console.error('Cover letter save failed', err);
       toast.error('Anschreiben konnte nicht gespeichert werden');
@@ -311,9 +347,9 @@ export default function ApplicationResumeEditorPage() {
     );
   }
 
-  const isSaveDisabled = !parsedResume || updateResume.isPending;
+  const isSaveDisabled = !parsedResume || updateResume.isPending || !hasResumeChanges;
   const coverMutationPending = upsertCoverLetter.isPending;
-  const isCoverSaveDisabled = !coverHasContent || coverMutationPending;
+  const isCoverSaveDisabled = !coverHasContent || coverMutationPending || !hasCoverChanges;
 
   // Check if data exists in the application (saved data), not just in editor state
   const hasSavedResume = application?.resumeText && application.resumeText.trim().length > 0;
@@ -436,7 +472,7 @@ export default function ApplicationResumeEditorPage() {
 
       <Tabs
         value={activeTab}
-        onValueChange={(value) => setActiveTab(value as 'resume' | 'cover-letter' | 'ats-score')}
+        onValueChange={(value) => handleTabChange(value as 'resume' | 'cover-letter' | 'ats-score')}
         defaultValue="resume"
         className="space-y-6"
       >
@@ -478,7 +514,13 @@ export default function ApplicationResumeEditorPage() {
               <Button variant="ghost" size="sm" onClick={handleResumeReset} disabled={!hasResumeChanges || updateResume.isPending}>
                 Zurücksetzen
               </Button>
-              <Button onClick={handleResumeSave} disabled={isSaveDisabled} size="sm" className="shadow-sm">
+              <Button 
+                onClick={handleResumeSave} 
+                disabled={isSaveDisabled} 
+                size="sm" 
+                className="shadow-sm"
+                title={!hasResumeChanges ? 'Keine Änderungen' : updateResume.isPending ? 'Wird gespeichert...' : 'Lebenslauf speichern'}
+              >
                 {updateResume.isPending ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
                 Speichern
               </Button>
@@ -539,7 +581,13 @@ export default function ApplicationResumeEditorPage() {
                 <Button variant="ghost" size="sm" onClick={handleCoverReset} disabled={!hasCoverChanges || coverMutationPending}>
                   Zurücksetzen
                 </Button>
-                <Button onClick={handleCoverSave} disabled={isCoverSaveDisabled} size="sm" className="shadow-sm">
+                <Button 
+                  onClick={handleCoverSave} 
+                  disabled={isCoverSaveDisabled} 
+                  size="sm" 
+                  className="shadow-sm"
+                  title={!coverHasContent ? 'Anschreiben ist leer' : !hasCoverChanges ? 'Keine Änderungen' : coverMutationPending ? 'Wird gespeichert...' : 'Anschreiben speichern'}
+                >
                   {coverMutationPending ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
                   Speichern
                 </Button>

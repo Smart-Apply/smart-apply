@@ -122,8 +122,10 @@ export function useUpdateApplicationResume(applicationId: string) {
 
   return useMutation({
     mutationFn: (resume: ResumeData) => api.applications.updateResume(applicationId, { resume }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['applications', applicationId] });
+    onSuccess: (updatedApplication) => {
+      // Optimistic update: Update cache directly without refetching
+      queryClient.setQueryData(['applications', applicationId], updatedApplication);
+      // Also invalidate keywords query (secondary data)
       queryClient.invalidateQueries({ queryKey: ['applications', applicationId, 'keywords'] });
       toastSuccess('Lebenslauf gespeichert');
     },
@@ -139,8 +141,9 @@ export function useUpsertCoverLetter(applicationId: string) {
   return useMutation({
     mutationFn: (data: { instructions?: string; content?: string; regenerate?: boolean }) =>
       api.applications.upsertCoverLetter(applicationId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['applications', applicationId] });
+    onSuccess: (updatedApplication) => {
+      // Optimistic update: Update cache directly without refetching
+      queryClient.setQueryData(['applications', applicationId], updatedApplication);
       toastSuccess('Anschreiben aktualisiert');
     },
     onError: (error: unknown) => {

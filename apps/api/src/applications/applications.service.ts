@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
   Logger,
   MessageEvent,
 } from '@nestjs/common';
@@ -776,10 +777,31 @@ Summary: ${resume.summary || 'Not provided'}
       jobPosting.language || this.detectLanguage(jobPosting.fullText) || 'en';
     this.logger.log(`Detected language: ${detectedLanguage}`);
 
-    // 4. Generate title
+    // 4. Check if application already exists (prevent duplicates BEFORE generation)
+    const existingApplication = await this.prisma.application.findFirst({
+      where: {
+        userId,
+        jobPostingId: dto.jobPostingId,
+      },
+      select: {
+        id: true,
+        title: true,
+      },
+    });
+
+    if (existingApplication) {
+      // Provide application ID in error metadata for frontend to navigate to it
+      const error: any = new ConflictException(
+        'Du hast bereits eine Bewerbung für diese Stelle erstellt.',
+      );
+      error.applicationId = existingApplication.id;
+      throw error;
+    }
+
+    // 5. Generate title
     const title = await this.titleGenerator.generateTitle(jobPosting);
 
-    // 5. Resolve templates to match detected language
+    // 6. Resolve templates to match detected language
     const resolvedResumeTemplateId = await this.resolveTemplateForLanguage(
       dto.resumeTemplateId,
       detectedLanguage,
@@ -793,7 +815,7 @@ Summary: ${resume.summary || 'Not provided'}
         )
       : null;
 
-    // 6. Create application (initially empty, will be populated by pipeline)
+    // 7. Create application (initially empty, will be populated by pipeline)
     const application = await this.prisma.application.create({
       data: {
         userId,
@@ -812,7 +834,7 @@ Summary: ${resume.summary || 'Not provided'}
 
     this.logger.log(`Application ${application.id} created, starting generation pipeline`);
 
-    // 7. Run single-LLM pipeline to generate everything
+    // 8. Run single-LLM pipeline to generate everything
     try {
       const startTime = Date.now();
 
