@@ -129,6 +129,37 @@ describe('ApplicationsController (e2e)', () => {
         })
         .expect(404);
     });
+
+    it('should return 409 when creating duplicate application for same job posting', async () => {
+      // First application should succeed
+      const firstResponse = await request(app.getHttpServer())
+        .post('/api/v1/applications')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          jobPostingId,
+          notes: 'First application',
+        })
+        .expect(201);
+
+      const firstApplicationId = firstResponse.body.id;
+
+      // Second application for same job posting should fail with 409
+      const secondResponse = await request(app.getHttpServer())
+        .post('/api/v1/applications')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          jobPostingId,
+          notes: 'Duplicate application attempt',
+        })
+        .expect(409);
+
+      expect(secondResponse.body.message).toContain(
+        'Du hast bereits eine Bewerbung für diese Stelle erstellt',
+      );
+
+      // Clean up the created application
+      await prisma.application.delete({ where: { id: firstApplicationId } });
+    });
   });
 
   describe('GET /api/v1/applications', () => {

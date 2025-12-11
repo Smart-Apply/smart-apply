@@ -59,6 +59,10 @@ export class ApplicationsController {
     description: 'Bad request (missing profile or invalid job posting)',
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({
+    status: 409,
+    description: 'Conflict - Application for this job posting already exists',
+  })
   async create(
     @CurrentUser() user: any,
     @Body() dto: CreateApplicationDto,
@@ -82,6 +86,10 @@ export class ApplicationsController {
     description: 'Bad request (missing profile or invalid job posting)',
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({
+    status: 409,
+    description: 'Conflict - Application for this job posting already exists',
+  })
   @ApiResponse({ status: 429, description: 'Too many requests (max 5 per minute)' })
   async createWithGeneration(
     @CurrentUser() user: any,

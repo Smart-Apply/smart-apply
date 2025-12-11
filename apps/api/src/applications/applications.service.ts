@@ -700,19 +700,38 @@ Summary: ${resume.summary || 'Not provided'}
       throw new NotFoundException(`Job posting with ID ${dto.jobPostingId} not found`);
     }
 
-    // 2. Prefill resume data from profile
+    // 2. Check for existing application (prevent duplicates)
+    const existingApplication = await this.prisma.application.findFirst({
+      where: {
+        userId,
+        jobPostingId: dto.jobPostingId,
+      },
+      select: {
+        id: true,
+        title: true,
+      },
+    });
+
+    if (existingApplication) {
+      throw new ConflictException(
+        'Du hast bereits eine Bewerbung für diese Stelle erstellt. ' +
+          'Bitte bearbeite die bestehende Bewerbung oder lösche sie zuerst.',
+      );
+    }
+
+    // 3. Prefill resume data from profile
     const profile = await this.getProfileWithRelations(userId);
 
-    // 2.1. Intelligently categorize skills using LLM
+    // 3.1. Intelligently categorize skills using LLM
     const skillCategories = await this.categorizeSkillsWithLLM(profile);
     const resumeTemplate = buildResumeTemplateData(profile, skillCategories);
 
-    // 2.2. Detect language from job posting for multilingual templates
+    // 3.2. Detect language from job posting for multilingual templates
     const detectedLanguage =
       jobPosting.language || this.detectLanguage(jobPosting.fullText) || 'en';
     resumeTemplate.language = detectedLanguage;
 
-    // 2.3. Translate summary if job language differs from profile language (assume profile is in German)
+    // 3.3. Translate summary if job language differs from profile language (assume profile is in German)
     const profileLanguage = 'de'; // Assume profile is written in German
     if (resumeTemplate.summary && detectedLanguage !== profileLanguage) {
       this.logger.log(`Translating summary from ${profileLanguage} to ${detectedLanguage}`);
@@ -727,26 +746,37 @@ Summary: ${resume.summary || 'Not provided'}
       }
     }
 
-    // 3. Generate title for application
+    // 4. Generate title for application
     const title = await this.titleGenerator.generateTitle(jobPosting);
 
-    // 4. Create application record (no automatic generation yet)
-    const application = await this.prisma.application.create({
-      data: {
-        userId,
-        jobPostingId: dto.jobPostingId,
-        title,
-        applicationStatus: ApplicationTrackingStatus.CREATED,
-        status: ApplicationStatus.PENDING,
-        notes: dto.notes,
-        resumeText: JSON.stringify(resumeTemplate),
-      },
-      include: {
-        jobPosting: true,
-      },
-    });
+    // 5. Create application record (no automatic generation yet)
+    try {
+      const application = await this.prisma.application.create({
+        data: {
+          userId,
+          jobPostingId: dto.jobPostingId,
+          title,
+          applicationStatus: ApplicationTrackingStatus.CREATED,
+          status: ApplicationStatus.PENDING,
+          notes: dto.notes,
+          resumeText: JSON.stringify(resumeTemplate),
+        },
+        include: {
+          jobPosting: true,
+        },
+      });
 
-    return this.mapToResponseDto(application);
+      return this.mapToResponseDto(application);
+    } catch (error) {
+      // Handle Prisma unique constraint violation (defense in depth)
+      if (error.code === 'P2002') {
+        throw new ConflictException(
+          'Du hast bereits eine Bewerbung für diese Stelle erstellt. ' +
+            'Bitte bearbeite die bestehende Bewerbung oder lösche sie zuerst.',
+        );
+      }
+      throw error;
+    }
   }
 
   /**
@@ -816,21 +846,32 @@ Summary: ${resume.summary || 'Not provided'}
       : null;
 
     // 7. Create application (initially empty, will be populated by pipeline)
-    const application = await this.prisma.application.create({
-      data: {
-        userId,
-        jobPostingId: dto.jobPostingId,
-        title,
-        applicationStatus: ApplicationTrackingStatus.CREATED,
-        status: ApplicationStatus.PENDING,
-        notes: dto.notes,
-        coverLetterTemplateId: resolvedCoverLetterTemplateId,
-        resumeTemplateId: resolvedResumeTemplateId,
-      },
-      include: {
-        jobPosting: true,
-      },
-    });
+    let application: any;
+    try {
+      application = await this.prisma.application.create({
+        data: {
+          userId,
+          jobPostingId: dto.jobPostingId,
+          title,
+          applicationStatus: ApplicationTrackingStatus.CREATED,
+          status: ApplicationStatus.PENDING,
+          notes: dto.notes,
+          coverLetterTemplateId: resolvedCoverLetterTemplateId,
+          resumeTemplateId: resolvedResumeTemplateId,
+        },
+        include: {
+          jobPosting: true,
+        },
+      });
+    } catch (error) {
+      // Handle Prisma unique constraint violation (defense in depth)
+      if (error.code === 'P2002') {
+        throw new ConflictException(
+          'Du hast bereits eine Bewerbung für diese Stelle erstellt.',
+        );
+      }
+      throw error;
+    }
 
     this.logger.log(`Application ${application.id} created, starting generation pipeline`);
 
