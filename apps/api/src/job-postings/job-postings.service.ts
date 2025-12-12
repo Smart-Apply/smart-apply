@@ -8,6 +8,8 @@ import { TextParser } from './parsers/text.parser';
 import { UrlParser } from './parsers/url.parser';
 import { PdfParser } from './parsers/pdf.parser';
 import { DocxParser } from './parsers/docx.parser';
+import { ErrorCode } from '../common/constants/error-codes';
+import { NotFoundWithCode } from '../common/exceptions/coded-http.exception';
 
 interface ParsedJobData {
   title: string;
@@ -200,16 +202,23 @@ export class JobPostingsService {
     userId: string,
     page = 1,
     limit = 20,
+    includeDeleted = false,
   ): Promise<{ items: JobPostingResponseDto[]; pagination: any }> {
+    const whereClause = {
+      userId,
+      // Filter out soft-deleted items unless explicitly requested
+      deletedAt: includeDeleted ? undefined : null,
+    };
+
     const [jobPostings, total] = await Promise.all([
       this.prisma.jobPosting.findMany({
-        where: { userId },
+        where: whereClause,
         orderBy: { createdAt: 'desc' },
         take: limit,
         skip: (page - 1) * limit,
       }),
       this.prisma.jobPosting.count({
-        where: { userId },
+        where: whereClause,
       }),
     ]);
 
@@ -243,24 +252,83 @@ export class JobPostingsService {
   }
 
   /**
-   * Delete job posting
+   * Soft delete job posting (sets deletedAt timestamp)
+   * The job posting can be restored within 30 days before permanent deletion
    * @param userId User ID from JWT token
    * @param id Job posting ID
    */
   async deleteJobPosting(userId: string, id: string): Promise<void> {
     const jobPosting = await this.prisma.jobPosting.findFirst({
+      where: { 
+        id, 
+        userId,
+        deletedAt: null, // Can only soft delete non-deleted postings
+      },
+    });
+
+    if (!jobPosting) {
+      throw new NotFoundWithCode(ErrorCode.JOB_POSTING_NOT_FOUND);
+    }
+
+    // Soft delete by setting deletedAt timestamp
+    await this.prisma.jobPosting.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
+
+    this.logger.log(`Soft deleted job posting: ${id}`);
+  }
+
+  /**
+   * Restore a soft-deleted job posting (clears deletedAt timestamp)
+   * @param userId User ID from JWT token
+   * @param id Job posting ID
+   * @returns Restored job posting
+   */
+  async restoreJobPosting(userId: string, id: string): Promise<JobPostingResponseDto> {
+    const jobPosting = await this.prisma.jobPosting.findFirst({
+      where: { 
+        id, 
+        userId,
+        deletedAt: { not: null }, // Can only restore deleted postings
+      },
+    });
+
+    if (!jobPosting) {
+      throw new NotFoundWithCode(ErrorCode.JOB_POSTING_NOT_FOUND);
+    }
+
+    // Restore by clearing deletedAt
+    const restored = await this.prisma.jobPosting.update({
+      where: { id },
+      data: { deletedAt: null },
+    });
+
+    this.logger.log(`Restored job posting: ${id}`);
+    return this.mapToResponseDto(restored);
+  }
+
+  /**
+   * Permanently delete job posting
+   * This is irreversible - only used by cleanup cron or admin actions
+   * @param userId User ID from JWT token
+   * @param id Job posting ID
+   */
+  async hardDeleteJobPosting(userId: string, id: string): Promise<void> {
+    const jobPosting = await this.prisma.jobPosting.findFirst({
       where: { id, userId },
     });
 
     if (!jobPosting) {
-      throw new BadRequestException('Job posting not found');
+      throw new NotFoundWithCode(ErrorCode.JOB_POSTING_NOT_FOUND);
     }
 
+    // Permanently delete (cascades to applications via Prisma schema)
     await this.prisma.jobPosting.delete({
       where: { id },
     });
 
-    this.logger.log(`Deleted job posting: ${id}`);
+    this.logger.log(`Permanently deleted job posting: ${id}`);
   }
 
   /**

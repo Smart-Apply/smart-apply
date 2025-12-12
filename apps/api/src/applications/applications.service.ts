@@ -1778,16 +1778,25 @@ Summary: ${resume.summary || 'Not provided'}
    * - Eager loads job posting when requested (single JOIN query)
    * - Uses Promise.all for parallel count query
    * - Results in 2 queries total (1 for data + 1 for count), not 1+N
+   * 
+   * Supports soft delete filtering via includeDeleted parameter
    */
   async findAll(
     userId: string,
     includeJobPosting = false,
     page = 1,
     limit = 20,
+    includeDeleted = false,
   ): Promise<{ items: ApplicationResponseDto[]; pagination: any }> {
+    const whereClause = {
+      userId,
+      // Filter out soft-deleted items unless explicitly requested
+      deletedAt: includeDeleted ? undefined : null,
+    };
+
     const [applications, total] = await Promise.all([
       this.prisma.application.findMany({
-        where: { userId },
+        where: whereClause,
         include: {
           // Eagerly load job posting to prevent N+1 queries
           jobPosting: includeJobPosting,
@@ -1799,7 +1808,7 @@ Summary: ${resume.summary || 'Not provided'}
         skip: (page - 1) * limit,
       }),
       this.prisma.application.count({
-        where: { userId },
+        where: whereClause,
       }),
     ]);
 
@@ -1906,10 +1915,72 @@ Summary: ${resume.summary || 'Not provided'}
   }
 
   /**
-   * Delete an application and its associated files
+   * Soft delete an application (sets deletedAt timestamp)
+   * The application can be restored within 30 days before permanent deletion
    */
   async delete(userId: string, applicationId: string): Promise<void> {
-    this.logger.log(`Deleting application ${applicationId} for user ${userId}`);
+    this.logger.log(`Soft deleting application ${applicationId} for user ${userId}`);
+
+    // Find application (verify ownership)
+    const application = await this.prisma.application.findFirst({
+      where: {
+        id: applicationId,
+        userId,
+        deletedAt: null, // Can only soft delete non-deleted applications
+      },
+    });
+
+    if (!application) {
+      throw new NotFoundWithCode(ErrorCode.APPLICATION_NOT_FOUND);
+    }
+
+    // Soft delete by setting deletedAt timestamp
+    await this.prisma.application.update({
+      where: { id: applicationId },
+      data: { deletedAt: new Date() },
+    });
+
+    this.logger.log(`Application ${applicationId} soft deleted successfully`);
+  }
+
+  /**
+   * Restore a soft-deleted application (clears deletedAt timestamp)
+   */
+  async restore(userId: string, applicationId: string): Promise<ApplicationResponseDto> {
+    this.logger.log(`Restoring application ${applicationId} for user ${userId}`);
+
+    // Find soft-deleted application (verify ownership)
+    const application = await this.prisma.application.findFirst({
+      where: {
+        id: applicationId,
+        userId,
+        deletedAt: { not: null }, // Can only restore deleted applications
+      },
+    });
+
+    if (!application) {
+      throw new NotFoundWithCode(ErrorCode.APPLICATION_NOT_FOUND);
+    }
+
+    // Restore by clearing deletedAt
+    const restored = await this.prisma.application.update({
+      where: { id: applicationId },
+      data: { deletedAt: null },
+      include: {
+        jobPosting: true,
+      },
+    });
+
+    this.logger.log(`Application ${applicationId} restored successfully`);
+    return this.mapToResponseDto(restored);
+  }
+
+  /**
+   * Permanently delete an application and its associated files
+   * This is irreversible - only used by cleanup cron or admin actions
+   */
+  async hardDelete(userId: string, applicationId: string): Promise<void> {
+    this.logger.log(`Permanently deleting application ${applicationId} for user ${userId}`);
 
     // Find application (verify ownership)
     const application = await this.prisma.application.findFirst({
@@ -1923,14 +1994,15 @@ Summary: ${resume.summary || 'Not provided'}
       throw new NotFoundWithCode(ErrorCode.APPLICATION_NOT_FOUND);
     }
 
+    // Clean up generated files from storage
     await this.cleanupGeneratedFiles(application);
 
-    // Delete application from database
+    // Permanently delete application from database
     await this.prisma.application.delete({
       where: { id: applicationId },
     });
 
-    this.logger.log(`Application ${applicationId} deleted successfully`);
+    this.logger.log(`Application ${applicationId} permanently deleted`);
   }
 
   /**

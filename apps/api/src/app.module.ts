@@ -15,6 +15,7 @@ import { ApplicationsModule } from './applications/applications.module';
 import { TemplatesModule } from './templates/templates.module';
 import { UserPreferencesModule } from './user-preferences/user-preferences.module';
 import { HealthModule } from './health/health.module';
+import { CleanupCronModule } from './common/cron/cleanup-cron.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
 import { ConfigService } from './config/config.service';
@@ -27,6 +28,7 @@ import { TimeoutMiddleware } from './common/middleware';
     ConfigModule,
     PrismaModule,
     AuditLoggerModule,
+    CleanupCronModule,
     ThrottlerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {

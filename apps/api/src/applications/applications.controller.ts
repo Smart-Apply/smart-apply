@@ -231,6 +231,12 @@ export class ApplicationsController {
     description: 'Include job posting details in response',
   })
   @ApiQuery({
+    name: 'includeDeleted',
+    required: false,
+    type: Boolean,
+    description: 'Include soft-deleted applications (for trash view)',
+  })
+  @ApiQuery({
     name: 'page',
     required: false,
     type: Number,
@@ -271,6 +277,8 @@ export class ApplicationsController {
     @CurrentUser() user: any,
     @Query('includeJobPosting', new ParseBoolPipe({ optional: true }))
     includeJobPosting = false,
+    @Query('includeDeleted', new ParseBoolPipe({ optional: true }))
+    includeDeleted = false,
     @Query() paginationQuery: PaginationQueryDto,
   ) {
     return this.applicationsService.findAll(
@@ -278,6 +286,7 @@ export class ApplicationsController {
       includeJobPosting,
       paginationQuery.page,
       paginationQuery.limit,
+      includeDeleted,
     );
   }
 
@@ -461,16 +470,51 @@ export class ApplicationsController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
-    summary: 'Delete application',
-    description: 'Deletes an application and its associated files (cover letter and resume PDFs)',
+    summary: 'Soft delete application',
+    description: 'Soft deletes an application (sets deletedAt timestamp). Can be restored within 30 days.',
   })
   @ApiResponse({
     status: 204,
-    description: 'Application deleted successfully',
+    description: 'Application soft deleted successfully',
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Application not found' })
   async delete(@CurrentUser() user: any, @Param('id') id: string): Promise<void> {
     await this.applicationsService.delete(user.id, id);
+  }
+
+  @Patch(':id/restore')
+  @ApiOperation({
+    summary: 'Restore soft-deleted application',
+    description: 'Restores a soft-deleted application by clearing the deletedAt timestamp',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Application restored successfully',
+    type: ApplicationResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Application not found in trash' })
+  async restore(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+  ): Promise<ApplicationResponseDto> {
+    return this.applicationsService.restore(user.id, id);
+  }
+
+  @Delete(':id/permanent')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Permanently delete application',
+    description: 'Permanently deletes an application and its files. This action is irreversible.',
+  })
+  @ApiResponse({
+    status: 204,
+    description: 'Application permanently deleted',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Application not found' })
+  async hardDelete(@CurrentUser() user: any, @Param('id') id: string): Promise<void> {
+    await this.applicationsService.hardDelete(user.id, id);
   }
 }

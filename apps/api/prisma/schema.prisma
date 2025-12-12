@@ -218,9 +218,11 @@ model JobPosting {
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  deletedAt DateTime? // Soft delete timestamp
 
   @@index([userId])
   @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, deletedAt]) // For efficient soft delete filtering
   @@index([company])
   @@map("job_postings")
 }
@@ -273,11 +275,13 @@ model Application {
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  deletedAt DateTime? // Soft delete timestamp
 
   @@index([userId])
   @@index([status])
   @@index([userId, applicationStatus])
   @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, deletedAt]) // For efficient soft delete filtering
   @@index([coverLetterTemplateId])
   @@index([resumeTemplateId])
   @@unique([userId, jobPostingId])

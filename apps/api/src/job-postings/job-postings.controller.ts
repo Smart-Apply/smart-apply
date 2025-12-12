@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Delete,
+  Patch,
   Body,
   Param,
   Query,
@@ -10,6 +11,7 @@ import {
   HttpCode,
   HttpStatus,
   BadRequestException,
+  ParseBoolPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -77,6 +79,12 @@ export class JobPostingsController {
     description: 'Items per page (max: 100)',
     example: 20,
   })
+  @ApiQuery({
+    name: 'includeDeleted',
+    required: false,
+    type: Boolean,
+    description: 'Include soft-deleted job postings (for trash view)',
+  })
   @ApiResponse({
     status: 200,
     description: 'Job postings retrieved successfully with pagination',
@@ -103,11 +111,14 @@ export class JobPostingsController {
   async listJobPostings(
     @CurrentUser('id') userId: string,
     @Query() paginationQuery: PaginationQueryDto,
+    @Query('includeDeleted', new ParseBoolPipe({ optional: true }))
+    includeDeleted = false,
   ) {
     return this.jobPostingsService.listJobPostings(
       userId,
       paginationQuery.page,
       paginationQuery.limit,
+      includeDeleted,
     );
   }
 
@@ -129,10 +140,13 @@ export class JobPostingsController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Delete job posting' })
+  @ApiOperation({ 
+    summary: 'Soft delete job posting',
+    description: 'Soft deletes a job posting (sets deletedAt timestamp). Can be restored within 30 days.',
+  })
   @ApiResponse({
     status: 204,
-    description: 'Job posting deleted successfully',
+    description: 'Job posting soft deleted successfully',
   })
   @ApiResponse({ status: 400, description: 'Job posting not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
@@ -141,6 +155,44 @@ export class JobPostingsController {
     @Param('id') id: string,
   ): Promise<void> {
     return this.jobPostingsService.deleteJobPosting(userId, id);
+  }
+
+  @Patch(':id/restore')
+  @ApiOperation({
+    summary: 'Restore soft-deleted job posting',
+    description: 'Restores a soft-deleted job posting by clearing the deletedAt timestamp',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Job posting restored successfully',
+    type: JobPostingResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Job posting not found in trash' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async restoreJobPosting(
+    @CurrentUser('id') userId: string,
+    @Param('id') id: string,
+  ): Promise<JobPostingResponseDto> {
+    return this.jobPostingsService.restoreJobPosting(userId, id);
+  }
+
+  @Delete(':id/permanent')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Permanently delete job posting',
+    description: 'Permanently deletes a job posting. This action is irreversible.',
+  })
+  @ApiResponse({
+    status: 204,
+    description: 'Job posting permanently deleted',
+  })
+  @ApiResponse({ status: 400, description: 'Job posting not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async hardDeleteJobPosting(
+    @CurrentUser('id') userId: string,
+    @Param('id') id: string,
+  ): Promise<void> {
+    return this.jobPostingsService.hardDeleteJobPosting(userId, id);
   }
 
   @Post(':id/analyze')
