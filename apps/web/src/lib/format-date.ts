@@ -1,4 +1,4 @@
-import { format, formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow, isToday, isYesterday } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { de } from 'date-fns/locale';
 
@@ -26,31 +26,63 @@ export function formatRelativeTime(date: string | Date): string {
 }
 
 /**
- * Smart date formatting - uses relative time for recent dates, full date for older ones
+ * Smart date formatting with progressive granularity:
+ * - < 1 hour: "vor 5 Minuten", "vor 30 Minuten"
+ * - Today: "Heute um 14:30"
+ * - Yesterday: "Gestern um 14:30"
+ * - This year: "15. Jan um 14:30"
+ * - Older: "15.01.2023"
+ * 
  * @param date - Date string (UTC) or Date object to format
- * @returns Formatted string - relative time if < 24h, otherwise full date
+ * @returns Smart formatted string in German
  */
 export function formatDateSmart(date: string | Date): string {
+  const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const targetDate = toZonedTime(new Date(date), userTimezone);
   const now = new Date();
-  const targetDate = new Date(date);
-  const diffHours = (now.getTime() - targetDate.getTime()) / (1000 * 60 * 60);
   
-  // If less than 24 hours ago, show relative time
-  if (diffHours < 24 && diffHours >= 0) {
-    return formatRelativeTime(date);
+  // Less than 1 hour: relative time (e.g., "vor 5 Minuten", "vor 30 Minuten")
+  const diffHours = (now.getTime() - targetDate.getTime()) / (1000 * 60 * 60);
+  if (diffHours < 1 && diffHours >= 0) {
+    return formatDistanceToNow(targetDate, { addSuffix: true, locale: de });
   }
   
-  // Otherwise show full date
-  return formatDate(date);
+  // Today: "Heute um 14:30"
+  if (isToday(targetDate)) {
+    return `Heute um ${format(targetDate, 'HH:mm')}`;
+  }
+  
+  // Yesterday: "Gestern um 14:30"
+  if (isYesterday(targetDate)) {
+    return `Gestern um ${format(targetDate, 'HH:mm')}`;
+  }
+  
+  // This year: "15. Jan um 14:30"
+  if (targetDate.getFullYear() === now.getFullYear()) {
+    return format(targetDate, 'dd. MMM um HH:mm', { locale: de });
+  }
+  
+  // Older: "15.01.2023"
+  return format(targetDate, 'dd.MM.yyyy', { locale: de });
 }
 
 /**
  * Formats a date for display with full timestamp including time
+ * Alias for formatDateFull for backwards compatibility
  * @param date - Date string (UTC) or Date object to format
- * @returns Full timestamp in German format
+ * @returns Full timestamp in German format (dd.MM.yyyy HH:mm)
  */
 export function formatFullTimestamp(date: string | Date): string {
-  return formatDate(date, 'dd. MMMM yyyy, HH:mm');
+  return formatDate(date, 'dd.MM.yyyy HH:mm');
+}
+
+/**
+ * Formats a date with full timestamp for tooltips and detailed displays
+ * @param date - Date string (UTC) or Date object to format
+ * @returns Full timestamp in German format (dd.MM.yyyy HH:mm)
+ */
+export function formatDateFull(date: string | Date): string {
+  return formatDate(date, 'dd.MM.yyyy HH:mm');
 }
 
 /**
