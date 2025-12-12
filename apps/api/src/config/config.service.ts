@@ -198,4 +198,9 @@ export class ConfigService {
   get enableCronJobs(): boolean {
     return this.nestConfig.get('ENABLE_CRON_JOBS', { infer: true });
   }
+
+  // Compression
+  get enableCompression(): boolean {
+    return this.nestConfig.get('ENABLE_COMPRESSION', { infer: true });
+  }
 }

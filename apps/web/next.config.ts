@@ -11,6 +11,10 @@ const nextConfig: NextConfig = {
   // Set workspace root for file tracing (monorepo setup)
   outputFileTracingRoot: path.join(__dirname, "../../"),
 
+  // Enable gzip compression for production builds (default: true in production)
+  // This compresses static assets and API responses, reducing bandwidth usage
+  compress: true,
+
   // Image configuration for external template preview images
   images: {
     unoptimized: true,

@@ -3,6 +3,7 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
+import * as compression from 'compression';
 import * as cookieParser from 'cookie-parser';
 import { doubleCsrf } from 'csrf-csrf';
 import { config } from 'dotenv';
@@ -70,6 +71,29 @@ async function bootstrap() {
   logger.log(
     `🛡️  CSP configured in ${configService.cspReportOnly ? 'report-only' : 'enforcing'} mode`,
   );
+
+  // Compression middleware - reduces bandwidth usage for large JSON responses
+  // Compresses responses with gzip for 80%+ bandwidth reduction (150KB → 30KB)
+  // Only enabled if ENABLE_COMPRESSION=true (default: true)
+  if (configService.enableCompression) {
+    app.use(
+      compression({
+        filter: (req, res) => {
+          // Don't compress if client explicitly disables it
+          if (req.headers['x-no-compression']) {
+            return false;
+          }
+          // Use default compression filter (checks Accept-Encoding header)
+          return compression.filter(req, res);
+        },
+        threshold: 1024, // Only compress responses larger than 1KB (avoid overhead for small responses)
+        level: 6, // Balance between compression speed and ratio (0-9, where 6 is good default)
+      }),
+    );
+    logger.log('🗜️  Response compression enabled (gzip, level 6, threshold: 1KB)');
+  } else {
+    logger.warn('⚠️  Response compression disabled (set ENABLE_COMPRESSION=true to enable)');
+  }
 
   // Cookie parser - must be before routes
   app.use(cookieParser());

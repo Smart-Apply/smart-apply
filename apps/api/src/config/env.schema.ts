@@ -102,6 +102,12 @@ const envSchema = z.object({
     .string()
     .default('true')
     .transform((val) => val === 'true'),
+
+  // Compression
+  ENABLE_COMPRESSION: z
+    .string()
+    .default('true')
+    .transform((val) => val === 'true'),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;
