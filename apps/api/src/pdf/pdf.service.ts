@@ -1,6 +1,8 @@
-import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import * as puppeteer from 'puppeteer';
+import { Browser } from 'puppeteer';
 import { PDFDocument } from 'pdf-lib';
+import { createPool, Pool } from 'generic-pool';
 import { ConfigService } from '../config/config.service';
 import {
   TemplateRendererService,
@@ -30,43 +32,128 @@ export interface PdfMetadata {
 }
 
 @Injectable()
-export class PdfService implements OnModuleDestroy {
+export class PdfService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PdfService.name);
-  private browser: puppeteer.Browser | null = null;
-  private browserInitPromise: Promise<puppeteer.Browser> | null = null;
+  private browserPool: Pool<Browser>;
+  private poolMetrics = {
+    totalAcquires: 0,
+    totalReleases: 0,
+    currentlyAcquired: 0,
+    totalErrors: 0,
+  };
 
   constructor(
     private configService: ConfigService,
     private templateRenderer: TemplateRendererService,
   ) {}
 
+  async onModuleInit() {
+    this.logger.log('Initializing browser pool...');
+    this.browserPool = createPool(
+      {
+        create: async () => {
+          this.logger.debug('Creating new browser instance...');
+          const browser = await this.launchBrowserWithRetry();
+          this.logger.debug(`Browser created (PID: ${browser.process()?.pid || 'unknown'})`);
+          return browser;
+        },
+        destroy: async (browser) => {
+          this.logger.debug(`Destroying browser (PID: ${browser.process()?.pid || 'unknown'})...`);
+          await browser.close();
+          this.logger.debug('Browser destroyed');
+        },
+        validate: async (browser) => {
+          // Check if browser is still connected
+          return browser.isConnected();
+        },
+      },
+      {
+        max: this.configService.puppeteerMaxBrowsers,
+        min: this.configService.puppeteerMinBrowsers,
+        idleTimeoutMillis: this.configService.puppeteerIdleTimeoutMs,
+        evictionRunIntervalMillis: this.configService.puppeteerEvictionIntervalMs,
+        testOnBorrow: true, // Validate browser before use
+        acquireTimeoutMillis: 30000, // Wait up to 30s for a browser
+      },
+    );
+
+    this.logger.log(
+      `Browser pool initialized (min: ${this.configService.puppeteerMinBrowsers}, max: ${this.configService.puppeteerMaxBrowsers})`,
+    );
+
+    // Log pool metrics every 30 seconds in development
+    if (this.configService.isDevelopment) {
+      setInterval(() => {
+        this.logPoolMetrics();
+      }, 30000);
+    }
+  }
+
   async onModuleDestroy() {
-    if (this.browser) {
-      await this.browser.close();
-      this.logger.log('Puppeteer browser closed');
+    if (this.browserPool) {
+      this.logger.log('Draining browser pool...');
+      await this.browserPool.drain();
+      await this.browserPool.clear();
+      this.logger.log('Browser pool closed');
+    }
+  }
+
+  private logPoolMetrics() {
+    const poolSize = this.browserPool.size;
+    const available = this.browserPool.available;
+    const pending = this.browserPool.pending;
+    const borrowed = this.browserPool.borrowed;
+
+    const utilization = poolSize > 0 ? ((borrowed / poolSize) * 100).toFixed(1) : '0.0';
+
+    this.logger.debug(
+      `Pool Metrics: size=${poolSize}, available=${available}, borrowed=${borrowed}, ` +
+        `pending=${pending}, utilization=${utilization}%, acquires=${this.poolMetrics.totalAcquires}, ` +
+        `releases=${this.poolMetrics.totalReleases}, errors=${this.poolMetrics.totalErrors}`,
+    );
+  }
+
+  private async acquireBrowser(): Promise<Browser> {
+    try {
+      this.poolMetrics.totalAcquires++;
+      this.poolMetrics.currentlyAcquired++;
+      
+      const browser = await this.browserPool.acquire();
+      
+      // Log pool metrics after acquire
+      if (this.configService.isDevelopment) {
+        this.logPoolMetrics();
+      }
+      
+      return browser;
+    } catch (error) {
+      this.poolMetrics.totalErrors++;
+      this.logger.error('Failed to acquire browser from pool', error);
+      throw new Error(`Browser pool exhausted: ${error.message}`);
+    }
+  }
+
+  private async releaseBrowser(browser: Browser) {
+    try {
+      this.poolMetrics.totalReleases++;
+      this.poolMetrics.currentlyAcquired--;
+      
+      await this.browserPool.release(browser);
+      
+      // Log pool metrics after release
+      if (this.configService.isDevelopment) {
+        this.logPoolMetrics();
+      }
+    } catch (error) {
+      this.poolMetrics.totalErrors++;
+      this.logger.error('Failed to release browser to pool', error);
+      // Don't throw - this is cleanup, we want to continue
     }
   }
 
   private async initializeBrowser(): Promise<puppeteer.Browser> {
-    if (this.browser) {
-      return this.browser;
-    }
-
-    if (this.browserInitPromise) {
-      return this.browserInitPromise;
-    }
-
-    this.browserInitPromise = this.launchBrowserWithRetry();
-
-    try {
-      this.browser = await this.browserInitPromise;
-      this.logger.log('Puppeteer browser initialized');
-      return this.browser;
-    } catch (error) {
-      this.logger.error('Failed to initialize Puppeteer browser', error);
-      this.browserInitPromise = null;
-      throw new Error(`Puppeteer initialization failed: ${error.message}`);
-    }
+    // Legacy method - now uses pool
+    return this.acquireBrowser();
   }
 
   private async launchBrowserWithRetry(): Promise<puppeteer.Browser> {
@@ -135,44 +222,50 @@ export class PdfService implements OnModuleDestroy {
    * Generate PDF from HTML string (legacy method - still supported)
    */
   async generatePDF(html: string, options: PdfGenerationOptions = {}): Promise<Buffer> {
-    const browser = await this.initializeBrowser();
-    const page = await browser.newPage();
+    const browser = await this.acquireBrowser();
     
-    // Increase navigation timeout
-    page.setDefaultNavigationTimeout(120000); // 2 minutes
-    page.setDefaultTimeout(120000); // 2 minutes
-
     try {
-      // Set HTML content
-      await page.setContent(html, {
-        waitUntil: 'networkidle0',
-      });
+      const page = await browser.newPage();
+      
+      // Increase navigation timeout
+      page.setDefaultNavigationTimeout(120000); // 2 minutes
+      page.setDefaultTimeout(120000); // 2 minutes
 
-      // Add CSS based on template (legacy behavior)
-      if (options.template) {
-        const css = this.getTemplateCSS(options.template);
-        await page.addStyleTag({ content: css });
+      try {
+        // Set HTML content
+        await page.setContent(html, {
+          waitUntil: 'networkidle0',
+        });
+
+        // Add CSS based on template (legacy behavior)
+        if (options.template) {
+          const css = this.getTemplateCSS(options.template);
+          await page.addStyleTag({ content: css });
+        }
+
+        // Generate PDF
+        const pdf = await page.pdf({
+          format: options.format || 'A4',
+          margin: options.margin || {
+            top: '20mm',
+            right: '20mm',
+            bottom: '20mm',
+            left: '20mm',
+          },
+          printBackground: true,
+        });
+
+        this.logger.log(`PDF generated successfully (${pdf.length} bytes)`);
+        return Buffer.from(pdf);
+      } catch (error) {
+        this.logger.error('Failed to generate PDF', error);
+        throw new Error(`PDF generation failed: ${error.message}`);
+      } finally {
+        await page.close();
       }
-
-      // Generate PDF
-      const pdf = await page.pdf({
-        format: options.format || 'A4',
-        margin: options.margin || {
-          top: '20mm',
-          right: '20mm',
-          bottom: '20mm',
-          left: '20mm',
-        },
-        printBackground: true,
-      });
-
-      this.logger.log(`PDF generated successfully (${pdf.length} bytes)`);
-      return Buffer.from(pdf);
-    } catch (error) {
-      this.logger.error('Failed to generate PDF', error);
-      throw new Error(`PDF generation failed: ${error.message}`);
     } finally {
-      await page.close();
+      // Always release browser back to pool
+      await this.releaseBrowser(browser);
     }
   }
 
@@ -271,46 +364,52 @@ export class PdfService implements OnModuleDestroy {
     html: string,
     options: PdfGenerationOptions = {},
   ): Promise<Buffer> {
-    const browser = await this.initializeBrowser();
-    const page = await browser.newPage();
+    const browser = await this.acquireBrowser();
 
     try {
-      // Set HTML content (already includes styles)
-      await page.setContent(html, {
-        waitUntil: 'networkidle0',
-      });
+      const page = await browser.newPage();
 
-      // Generate PDF with ATS-friendly options
-      const pdfOptions: any = {
-        format: options.format || 'A4',
-        margin: options.margin || {
-          top: '20mm',
-          right: '20mm',
-          bottom: '20mm',
-          left: '20mm',
-        },
-        printBackground: options.atsOptimized ? false : true, // ATS-friendly: no backgrounds
-        displayHeaderFooter: false, // ATS-friendly: no headers/footers
-        preferCSSPageSize: false, // Use format setting
-      };
+      try {
+        // Set HTML content (already includes styles)
+        await page.setContent(html, {
+          waitUntil: 'networkidle0',
+        });
 
-      // ATS-optimized PDFs: Enable tagged PDF for accessibility/ATS
-      if (options.atsOptimized) {
-        pdfOptions.tagged = true; // UA accessibility (helps ATS)
-        pdfOptions.outline = true; // Document outline for navigation
+        // Generate PDF with ATS-friendly options
+        const pdfOptions: any = {
+          format: options.format || 'A4',
+          margin: options.margin || {
+            top: '20mm',
+            right: '20mm',
+            bottom: '20mm',
+            left: '20mm',
+          },
+          printBackground: options.atsOptimized ? false : true, // ATS-friendly: no backgrounds
+          displayHeaderFooter: false, // ATS-friendly: no headers/footers
+          preferCSSPageSize: false, // Use format setting
+        };
+
+        // ATS-optimized PDFs: Enable tagged PDF for accessibility/ATS
+        if (options.atsOptimized) {
+          pdfOptions.tagged = true; // UA accessibility (helps ATS)
+          pdfOptions.outline = true; // Document outline for navigation
+        }
+
+        const pdf = await page.pdf(pdfOptions);
+
+        this.logger.log(
+          `PDF generated successfully (${pdf.length} bytes)${options.atsOptimized ? ' [ATS-optimized]' : ''}`,
+        );
+        return Buffer.from(pdf);
+      } catch (error) {
+        this.logger.error('Failed to generate PDF from rendered HTML', error);
+        throw new Error(`PDF generation failed: ${error.message}`);
+      } finally {
+        await page.close();
       }
-
-      const pdf = await page.pdf(pdfOptions);
-
-      this.logger.log(
-        `PDF generated successfully (${pdf.length} bytes)${options.atsOptimized ? ' [ATS-optimized]' : ''}`,
-      );
-      return Buffer.from(pdf);
-    } catch (error) {
-      this.logger.error('Failed to generate PDF from rendered HTML', error);
-      throw new Error(`PDF generation failed: ${error.message}`);
     } finally {
-      await page.close();
+      // Always release browser back to pool
+      await this.releaseBrowser(browser);
     }
   }
 
@@ -537,11 +636,12 @@ export class PdfService implements OnModuleDestroy {
   }
 
   /**
-   * Health check - try to initialize browser without throwing
+   * Health check - try to acquire and release a browser without throwing
    */
   async healthCheck(): Promise<boolean> {
     try {
-      await this.initializeBrowser();
+      const browser = await this.acquireBrowser();
+      await this.releaseBrowser(browser);
       return true;
     } catch (error) {
       this.logger.warn('PDF service health check failed', error.message);

@@ -144,6 +144,22 @@ export class ConfigService {
     return this.nestConfig.get('PUPPETEER_EXECUTABLE_PATH', { infer: true });
   }
 
+  get puppeteerMaxBrowsers(): number {
+    return parseInt(this.nestConfig.get('PUPPETEER_MAX_BROWSERS', { infer: true }), 10);
+  }
+
+  get puppeteerMinBrowsers(): number {
+    return parseInt(this.nestConfig.get('PUPPETEER_MIN_BROWSERS', { infer: true }), 10);
+  }
+
+  get puppeteerIdleTimeoutMs(): number {
+    return parseInt(this.nestConfig.get('PUPPETEER_IDLE_TIMEOUT_MS', { infer: true }), 10);
+  }
+
+  get puppeteerEvictionIntervalMs(): number {
+    return parseInt(this.nestConfig.get('PUPPETEER_EVICTION_INTERVAL_MS', { infer: true }), 10);
+  }
+
   // OAuth
   get azureAdClientId(): string | undefined {
     return this.nestConfig.get('AZURE_AD_CLIENT_ID', { infer: true });

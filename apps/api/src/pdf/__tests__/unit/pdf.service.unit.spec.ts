@@ -8,11 +8,44 @@ jest.mock('puppeteer', () => ({
   launch: jest.fn().mockResolvedValue({
     newPage: jest.fn().mockResolvedValue({
       setContent: jest.fn(),
-      addStyleTag: jest.fn(), // Add missing method
+      addStyleTag: jest.fn(),
+      setDefaultNavigationTimeout: jest.fn(),
+      setDefaultTimeout: jest.fn(),
       pdf: jest.fn().mockResolvedValue(Buffer.from('%PDF-1.4\nMock PDF content')),
       close: jest.fn(),
     }),
     close: jest.fn(),
+    isConnected: jest.fn().mockReturnValue(true),
+    process: jest.fn().mockReturnValue({ pid: 12345 }),
+  }),
+}));
+
+// Mock generic-pool
+jest.mock('generic-pool', () => ({
+  createPool: jest.fn((factory, opts) => {
+    // Simple pool mock that just calls factory methods directly
+    let browserInstance: any = null;
+
+    return {
+      acquire: jest.fn(async () => {
+        if (!browserInstance) {
+          browserInstance = await factory.create();
+        }
+        return browserInstance;
+      }),
+      release: jest.fn().mockResolvedValue(undefined),
+      drain: jest.fn(async () => {
+        if (browserInstance && factory.destroy) {
+          await factory.destroy(browserInstance);
+          browserInstance = null;
+        }
+      }),
+      clear: jest.fn().mockResolvedValue(undefined),
+      size: 1,
+      available: 1,
+      borrowed: 0,
+      pending: 0,
+    };
   }),
 }));
 
@@ -21,9 +54,13 @@ describe('PdfService', () => {
 
   const mockConfigService = {
     puppeteerExecutablePath: undefined,
-    isDevelopment: true,
+    puppeteerMaxBrowsers: 3,
+    puppeteerMinBrowsers: 1,
+    puppeteerIdleTimeoutMs: 30000,
+    puppeteerEvictionIntervalMs: 10000,
+    isDevelopment: false, // Disable metrics logging in tests
     isProduction: false,
-    isTest: false,
+    isTest: true,
   };
 
   beforeAll(async () => {
@@ -45,10 +82,13 @@ describe('PdfService', () => {
     }).compile();
 
     service = module.get<PdfService>(PdfService);
+    
+    // Initialize the service (triggers pool creation)
+    await service.onModuleInit();
   }, 30000);
 
   afterAll(async () => {
-    // Cleanup browser
+    // Cleanup browser pool
     await service.onModuleDestroy();
   }, 10000);
 
