@@ -37,6 +37,9 @@ import {
 import { buildResumeTemplateData, ProfileWithRelations } from './resume-template.util';
 import { sanitizeRichText } from '../common/services/html-sanitizer';
 
+// Type for progress callback function
+export type ProgressCallback = (progress: number, message: string) => void;
+
 @Injectable()
 export class ApplicationsService {
   private readonly logger = new Logger(ApplicationsService.name);
@@ -46,6 +49,9 @@ export class ApplicationsService {
     string,
     { type: string; skills: string[] }[]
   >();
+
+  // In-memory cache for progress callbacks (keyed by application ID)
+  private readonly progressCallbacks = new Map<string, ProgressCallback>();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -985,7 +991,19 @@ Summary: ${resume.summary || 'Not provided'}
     const startTime = Date.now();
     this.logger.log(`Starting single-LLM pipeline for application ${applicationId}`);
 
+    // Get progress callback if one is registered
+    const emitProgress = (progress: number, message: string) => {
+      const callback = this.progressCallbacks.get(applicationId);
+      if (callback) {
+        callback(progress, message);
+      }
+    };
+
+    // 0. Initial progress
+    emitProgress(0, 'Starte Generierung...');
+
     // 1. Load data
+    emitProgress(10, 'Lade Profil und Stellenanzeige...');
     const profile = await this.getProfileWithRelations(userId);
     const application = await this.prisma.application.findUnique({
       where: { id: applicationId },
@@ -1005,6 +1023,7 @@ Summary: ${resume.summary || 'Not provided'}
 
     try {
       // 3. Call skill selector (ONCE per application)
+      emitProgress(20, 'Wähle relevante Profildaten aus...');
       this.logger.log('Step 1: Selecting relevant profile data...');
       const tailoredProfile = await this.llmService.callJson<TailoredProfileDto>(
         'v1/skill-selector.md',
@@ -1021,6 +1040,7 @@ Summary: ${resume.summary || 'Not provided'}
       );
 
       // 4. Generate resume (uses tailored profile)
+      emitProgress(40, 'Generiere Lebenslauf mit KI...');
       this.logger.log('Step 2: Generating resume...');
       const resumeMarkdown = await this.llmService.callText('v1/resume.md', {
         job: this.serializeJobPosting(jobPosting),
@@ -1033,6 +1053,7 @@ Summary: ${resume.summary || 'Not provided'}
       // 5. Generate cover letter (if enabled)
       let coverLetterMarkdown: string | null = null;
       if (shouldGenerateCoverLetter) {
+        emitProgress(60, 'Generiere Anschreiben mit KI...');
         this.logger.log('Step 3: Generating cover letter...');
         coverLetterMarkdown = await this.llmService.callText('v1/cover-letter.md', {
           job: this.serializeJobPosting(jobPosting),
@@ -1042,10 +1063,12 @@ Summary: ${resume.summary || 'Not provided'}
           jobPostingId: jobPosting.id,
         });
       } else {
+        emitProgress(60, 'Überspringe Anschreiben-Generierung...');
         this.logger.log('Skipping cover letter generation');
       }
 
       // 6. Extract ATS keywords with optimized two-phase matching
+      emitProgress(80, 'Extrahiere ATS-Keywords...');
       this.logger.log('Step 4: Extracting and matching ATS keywords...');
       let atsKeywords: AtsKeywordsOutputDto | null = null;
       try {
@@ -1098,6 +1121,7 @@ Summary: ${resume.summary || 'Not provided'}
       }
 
       // 7. Persist results
+      emitProgress(95, 'Speichere Ergebnisse...');
       const updated = await this.prisma.application.update({
         where: { id: applicationId },
         data: {
@@ -1109,6 +1133,8 @@ Summary: ${resume.summary || 'Not provided'}
         },
         include: { jobPosting: true },
       });
+
+      emitProgress(100, 'Fertig!');
 
       const duration = Date.now() - startTime;
       this.logger.log(
@@ -1129,6 +1155,9 @@ Summary: ${resume.summary || 'Not provided'}
       });
 
       throw error;
+    } finally {
+      // Clean up progress callback
+      this.progressCallbacks.delete(applicationId);
     }
   }
 
@@ -2033,6 +2062,16 @@ Summary: ${resume.summary || 'Not provided'}
 
     this.logger.log(`SSE stream started for application ${applicationId} by user ${userId}`);
 
+    // Create a subject to emit progress updates
+    let lastProgress = 0;
+    let lastMessage = '';
+
+    // Register progress callback for this application
+    this.progressCallbacks.set(applicationId, (progress: number, message: string) => {
+      lastProgress = progress;
+      lastMessage = message;
+    });
+
     // Create SSE stream that polls status every 2 seconds
     return interval(2000).pipe(
       // Fetch latest application status
@@ -2055,11 +2094,11 @@ Summary: ${resume.summary || 'Not provided'}
           throw new NotFoundWithCode(ErrorCode.APPLICATION_NOT_FOUND);
         }
 
-        this.logger.debug(`SSE emit: application ${applicationId} status=${application.status}`);
-        return application;
+        this.logger.debug(`SSE emit: application ${applicationId} status=${application.status} progress=${lastProgress}%`);
+        return { application, progress: lastProgress, message: lastMessage };
       }),
       // Transform to SSE MessageEvent format
-      map((application) => {
+      map(({ application, progress, message }) => {
         const status = application.status;
         return {
           data: {
@@ -2067,20 +2106,24 @@ Summary: ${resume.summary || 'Not provided'}
             status: status,
             updatedAt: application.updatedAt,
             errorMessage: application.errorMessage,
+            progress: progress,
+            message: message,
           },
         } as MessageEvent;
       }),
       // Stop streaming when status reaches a final state (READY or FAILED)
       // The `true` parameter ensures the final status is emitted before closing
       takeWhile((event: MessageEvent) => {
-        const eventData = event.data as { status: ApplicationStatus };
+        const eventData = event.data as { status: ApplicationStatus; progress: number };
         const status = eventData.status;
         const shouldContinue = status === 'PENDING' || status === 'GENERATING';
 
         if (!shouldContinue) {
           this.logger.log(
-            `SSE stream closing for application ${applicationId} (final status: ${status})`,
+            `SSE stream closing for application ${applicationId} (final status: ${status}, progress: ${eventData.progress}%)`,
           );
+          // Clean up progress callback when stream closes
+          this.progressCallbacks.delete(applicationId);
         }
 
         return shouldContinue;

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
 import { CenteredLoader } from '@/components/shared/loading';
 import {
   ArrowLeft,
@@ -103,6 +104,10 @@ export default function ApplicationDetailPage() {
     both?: boolean;
   }>({});
   
+  // Track progress state
+  const [progress, setProgress] = useState(0);
+  const [progressMessage, setProgressMessage] = useState('');
+  
   // Track previous status to detect changes
   const prevStatusRef = useRef<ApplicationStatus | null>(null);
 
@@ -113,7 +118,7 @@ export default function ApplicationDetailPage() {
     enabled: isAuthenticated && !!applicationId,
   });
 
-  // SSE: Real-time status updates (replaces polling)
+  // SSE: Real-time status and progress updates (replaces polling)
   useEffect(() => {
     if (!isAuthenticated || !applicationId || !application) return;
     
@@ -137,6 +142,14 @@ export default function ApplicationDetailPage() {
       try {
         const data = JSON.parse(event.data);
         console.log(`[SSE] Received update for application ${applicationId}:`, data);
+        
+        // Update progress state
+        if (data.progress !== undefined) {
+          setProgress(data.progress);
+        }
+        if (data.message) {
+          setProgressMessage(data.message);
+        }
         
         // Update query cache with new status
         queryClient.setQueryData(['applications', applicationId], (old: any) => {
@@ -453,10 +466,26 @@ export default function ApplicationDetailPage() {
               </div>
             )}
             {application.status === 'GENERATING' && (
-              <p className="text-sm text-gray-600 mt-1">
-                Die KI erstellt gerade dein Anschreiben und deinen Lebenslauf. Dies kann
-                einige Minuten dauern.
-              </p>
+              <div className="space-y-3 mt-2">
+                <p className="text-sm text-gray-600">
+                  Die KI erstellt gerade dein Anschreiben und deinen Lebenslauf. Dies kann
+                  einige Minuten dauern.
+                </p>
+                {/* Progress bar */}
+                <div className="space-y-2">
+                  <Progress value={progress} className="h-2" />
+                  {progressMessage && (
+                    <p className="text-sm text-gray-700 font-medium">
+                      {progressMessage}
+                    </p>
+                  )}
+                  {progress > 0 && (
+                    <p className="text-xs text-gray-500">
+                      {progress}% abgeschlossen
+                    </p>
+                  )}
+                </div>
+              </div>
             )}
             {application.status === 'READY' && (
               <p className="text-sm text-gray-600 mt-1">
