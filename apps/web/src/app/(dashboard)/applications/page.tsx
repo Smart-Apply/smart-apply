@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useApplications, useDeleteApplication } from '@/hooks/use-applications';
 import { Button } from '@/components/ui/button';
+import { SubmitButton } from '@/components/ui/submit-button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -641,13 +642,14 @@ export default function ApplicationsPage() {
             >
               Abbrechen
             </Button>
-            <Button
+            <SubmitButton
               variant="destructive"
               onClick={handleDeleteConfirm}
-              disabled={deleteApplication.isPending}
+              isLoading={deleteApplication.isPending}
+              loadingText="Wird gelöscht..."
             >
-              {deleteApplication.isPending ? 'Wird gelöscht...' : 'Löschen'}
-            </Button>
+              Löschen
+            </SubmitButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>

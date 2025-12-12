@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { useProfile, useUpdateProfile } from '@/hooks/use-profile';
 import { useAuthStore } from '@/stores/auth-store';
 import { Button } from '@/components/ui/button';
+import { SubmitButton } from '@/components/ui/submit-button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -201,14 +202,15 @@ export default function ProfileEditPage() {
             <p className="text-muted-foreground">Aktualisiere deine Informationen</p>
           </div>
         </div>
-        <Button onClick={form.handleSubmit(onSubmit)} disabled={updateProfile.isPending} className="shadow-lg shadow-primary/20">
-          {updateProfile.isPending ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="mr-2 h-4 w-4" />
-          )}
+        <SubmitButton 
+          onClick={form.handleSubmit(onSubmit)} 
+          isLoading={updateProfile.isPending}
+          loadingText="Speichere..."
+          className="shadow-lg shadow-primary/20"
+        >
+          <Save className="mr-2 h-4 w-4" />
           Speichern
-        </Button>
+        </SubmitButton>
       </div>
 
       <Tabs defaultValue="basic" className="space-y-6">

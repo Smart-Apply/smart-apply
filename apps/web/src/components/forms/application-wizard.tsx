@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { SubmitButton } from '@/components/ui/submit-button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -268,14 +269,15 @@ export function ApplicationWizard() {
           )}
 
           {currentStep === 'review' ? (
-            <Button
+            <SubmitButton
               onClick={handleSubmit}
-              disabled={createApplication.isPending}
+              isLoading={createApplication.isPending}
+              loadingText="Erstelle Bewerbung..."
               className="shadow-lg hover:shadow-xl transition-all"
             >
               Bewerbung erstellen
               <Sparkles className="ml-2 h-4 w-4" />
-            </Button>
+            </SubmitButton>
           ) : (
             <Button onClick={handleNext} className="shadow-md hover:shadow-lg transition-all">
               Weiter

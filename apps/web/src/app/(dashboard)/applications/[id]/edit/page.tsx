@@ -4,6 +4,7 @@ import { startTransition, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Briefcase, MapPin, Sparkles, FileText, Save, RefreshCw, CheckCircle2, AlertCircle, Download, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { SubmitButton } from '@/components/ui/submit-button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
@@ -457,14 +458,17 @@ export default function ApplicationResumeEditorPage() {
                   )}
                 </p>
               </div>
-              <Button onClick={handleExport} disabled={!canExport} size="sm" className="shadow-sm">
-                {exportApplication.isPending || application.status === 'GENERATING' ? (
-                  <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <Download className="h-4 w-4 mr-2" />
-                )}
+              <SubmitButton 
+                onClick={handleExport} 
+                isLoading={exportApplication.isPending || application.status === 'GENERATING'}
+                loadingText="Exportiere..."
+                disabled={!canExport}
+                size="sm" 
+                className="shadow-sm"
+              >
+                <Download className="h-4 w-4 mr-2" />
                 Exportieren
-              </Button>
+              </SubmitButton>
             </div>
           </CardContent>
         </Card>
@@ -514,16 +518,18 @@ export default function ApplicationResumeEditorPage() {
               <Button variant="ghost" size="sm" onClick={handleResumeReset} disabled={!hasResumeChanges || updateResume.isPending}>
                 Zurücksetzen
               </Button>
-              <Button 
+              <SubmitButton 
                 onClick={handleResumeSave} 
+                isLoading={updateResume.isPending}
+                loadingText="Speichere..."
                 disabled={isSaveDisabled} 
                 size="sm" 
                 className="shadow-sm"
                 title={!hasResumeChanges ? 'Keine Änderungen' : updateResume.isPending ? 'Wird gespeichert...' : 'Lebenslauf speichern'}
               >
-                {updateResume.isPending ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                <Save className="h-4 w-4 mr-2" />
                 Speichern
-              </Button>
+              </SubmitButton>
             </div>
           </div>
 
@@ -581,16 +587,18 @@ export default function ApplicationResumeEditorPage() {
                 <Button variant="ghost" size="sm" onClick={handleCoverReset} disabled={!hasCoverChanges || coverMutationPending}>
                   Zurücksetzen
                 </Button>
-                <Button 
+                <SubmitButton 
                   onClick={handleCoverSave} 
+                  isLoading={coverMutationPending}
+                  loadingText="Speichere..."
                   disabled={isCoverSaveDisabled} 
                   size="sm" 
                   className="shadow-sm"
                   title={!coverHasContent ? 'Anschreiben ist leer' : !hasCoverChanges ? 'Keine Änderungen' : coverMutationPending ? 'Wird gespeichert...' : 'Anschreiben speichern'}
                 >
-                  {coverMutationPending ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                  <Save className="h-4 w-4 mr-2" />
                   Speichern
-                </Button>
+                </SubmitButton>
               </div>
             </div>
 
@@ -620,25 +628,18 @@ export default function ApplicationResumeEditorPage() {
                         <AlertCircle className="h-3.5 w-3.5" />
                         <span>Die AI passt den aktuellen Inhalt an. Danach musst du manuell speichern.</span>
                       </div>
-                      <Button 
+                      <SubmitButton 
                         variant="default" 
                         size="sm" 
                         onClick={handleApplyAIChanges} 
+                        isLoading={coverMutationPending}
+                        loadingText="AI arbeitet..."
                         disabled={coverMutationPending || !instructions.trim()} 
                         className="w-full bg-primary hover:bg-primary/90"
                       >
-                        {coverMutationPending ? (
-                          <>
-                            <RefreshCw className="h-3.5 w-3.5 animate-spin mr-2" />
-                            AI arbeitet...
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="h-3.5 w-3.5 mr-2" />
-                            Änderungen mit AI anwenden
-                          </>
-                        )}
-                      </Button>
+                        <Sparkles className="h-3.5 w-3.5 mr-2" />
+                        Änderungen mit AI anwenden
+                      </SubmitButton>
                     </div>
 
                     <div className="space-y-2">
