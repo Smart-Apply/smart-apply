@@ -1,7 +1,7 @@
 import { Injectable, Inject, Logger, ServiceUnavailableException } from '@nestjs/common';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import CircuitBreaker from 'opossum';
+import * as CircuitBreaker from 'opossum';
 import { LLMProvider } from './llm.interface';
 import { ConfigService } from '../config/config.service';
 
