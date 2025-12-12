@@ -26,31 +26,80 @@ export function formatRelativeTime(date: string | Date): string {
 }
 
 /**
- * Smart date formatting - uses relative time for recent dates, full date for older ones
+ * Smart date formatting with progressive granularity:
+ * - < 1 hour: "vor 5 Minuten", "vor 30 Minuten"
+ * - Today: "Heute um 14:30"
+ * - Yesterday: "Gestern um 14:30"
+ * - This year: "15. Jan um 14:30"
+ * - Older: "15.01.2023"
+ * 
  * @param date - Date string (UTC) or Date object to format
- * @returns Formatted string - relative time if < 24h, otherwise full date
+ * @returns Smart formatted string in German
  */
 export function formatDateSmart(date: string | Date): string {
-  const now = new Date();
   const targetDate = new Date(date);
-  const diffHours = (now.getTime() - targetDate.getTime()) / (1000 * 60 * 60);
+  const now = new Date();
   
-  // If less than 24 hours ago, show relative time
-  if (diffHours < 24 && diffHours >= 0) {
+  // Less than 1 hour: relative time (e.g., "vor 5 Minuten", "vor 30 Minuten")
+  const diffHours = (now.getTime() - targetDate.getTime()) / (1000 * 60 * 60);
+  if (diffHours < 1 && diffHours >= 0) {
     return formatRelativeTime(date);
   }
   
-  // Otherwise show full date
-  return formatDate(date);
+  // Convert to user's timezone for accurate day comparisons
+  const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const zonedDate = toZonedTime(targetDate, userTimezone);
+  const zonedNow = toZonedTime(now, userTimezone);
+  
+  // Manual today/yesterday check to ensure timezone-aware comparison
+  const targetDay = zonedDate.getDate();
+  const targetMonth = zonedDate.getMonth();
+  const targetYear = zonedDate.getFullYear();
+  const nowDay = zonedNow.getDate();
+  const nowMonth = zonedNow.getMonth();
+  const nowYear = zonedNow.getFullYear();
+  
+  // Today: "Heute um 14:30"
+  if (targetYear === nowYear && targetMonth === nowMonth && targetDay === nowDay) {
+    return `Heute um ${format(zonedDate, 'HH:mm')}`;
+  }
+  
+  // Yesterday: "Gestern um 14:30"
+  // Calculate yesterday using timezone-aware dates for DST/boundary safety
+  const yesterdayMs = zonedNow.getTime() - (24 * 60 * 60 * 1000);
+  const yesterdayDate = toZonedTime(new Date(yesterdayMs), userTimezone);
+  if (targetYear === yesterdayDate.getFullYear() && 
+      targetMonth === yesterdayDate.getMonth() && 
+      targetDay === yesterdayDate.getDate()) {
+    return `Gestern um ${format(zonedDate, 'HH:mm')}`;
+  }
+  
+  // This year: "15. Jan um 14:30"
+  if (targetYear === nowYear) {
+    return format(zonedDate, 'dd. MMM um HH:mm', { locale: de });
+  }
+  
+  // Older: "15.01.2023"
+  return format(zonedDate, 'dd.MM.yyyy', { locale: de });
+}
+
+/**
+ * Formats a date with full timestamp for tooltips and detailed displays
+ * @param date - Date string (UTC) or Date object to format
+ * @returns Full timestamp in German format (dd.MM.yyyy HH:mm)
+ */
+export function formatDateFull(date: string | Date): string {
+  return formatDate(date, 'dd.MM.yyyy HH:mm');
 }
 
 /**
  * Formats a date for display with full timestamp including time
+ * Backwards compatible wrapper for formatDateFull
  * @param date - Date string (UTC) or Date object to format
- * @returns Full timestamp in German format
+ * @returns Full timestamp in German format (dd.MM.yyyy HH:mm)
  */
 export function formatFullTimestamp(date: string | Date): string {
-  return formatDate(date, 'dd. MMMM yyyy, HH:mm');
+  return formatDateFull(date);
 }
 
 /**
