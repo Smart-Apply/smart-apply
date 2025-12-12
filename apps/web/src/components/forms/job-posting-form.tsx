@@ -2,7 +2,6 @@
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,19 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Check, X } from 'lucide-react';
 import { useCreateJobPosting } from '@/hooks/use-job-postings';
-
-// Validation schema for manual job posting form
-const jobPostingSchema = z.object({
-  title: z.string().min(1, 'Titel ist erforderlich').max(200, 'Titel darf maximal 200 Zeichen lang sein'),
-  company: z.string().min(1, 'Unternehmen ist erforderlich').max(200, 'Unternehmen darf maximal 200 Zeichen lang sein'),
-  location: z.string().max(200, 'Standort darf maximal 200 Zeichen lang sein').optional().or(z.literal('')),
-  url: z.string().url('Bitte gebe eine gültige URL ein').optional().or(z.literal('')),
-  fullText: z.string().min(10, 'Stellenbeschreibung muss mindestens 10 Zeichen lang sein'),
-  salary: z.string().max(100, 'Gehalt darf maximal 100 Zeichen lang sein').optional().or(z.literal('')),
-  employmentType: z.string().max(50, 'Beschäftigungsart darf maximal 50 Zeichen lang sein').optional().or(z.literal('')),
-});
-
-type JobPostingFormValues = z.infer<typeof jobPostingSchema>;
+import { jobPostingSchema, type JobPostingFormValues } from '@/lib/validation/schemas';
 
 interface JobPostingFormProps {
   onSave?: () => void;
@@ -44,6 +31,7 @@ export function JobPostingForm({ onSave, onCancel }: JobPostingFormProps) {
 
   const form = useForm<JobPostingFormValues>({
     resolver: zodResolver(jobPostingSchema),
+    mode: 'onBlur', // Validate on blur
     defaultValues: {
       title: '',
       company: '',

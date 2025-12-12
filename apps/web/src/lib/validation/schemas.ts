@@ -122,8 +122,8 @@ export const educationSchema = z.object({
   degree: z.string().min(1, 'Abschluss ist erforderlich'),
   institution: z.string().min(1, 'Institution ist erforderlich'),
   fieldOfStudy: z.string().optional(),
-  startYear: z.string().optional(),
-  endYear: z.string().optional(),
+  startYear: z.string().optional(), // DateString format
+  endYear: z.string().optional(), // DateString format
   gpa: z.string().optional(),
   description: z.string().optional(),
 });
