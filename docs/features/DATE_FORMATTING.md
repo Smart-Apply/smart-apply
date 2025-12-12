@@ -160,8 +160,10 @@ formatDateSmart(yesterday)
 // Test 4: 2 months ago (this year)
 const twoMonthsAgo = new Date();
 twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+twoMonthsAgo.setDate(15);
+twoMonthsAgo.setHours(10, 15, 0, 0);
 formatDateSmart(twoMonthsAgo)
-// Output: "15. Okt um 10:15" (depending on current month)
+// Output: "15. Okt um 10:15" (if current month is December)
 
 // Test 5: January 15, 2023
 formatDateSmart(new Date('2023-01-15T10:30:00Z'))

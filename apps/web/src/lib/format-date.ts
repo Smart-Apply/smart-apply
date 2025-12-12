@@ -1,4 +1,4 @@
-import { format, formatDistanceToNow, isToday, isYesterday } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { de } from 'date-fns/locale';
 
@@ -51,18 +51,30 @@ export function formatDateSmart(date: string | Date): string {
   const zonedDate = toZonedTime(targetDate, userTimezone);
   const zonedNow = toZonedTime(now, userTimezone);
   
+  // Manual today/yesterday check to ensure timezone-aware comparison
+  const targetDay = zonedDate.getDate();
+  const targetMonth = zonedDate.getMonth();
+  const targetYear = zonedDate.getFullYear();
+  const nowDay = zonedNow.getDate();
+  const nowMonth = zonedNow.getMonth();
+  const nowYear = zonedNow.getFullYear();
+  
   // Today: "Heute um 14:30"
-  if (isToday(zonedDate)) {
+  if (targetYear === nowYear && targetMonth === nowMonth && targetDay === nowDay) {
     return `Heute um ${format(zonedDate, 'HH:mm')}`;
   }
   
   // Yesterday: "Gestern um 14:30"
-  if (isYesterday(zonedDate)) {
+  const yesterday = new Date(zonedNow);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (targetYear === yesterday.getFullYear() && 
+      targetMonth === yesterday.getMonth() && 
+      targetDay === yesterday.getDate()) {
     return `Gestern um ${format(zonedDate, 'HH:mm')}`;
   }
   
   // This year: "15. Jan um 14:30"
-  if (zonedDate.getFullYear() === zonedNow.getFullYear()) {
+  if (targetYear === nowYear) {
     return format(zonedDate, 'dd. MMM um HH:mm', { locale: de });
   }
   
