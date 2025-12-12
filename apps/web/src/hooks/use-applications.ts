@@ -2,7 +2,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { useQuery, useMutation, useQueryClient, type UseQueryOptions } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
 import { toastSuccess, toastError } from '@/lib/toast';
-import type { Application, ResumeData } from '@/types';
+import type { Application, ResumeData, PaginatedResponse } from '@/types';
 
 /**
  * Hook to fetch all applications
@@ -15,7 +15,11 @@ export function useApplications(options?: {
 
   return useQuery<Application[]>({
     queryKey: ['applications', { includeJobPosting: options?.includeJobPosting }],
-    queryFn: () => api.applications.list({ includeJobPosting: options?.includeJobPosting }),
+    queryFn: async () => {
+      const response = await api.applications.list({ includeJobPosting: options?.includeJobPosting });
+      // Extract items from paginated response
+      return response.items;
+    },
     enabled: isAuthenticated,
     refetchInterval: options?.refetchInterval,
     staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes

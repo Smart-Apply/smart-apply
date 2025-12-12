@@ -441,3 +441,51 @@ export interface UpdateUserPreferencesDto {
   profilePublic?: boolean;
   analyticsEnabled?: boolean;
 }
+
+// ============================================
+// API Response Types
+// ============================================
+
+/**
+ * Pagination metadata for list responses
+ */
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+/**
+ * Paginated list response format
+ */
+export interface PaginatedResponse<T> {
+  items: T[];
+  pagination: PaginationMeta;
+}
+
+/**
+ * Standard API response wrapper
+ */
+export interface ApiResponse<T> {
+  data: T;
+  meta: {
+    timestamp: string;
+    requestId?: string;
+  };
+}
+
+/**
+ * Standard API error response
+ */
+export interface ApiErrorResponse {
+  statusCode: number;
+  message: string | string[];
+  code?: string;
+  errors?: any[];
+  meta: {
+    timestamp: string;
+    path: string;
+    method: string;
+  };
+}
