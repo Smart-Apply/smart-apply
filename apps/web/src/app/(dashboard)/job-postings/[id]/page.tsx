@@ -21,8 +21,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
-import { de } from 'date-fns/locale';
+import { formatDate } from '@/lib/format-date';
 
 export default function JobPostingDetailPage() {
   const params = useParams();
@@ -96,7 +95,7 @@ export default function JobPostingDetailPage() {
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
                   <span>
-                    {format(new Date(jobPosting.createdAt), 'dd. MMMM yyyy', { locale: de })}
+                    {formatDate(jobPosting.createdAt, 'dd. MMMM yyyy')}
                   </span>
                 </div>
               </div>

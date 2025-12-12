@@ -35,6 +35,7 @@ import { handleDownload, handleZipDownload, generateFilename } from '@/lib/pdf-u
 import { EditableTitle } from '@/components/applications/editable-title';
 import { StatusDropdown } from '@/components/applications/status-dropdown';
 import { ATSAnalysisPanel } from '@/components/applications/ats-analysis-panel';
+import { formatFullTimestamp, formatDate } from '@/lib/format-date';
 
 // Local alias for generation status
 type ApplicationStatus = ApplicationGenerationStatus;
@@ -639,7 +640,7 @@ export default function ApplicationDetailPage() {
                       <p className="font-medium">Anschreiben</p>
                       <p className="text-sm text-gray-500">PDF-Dokument</p>
                       <p className="text-xs text-gray-400 mt-1">
-                        Link läuft ab: {new Date(files.coverLetter.expiresAt).toLocaleTimeString('de-DE')}
+                        Link läuft ab: {formatDate(files.coverLetter.expiresAt, 'HH:mm:ss')}
                       </p>
                     </div>
                   </div>
@@ -691,7 +692,7 @@ export default function ApplicationDetailPage() {
                       <p className="font-medium">Lebenslauf</p>
                       <p className="text-sm text-gray-500">PDF-Dokument</p>
                       <p className="text-xs text-gray-400 mt-1">
-                        Link läuft ab: {new Date(files.resume.expiresAt).toLocaleTimeString('de-DE')}
+                        Link läuft ab: {formatDate(files.resume.expiresAt, 'HH:mm:ss')}
                       </p>
                     </div>
                   </div>
@@ -752,26 +753,14 @@ export default function ApplicationDetailPage() {
           <div className="flex justify-between text-sm">
             <span className="text-gray-500">Erstellt am</span>
             <span className="font-medium">
-              {new Date(application.createdAt).toLocaleDateString('de-DE', {
-                day: '2-digit',
-                month: 'long',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
+              {formatFullTimestamp(application.createdAt)}
             </span>
           </div>
           <Separator />
           <div className="flex justify-between text-sm">
             <span className="text-gray-500">Zuletzt aktualisiert</span>
             <span className="font-medium">
-              {new Date(application.updatedAt).toLocaleDateString('de-DE', {
-                day: '2-digit',
-                month: 'long',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
+              {formatFullTimestamp(application.updatedAt)}
             </span>
           </div>
           <Separator />
