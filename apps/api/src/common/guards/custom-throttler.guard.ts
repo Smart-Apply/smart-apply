@@ -9,9 +9,10 @@ import { AuditLoggerService } from '../audit-logger';
  * 1. Skips rate limiting in development (NODE_ENV === 'development')
  * 2. Supports named throttlers via @UseThrottler('name') decorator
  * 3. Logs rate limit violations for audit purposes
+ * 4. Exposes comprehensive rate limit headers (X-RateLimit-*)
  *
  * Note: @nestjs/throttler v5 changed the storage API - it only has increment(),
- * not get(). We rely on the parent class for actual rate limiting logic.
+ * not get(). We override handleRequest to track hits and set headers.
  */
 @Injectable()
 export class CustomThrottlerGuard extends ThrottlerGuard {
@@ -40,48 +41,73 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
       return true;
     }
 
+    // Call parent implementation which calls handleRequest for each throttler
+    return super.canActivate(context);
+  }
+
+  /**
+   * Override handleRequest to add comprehensive rate limit headers
+   * This is called by the parent's canActivate method for each throttler
+   */
+  protected async handleRequest(
+    context: ExecutionContext,
+    limit: number,
+    ttl: number,
+    throttler: any,
+  ): Promise<boolean> {
+    const request = context.switchToHttp().getRequest();
     const response = context.switchToHttp().getResponse();
+    const tracker = await this.getTracker(request);
+    const key = this.generateKey(context, tracker, throttler.name || 'default');
 
     try {
-      // Call parent implementation which handles the actual rate limiting
-      const result = await super.canActivate(context);
+      // Increment counter and get total hits
+      const { totalHits } = await this.storageService.increment(key, ttl);
 
-      // Add basic rate limit headers on success
-      const throttlers = await this.getThrottlers(context);
-      if (throttlers.length > 0) {
-        const throttler = throttlers[0];
-        response.setHeader('X-RateLimit-Limit', throttler.limit);
+      // Check if limit exceeded
+      if (totalHits > limit) {
+        const user = request.user;
+
+        // Log rate limit violation
+        console.warn('[RateLimitGuard] Rate limit exceeded:', {
+          endpoint: request.url,
+          method: request.method,
+          throttlerName: throttler.name,
+          limit,
+          ttl: `${ttl}ms`,
+          tracker,
+          userId: user?.userId || 'anonymous',
+          totalHits,
+        });
+
+        this.auditLogger.logRateLimitViolation(user?.id, request.url, request);
+
+        // Set rate limit headers for exceeded limit
+        response.setHeader('X-RateLimit-Limit', limit.toString());
+        response.setHeader('X-RateLimit-Remaining', '0');
+        response.setHeader('X-RateLimit-Reset', (Date.now() + ttl).toString());
+        response.setHeader('Retry-After', Math.ceil(ttl / 1000).toString());
+
+        // Throw exception to trigger 429 response
+        throw new ThrottlerException();
       }
 
-      return result;
+      // Calculate remaining requests
+      const remaining = Math.max(0, limit - totalHits);
+
+      // Set comprehensive rate limit headers on success
+      response.setHeader('X-RateLimit-Limit', limit.toString());
+      response.setHeader('X-RateLimit-Remaining', remaining.toString());
+      response.setHeader('X-RateLimit-Reset', (Date.now() + ttl).toString());
+
+      return true;
     } catch (error) {
+      // Re-throw ThrottlerException to trigger 429 response
       if (error instanceof ThrottlerException) {
-        const throttlers = await this.getThrottlers(context);
-        if (throttlers.length > 0) {
-          const throttler = throttlers[0];
-          const tracker = await this.getTracker(request);
-          const user = request.user;
-
-          // Log rate limit violation
-          console.warn('[RateLimitGuard] Rate limit exceeded:', {
-            endpoint: request.url,
-            method: request.method,
-            throttlerName: throttler.name,
-            limit: throttler.limit,
-            ttl: `${throttler.ttl}ms`,
-            tracker,
-            userId: user?.userId || 'anonymous',
-          });
-
-          this.auditLogger.logRateLimitViolation(user?.id, request.url, request);
-
-          // Add rate limit headers
-          response.setHeader('X-RateLimit-Limit', throttler.limit);
-          response.setHeader('X-RateLimit-Remaining', '0');
-          response.setHeader('Retry-After', Math.ceil(throttler.ttl / 1000));
-        }
+        throw error;
       }
-
+      // For other errors, log and re-throw
+      console.error('[RateLimitGuard] Error in handleRequest:', error);
       throw error;
     }
   }

@@ -137,8 +137,41 @@ async function apiRequest<T>(
         credentials: 'include', // Include cookies with requests
       });
 
+      // Extract and handle rate limit headers
+      const rateLimitRemaining = response.headers.get('X-RateLimit-Remaining');
+      const rateLimitReset = response.headers.get('X-RateLimit-Reset');
+      const rateLimitLimit = response.headers.get('X-RateLimit-Limit');
+
+      // Warn user if close to rate limit (less than 10 requests remaining)
+      if (rateLimitRemaining && rateLimitLimit && parseInt(rateLimitRemaining) < 10 && parseInt(rateLimitRemaining) > 0) {
+        const resetTime = rateLimitReset ? parseInt(rateLimitReset) : Date.now();
+        const minutesUntilReset = Math.ceil((resetTime - Date.now()) / 60000);
+        
+        // Only show toast on client side
+        if (typeof window !== 'undefined') {
+          const { toast } = await import('sonner');
+          toast.warning(
+            `Nur noch ${rateLimitRemaining} Anfragen verfügbar. ` +
+            `Limit wird zurückgesetzt in ${minutesUntilReset} Minute${minutesUntilReset !== 1 ? 'n' : ''}.`
+          );
+        }
+      }
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
+        
+        // Handle rate limit errors (429 Too Many Requests)
+        if (response.status === 429) {
+          const retryAfter = response.headers.get('Retry-After');
+          const retrySeconds = retryAfter ? parseInt(retryAfter) : 60;
+          const retryMinutes = Math.ceil(retrySeconds / 60);
+          
+          throw new ApiError(
+            429,
+            `Zu viele Anfragen. Bitte warte ${retryMinutes} Minute${retryMinutes !== 1 ? 'n' : ''} und versuche es erneut.`,
+            errorData
+          );
+        }
         
         // Handle CSRF token errors (403 Forbidden with CSRF error)
         if (response.status === 403 && errorData?.code === 'EBADCSRFTOKEN') {
