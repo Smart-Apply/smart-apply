@@ -3,8 +3,10 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useApplications, useDeleteApplication } from '@/hooks/use-applications';
+import { useDebounce } from '@/hooks/use-debounce';
 import { Button } from '@/components/ui/button';
 import { SubmitButton } from '@/components/ui/submit-button';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -53,7 +55,9 @@ import {
   MoreHorizontal,
   Calendar,
   MapPin,
-  Building2
+  Building2,
+  Search,
+  Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Application, ApplicationGenerationStatus, ApplicationTrackingStatus } from '@/types';
@@ -184,6 +188,14 @@ export default function ApplicationsPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [applicationToDelete, setApplicationToDelete] = useState<{ id: string; title: string } | null>(null);
+  
+  // Search state with debouncing
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300); // 300ms delay for search
+  
+  // Debounced filter states (150ms for discrete changes)
+  const debouncedTab = useDebounce(selectedTab, 150);
+  const debouncedSort = useDebounce(sortBy, 150);
 
   // Track previous application statuses to detect changes
   const prevStatusesRef = useRef<Map<string, ApplicationGenerationStatus>>(new Map());
@@ -242,17 +254,42 @@ export default function ApplicationsPage() {
     });
   }, [applications]);
 
-  // Filter applications by tracking status
+  // Filter applications by tracking status and search term
   const filteredApplications = useMemo(() => {
     if (!applications) return [];
-    if (selectedTab === 'all') return applications;
-    return applications.filter((app) => app.applicationStatus === selectedTab);
-  }, [applications, selectedTab]);
+    
+    let filtered = applications;
+    
+    // Filter by status tab using debounced value
+    if (debouncedTab !== 'all') {
+      filtered = filtered.filter((app) => app.applicationStatus === debouncedTab);
+    }
+    
+    // Filter by search term using debounced value
+    if (debouncedSearchTerm.trim()) {
+      const searchLower = debouncedSearchTerm.toLowerCase();
+      filtered = filtered.filter((app) => {
+        const title = (app.title || app.jobPosting?.title || '').toLowerCase();
+        const company = (app.jobPosting?.company || '').toLowerCase();
+        const location = (app.jobPosting?.location || '').toLowerCase();
+        const notes = (app.notes || '').toLowerCase();
+        
+        return (
+          title.includes(searchLower) ||
+          company.includes(searchLower) ||
+          location.includes(searchLower) ||
+          notes.includes(searchLower)
+        );
+      });
+    }
+    
+    return filtered;
+  }, [applications, debouncedTab, debouncedSearchTerm]);
 
-  // Sort filtered applications
+  // Sort filtered applications using debounced sort value
   const sortedApplications = useMemo(() => {
-    return sortApplications(filteredApplications, sortBy);
-  }, [filteredApplications, sortBy]);
+    return sortApplications(filteredApplications, debouncedSort);
+  }, [filteredApplications, debouncedSort]);
 
   // Pagination
   const totalPages = Math.ceil(sortedApplications.length / ITEMS_PER_PAGE);
@@ -261,10 +298,10 @@ export default function ApplicationsPage() {
     return sortedApplications.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   }, [sortedApplications, currentPage]);
 
-  // Reset to page 1 when filter or sort changes
+  // Reset to page 1 when filter, sort, or search changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedTab, sortBy]);
+  }, [debouncedTab, debouncedSort, debouncedSearchTerm]);
 
   // Count applications by tracking status
   const statusCounts = useMemo(() => ({
@@ -366,6 +403,33 @@ export default function ApplicationsPage() {
         </div>
       ) : applications && applications.length > 0 ? (
         <div className="space-y-6">
+          {/* Search Input */}
+          <div className="relative w-full max-w-md">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Bewerbungen durchsuchen..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 pr-10 h-11 bg-background"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Suche löschen"
+              >
+                <XCircle className="h-4 w-4" />
+              </button>
+            )}
+            {/* Show loading indicator while debouncing */}
+            {searchTerm !== debouncedSearchTerm && (
+              <div className="absolute right-10 top-1/2 -translate-y-1/2">
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              </div>
+            )}
+          </div>
+          
           {/* Controls: Filter & Sort */}
           <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between bg-card/50 p-4 rounded-xl border border-border/50">
             <div className="flex items-center gap-2 w-full lg:w-auto">
