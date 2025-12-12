@@ -110,6 +110,28 @@ describe('Rate Limiting (e2e)', () => {
       const remaining = parseInt(response.headers['x-ratelimit-remaining']);
       expect(remaining).toBeGreaterThanOrEqual(0);
       expect(remaining).toBeLessThanOrEqual(5);
+
+      // Verify X-RateLimit-Reset is a timestamp in the future
+      const resetTimestamp = parseInt(response.headers['x-ratelimit-reset']);
+      expect(resetTimestamp).toBeGreaterThan(Date.now());
+    });
+
+    it('should expose rate limit headers via CORS', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/api/v1/auth/login')
+        .set('Origin', 'http://localhost:3001')
+        .send({
+          email: `cors-test-${Date.now()}@example.com`,
+          password: 'Test123!',
+        });
+
+      // Check that CORS Access-Control-Expose-Headers includes rate limit headers
+      const exposedHeaders = response.headers['access-control-expose-headers'];
+      expect(exposedHeaders).toBeDefined();
+      expect(exposedHeaders).toContain('X-RateLimit-Limit');
+      expect(exposedHeaders).toContain('X-RateLimit-Remaining');
+      expect(exposedHeaders).toContain('X-RateLimit-Reset');
+      expect(exposedHeaders).toContain('Retry-After');
     });
   });
 
