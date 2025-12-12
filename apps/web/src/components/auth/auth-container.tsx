@@ -9,6 +9,7 @@ import { api, resetAuthRedirectFlag } from '@/lib/api-client';
 import { useAuthStore } from '@/stores/auth-store';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { SubmitButton } from '@/components/ui/submit-button';
 import {
   Form,
   FormControl,
@@ -307,13 +308,14 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
                 />
 
                 <div className="flex justify-center pt-2">
-                  <Button
+                  <SubmitButton
                     type="submit"
                     className="h-10 w-40 rounded-xl bg-primary font-poppins text-base font-semibold text-primary-foreground hover:bg-primary/90"
-                    disabled={loginForm.formState.isSubmitting}
+                    isLoading={loginForm.formState.isSubmitting}
+                    loadingText="Anmelden..."
                   >
-                    {loginForm.formState.isSubmitting ? 'Anmelden...' : 'Anmelden'}
-                  </Button>
+                    Anmelden
+                  </SubmitButton>
                 </div>
               </form>
             </Form>
@@ -462,13 +464,14 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
                 />
 
                 <div className="flex justify-center pt-2">
-                  <Button
+                  <SubmitButton
                     type="submit"
                     className="h-10 w-40 rounded-xl bg-primary font-poppins text-base font-semibold text-primary-foreground hover:bg-primary/90"
-                    disabled={registerForm.formState.isSubmitting}
+                    isLoading={registerForm.formState.isSubmitting}
+                    loadingText="Registriere..."
                   >
-                    {registerForm.formState.isSubmitting ? 'Registriere...' : 'Registrieren'}
-                  </Button>
+                    Registrieren
+                  </SubmitButton>
                 </div>
               </form>
             </Form>
