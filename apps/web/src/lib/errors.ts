@@ -2,6 +2,8 @@
  * Error handling utilities for Smart Apply
  */
 
+import { getErrorMessage as getLocalizedErrorMessage, formatValidationErrors } from './error-messages';
+
 /**
  * Custom API Error class with additional context
  */
@@ -13,6 +15,8 @@ export class ApiError extends Error {
       message?: string;
       error?: string;
       statusCode?: number;
+      code?: string;
+      errors?: string[] | string;
     }
   ) {
     super(data?.message || `API Error: ${status} ${statusText}`);
@@ -66,34 +70,45 @@ export enum ErrorType {
 
 /**
  * Get user-friendly error message based on error type
+ * Prioritizes backend error code, then message, then defaults
  */
 export function getErrorMessage(error: unknown): string {
   // Network errors
   if (error instanceof NetworkError || (error instanceof TypeError && error.message === 'Failed to fetch')) {
-    return 'Netzwerkfehler. Bitte überprüfe deine Internetverbindung.';
+    return getLocalizedErrorMessage('NETWORK_ERROR');
   }
 
   // API errors
   if (ApiError.isApiError(error)) {
-    // Use backend error message if available
+    // Priority 1: Use backend error code to get localized message
+    if (error.data?.code) {
+      return getLocalizedErrorMessage(error.data.code, error.data.message);
+    }
+    
+    // Priority 2: Use backend error message if available
     if (error.data?.message) {
       return error.data.message;
     }
+    
+    // Priority 3: Check for validation errors
+    if (error.data?.errors) {
+      return formatValidationErrors(error.data.errors);
+    }
 
-    // Default messages based on status code
+    // Priority 4: Default messages based on status code
     switch (error.status) {
       case ErrorType.UNAUTHORIZED:
-        return 'Nicht autorisiert. Bitte melde dich erneut an.';
+        return getLocalizedErrorMessage('UNAUTHORIZED');
       case ErrorType.FORBIDDEN:
-        return 'Zugriff verweigert. Du hast keine Berechtigung für diese Aktion.';
+        return getLocalizedErrorMessage('FORBIDDEN');
       case ErrorType.NOT_FOUND:
-        return 'Die angeforderte Ressource wurde nicht gefunden.';
+        return getLocalizedErrorMessage('NOT_FOUND');
       case ErrorType.VALIDATION:
-        return 'Ungültige Eingabe. Bitte überprüfe deine Daten.';
+        return getLocalizedErrorMessage('VALIDATION_ERROR');
       case ErrorType.RATE_LIMIT:
-        return 'Zu viele Anfragen. Bitte versuche es später erneut.';
+        return getLocalizedErrorMessage('RATE_LIMIT_EXCEEDED');
       case ErrorType.SERVER_ERROR:
-        return 'Ein Serverfehler ist aufgetreten. Bitte versuche es später erneut.';
+        return getLocalizedErrorMessage('INTERNAL_SERVER_ERROR');
       default:
         return `Ein Fehler ist aufgetreten: ${error.statusText}`;
     }
@@ -104,7 +119,7 @@ export function getErrorMessage(error: unknown): string {
     return error.message;
   }
 
-  return 'Ein unbekannter Fehler ist aufgetreten.';
+  return getLocalizedErrorMessage();
 }
 
 /**
@@ -117,6 +132,14 @@ export function isPermanentAuthFailure(error: unknown): boolean {
   }
   
   const message = error.data?.message || error.message || '';
+  const code = error.data?.code || '';
+  
+  // Check for specific error codes
+  if (code === 'USER_NOT_FOUND' || code === 'REFRESH_TOKEN_NOT_FOUND') {
+    return true;
+  }
+  
+  // Fallback to message checking
   return (
     message.includes('User not found') ||
     message.includes('Refresh token not found') ||

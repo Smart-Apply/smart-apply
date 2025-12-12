@@ -258,8 +258,6 @@ export class ApplicationsService {
     } catch (error) {
       this.logger.error('Failed to parse stored resume JSON', error as Error);
       throw new BadRequestWithCode(ErrorCode.APPLICATION_RESUME_CORRUPTED);
-        'Gespeicherter Lebenslauf ist beschädigt. Bitte aktualisieren.',
-      );
     }
   }
 
