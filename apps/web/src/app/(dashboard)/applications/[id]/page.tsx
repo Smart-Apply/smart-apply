@@ -28,14 +28,32 @@ import {
   Pencil,
 } from 'lucide-react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import type { ApplicationGenerationStatus } from '@/types';
 import { toast } from 'sonner';
-import { PDFPreviewModal } from '@/components/pdf/pdf-preview-modal';
+import { Skeleton } from '@/components/ui/skeleton';
 import { handleDownload, handleZipDownload, generateFilename } from '@/lib/pdf-utils';
 import { EditableTitle } from '@/components/applications/editable-title';
 import { StatusDropdown } from '@/components/applications/status-dropdown';
 import { ATSAnalysisPanel } from '@/components/applications/ats-analysis-panel';
 import { formatFullTimestamp, formatDate } from '@/lib/format-date';
+import { LOADING_MESSAGES } from '@/lib/constants';
+
+// Dynamic import for PDF preview modal (saves ~300KB)
+// Only loaded when user clicks preview button
+const PDFPreviewModal = dynamic(
+  () => import('@/components/pdf/pdf-preview-modal').then(mod => ({ default: mod.PDFPreviewModal })),
+  {
+    loading: () => (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-8">
+          <CenteredLoader message={LOADING_MESSAGES.PDF_PREVIEW} />
+        </div>
+      </div>
+    ),
+    ssr: false,
+  }
+);
 
 // Local alias for generation status
 type ApplicationStatus = ApplicationGenerationStatus;

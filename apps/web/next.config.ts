@@ -1,6 +1,13 @@
 import type { NextConfig } from "next";
 import path from "path";
 
+// Bundle analyzer for webpack analysis (ANALYZE=true npm run build)
+// Note: Using require() instead of import because @next/bundle-analyzer
+// is a CommonJS module that needs to wrap the config
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+});
+
 const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
@@ -26,6 +33,12 @@ const nextConfig: NextConfig = {
         pathname: '/api/v1/templates/*/preview',
       },
     ],
+  },
+
+  // Experimental optimizations for package imports
+  // Tree-shaking optimization for large icon libraries
+  experimental: {
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
 
   // Security headers for enhanced XSS and clickjacking protection
@@ -67,4 +80,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withBundleAnalyzer(nextConfig);

@@ -313,9 +313,15 @@ npm run dev                # Start with Turbopack (Port 3001)
 npm run lint               # ESLint check
 npm run build              # Production build (validates types)
 
+# Bundle Analysis
+ANALYZE=true npm run build # Analyze bundle size with webpack-bundle-analyzer
+
 # UI Components
 npx shadcn@latest add [component]  # Add shadcn/ui component
 ```
+
+**Bundle Optimization:**
+The frontend uses dynamic imports for heavy components (PDF viewer, rich text editors) to reduce initial bundle size. See [`apps/web/docs/BUNDLE_OPTIMIZATION.md`](apps/web/docs/BUNDLE_OPTIMIZATION.md) for details.
 
 ### Demo Credentials
 

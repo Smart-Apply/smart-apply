@@ -16,13 +16,38 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SkillsManager } from '@/components/forms/skills-manager';
 import { LanguagesManager } from '@/components/forms/languages-manager';
-import { ExperienceManager } from '@/components/forms/experience-manager';
-import { EducationManager } from '@/components/forms/education-manager';
 import { CertificatesManager } from '@/components/forms/certificates-manager';
-import { ProjectsManager } from '@/components/forms/projects-manager';
 import { ArrowLeft, Loader2, User, Briefcase, GraduationCap, Code, Award, Save } from 'lucide-react';
 import { profileFormSchema, type ProfileFormValues } from '@/lib/validation/profile-schema';
 import type { Skill, Experience, Education, Certificate, Project, Language } from '@/types';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Dynamic imports for form managers that use Tiptap editor (saves ~200KB)
+// Only loaded when user navigates to profile edit page
+const ExperienceManager = dynamic(
+  () => import('@/components/forms/experience-manager').then(mod => ({ default: mod.ExperienceManager })),
+  {
+    loading: () => <Skeleton className="h-64 w-full" />,
+    ssr: false,
+  }
+);
+
+const EducationManager = dynamic(
+  () => import('@/components/forms/education-manager').then(mod => ({ default: mod.EducationManager })),
+  {
+    loading: () => <Skeleton className="h-64 w-full" />,
+    ssr: false,
+  }
+);
+
+const ProjectsManager = dynamic(
+  () => import('@/components/forms/projects-manager').then(mod => ({ default: mod.ProjectsManager })),
+  {
+    loading: () => <Skeleton className="h-64 w-full" />,
+    ssr: false,
+  }
+);
 
 export default function ProfileEditPage() {
   const router = useRouter();
