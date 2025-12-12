@@ -4,15 +4,35 @@ import { ConfigService } from '../../../config/config.service';
 import { TemplateRendererService } from '../../template-renderer.service';
 
 // Mock Puppeteer module
-jest.mock('puppeteer', () => ({
-  launch: jest.fn().mockResolvedValue({
-    newPage: jest.fn().mockResolvedValue({
-      setContent: jest.fn(),
-      addStyleTag: jest.fn(), // Add missing method
-      pdf: jest.fn().mockResolvedValue(Buffer.from('%PDF-1.4\nMock PDF content')),
-      close: jest.fn(),
-    }),
+const mockBrowser = {
+  newPage: jest.fn().mockResolvedValue({
+    setContent: jest.fn(),
+    addStyleTag: jest.fn(),
+    setDefaultNavigationTimeout: jest.fn(),
+    setDefaultTimeout: jest.fn(),
+    pdf: jest.fn().mockResolvedValue(Buffer.from('%PDF-1.4\nMock PDF content')),
     close: jest.fn(),
+  }),
+  close: jest.fn(),
+  isConnected: jest.fn().mockReturnValue(true),
+  process: jest.fn().mockReturnValue({ pid: 12345 }),
+};
+
+jest.mock('puppeteer', () => ({
+  launch: jest.fn().mockResolvedValue(mockBrowser),
+}));
+
+// Mock generic-pool
+jest.mock('generic-pool', () => ({
+  createPool: jest.fn().mockReturnValue({
+    acquire: jest.fn().mockResolvedValue(mockBrowser),
+    release: jest.fn().mockResolvedValue(undefined),
+    drain: jest.fn().mockResolvedValue(undefined),
+    clear: jest.fn().mockResolvedValue(undefined),
+    size: 1,
+    available: 1,
+    borrowed: 0,
+    pending: 0,
   }),
 }));
 
@@ -21,9 +41,13 @@ describe('PdfService', () => {
 
   const mockConfigService = {
     puppeteerExecutablePath: undefined,
-    isDevelopment: true,
+    puppeteerMaxBrowsers: 3,
+    puppeteerMinBrowsers: 1,
+    puppeteerIdleTimeoutMs: 30000,
+    puppeteerEvictionIntervalMs: 10000,
+    isDevelopment: false, // Disable metrics logging in tests
     isProduction: false,
-    isTest: false,
+    isTest: true,
   };
 
   beforeAll(async () => {
@@ -45,10 +69,13 @@ describe('PdfService', () => {
     }).compile();
 
     service = module.get<PdfService>(PdfService);
+    
+    // Initialize the service (triggers pool creation)
+    await service.onModuleInit();
   }, 30000);
 
   afterAll(async () => {
-    // Cleanup browser
+    // Cleanup browser pool
     await service.onModuleDestroy();
   }, 10000);
 
