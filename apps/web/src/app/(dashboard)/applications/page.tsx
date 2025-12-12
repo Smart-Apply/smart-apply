@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/dialog';
 import { ApplicationCardSkeleton } from '@/components/shared/skeletons';
 import { ATSScoreCell } from '@/components/applications/ats-score-cell';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
   Plus,
   FileText,
@@ -539,27 +540,23 @@ export default function ApplicationsPage() {
               </Table>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-16 text-center rounded-2xl border border-dashed border-border bg-muted/10 animate-in fade-in zoom-in-95 duration-500">
-              <div className="h-16 w-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
-                <FileText className="h-8 w-8 text-muted-foreground/50" />
-              </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">
-                Keine Bewerbungen gefunden
-              </h3>
-              <p className="text-muted-foreground max-w-sm mb-6">
-                Es gibt keine Bewerbungen mit dem Status &quot;
-                {TRACKING_STATUS_TABS.find((t) => t.value === selectedTab)?.label}&quot;.
-              </p>
-              {selectedTab !== 'all' ? (
-                <Button variant="outline" onClick={() => setSelectedTab('all')}>
-                  Alle anzeigen
-                </Button>
-              ) : (
-                <Button onClick={() => router.push('/applications/new')}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Erste Bewerbung erstellen
-                </Button>
-              )}
+            <div className="rounded-2xl border border-dashed border-border bg-muted/10 animate-in fade-in zoom-in-95 duration-500">
+              <EmptyState
+                icon={FileText}
+                title="Keine Bewerbungen gefunden"
+                description={`Es gibt keine Bewerbungen mit dem Status "${TRACKING_STATUS_TABS.find((t) => t.value === selectedTab)?.label}".`}
+                action={
+                  selectedTab !== 'all'
+                    ? {
+                        label: 'Alle anzeigen',
+                        onClick: () => setSelectedTab('all'),
+                      }
+                    : {
+                        label: 'Erste Bewerbung erstellen',
+                        onClick: () => router.push('/applications/new'),
+                      }
+                }
+              />
             </div>
           )}
 

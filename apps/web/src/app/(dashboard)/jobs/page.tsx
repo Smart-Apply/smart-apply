@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { JobPostingParser } from '@/components/forms/job-posting-parser';
 import { JobPostingForm } from '@/components/forms/job-posting-form';
+import { EmptyState } from '@/components/ui/empty-state';
 import { useJobPostings, useDeleteJobPosting } from '@/hooks/use-job-postings';
 import {
   Plus,
@@ -253,24 +254,16 @@ export default function JobsPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="flex flex-col items-center justify-center py-20 text-center rounded-2xl border border-dashed border-border bg-muted/10 animate-in fade-in zoom-in-95 duration-500">
-            <div className="relative mb-6">
-              <div className="absolute inset-0 bg-blue-500/10 rounded-full blur-xl animate-pulse"></div>
-              <div className="relative h-20 w-20 rounded-full bg-background shadow-soft flex items-center justify-center border border-border/50">
-                <Briefcase className="h-10 w-10 text-blue-500" />
-              </div>
-            </div>
-            <h3 className="text-xl font-bold text-foreground mb-2">
-              Keine Stellenanzeigen
-            </h3>
-            <p className="text-muted-foreground mb-8 text-center max-w-md">
-              Du hast noch keine Stellenanzeigen gespeichert. Füge deine erste
-              Stelle hinzu, um loszulegen.
-            </p>
-            <Button size="lg" onClick={() => setShowInput(true)} className="shadow-lg hover:shadow-xl transition-all">
-              <Plus className="mr-2 h-5 w-5" />
-              Erste Stelle hinzufügen
-            </Button>
+          <div className="rounded-2xl border border-dashed border-border bg-muted/10 animate-in fade-in zoom-in-95 duration-500">
+            <EmptyState
+              icon={Briefcase}
+              title="Keine Stellenanzeigen"
+              description="Du hast noch keine Stellenanzeigen gespeichert. Füge deine erste Stelle hinzu, um loszulegen."
+              action={{
+                label: 'Erste Stelle hinzufügen',
+                onClick: () => setShowInput(true),
+              }}
+            />
           </div>
         )}
       </div>

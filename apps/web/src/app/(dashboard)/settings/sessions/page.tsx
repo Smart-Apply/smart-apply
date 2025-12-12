@@ -1,11 +1,12 @@
 'use client';
 
-import { Monitor, Smartphone, LogOut, AlertTriangle } from 'lucide-react';
+import { Monitor, Smartphone, LogOut, AlertTriangle, Shield } from 'lucide-react';
 import { useSessions, useRevokeSession, useRevokeAllSessions } from '@/hooks/use-sessions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -274,15 +275,13 @@ export default function SessionsPage() {
 
         {/* Empty State - Only one session */}
         {sessions.length === 1 && (
-          <Card className="border-dashed">
-            <CardContent className="flex flex-col items-center justify-center py-8">
-              <Monitor className="h-12 w-12 text-muted-foreground mb-3" />
-              <p className="text-sm text-muted-foreground text-center">
-                This is your only active session.<br />
-                Login from another device to see it here.
-              </p>
-            </CardContent>
-          </Card>
+          <div className="rounded-xl border border-dashed border-border bg-muted/10">
+            <EmptyState
+              icon={Shield}
+              title="Nur eine aktive Sitzung"
+              description="Dies ist deine einzige aktive Sitzung. Melde dich von einem anderen Gerät an, um weitere Sitzungen hier zu sehen."
+            />
+          </div>
         )}
       </div>
     </div>
