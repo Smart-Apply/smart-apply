@@ -10,6 +10,7 @@ import { config } from 'dotenv';
 import { join } from 'path';
 import { AppModule } from './app.module';
 import { ConfigService } from './config/config.service';
+import { TransformInterceptor } from './common/interceptors';
 
 // Load .env file from workspace root
 config({ path: join(__dirname, '../../../.env') });
@@ -165,6 +166,9 @@ async function bootstrap() {
       enableDebugMessages: true,
     }),
   );
+
+  // Global response transformation - wraps all successful responses in { data, meta } format
+  app.useGlobalInterceptors(new TransformInterceptor());
 
   // API prefix
   app.setGlobalPrefix('api/v1');

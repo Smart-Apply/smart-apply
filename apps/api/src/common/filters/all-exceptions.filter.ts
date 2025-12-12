@@ -95,15 +95,19 @@ export class AllExceptionsFilter implements ExceptionFilter {
       }
     }
 
+    const timestamp = new Date().toISOString();
+    
     const errorResponse = {
       statusCode: status,
-      timestamp: new Date().toISOString(),
-      path: request.url,
-      method: request.method,
       message,
       ...(errorCode && { code: errorCode }), // Include error code
       ...(errors && { errors }), // Include detailed errors if available
       ...additionalData, // Include additional metadata (e.g., applicationId)
+      meta: {
+        timestamp,
+        path: request.url,
+        method: request.method,
+      },
     };
 
     // Log error details

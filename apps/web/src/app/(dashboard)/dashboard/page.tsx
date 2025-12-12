@@ -93,7 +93,8 @@ export default function DashboardPage() {
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
-        const apps = await api.applications.list({ includeJobPosting: true });
+        const response = await api.applications.list({ includeJobPosting: true });
+        const apps = response.items; // Extract items from paginated response
         setApplications(apps);
 
         // Calculate stats
