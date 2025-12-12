@@ -46,6 +46,7 @@ Smart Apply is an intelligent job application assistant that:
 - **Framework**: NestJS (TypeScript)
 - **Database**: PostgreSQL (Docker for dev, Azure Database for PostgreSQL in prod)
 - **ORM**: Prisma
+- **Caching**: In-memory (node-cache) for templates, Redis-ready for production scaling
 - **Storage**: Azure Blob Storage (disk in dev)
 - **Queue/Jobs**: Azure Service Bus
 - **LLM**: Azure AI Foundry Agents, Azure OpenAI, Hugging Face (with mock provider for tests)
