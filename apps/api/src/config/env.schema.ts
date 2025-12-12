@@ -108,6 +108,10 @@ const envSchema = z.object({
     .string()
     .default('true')
     .transform((val) => val === 'true'),
+
+  // Pagination
+  DEFAULT_PAGE_SIZE: z.string().default('20'),
+  MAX_PAGE_SIZE: z.string().default('100'),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

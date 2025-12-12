@@ -5,14 +5,16 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
   HttpCode,
   HttpStatus,
   BadRequestException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { PaginationQueryDto } from '../common/dto';
 import { JobPostingsService } from './job-postings.service';
 import { ParseJobPostingDto, CreateJobPostingDto, JobPostingResponseDto } from './dto';
 import { KeywordsService, MatchAnalysisResponseDto } from '../keywords';
@@ -60,15 +62,53 @@ export class JobPostingsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'List all job postings for current user' })
+  @ApiOperation({ summary: 'List all job postings for current user with pagination' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number (starts at 1)',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page (max: 100)',
+    example: 20,
+  })
   @ApiResponse({
     status: 200,
-    description: 'Job postings retrieved successfully',
-    type: [JobPostingResponseDto],
+    description: 'Job postings retrieved successfully with pagination',
+    schema: {
+      type: 'object',
+      properties: {
+        items: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/JobPostingResponseDto' },
+        },
+        pagination: {
+          type: 'object',
+          properties: {
+            page: { type: 'number', example: 1 },
+            limit: { type: 'number', example: 20 },
+            total: { type: 'number', example: 50 },
+            totalPages: { type: 'number', example: 3 },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async listJobPostings(@CurrentUser('id') userId: string): Promise<JobPostingResponseDto[]> {
-    return this.jobPostingsService.listJobPostings(userId);
+  async listJobPostings(
+    @CurrentUser('id') userId: string,
+    @Query() paginationQuery: PaginationQueryDto,
+  ) {
+    return this.jobPostingsService.listJobPostings(
+      userId,
+      paginationQuery.page,
+      paginationQuery.limit,
+    );
   }
 
   @Get(':id')

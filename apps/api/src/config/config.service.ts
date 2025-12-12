@@ -203,4 +203,13 @@ export class ConfigService {
   get enableCompression(): boolean {
     return this.nestConfig.get('ENABLE_COMPRESSION', { infer: true });
   }
+
+  // Pagination
+  get defaultPageSize(): number {
+    return parseInt(this.nestConfig.get('DEFAULT_PAGE_SIZE', { infer: true }), 10);
+  }
+
+  get maxPageSize(): number {
+    return parseInt(this.nestConfig.get('MAX_PAGE_SIZE', { infer: true }), 10);
+  }
 }

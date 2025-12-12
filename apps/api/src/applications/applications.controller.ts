@@ -23,6 +23,7 @@ import { Observable } from 'rxjs';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { PaginationQueryDto } from '../common/dto';
 import { ApplicationsService } from './applications.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { ExportApplicationDto } from './dto/export-application.dto';
@@ -197,7 +198,7 @@ export class ApplicationsController {
   @Get()
   @ApiOperation({
     summary: 'Get all applications',
-    description: 'Returns all applications for the authenticated user',
+    description: 'Returns paginated applications for the authenticated user (default: 20 per page, max: 100)',
   })
   @ApiQuery({
     name: 'includeJobPosting',
@@ -205,18 +206,55 @@ export class ApplicationsController {
     type: Boolean,
     description: 'Include job posting details in response',
   })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number (starts at 1)',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page (max: 100)',
+    example: 20,
+  })
   @ApiResponse({
     status: 200,
-    description: 'Applications retrieved successfully',
-    type: [ApplicationResponseDto],
+    description: 'Applications retrieved successfully with pagination',
+    schema: {
+      type: 'object',
+      properties: {
+        items: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/ApplicationResponseDto' },
+        },
+        pagination: {
+          type: 'object',
+          properties: {
+            page: { type: 'number', example: 1 },
+            limit: { type: 'number', example: 20 },
+            total: { type: 'number', example: 100 },
+            totalPages: { type: 'number', example: 5 },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async findAll(
     @CurrentUser() user: any,
     @Query('includeJobPosting', new ParseBoolPipe({ optional: true }))
     includeJobPosting = false,
-  ): Promise<ApplicationResponseDto[]> {
-    return this.applicationsService.findAll(user.id, includeJobPosting);
+    @Query() paginationQuery: PaginationQueryDto,
+  ) {
+    return this.applicationsService.findAll(
+      user.id,
+      includeJobPosting,
+      paginationQuery.page,
+      paginationQuery.limit,
+    );
   }
 
   @Get(':id')

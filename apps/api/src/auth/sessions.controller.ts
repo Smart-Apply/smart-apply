@@ -1,8 +1,9 @@
-import { Controller, Get, Delete, Param, UseGuards, NotFoundException } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Get, Delete, Param, Query, UseGuards, NotFoundException } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { SessionService } from './session.service';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { PaginationQueryDto } from '../common/dto';
 import { PrismaService } from '../prisma/prisma.service';
 
 @ApiTags('auth/sessions')
@@ -16,9 +17,27 @@ export class SessionsController {
   ) {}
 
   @Get()
-  @ApiOperation({ summary: 'Get all active sessions for the current user' })
-  async getSessions(@CurrentUser() user: any) {
-    return this.sessionService.getActiveSessions(user.id);
+  @ApiOperation({ summary: 'Get all active sessions for the current user with pagination' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number (starts at 1)',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page (max: 100)',
+    example: 20,
+  })
+  async getSessions(@CurrentUser() user: any, @Query() paginationQuery: PaginationQueryDto) {
+    return this.sessionService.getActiveSessions(
+      user.id,
+      paginationQuery.page,
+      paginationQuery.limit,
+    );
   }
 
   @Delete(':id')

@@ -190,17 +190,38 @@ export class JobPostingsService {
   }
 
   /**
-   * List all job postings for a user
+   * List all job postings for a user with pagination
    * @param userId User ID from JWT token
-   * @returns Array of job posting response DTOs
+   * @param page Page number (starts at 1)
+   * @param limit Items per page
+   * @returns Paginated job posting response DTOs
    */
-  async listJobPostings(userId: string): Promise<JobPostingResponseDto[]> {
-    const jobPostings = await this.prisma.jobPosting.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-    });
+  async listJobPostings(
+    userId: string,
+    page = 1,
+    limit = 20,
+  ): Promise<{ items: JobPostingResponseDto[]; pagination: any }> {
+    const [jobPostings, total] = await Promise.all([
+      this.prisma.jobPosting.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: (page - 1) * limit,
+      }),
+      this.prisma.jobPosting.count({
+        where: { userId },
+      }),
+    ]);
 
-    return jobPostings.map((jp) => this.mapToResponseDto(jp));
+    return {
+      items: jobPostings.map((jp) => this.mapToResponseDto(jp)),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   /**

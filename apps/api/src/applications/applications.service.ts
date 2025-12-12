@@ -1689,20 +1689,40 @@ Summary: ${resume.summary || 'Not provided'}
   }
 
   /**
-   * Get all applications for a user
+   * Get all applications for a user with pagination
    */
-  async findAll(userId: string, includeJobPosting = false): Promise<ApplicationResponseDto[]> {
-    const applications = await this.prisma.application.findMany({
-      where: { userId },
-      include: {
-        jobPosting: includeJobPosting,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+  async findAll(
+    userId: string,
+    includeJobPosting = false,
+    page = 1,
+    limit = 20,
+  ): Promise<{ items: ApplicationResponseDto[]; pagination: any }> {
+    const [applications, total] = await Promise.all([
+      this.prisma.application.findMany({
+        where: { userId },
+        include: {
+          jobPosting: includeJobPosting,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: limit,
+        skip: (page - 1) * limit,
+      }),
+      this.prisma.application.count({
+        where: { userId },
+      }),
+    ]);
 
-    return applications.map((app) => this.mapToResponseDto(app));
+    return {
+      items: applications.map((app) => this.mapToResponseDto(app)),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   /**

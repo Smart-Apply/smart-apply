@@ -21,8 +21,8 @@ export class SessionService {
     const parser = new UAParser.UAParser(req.headers['user-agent']);
     const device = parser.getResult();
 
-    // Check session limit
-    const activeSessions = await this.getActiveSessions(userId);
+    // Check session limit (internal - no pagination needed)
+    const activeSessions = await this.getAllActiveSessionsInternal(userId);
     if (activeSessions.length >= MAX_SESSIONS_PER_USER) {
       // Remove oldest session (FIFO)
       await this.revokeSession(activeSessions[activeSessions.length - 1].id);
@@ -46,9 +46,10 @@ export class SessionService {
   }
 
   /**
-   * Get all active sessions for a user
+   * Internal method to get ALL active sessions (no pagination)
+   * Used for session limit checks
    */
-  async getActiveSessions(userId: string) {
+  private async getAllActiveSessionsInternal(userId: string) {
     return this.prisma.session.findMany({
       where: {
         userId,
@@ -57,6 +58,45 @@ export class SessionService {
       },
       orderBy: { lastActiveAt: 'desc' },
     });
+  }
+
+  /**
+   * Get all active sessions for a user with pagination
+   */
+  async getActiveSessions(
+    userId: string,
+    page = 1,
+    limit = 20,
+  ): Promise<{ items: any[]; pagination: any }> {
+    const [sessions, total] = await Promise.all([
+      this.prisma.session.findMany({
+        where: {
+          userId,
+          isActive: true,
+          expiresAt: { gt: new Date() },
+        },
+        orderBy: { lastActiveAt: 'desc' },
+        take: limit,
+        skip: (page - 1) * limit,
+      }),
+      this.prisma.session.count({
+        where: {
+          userId,
+          isActive: true,
+          expiresAt: { gt: new Date() },
+        },
+      }),
+    ]);
+
+    return {
+      items: sessions,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   /**
