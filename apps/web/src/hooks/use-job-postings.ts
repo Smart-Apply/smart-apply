@@ -1,8 +1,8 @@
 import { useAuthStore } from '@/stores/auth-store';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tantml:react-query';
 import { api } from '@/lib/api-client';
 import { toastSuccess, toastError } from '@/lib/toast';
-import type { JobPosting } from '@/types';
+import type { JobPosting, PaginatedResponse } from '@/types';
 
 /**
  * Hook to fetch all job postings
@@ -12,7 +12,11 @@ export function useJobPostings() {
 
   return useQuery<JobPosting[]>({
     queryKey: ['job-postings'],
-    queryFn: () => api.jobPostings.list(),
+    queryFn: async () => {
+      const response = await api.jobPostings.list();
+      // Extract items from paginated response
+      return response.items;
+    },
     enabled: isAuthenticated,
   });
 }

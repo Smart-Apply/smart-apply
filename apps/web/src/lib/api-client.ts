@@ -19,6 +19,7 @@ import type {
   ApplicationKeywordsResponse,
   UserPreferences,
   UpdateUserPreferencesDto,
+  PaginatedResponse,
 } from '@/types';
 import { ApiError, NetworkError, shouldRetry, getRetryDelay, isPermanentAuthFailure } from './errors';
 import { getCsrfToken, refreshCsrfToken } from './csrf';
@@ -200,7 +201,17 @@ async function apiRequest<T>(
         return {} as T;
       }
 
-      return response.json();
+      // Parse JSON response
+      const json = await response.json();
+      
+      // Unwrap standardized API response format { data, meta }
+      // All endpoints now return this format (except 204 No Content)
+      if (json && typeof json === 'object' && 'data' in json && 'meta' in json) {
+        return json.data as T;
+      }
+      
+      // Fallback for backward compatibility (shouldn't happen after migration)
+      return json as T;
     } catch (error) {
       // Convert network errors to NetworkError
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
@@ -337,7 +348,7 @@ export const api = {
       }),
 
     list: () =>
-      apiRequest<JobPosting[]>('/job-postings'),
+      apiRequest<PaginatedResponse<JobPosting>>('/job-postings'),
 
     getById: (id: string) =>
       apiRequest<JobPosting>(`/job-postings/${id}`),
@@ -372,7 +383,7 @@ export const api = {
       }),
 
     list: (options?: { includeJobPosting?: boolean }) =>
-      apiRequest<Application[]>(`/applications${options?.includeJobPosting ? '?includeJobPosting=true' : ''}`),
+      apiRequest<PaginatedResponse<Application>>(`/applications${options?.includeJobPosting ? '?includeJobPosting=true' : ''}`),
 
     getById: (id: string) =>
       apiRequest<Application>(`/applications/${id}`),
