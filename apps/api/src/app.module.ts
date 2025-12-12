@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ConfigModule } from './config/config.module';
@@ -20,6 +20,7 @@ import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
 import { ConfigService } from './config/config.service';
 import { AuditLoggerModule } from './common/audit-logger';
 import { CSPViolationController } from './common/csp/csp-violation.controller';
+import { TimeoutMiddleware } from './common/middleware';
 
 @Module({
   imports: [
@@ -95,4 +96,9 @@ import { CSPViolationController } from './common/csp/csp-violation.controller';
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    // Apply global request timeout middleware to all routes
+    consumer.apply(TimeoutMiddleware).forRoutes('*');
+  }
+}
