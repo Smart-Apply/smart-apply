@@ -10,8 +10,6 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CenteredLoader } from '@/components/shared/loading';
-import { ResumeFormEditor } from '@/components/applications/resume-form-editor';
-import { CoverLetterEditor } from '@/components/applications/cover-letter-editor';
 import { ResumeTemplatePreview, CoverLetterTemplatePreview } from '@/components/applications/template-preview';
 import { ATSScoreSidebar } from '@/components/applications/ats-score-sidebar';
 import { useApplication, useExportApplication, useUpdateApplicationResume, useUpsertCoverLetter } from '@/hooks/use-applications';
@@ -21,6 +19,26 @@ import { toast } from 'sonner';
 import { stripHtml } from '@/lib/sanitize';
 import { toTiptapHtml } from '@/lib/markdown';
 import { cn } from '@/lib/utils';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Dynamic imports for heavy Tiptap-based editors (saves ~200KB)
+// Only loaded when user navigates to edit page
+const ResumeFormEditor = dynamic(
+  () => import('@/components/applications/resume-form-editor').then(mod => ({ default: mod.ResumeFormEditor })),
+  {
+    loading: () => <Skeleton className="h-96 w-full" />,
+    ssr: false,
+  }
+);
+
+const CoverLetterEditor = dynamic(
+  () => import('@/components/applications/cover-letter-editor').then(mod => ({ default: mod.CoverLetterEditor })),
+  {
+    loading: () => <Skeleton className="h-96 w-full" />,
+    ssr: false,
+  }
+);
 
 /**
  * Normalize HTML to ensure consistent comparison.
