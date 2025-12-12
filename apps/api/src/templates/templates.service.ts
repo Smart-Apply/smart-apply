@@ -23,9 +23,9 @@ export class TemplatesService {
     private readonly storage: StorageService,
     private readonly config: ConfigService,
   ) {
-    // Initialize cache with TTL from config
+    // Initialize cache with TTL from config (default: 3600s from env.schema.ts)
     this.cache = new NodeCache({
-      stdTTL: this.config.cacheTtlSeconds, // TTL from config (default: 1 hour if not set)
+      stdTTL: this.config.cacheTtlSeconds,
       checkperiod: 600, // Check for expired keys every 10 minutes
       useClones: false, // Don't clone objects (better performance, read-only access)
     });
@@ -321,6 +321,7 @@ export class TemplatesService {
 
   /**
    * Get cache statistics for monitoring
+   * Note: Hit rate is estimated and may not be 100% accurate in concurrent environments
    */
   getCacheStats() {
     return {
