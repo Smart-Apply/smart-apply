@@ -41,9 +41,9 @@ export class TemplatesService {
   async findAll(type?: TemplateType): Promise<TemplateResponseDto[]> {
     const cacheKey = `templates:all:${type || 'all'}`;
     
-    // Check cache first
+    // Check cache first (use !== undefined to properly handle null cached values)
     const cached = this.cache.get<TemplateResponseDto[]>(cacheKey);
-    if (cached) {
+    if (cached !== undefined) {
       this.cacheStats.hits++;
       this.logger.debug(`Cache HIT for ${cacheKey} (hits: ${this.cacheStats.hits}, misses: ${this.cacheStats.misses})`);
       return cached;
@@ -111,7 +111,7 @@ export class TemplatesService {
   ): Promise<TemplateWithContentResponseDto | null> {
     const cacheKey = `templates:category:${category}:lang:${language}:type:${type || 'all'}`;
     
-    // Check cache first
+    // Check cache first (use !== undefined to properly handle null cached values)
     const cached = this.cache.get<TemplateWithContentResponseDto | null>(cacheKey);
     if (cached !== undefined) {
       this.cacheStats.hits++;
@@ -143,8 +143,7 @@ export class TemplatesService {
       if (cachedFallback !== undefined) {
         this.cacheStats.hits++;
         this.logger.debug(`Cache HIT for fallback ${fallbackCacheKey}`);
-        // Also cache under original key to avoid repeated fallback attempts
-        this.cache.set(cacheKey, cachedFallback);
+        // Note: We do NOT cache under the original key to allow new templates to be found after cache expiry
         return cachedFallback;
       }
       
@@ -157,9 +156,10 @@ export class TemplatesService {
         },
       });
 
-      // Cache both under fallback key and original key
+      // Cache under fallback key only (not original key)
       this.cache.set(fallbackCacheKey, fallback);
-      this.cache.set(cacheKey, fallback);
+      // Cache null under original key to avoid repeated DB queries for missing templates
+      this.cache.set(cacheKey, null);
       return fallback;
     }
 
@@ -176,9 +176,9 @@ export class TemplatesService {
   async findLanguageVariants(baseTemplateId: string): Promise<TemplateResponseDto[]> {
     const cacheKey = `templates:variants:${baseTemplateId}`;
     
-    // Check cache first
+    // Check cache first (use !== undefined to properly handle null cached values)
     const cached = this.cache.get<TemplateResponseDto[]>(cacheKey);
-    if (cached) {
+    if (cached !== undefined) {
       this.cacheStats.hits++;
       this.logger.debug(`Cache HIT for ${cacheKey} (hits: ${this.cacheStats.hits}, misses: ${this.cacheStats.misses})`);
       return cached;
@@ -226,9 +226,9 @@ export class TemplatesService {
   async findOne(id: string): Promise<TemplateWithContentResponseDto> {
     const cacheKey = `templates:id:${id}`;
     
-    // Check cache first
+    // Check cache first (use !== undefined to properly handle null cached values)
     const cached = this.cache.get<TemplateWithContentResponseDto>(cacheKey);
-    if (cached) {
+    if (cached !== undefined) {
       this.cacheStats.hits++;
       this.logger.debug(`Cache HIT for ${cacheKey} (hits: ${this.cacheStats.hits}, misses: ${this.cacheStats.misses})`);
       return cached;
@@ -259,9 +259,9 @@ export class TemplatesService {
   async findDefault(type: TemplateType): Promise<TemplateWithContentResponseDto> {
     const cacheKey = `templates:default:${type}`;
     
-    // Check cache first
+    // Check cache first (use !== undefined to properly handle null cached values)
     const cached = this.cache.get<TemplateWithContentResponseDto>(cacheKey);
-    if (cached) {
+    if (cached !== undefined) {
       this.cacheStats.hits++;
       this.logger.debug(`Cache HIT for ${cacheKey} (hits: ${this.cacheStats.hits}, misses: ${this.cacheStats.misses})`);
       return cached;
@@ -311,11 +311,12 @@ export class TemplatesService {
   /**
    * Invalidate all template caches
    * Called after any template mutation (create, update, delete)
+   * Note: keyCount may not be 100% accurate due to race conditions (non-atomic operation)
    */
   private invalidateCache(): void {
     const keyCount = this.cache.keys().length;
     this.cache.flushAll();
-    this.logger.log(`Template cache invalidated (${keyCount} keys cleared)`);
+    this.logger.log(`Template cache invalidated (~${keyCount} keys cleared)`);
   }
 
   /**
