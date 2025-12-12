@@ -1665,6 +1665,8 @@ Summary: ${resume.summary || 'Not provided'}
 
   /**
    * Get a single application by ID
+   * 
+   * Uses Prisma's `include` to prevent N+1 queries when job posting is requested
    */
   async findOne(
     userId: string,
@@ -1677,6 +1679,7 @@ Summary: ${resume.summary || 'Not provided'}
         userId, // Security: Only return user's own applications
       },
       include: {
+        // Eagerly load job posting to prevent N+1 queries
         jobPosting: includeJobPosting,
       },
     });
@@ -1690,6 +1693,11 @@ Summary: ${resume.summary || 'Not provided'}
 
   /**
    * Get all applications for a user with pagination
+   * 
+   * Uses Prisma's `include` to prevent N+1 query problems:
+   * - Eager loads job posting when requested (single JOIN query)
+   * - Uses Promise.all for parallel count query
+   * - Results in 2 queries total (1 for data + 1 for count), not 1+N
    */
   async findAll(
     userId: string,
@@ -1701,6 +1709,7 @@ Summary: ${resume.summary || 'Not provided'}
       this.prisma.application.findMany({
         where: { userId },
         include: {
+          // Eagerly load job posting to prevent N+1 queries
           jobPosting: includeJobPosting,
         },
         orderBy: {
