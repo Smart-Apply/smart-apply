@@ -41,25 +41,34 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
     }
 
     const response = context.switchToHttp().getResponse();
+    const throttlers = await this.getThrottlers(context);
+    
+    if (throttlers.length > 0) {
+      const throttler = throttlers[0];
+      const tracker = await this.getTracker(request);
+      const key = this.generateKey(context, tracker, throttler.name || 'default');
 
-    try {
-      // Call parent implementation which handles the actual rate limiting
-      const result = await super.canActivate(context);
+      try {
+        // Increment the counter and get the current total
+        const { totalHits } = await this.storageService.increment(key, throttler.ttl);
+        
+        // Calculate remaining requests
+        const remaining = Math.max(0, throttler.limit - totalHits);
+        
+        // Calculate reset timestamp (current time + TTL in milliseconds)
+        const resetTimestamp = Date.now() + throttler.ttl;
 
-      // Add basic rate limit headers on success
-      const throttlers = await this.getThrottlers(context);
-      if (throttlers.length > 0) {
-        const throttler = throttlers[0];
-        response.setHeader('X-RateLimit-Limit', throttler.limit);
-      }
+        // Call parent implementation which handles the actual rate limiting
+        const result = await super.canActivate(context);
 
-      return result;
-    } catch (error) {
-      if (error instanceof ThrottlerException) {
-        const throttlers = await this.getThrottlers(context);
-        if (throttlers.length > 0) {
-          const throttler = throttlers[0];
-          const tracker = await this.getTracker(request);
+        // Add comprehensive rate limit headers on success
+        response.setHeader('X-RateLimit-Limit', throttler.limit.toString());
+        response.setHeader('X-RateLimit-Remaining', remaining.toString());
+        response.setHeader('X-RateLimit-Reset', resetTimestamp.toString());
+
+        return result;
+      } catch (error) {
+        if (error instanceof ThrottlerException) {
           const user = request.user;
 
           // Log rate limit violation
@@ -75,15 +84,19 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
 
           this.auditLogger.logRateLimitViolation(user?.id, request.url, request);
 
-          // Add rate limit headers
-          response.setHeader('X-RateLimit-Limit', throttler.limit);
+          // Add rate limit headers for exceeded limit
+          response.setHeader('X-RateLimit-Limit', throttler.limit.toString());
           response.setHeader('X-RateLimit-Remaining', '0');
-          response.setHeader('Retry-After', Math.ceil(throttler.ttl / 1000));
+          response.setHeader('X-RateLimit-Reset', (Date.now() + throttler.ttl).toString());
+          response.setHeader('Retry-After', Math.ceil(throttler.ttl / 1000).toString());
         }
-      }
 
-      throw error;
+        throw error;
+      }
     }
+
+    // Fallback if no throttlers configured
+    return super.canActivate(context);
   }
 
   /**
