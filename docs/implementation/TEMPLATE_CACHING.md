@@ -15,7 +15,7 @@ The `TemplatesService` implements in-memory caching using `node-cache` to reduce
 **After caching:**
 - First request: Database query (cache miss)
 - Subsequent requests: In-memory cache (cache hit)
-- Estimated reduction: **99%+ of database queries eliminated**
+- Estimated reduction: **99%+ of database queries eliminated** (based on typical read:write ratio of 100:1 or higher)
 - Response time: < 1ms for cache hits
 
 ## Implementation Details

@@ -25,7 +25,7 @@ export class TemplatesService {
   ) {
     // Initialize cache with TTL from config
     this.cache = new NodeCache({
-      stdTTL: this.config.cacheTtlSeconds, // Default TTL from config (1 hour)
+      stdTTL: this.config.cacheTtlSeconds, // TTL from config (default: 1 hour if not set)
       checkperiod: 600, // Check for expired keys every 10 minutes
       useClones: false, // Don't clone objects (better performance, read-only access)
     });
@@ -135,6 +135,19 @@ export class TemplatesService {
     if (!template) {
       // Fallback to English if specific language not found
       this.logger.warn(`Template not found for category ${category} and language ${language}, falling back to English`);
+      
+      // Use a separate cache key for fallback to avoid confusion
+      const fallbackCacheKey = `templates:category:${category}:lang:en:type:${type || 'all'}`;
+      const cachedFallback = this.cache.get<TemplateWithContentResponseDto | null>(fallbackCacheKey);
+      
+      if (cachedFallback !== undefined) {
+        this.cacheStats.hits++;
+        this.logger.debug(`Cache HIT for fallback ${fallbackCacheKey}`);
+        // Also cache under original key to avoid repeated fallback attempts
+        this.cache.set(cacheKey, cachedFallback);
+        return cachedFallback;
+      }
+      
       const fallback = await this.prisma.template.findFirst({
         where: {
           category,
@@ -144,7 +157,8 @@ export class TemplatesService {
         },
       });
 
-      // Cache the result (including null)
+      // Cache both under fallback key and original key
+      this.cache.set(fallbackCacheKey, fallback);
       this.cache.set(cacheKey, fallback);
       return fallback;
     }
@@ -299,9 +313,9 @@ export class TemplatesService {
    * Called after any template mutation (create, update, delete)
    */
   private invalidateCache(): void {
-    const keysDeleted = this.cache.keys().length;
+    const keyCount = this.cache.keys().length;
     this.cache.flushAll();
-    this.logger.log(`Template cache invalidated (${keysDeleted} keys cleared)`);
+    this.logger.log(`Template cache invalidated (${keyCount} keys cleared)`);
   }
 
   /**
