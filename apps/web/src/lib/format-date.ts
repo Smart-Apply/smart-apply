@@ -65,8 +65,9 @@ export function formatDateSmart(date: string | Date): string {
   }
   
   // Yesterday: "Gestern um 14:30"
-  const yesterday = new Date(zonedNow);
-  yesterday.setDate(yesterday.getDate() - 1);
+  // Calculate yesterday by subtracting 24 hours and comparing dates
+  const yesterdayTimestamp = zonedNow.getTime() - (24 * 60 * 60 * 1000);
+  const yesterday = new Date(yesterdayTimestamp);
   if (targetYear === yesterday.getFullYear() && 
       targetMonth === yesterday.getMonth() && 
       targetDay === yesterday.getDate()) {
@@ -83,22 +84,22 @@ export function formatDateSmart(date: string | Date): string {
 }
 
 /**
- * Formats a date for display with full timestamp including time
- * Alias for formatDateFull for backwards compatibility
- * @param date - Date string (UTC) or Date object to format
- * @returns Full timestamp in German format (dd.MM.yyyy HH:mm)
- */
-export function formatFullTimestamp(date: string | Date): string {
-  return formatDate(date, 'dd.MM.yyyy HH:mm');
-}
-
-/**
  * Formats a date with full timestamp for tooltips and detailed displays
  * @param date - Date string (UTC) or Date object to format
  * @returns Full timestamp in German format (dd.MM.yyyy HH:mm)
  */
 export function formatDateFull(date: string | Date): string {
   return formatDate(date, 'dd.MM.yyyy HH:mm');
+}
+
+/**
+ * Formats a date for display with full timestamp including time
+ * Backwards compatible wrapper for formatDateFull
+ * @param date - Date string (UTC) or Date object to format
+ * @returns Full timestamp in German format (dd.MM.yyyy HH:mm)
+ */
+export function formatFullTimestamp(date: string | Date): string {
+  return formatDateFull(date);
 }
 
 /**
