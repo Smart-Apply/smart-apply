@@ -27,8 +27,7 @@ import {
   MoreHorizontal,
   ChevronRight,
 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { de } from 'date-fns/locale';
+import { formatRelativeTime } from '@/lib/format-date';
 
 const STATUS_CONFIG: Record<
   ApplicationTrackingStatus,
@@ -265,10 +264,7 @@ export default function DashboardPage() {
                           <div className="text-right hidden sm:block">
                             <p className="text-xs text-muted-foreground">Aktualisiert</p>
                             <p className="text-xs font-medium">
-                              {formatDistanceToNow(new Date(app.updatedAt), {
-                                addSuffix: true,
-                                locale: de,
-                              })}
+                              {formatRelativeTime(app.updatedAt)}
                             </p>
                           </div>
                           <Button

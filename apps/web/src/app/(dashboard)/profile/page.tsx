@@ -28,6 +28,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { formatDate } from '@/lib/format-date';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -314,8 +315,8 @@ export default function ProfilePage() {
                       <div className="mb-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
                         <h3 className="text-lg font-semibold text-foreground">{exp.title}</h3>
                         <span className="text-sm text-muted-foreground font-medium bg-muted px-2 py-0.5 rounded">
-                          {new Date(exp.startDate).toLocaleDateString('de-DE', { month: 'short', year: 'numeric' })} - {' '}
-                          {exp.endDate ? new Date(exp.endDate).toLocaleDateString('de-DE', { month: 'short', year: 'numeric' }) : 'Heute'}
+                          {formatDate(exp.startDate, 'MMM yyyy')} - {' '}
+                          {exp.endDate ? formatDate(exp.endDate, 'MMM yyyy') : 'Heute'}
                         </span>
                       </div>
 
@@ -457,7 +458,7 @@ export default function ProfilePage() {
                         <p className="text-sm text-muted-foreground">{cert.issuer}</p>
                         {cert.dateObtained && (
                           <p className="text-xs text-muted-foreground mt-1">
-                            {new Date(cert.dateObtained).toLocaleDateString('de-DE', { month: 'short', year: 'numeric' })}
+                            {formatDate(cert.dateObtained, 'MMM yyyy')}
                           </p>
                         )}
                       </div>

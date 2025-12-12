@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { formatShortDate } from '@/lib/format-date';
 import {
   Dialog,
   DialogContent,
@@ -179,7 +180,7 @@ export default function JobsPage() {
                               )}
                               <div className="flex items-center gap-1.5">
                                 <Calendar className="h-3.5 w-3.5 shrink-0" />
-                                <span>{new Date(job.createdAt).toLocaleDateString('de-DE')}</span>
+                                <span>{formatShortDate(job.createdAt)}</span>
                               </div>
                             </div>
                           </div>

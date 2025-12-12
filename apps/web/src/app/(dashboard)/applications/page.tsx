@@ -36,6 +36,12 @@ import { ApplicationCardSkeleton } from '@/components/shared/skeletons';
 import { ATSScoreCell } from '@/components/applications/ats-score-cell';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
   Plus,
   FileText,
   Clock,
@@ -63,8 +69,7 @@ import { toast } from 'sonner';
 import type { Application, ApplicationGenerationStatus, ApplicationTrackingStatus } from '@/types';
 import { StatusDropdown } from '@/components/applications/status-dropdown';
 import { APPLICATION_ID_DISPLAY_LENGTH } from '@/lib/constants';
-import { formatDistanceToNow } from 'date-fns';
-import { de } from 'date-fns/locale';
+import { formatDateSmart, formatTooltipTimestamp } from '@/lib/format-date';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -510,7 +515,8 @@ export default function ApplicationsPage() {
                     const jobTitle = application.title || application.jobPosting?.title || `Bewerbung #${application.id.substring(0, APPLICATION_ID_DISPLAY_LENGTH)}`;
                     const company = application.jobPosting?.company;
                     const location = application.jobPosting?.location;
-                    const timeAgo = formatDistanceToNow(new Date(application.createdAt), { addSuffix: true, locale: de });
+                    const timeAgo = formatDateSmart(application.createdAt);
+                    const fullTimestamp = formatTooltipTimestamp(application.createdAt);
 
                     return (
                       <TableRow 
@@ -557,10 +563,19 @@ export default function ApplicationsPage() {
                           <ATSScoreCell applicationId={application.id} status={application.status} />
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                            <Calendar className="h-3.5 w-3.5" />
-                            <span>{timeAgo}</span>
-                          </div>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="flex items-center gap-1.5 text-sm text-muted-foreground cursor-help">
+                                  <Calendar className="h-3.5 w-3.5" />
+                                  <span>{timeAgo}</span>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{fullTimestamp}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </TableCell>
                         <TableCell className="text-right">
                           <div onClick={(e) => e.stopPropagation()}>
