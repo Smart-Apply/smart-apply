@@ -229,6 +229,11 @@ export class ConfigService {
     return parseInt(this.nestConfig.get('MAX_PAGE_SIZE', { infer: true }), 10);
   }
 
+  // Caching
+  get cacheTtlSeconds(): number {
+    return parseInt(this.nestConfig.get('CACHE_TTL_SECONDS', { infer: true }), 10);
+  }
+
   // Circuit Breaker - LLM Service Protection
   get llmCircuitBreakerTimeout(): number {
     return parseInt(this.nestConfig.get('LLM_CIRCUIT_BREAKER_TIMEOUT', { infer: true }), 10);

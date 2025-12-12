@@ -77,6 +77,7 @@
     "langchain": "^1.0.3",
     "langchain-core": "^0.0.4",
     "mammoth": "^1.6.0",
+    "node-cache": "^5.1.2",
     "opossum": "^9.0.0",
     "passport": "^0.7.0",
     "passport-azure-ad": "^4.3.5",

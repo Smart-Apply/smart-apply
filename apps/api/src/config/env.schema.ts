@@ -117,6 +117,9 @@ const envSchema = z.object({
   DEFAULT_PAGE_SIZE: z.string().default('20'),
   MAX_PAGE_SIZE: z.string().default('100'),
 
+  // Caching
+  CACHE_TTL_SECONDS: z.string().default('3600'), // 1 hour TTL for static data (templates)
+
   // Circuit Breaker - LLM Service Protection
   LLM_CIRCUIT_BREAKER_TIMEOUT: z.string().default('60000'), // 60s timeout for LLM calls
   LLM_CIRCUIT_BREAKER_ERROR_THRESHOLD: z.string().default('50'), // Open circuit if 50% fail

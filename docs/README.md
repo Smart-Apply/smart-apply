@@ -35,6 +35,9 @@ Implementierungs-Details und technische Summaries
 - **IMPLEMENTATION_SUMMARY.md** - Allgemeine Implementation Summary
 - **REFRESH_TOKEN_IMPLEMENTATION_SUMMARY.md** - Refresh Token Details
 - **SSE_INTEGRATION_EXAMPLE.md** - SSE Integration Beispiele
+- **TEMPLATE_CACHING.md** - Template Caching Strategy (In-Memory Cache)
+- **BROWSER_POOLING.md** - Browser Pool Management (Puppeteer)
+- **CIRCUIT_BREAKER.md** - Circuit Breaker Pattern (LLM Protection)
 
 ### 📚 [guides/](./guides/)
 
