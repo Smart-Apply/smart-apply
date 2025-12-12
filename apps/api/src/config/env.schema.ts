@@ -112,6 +112,16 @@ const envSchema = z.object({
   // Pagination
   DEFAULT_PAGE_SIZE: z.string().default('20'),
   MAX_PAGE_SIZE: z.string().default('100'),
+
+  // Circuit Breaker - LLM Service Protection
+  LLM_CIRCUIT_BREAKER_TIMEOUT: z.string().default('60000'), // 60s timeout for LLM calls
+  LLM_CIRCUIT_BREAKER_ERROR_THRESHOLD: z.string().default('50'), // Open circuit if 50% fail
+  LLM_CIRCUIT_BREAKER_RESET_TIMEOUT: z.string().default('30000'), // Try again after 30s
+  LLM_CIRCUIT_BREAKER_ROLLING_COUNT_TIMEOUT: z.string().default('10000'), // 10s window for rolling count
+  LLM_CIRCUIT_BREAKER_ROLLING_COUNT_BUCKETS: z.string().default('10'), // 10 buckets for rolling count
+
+  // Global Request Timeout
+  REQUEST_TIMEOUT_MS: z.string().default('30000'), // 30s global timeout for all requests
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

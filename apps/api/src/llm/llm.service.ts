@@ -1,24 +1,106 @@
-import { Injectable, Inject, Logger } from '@nestjs/common';
+import { Injectable, Inject, Logger, ServiceUnavailableException } from '@nestjs/common';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import * as CircuitBreaker from 'opossum';
 import { LLMProvider } from './llm.interface';
 import { ConfigService } from '../config/config.service';
 
 @Injectable()
 export class LLMService {
   private readonly logger = new Logger(LLMService.name);
+  private readonly circuitBreaker: CircuitBreaker<[string, any?], string>;
 
   constructor(
     @Inject('LLM_PROVIDER')
     private readonly provider: LLMProvider,
     private readonly configService: ConfigService,
-  ) {}
+  ) {
+    // Initialize circuit breaker for LLM provider calls
+    this.circuitBreaker = new CircuitBreaker(
+      async (prompt: string, options?: any) => await this.provider.generateText(prompt, options),
+      {
+        timeout: this.configService.llmCircuitBreakerTimeout, // 60s timeout
+        errorThresholdPercentage: this.configService.llmCircuitBreakerErrorThreshold, // Open if 50% fail
+        resetTimeout: this.configService.llmCircuitBreakerResetTimeout, // Try again after 30s
+        rollingCountTimeout: this.configService.llmCircuitBreakerRollingCountTimeout, // 10s window
+        rollingCountBuckets: this.configService.llmCircuitBreakerRollingCountBuckets, // 10 buckets
+        name: 'LLM-Provider', // Circuit breaker name for logging
+      },
+    );
+
+    // Circuit breaker event handlers
+    this.circuitBreaker.on('open', () => {
+      this.logger.error(
+        '🔴 Circuit breaker OPEN - LLM provider is failing. All requests will fast-fail until recovery.',
+      );
+    });
+
+    this.circuitBreaker.on('halfOpen', () => {
+      this.logger.warn(
+        '🟡 Circuit breaker HALF-OPEN - Testing LLM provider health with single request.',
+      );
+    });
+
+    this.circuitBreaker.on('close', () => {
+      this.logger.log(
+        '🟢 Circuit breaker CLOSED - LLM provider recovered and accepting requests.',
+      );
+    });
+
+    this.circuitBreaker.on('timeout', () => {
+      this.logger.warn(
+        `⏱️  LLM request timeout after ${this.configService.llmCircuitBreakerTimeout}ms`,
+      );
+    });
+
+    this.circuitBreaker.on('fallback', (result) => {
+      this.logger.warn('🔄 Circuit breaker fallback triggered');
+    });
+
+    this.circuitBreaker.on('reject', () => {
+      this.logger.warn('⛔ Circuit breaker rejected request (circuit is open)');
+    });
+
+    this.logger.log(
+      `🛡️  LLM Circuit Breaker initialized (timeout: ${this.configService.llmCircuitBreakerTimeout}ms, error threshold: ${this.configService.llmCircuitBreakerErrorThreshold}%, reset: ${this.configService.llmCircuitBreakerResetTimeout}ms)`,
+    );
+  }
+
+  /**
+   * Call LLM provider with circuit breaker protection
+   * Wraps provider.generateText() with timeout and automatic failover
+   */
+  private async callProvider(prompt: string, options?: any): Promise<string> {
+    try {
+      return await this.circuitBreaker.fire(prompt, options);
+    } catch (error: any) {
+      // Circuit breaker is open (too many failures)
+      if (error.message && error.message.includes('Breaker is open')) {
+        this.logger.error('Circuit breaker is open - LLM service temporarily unavailable');
+        throw new ServiceUnavailableException(
+          'AI-Service ist derzeit überlastet. Deine Bewerbung wurde in die Warteschlange gestellt und wird in Kürze verarbeitet. Bitte versuche es in ein paar Minuten erneut.',
+        );
+      }
+
+      // Timeout error
+      if (error.code === 'ETIMEDOUT' || error.message?.includes('timeout')) {
+        this.logger.error('LLM request timeout');
+        throw new ServiceUnavailableException(
+          'AI-Service antwortet nicht rechtzeitig. Bitte versuche es später erneut.',
+        );
+      }
+
+      // Other errors - rethrow
+      throw error;
+    }
+  }
+
 
   async generateCoverLetter(context: CoverLetterContext): Promise<string> {
     const template = await this.loadTemplate('cover-letter.md');
     const prompt = this.renderTemplate(template, context);
 
-    return this.provider.generateText(prompt, {
+    return this.callProvider(prompt, {
       temperature: 0.7,
       maxTokens: 1500,
       systemMessage:
@@ -38,7 +120,7 @@ export class LLMService {
     const template = await this.loadTemplate('cover-letter-ats.md');
     const prompt = this.renderTemplate(template, this.buildATSCoverLetterContext(context));
 
-    return this.provider.generateText(prompt, {
+    return this.callProvider(prompt, {
       temperature: 0.7,
       maxTokens: 1500,
       systemMessage:
@@ -50,7 +132,7 @@ export class LLMService {
     const template = await this.loadTemplate('resume.md');
     const prompt = this.renderTemplate(template, context);
 
-    return this.provider.generateText(prompt, {
+    return this.callProvider(prompt, {
       temperature: 0.6,
       maxTokens: 2500,
       systemMessage:
@@ -70,7 +152,7 @@ export class LLMService {
     const template = await this.loadTemplate('resume-ats.md');
     const prompt = this.renderTemplate(template, this.buildATSResumeContext(context));
 
-    return this.provider.generateText(prompt, {
+    return this.callProvider(prompt, {
       temperature: 0.6,
       maxTokens: 2500,
       systemMessage:
@@ -85,7 +167,7 @@ export class LLMService {
     prompt: string,
     options?: { temperature?: number; maxTokens?: number; systemMessage?: string },
   ): Promise<string> {
-    return this.provider.generateText(prompt, options);
+    return this.callProvider(prompt, options);
   }
 
   /**
@@ -122,7 +204,7 @@ export class LLMService {
     };
 
     try {
-      const response = await this.provider.generateText(prompt, defaultOptions);
+      const response = await this.callProvider(prompt, defaultOptions);
       const duration = Date.now() - startTime;
 
       if (shouldLog) {
@@ -171,7 +253,7 @@ export class LLMService {
     };
 
     try {
-      const response = await this.provider.generateText(prompt, defaultOptions);
+      const response = await this.callProvider(prompt, defaultOptions);
       const parsed = this.parseJsonResponse<T>(response, templatePath);
       const duration = Date.now() - startTime;
 
@@ -421,7 +503,7 @@ Return ONLY a JSON array in this exact format (no markdown, no additional text):
 - Return valid JSON only`;
 
     try {
-      const response = await this.provider.generateText(prompt, {
+      const response = await this.callProvider(prompt, {
         temperature: 0.3, // Lower temperature for more consistent categorization
         maxTokens: 1000,
         systemMessage:
@@ -498,7 +580,7 @@ ${summary}
 
 **Translated Summary (${toLang}):**`;
 
-    return this.provider.generateText(prompt, {
+    return this.callProvider(prompt, {
       temperature: 0.3, // Lower temperature for accurate translation
       maxTokens: 500,
       systemMessage: `You are a professional translator specializing in resume and career documents. You translate accurately while maintaining professional tone and preserving technical terminology.`,
@@ -539,7 +621,7 @@ Aufgabe:
 
 Geändertes Anschreiben:`;
 
-    return this.provider.generateText(prompt, {
+    return this.callProvider(prompt, {
       temperature: 0.7,
       maxTokens: 2000,
       systemMessage:

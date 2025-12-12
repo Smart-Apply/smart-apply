@@ -212,4 +212,30 @@ export class ConfigService {
   get maxPageSize(): number {
     return parseInt(this.nestConfig.get('MAX_PAGE_SIZE', { infer: true }), 10);
   }
+
+  // Circuit Breaker - LLM Service Protection
+  get llmCircuitBreakerTimeout(): number {
+    return parseInt(this.nestConfig.get('LLM_CIRCUIT_BREAKER_TIMEOUT', { infer: true }), 10);
+  }
+
+  get llmCircuitBreakerErrorThreshold(): number {
+    return parseInt(this.nestConfig.get('LLM_CIRCUIT_BREAKER_ERROR_THRESHOLD', { infer: true }), 10);
+  }
+
+  get llmCircuitBreakerResetTimeout(): number {
+    return parseInt(this.nestConfig.get('LLM_CIRCUIT_BREAKER_RESET_TIMEOUT', { infer: true }), 10);
+  }
+
+  get llmCircuitBreakerRollingCountTimeout(): number {
+    return parseInt(this.nestConfig.get('LLM_CIRCUIT_BREAKER_ROLLING_COUNT_TIMEOUT', { infer: true }), 10);
+  }
+
+  get llmCircuitBreakerRollingCountBuckets(): number {
+    return parseInt(this.nestConfig.get('LLM_CIRCUIT_BREAKER_ROLLING_COUNT_BUCKETS', { infer: true }), 10);
+  }
+
+  // Global Request Timeout
+  get requestTimeoutMs(): number {
+    return parseInt(this.nestConfig.get('REQUEST_TIMEOUT_MS', { infer: true }), 10);
+  }
 }
