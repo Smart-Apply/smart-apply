@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,23 +13,15 @@ import { Link as LinkIcon, Check, AlertCircle } from 'lucide-react';
 import { useParseJobPosting } from '@/hooks/use-job-postings';
 import { toast } from 'sonner';
 import type { JobPosting } from '@/types';
+import {
+  jobPostingUrlSchema,
+  jobPostingEditSchema,
+  type JobPostingUrlFormValues,
+  type JobPostingEditFormValues,
+} from '@/lib/validation/schemas';
 
-// Validation schema for URL input
-const urlSchema = z.object({
-  url: z.string().url('Bitte gebe eine gültige URL ein'),
-});
-
-// Validation schema for editing parsed data
-const editSchema = z.object({
-  title: z.string().min(1, 'Titel ist erforderlich'),
-  company: z.string().min(1, 'Unternehmen ist erforderlich'),
-  location: z.string().optional(),
-  description: z.string().optional(),
-  requirements: z.string().optional(),
-});
-
-type UrlFormData = z.infer<typeof urlSchema>;
-type EditFormData = z.infer<typeof editSchema>;
+type UrlFormData = JobPostingUrlFormValues;
+type EditFormData = JobPostingEditFormValues;
 
 interface JobPostingParserProps {
   onSave?: (jobPosting: JobPosting) => void;
@@ -53,7 +44,8 @@ export function JobPostingParser({ onSave }: JobPostingParserProps) {
 
   // Form for URL input
   const urlForm = useForm<UrlFormData>({
-    resolver: zodResolver(urlSchema),
+    resolver: zodResolver(jobPostingUrlSchema),
+    mode: 'onBlur', // Validate on blur
     defaultValues: {
       url: '',
     },
@@ -61,7 +53,8 @@ export function JobPostingParser({ onSave }: JobPostingParserProps) {
 
   // Form for editing parsed data
   const editForm = useForm<EditFormData>({
-    resolver: zodResolver(editSchema),
+    resolver: zodResolver(jobPostingEditSchema),
+    mode: 'onBlur', // Validate on blur
   });
 
   // Handle URL parsing

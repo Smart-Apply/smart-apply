@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -31,25 +30,16 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Edit, Trash2, Calendar, Briefcase } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Experience } from '@/types';
+import {
+  experienceSchema,
+  type ExperienceFormValues,
+} from '@/lib/validation/schemas';
 
 interface ExperienceManagerProps {
   experiences: Experience[];
   onExperiencesChange: (experiences: Experience[]) => void;
   disabled?: boolean;
 }
-
-// Validation schema for experience form
-const experienceSchema = z.object({
-  title: z.string().min(1, 'Jobtitel ist erforderlich'),
-  company: z.string().min(1, 'Firma ist erforderlich'),
-  location: z.string().optional(),
-  startDate: z.string().min(1, 'Startdatum ist erforderlich'),
-  endDate: z.string().optional(),
-  current: z.boolean(),
-  description: z.string().optional(),
-});
-
-type ExperienceFormValues = z.infer<typeof experienceSchema>;
 
 export function ExperienceManager({
   experiences,

@@ -4,7 +4,6 @@ import { useState, useEffect, JSX } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { api, resetAuthRedirectFlag } from '@/lib/api-client';
 import { useAuthStore } from '@/stores/auth-store';
 import { toast } from 'sonner';
@@ -20,34 +19,15 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { PasswordStrength } from '@/components/ui/password-strength';
+import {
+  loginSchema,
+  registerSchema,
+  type LoginFormValues,
+  type RegisterFormValues,
+} from '@/lib/validation/schemas';
 
-// Validation Schemas
-const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[\w@$!%*?&#]{8,}$/;
-
-const loginSchema = z.object({
-  email: z.string().email('Ungültige E-Mail-Adresse'),
-  password: z.string().min(8, 'Passwort muss mindestens 8 Zeichen lang sein'),
-});
-
-const registerSchema = z.object({
-  firstName: z.string().min(2, 'Vorname muss mindestens 2 Zeichen haben'),
-  lastName: z.string().min(2, 'Nachname muss mindestens 2 Zeichen haben'),
-  email: z.string().email('Ungültige E-Mail-Adresse'),
-  password: z
-    .string()
-    .min(8, 'Passwort muss mindestens 8 Zeichen haben')
-    .regex(
-      PASSWORD_REGEX,
-      'Passwort muss einen Großbuchstaben, einen Kleinbuchstaben, eine Zahl und ein Sonderzeichen (@$!%*?&#) enthalten'
-    ),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: 'Passwörter stimmen nicht überein',
-  path: ['confirmPassword'],
-});
-
-type LoginFormData = z.infer<typeof loginSchema>;
-type RegisterFormData = z.infer<typeof registerSchema>;
+type LoginFormData = LoginFormValues;
+type RegisterFormData = RegisterFormValues;
 
 interface AuthContainerProps {
   initialMode?: 'login' | 'register';
@@ -79,6 +59,7 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
   // Login Form
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
+    mode: 'onBlur', // Validate on blur
     defaultValues: {
       email: '',
       password: '',
@@ -88,6 +69,7 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
   // Register Form
   const registerForm = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
+    mode: 'onBlur', // Validate on blur
     defaultValues: {
       firstName: '',
       lastName: '',
@@ -268,7 +250,7 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
                 <FormField
                   control={loginForm.control}
                   name="email"
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <FormItem>
                       <FormLabel className="font-poppins text-lg font-semibold text-foreground">
                         E-Mail
@@ -277,7 +259,13 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
                         <Input
                           type="email"
                           placeholder="Deine E-Mail"
-                          className="h-10 rounded-xl border-2 border-input bg-transparent px-4 font-poppins text-[15px] placeholder:text-muted-foreground focus:border-primary"
+                          className={`h-10 rounded-xl border-2 bg-transparent px-4 font-poppins text-[15px] placeholder:text-muted-foreground focus:border-primary ${
+                            fieldState.error
+                              ? 'border-red-500 focus:border-red-500'
+                              : fieldState.isDirty && !fieldState.invalid
+                              ? 'border-green-500'
+                              : 'border-input'
+                          }`}
                           {...field}
                         />
                       </FormControl>
@@ -289,7 +277,7 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
                 <FormField
                   control={loginForm.control}
                   name="password"
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <FormItem>
                       <FormLabel className="font-poppins text-lg font-semibold text-foreground">
                         Passwort
@@ -298,7 +286,13 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
                         <Input
                           type="password"
                           placeholder="Dein Passwort"
-                          className="h-10 rounded-xl border-2 border-input bg-transparent px-4 font-poppins text-[15px] placeholder:text-muted-foreground focus:border-primary"
+                          className={`h-10 rounded-xl border-2 bg-transparent px-4 font-poppins text-[15px] placeholder:text-muted-foreground focus:border-primary ${
+                            fieldState.error
+                              ? 'border-red-500 focus:border-red-500'
+                              : fieldState.isDirty && !fieldState.invalid
+                              ? 'border-green-500'
+                              : 'border-input'
+                          }`}
                           {...field}
                         />
                       </FormControl>
@@ -361,7 +355,7 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
                   <FormField
                     control={registerForm.control}
                     name="firstName"
-                    render={({ field }) => (
+                    render={({ field, fieldState }) => (
                       <FormItem>
                         <FormLabel className="font-poppins text-base font-semibold text-foreground">
                           Vorname
@@ -369,7 +363,13 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
                         <FormControl>
                           <Input
                             placeholder="Dein Vorname"
-                            className="h-9 rounded-xl border-2 border-input bg-transparent px-4 text-[14px] placeholder:text-muted-foreground focus:border-primary"
+                            className={`h-9 rounded-xl border-2 bg-transparent px-4 text-[14px] placeholder:text-muted-foreground focus:border-primary ${
+                              fieldState.error
+                                ? 'border-red-500 focus:border-red-500'
+                                : fieldState.isDirty && !fieldState.invalid
+                                ? 'border-green-500'
+                                : 'border-input'
+                            }`}
                             {...field}
                           />
                         </FormControl>
@@ -381,7 +381,7 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
                   <FormField
                     control={registerForm.control}
                     name="lastName"
-                    render={({ field }) => (
+                    render={({ field, fieldState }) => (
                       <FormItem>
                         <FormLabel className="font-poppins text-base font-semibold text-foreground">
                           Nachname
@@ -389,7 +389,13 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
                         <FormControl>
                           <Input
                             placeholder="Dein Nachname"
-                            className="h-9 rounded-xl border-2 border-input bg-transparent px-4 text-[14px] placeholder:text-muted-foreground focus:border-primary"
+                            className={`h-9 rounded-xl border-2 bg-transparent px-4 text-[14px] placeholder:text-muted-foreground focus:border-primary ${
+                              fieldState.error
+                                ? 'border-red-500 focus:border-red-500'
+                                : fieldState.isDirty && !fieldState.invalid
+                                ? 'border-green-500'
+                                : 'border-input'
+                            }`}
                             {...field}
                           />
                         </FormControl>
@@ -402,7 +408,7 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
                 <FormField
                   control={registerForm.control}
                   name="email"
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <FormItem>
                       <FormLabel className="font-poppins text-base font-semibold text-foreground">
                         E-Mail
@@ -411,7 +417,13 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
                         <Input
                           type="email"
                           placeholder="Deine E-Mail"
-                          className="h-9 rounded-xl border-2 border-input bg-transparent px-4 text-[14px] placeholder:text-muted-foreground focus:border-primary"
+                          className={`h-9 rounded-xl border-2 bg-transparent px-4 text-[14px] placeholder:text-muted-foreground focus:border-primary ${
+                            fieldState.error
+                              ? 'border-red-500 focus:border-red-500'
+                              : fieldState.isDirty && !fieldState.invalid
+                              ? 'border-green-500'
+                              : 'border-input'
+                          }`}
                           {...field}
                         />
                       </FormControl>
@@ -423,7 +435,7 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
                 <FormField
                   control={registerForm.control}
                   name="password"
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <FormItem>
                       <FormLabel className="font-poppins text-base font-semibold text-foreground">
                         Passwort
@@ -432,7 +444,13 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
                         <Input
                           type="password"
                           placeholder="Dein Passwort"
-                          className="h-9 rounded-xl border-2 border-input bg-transparent px-4 text-[14px] placeholder:text-muted-foreground focus:border-primary"
+                          className={`h-9 rounded-xl border-2 bg-transparent px-4 text-[14px] placeholder:text-muted-foreground focus:border-primary ${
+                            fieldState.error
+                              ? 'border-red-500 focus:border-red-500'
+                              : fieldState.isDirty && !fieldState.invalid
+                              ? 'border-green-500'
+                              : 'border-input'
+                          }`}
                           {...field}
                         />
                       </FormControl>
@@ -445,7 +463,7 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
                 <FormField
                   control={registerForm.control}
                   name="confirmPassword"
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <FormItem>
                       <FormLabel className="font-poppins text-base font-semibold text-foreground">
                         Passwort wiederholen
@@ -454,7 +472,13 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
                         <Input
                           type="password"
                           placeholder="Dein Passwort"
-                          className="h-9 rounded-xl border-2 border-input bg-transparent px-4 text-[14px] placeholder:text-muted-foreground focus:border-primary"
+                          className={`h-9 rounded-xl border-2 bg-transparent px-4 text-[14px] placeholder:text-muted-foreground focus:border-primary ${
+                            fieldState.error
+                              ? 'border-red-500 focus:border-red-500'
+                              : fieldState.isDirty && !fieldState.invalid
+                              ? 'border-green-500'
+                              : 'border-input'
+                          }`}
                           {...field}
                         />
                       </FormControl>
