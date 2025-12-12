@@ -18,6 +18,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { formatDateSmart, formatDateFull } from '@/lib/format-date';
 import type { Session } from '@/types';
 
 /**
@@ -63,27 +70,7 @@ function parseUserAgent(userAgent: string): { device: string; browser: string; o
   return { device, browser, os };
 }
 
-/**
- * Get relative time string (e.g., "Active now", "2 hours ago")
- */
-function getRelativeTime(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  
-  if (diffMins < 1) return 'Active now';
-  if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
-  
-  const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
-  
-  const diffDays = Math.floor(diffHours / 24);
-  if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
-  
-  const diffWeeks = Math.floor(diffDays / 7);
-  return `${diffWeeks} week${diffWeeks !== 1 ? 's' : ''} ago`;
-}
+
 
 /**
  * Session Card Component
@@ -116,9 +103,18 @@ function SessionCard({ session, isCurrentSession, onRevoke }: {
       </CardHeader>
       <CardContent>
         <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Last active: {getRelativeTime(session.lastUsedAt)}
-          </p>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <p className="text-sm text-muted-foreground cursor-help">
+                  Zuletzt aktiv: {formatDateSmart(session.lastUsedAt)}
+                </p>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{formatDateFull(session.lastUsedAt)}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <Button
             variant="ghost"
             size="sm"

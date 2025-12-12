@@ -27,7 +27,7 @@ import {
   MoreHorizontal,
   ChevronRight,
 } from 'lucide-react';
-import { formatRelativeTime } from '@/lib/format-date';
+import { formatDateSmart } from '@/lib/format-date';
 
 const STATUS_CONFIG: Record<
   ApplicationTrackingStatus,
@@ -264,7 +264,7 @@ export default function DashboardPage() {
                           <div className="text-right hidden sm:block">
                             <p className="text-xs text-muted-foreground">Aktualisiert</p>
                             <p className="text-xs font-medium">
-                              {formatRelativeTime(app.updatedAt)}
+                              {formatDateSmart(app.updatedAt)}
                             </p>
                           </div>
                           <Button
