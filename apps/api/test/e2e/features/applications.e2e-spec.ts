@@ -163,17 +163,25 @@ describe('ApplicationsController (e2e)', () => {
   });
 
   describe('GET /api/v1/applications', () => {
-    it('should return all applications', async () => {
+    it('should return paginated applications', async () => {
       const response = await request(app.getHttpServer())
         .get('/api/v1/applications')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
-      expect(Array.isArray(response.body)).toBe(true);
-      expect(response.body.length).toBeGreaterThan(0);
-      expect(response.body[0]).toHaveProperty('id');
-      expect(response.body[0]).toHaveProperty('status');
-      expect(response.body[0]).toHaveProperty('jobPostingId');
+      expect(response.body).toHaveProperty('items');
+      expect(response.body).toHaveProperty('pagination');
+      expect(Array.isArray(response.body.items)).toBe(true);
+      expect(response.body.items.length).toBeGreaterThan(0);
+      expect(response.body.items[0]).toHaveProperty('id');
+      expect(response.body.items[0]).toHaveProperty('status');
+      expect(response.body.items[0]).toHaveProperty('jobPostingId');
+      expect(response.body.pagination).toMatchObject({
+        page: expect.any(Number),
+        limit: expect.any(Number),
+        total: expect.any(Number),
+        totalPages: expect.any(Number),
+      });
     });
 
     it('should include job posting details with query param', async () => {
@@ -182,10 +190,11 @@ describe('ApplicationsController (e2e)', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
-      if (response.body.length > 0) {
-        expect(response.body[0].jobPosting).toBeDefined();
-        expect(response.body[0].jobPosting.title).toBeDefined();
-        expect(response.body[0].jobPosting.company).toBeDefined();
+      expect(response.body).toHaveProperty('items');
+      if (response.body.items.length > 0) {
+        expect(response.body.items[0].jobPosting).toBeDefined();
+        expect(response.body.items[0].jobPosting.title).toBeDefined();
+        expect(response.body.items[0].jobPosting.company).toBeDefined();
       }
     });
 
