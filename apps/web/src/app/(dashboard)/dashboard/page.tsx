@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
   Plus,
   FileText,
@@ -222,18 +223,15 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="p-0">
               {applications.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                    <FileText className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                  <h3 className="text-lg font-medium">Keine Bewerbungen</h3>
-                  <p className="text-muted-foreground max-w-sm mt-1 mb-4">
-                    Du hast noch keine Bewerbungen angelegt. Starte jetzt deine Karriere!
-                  </p>
-                  <Button onClick={() => router.push('/applications/new')}>
-                    Erste Bewerbung erstellen
-                  </Button>
-                </div>
+                <EmptyState
+                  icon={FileText}
+                  title="Keine Bewerbungen"
+                  description="Du hast noch keine Bewerbungen angelegt. Starte jetzt deine Karriere!"
+                  action={{
+                    label: 'Erste Bewerbung erstellen',
+                    onClick: () => router.push('/applications/new'),
+                  }}
+                />
               ) : (
                 <div className="divide-y divide-border/50">
                   {applications.slice(0, 5).map((app) => {
