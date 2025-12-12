@@ -21,21 +21,8 @@ import { EducationManager } from '@/components/forms/education-manager';
 import { CertificatesManager } from '@/components/forms/certificates-manager';
 import { ProjectsManager } from '@/components/forms/projects-manager';
 import { ArrowLeft, Loader2, User, Briefcase, GraduationCap, Code, Award, Save } from 'lucide-react';
+import { profileFormSchema, type ProfileFormValues } from '@/lib/validation/profile-schema';
 import type { Skill, Experience, Education, Certificate, Project, Language } from '@/types';
-
-// Validation schema for basic profile info
-const profileFormSchema = z.object({
-  firstName: z.string().min(2, 'Vorname muss mindestens 2 Zeichen lang sein'),
-  lastName: z.string().min(2, 'Nachname muss mindestens 2 Zeichen lang sein'),
-  email: z.string().email('Ungültige E-Mail-Adresse'),
-  phone: z.string().optional(),
-  location: z.string().optional(),
-  linkedIn: z.string().url('Ungültige URL').optional().or(z.literal('')),
-  website: z.string().url('Ungültige URL').optional().or(z.literal('')),
-  summary: z.string().optional(),
-});
-
-type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 export default function ProfileEditPage() {
   const router = useRouter();
@@ -283,7 +270,20 @@ export default function ProfileEditPage() {
                         <FormItem>
                           <FormLabel>Telefon</FormLabel>
                           <FormControl>
-                            <Input placeholder="+49 123 456789" {...field} />
+                            <Input 
+                              type="tel"
+                              placeholder="+49 123 456789" 
+                              {...field}
+                              onChange={(e) => {
+                                // Auto-format as user types
+                                const value = e.target.value.replace(/\s/g, '');
+                                if (value.length > 0 && !value.startsWith('+')) {
+                                  field.onChange('+' + value);
+                                } else {
+                                  field.onChange(value);
+                                }
+                              }}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

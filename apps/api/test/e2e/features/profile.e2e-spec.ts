@@ -182,6 +182,41 @@ describe('ProfileController (e2e)', () => {
         .expect(400);
     });
 
+    it('should reject invalid phone number format', async () => {
+      const testCases = [
+        { phone: 'call me', description: 'text instead of number' },
+        { phone: '123', description: 'too short' },
+        { phone: 'abc123', description: 'contains letters' },
+      ];
+
+      for (const testCase of testCases) {
+        const response = await request(app.getHttpServer())
+          .put('/api/v1/profile')
+          .set('Authorization', `Bearer ${authToken}`)
+          .send({ phone: testCase.phone })
+          .expect(400);
+
+        expect(response.body.message).toContain('Phone number must be in international format');
+      }
+    });
+
+    it('should accept valid phone numbers', async () => {
+      const validPhones = [
+        '+49123456789',    // Germany
+        '+1234567890',     // US
+        '+441234567890',   // UK
+        '',                // Empty string (optional field)
+      ];
+
+      for (const phone of validPhones) {
+        await request(app.getHttpServer())
+          .put('/api/v1/profile')
+          .set('Authorization', `Bearer ${authToken}`)
+          .send({ phone })
+          .expect(200);
+      }
+    });
+
     it('should return 401 without auth token', async () => {
       await request(app.getHttpServer())
         .put('/api/v1/profile')

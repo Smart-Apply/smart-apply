@@ -7,6 +7,7 @@ import {
   IsUrl,
   IsDateString,
   IsBoolean,
+  IsPhoneNumber,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { Sanitize, SanitizeArray } from '../../common/decorators/sanitize.decorator';
@@ -247,8 +248,15 @@ export class UpdateProfileDto {
   @IsString()
   lastName?: string;
 
-  @ApiProperty({ example: '+1234567890', required: false })
+  @ApiProperty({ 
+    example: '+49123456789', 
+    required: false,
+    description: 'Phone number in international E.164 format (e.g., +49123456789)'
+  })
   @IsOptional()
+  @IsPhoneNumber(undefined, { 
+    message: 'Phone number must be in international format (e.g., +49123456789)' 
+  })
   @Sanitize()
   @IsString()
   phone?: string;
