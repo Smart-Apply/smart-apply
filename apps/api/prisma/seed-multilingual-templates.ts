@@ -16,15 +16,15 @@ const prisma = new PrismaClient();
 // =============================================================================
 
 interface TemplateConfig {
-  id: string;                    // Unique identifier (e.g., 'modern-professional')
-  name: string;                  // Display name
-  description: string;           // Description for users
-  category: string;              // Category (Professional, Minimal, etc.)
-  cssFile: string;               // CSS filename (e.g., 'modern-professional.css')
-  resumeHbs?: string;            // Optional: Custom resume HBS (defaults to 'resume-ats.hbs')
-  coverLetterHbs?: string;       // Optional: Custom cover letter HBS (defaults to 'cover-letter-ats.hbs')
-  isDefault?: boolean;           // Is this the default template?
-  isAtsOptimized?: boolean;      // ATS-friendly design (default: true)
+  id: string; // Unique identifier (e.g., 'modern-professional')
+  name: string; // Display name
+  description: string; // Description for users
+  category: string; // Category (Professional, Minimal, etc.)
+  cssFile: string; // CSS filename (e.g., 'modern-professional.css')
+  resumeHbs?: string; // Optional: Custom resume HBS (defaults to 'resume-ats.hbs')
+  coverLetterHbs?: string; // Optional: Custom cover letter HBS (defaults to 'cover-letter-ats.hbs')
+  isDefault?: boolean; // Is this the default template?
+  isAtsOptimized?: boolean; // ATS-friendly design (default: true)
 }
 
 // Template configurations - add new templates here
@@ -149,11 +149,11 @@ async function seedDynamicTemplates() {
   // Read default templates
   const defaultResumeHTML = readFileOrThrow(
     path.join(templatesDir, defaultResumeHbs),
-    'Default resume template'
+    'Default resume template',
   );
   const defaultCoverLetterHTML = readFileOrThrow(
     path.join(templatesDir, defaultCoverLetterHbs),
-    'Default cover letter template'
+    'Default cover letter template',
   );
 
   let totalCreated = 0;
@@ -161,7 +161,7 @@ async function seedDynamicTemplates() {
 
   for (const config of TEMPLATE_CONFIGS) {
     const cssPath = path.join(stylesDir, config.cssFile);
-    
+
     // Check if CSS file exists
     if (!fileExists(cssPath)) {
       console.log(`⚠️  Skipping "${config.name}": CSS file not found (${config.cssFile})`);
@@ -193,7 +193,9 @@ async function seedDynamicTemplates() {
         coverLetterHTML = customCoverLetterHTML;
         console.log(`   📄 Using custom cover letter HBS: ${config.coverLetterHbs}`);
       } else {
-        console.log(`   ⚠️  Custom cover letter HBS not found (${config.coverLetterHbs}), using default`);
+        console.log(
+          `   ⚠️  Custom cover letter HBS not found (${config.coverLetterHbs}), using default`,
+        );
       }
     }
 
@@ -214,6 +216,8 @@ async function seedDynamicTemplates() {
         description: config.description,
         category: config.category,
         baseTemplateId: resumeBaseId,
+        isActive: true,
+        isDefault: config.isDefault ?? false,
       },
       create: {
         id: resumeId,
@@ -242,6 +246,8 @@ async function seedDynamicTemplates() {
         description: config.description,
         category: config.category,
         baseTemplateId: coverLetterBaseId,
+        isActive: true,
+        isDefault: config.isDefault ?? false,
       },
       create: {
         id: coverLetterId,

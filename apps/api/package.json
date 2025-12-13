@@ -34,6 +34,7 @@
     "prisma:migrate": "prisma migrate dev --schema=./prisma/schema.prisma",
     "prisma:seed": "dotenv -e .env -- ts-node -r tsconfig-paths/register prisma/seed.ts",
     "prisma:seed:templates": "dotenv -e .env -- ts-node -r tsconfig-paths/register prisma/seed-multilingual-templates.ts",
+    "prisma:cleanup:templates": "dotenv -e .env -- ts-node -r tsconfig-paths/register prisma/cleanup-old-templates.ts",
     "prisma:studio": "prisma studio --schema=./prisma/schema.prisma",
     "create-agents": "ts-node -r tsconfig-paths/register scripts/create-agents.ts"
   },

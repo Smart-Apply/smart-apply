@@ -5,6 +5,38 @@ import { api } from '@/lib/api-client';
 import type { Template, TemplateType, TemplateWithContent } from '@/types';
 
 /**
+ * Group templates by design (baseTemplateId or category), returning one per design.
+ * Prefers the specified language, falls back to 'de', then 'en', then first available.
+ */
+export function groupTemplatesByDesign(
+  templates: Template[] | undefined,
+  preferredLanguage: string = 'de'
+): Template[] {
+  if (!templates || templates.length === 0) return [];
+
+  // Group by baseTemplateId (if set) or category
+  const grouped = new Map<string, Template[]>();
+  
+  for (const template of templates) {
+    const groupKey = template.baseTemplateId || template.category;
+    const group = grouped.get(groupKey) || [];
+    group.push(template);
+    grouped.set(groupKey, group);
+  }
+
+  // Select best template from each group based on language preference
+  const result: Template[] = [];
+  for (const group of grouped.values()) {
+    const preferred = group.find((t) => t.language === preferredLanguage);
+    const fallbackDe = group.find((t) => t.language === 'de');
+    const fallbackEn = group.find((t) => t.language === 'en');
+    result.push(preferred || fallbackDe || fallbackEn || group[0]);
+  }
+
+  return result;
+}
+
+/**
  * Hook to fetch all templates with optional type filter
  */
 export function useTemplates(type?: TemplateType) {

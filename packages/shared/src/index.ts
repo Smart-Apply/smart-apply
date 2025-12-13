@@ -171,7 +171,10 @@ export interface Template {
   description?: string;
   type: TemplateType;
   category: string;
+  language: string;
+  baseTemplateId?: string;
   thumbnailUrl?: string;
+  previewImageKey?: string;
   isActive: boolean;
   isDefault: boolean;
   createdAt: string;

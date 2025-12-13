@@ -487,23 +487,34 @@ function TemplateStep({
   const { data: coverLetterTemplates, isLoading: coverLetterLoading } = useCoverLetterTemplates();
   const { data: resumeTemplates, isLoading: resumeLoading } = useResumeTemplates();
 
+  // API already returns one template per design (grouped by baseTemplateId, preferring those with previews)
+
   // Auto-select matching cover letter template when resume template is selected
   useEffect(() => {
     if (selectedResumeTemplateId && resumeTemplates && coverLetterTemplates) {
       const selectedResume = resumeTemplates.find((t) => t.id === selectedResumeTemplateId);
       if (selectedResume) {
-        // Find matching cover letter template by category
+        // Find matching cover letter template by category and language
         const matchingCoverLetter = coverLetterTemplates.find(
-          (t) => t.category.toLowerCase() === selectedResume.category.toLowerCase()
+          (t) => t.category.toLowerCase() === selectedResume.category.toLowerCase() 
+                 && t.language === selectedResume.language
         );
 
         if (matchingCoverLetter) {
           onSelectCoverLetterTemplate(matchingCoverLetter.id);
         } else {
-          // Fallback to default cover letter template
-          const defaultCoverLetter = getDefaultTemplate(coverLetterTemplates);
-          if (defaultCoverLetter) {
-            onSelectCoverLetterTemplate(defaultCoverLetter.id);
+          // Fallback to matching category only
+          const categoryMatch = coverLetterTemplates.find(
+            (t) => t.category.toLowerCase() === selectedResume.category.toLowerCase()
+          );
+          if (categoryMatch) {
+            onSelectCoverLetterTemplate(categoryMatch.id);
+          } else {
+            // Fallback to default cover letter template
+            const defaultCoverLetter = getDefaultTemplate(coverLetterTemplates);
+            if (defaultCoverLetter) {
+              onSelectCoverLetterTemplate(defaultCoverLetter.id);
+            }
           }
         }
       }
@@ -512,8 +523,8 @@ function TemplateStep({
 
   // Auto-select default resume template on mount if nothing is selected
   useEffect(() => {
-    if (!selectedResumeTemplateId && resumeTemplates) {
-      const defaultTemplate = getDefaultTemplate(resumeTemplates);
+    if (!selectedResumeTemplateId && resumeTemplates && resumeTemplates.length > 0) {
+      const defaultTemplate = resumeTemplates.find((t) => t.isDefault) || resumeTemplates[0];
       if (defaultTemplate) {
         onSelectResumeTemplate(defaultTemplate.id);
       }

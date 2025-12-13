@@ -48,7 +48,7 @@ interface KeywordBadgeProps {
 }
 
 function KeywordBadge({ keyword, showUsedIn = false }: KeywordBadgeProps) {
-  const config = categoryConfig[keyword.category];
+  const config = categoryConfig[keyword.category] ?? categoryConfig.misc;
   const Icon = config.icon;
 
   return (

@@ -1,8 +1,9 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, Inject, forwardRef } from '@nestjs/common';
 import * as NodeCache from 'node-cache';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { ConfigService } from '../config/config.service';
+import { PdfService } from '../pdf/pdf.service';
 import { TemplateType } from '@prisma/client';
 import { TemplateResponseDto, TemplateWithContentResponseDto } from './dto/template-response.dto';
 import { CreateTemplateDto } from './dto/create-template.dto';
@@ -22,6 +23,8 @@ export class TemplatesService {
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
     private readonly config: ConfigService,
+    @Inject(forwardRef(() => PdfService))
+    private readonly pdfService: PdfService,
   ) {
     // Initialize cache with TTL from config (default: 3600s from env.schema.ts)
     this.cache = new NodeCache({
@@ -68,6 +71,7 @@ export class TemplatesService {
         language: true,
         baseTemplateId: true,
         thumbnailUrl: true,
+        previewImageKey: true,
         isActive: true,
         isDefault: true,
         createdAt: true,
@@ -76,7 +80,8 @@ export class TemplatesService {
     });
 
     // Group by baseTemplateId (or category if no baseTemplateId)
-    // Return only one template per design family (preferring English as default)
+    // Return only one template per design family
+    // Priority: 1. Has preview image, 2. English language, 3. First found
     const templateMap = new Map<string, typeof allTemplates[0]>();
     
     for (const template of allTemplates) {
@@ -85,9 +90,17 @@ export class TemplatesService {
       
       if (!existing) {
         templateMap.set(groupKey, template);
-      } else if (template.language === 'en' && existing.language !== 'en') {
-        // Prefer English variant for display
-        templateMap.set(groupKey, template);
+      } else {
+        // Prefer template with preview image
+        const hasPreview = !!template.previewImageKey;
+        const existingHasPreview = !!existing.previewImageKey;
+        
+        if (hasPreview && !existingHasPreview) {
+          templateMap.set(groupKey, template);
+        } else if (hasPreview === existingHasPreview && template.language === 'en' && existing.language !== 'en') {
+          // If same preview status, prefer English variant
+          templateMap.set(groupKey, template);
+        }
       }
     }
 
@@ -522,7 +535,14 @@ export class TemplatesService {
       <html>
         <head>
           <meta charset="UTF-8">
-          <style>${cssStyles}</style>
+          <style>
+            html, body {
+              background-color: #ffffff !important;
+              margin: 0;
+              padding: 0;
+            }
+            ${cssStyles}
+          </style>
         </head>
         <body>${content}</body>
       </html>
@@ -530,33 +550,13 @@ export class TemplatesService {
   }
 
   /**
-   * Generate PNG preview image from HTML using Puppeteer
+   * Generate PNG preview image from HTML using PDF service browser pool
    */
   private async generatePreviewImage(html: string): Promise<Buffer> {
-    const puppeteer = require('puppeteer');
-
-    const browser = await puppeteer.launch({
-      headless: 'new', // Use new headless mode (Chrome 109+)
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      timeout: 120000, // 2 minutes for browser launch
-      protocolTimeout: 120000, // 2 minutes for protocol operations
+    return this.pdfService.generateScreenshot(html, {
+      width: 595,  // A4 width at 72 DPI
+      height: 842, // A4 height at 72 DPI
+      fullPage: false,
     });
-
-    try {
-      const page = await browser.newPage();
-      page.setDefaultNavigationTimeout(120000); // 2 minutes
-      page.setDefaultTimeout(120000); // 2 minutes
-      await page.setViewport({ width: 595, height: 842 }); // A4 size at 72 DPI
-      await page.setContent(html, { waitUntil: 'networkidle0', timeout: 120000 });
-
-      const screenshot = await page.screenshot({
-        type: 'png',
-        fullPage: false,
-      });
-
-      return screenshot as Buffer;
-    } finally {
-      await browser.close();
-    }
   }
 }

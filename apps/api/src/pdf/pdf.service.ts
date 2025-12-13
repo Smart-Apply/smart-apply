@@ -636,6 +636,48 @@ export class PdfService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
+   * Generate PNG screenshot from HTML using the browser pool
+   * Used for template previews
+   */
+  async generateScreenshot(
+    html: string,
+    options: { width?: number; height?: number; fullPage?: boolean } = {},
+  ): Promise<Buffer> {
+    const browser = await this.acquireBrowser();
+
+    try {
+      const page = await browser.newPage();
+      page.setDefaultNavigationTimeout(60000); // 1 minute
+      page.setDefaultTimeout(60000); // 1 minute
+
+      try {
+        // Set viewport to A4 dimensions at 72 DPI by default
+        await page.setViewport({
+          width: options.width || 595,
+          height: options.height || 842,
+        });
+
+        await page.setContent(html, {
+          waitUntil: 'networkidle0',
+          timeout: 60000,
+        });
+
+        const screenshot = await page.screenshot({
+          type: 'png',
+          fullPage: options.fullPage ?? false,
+        });
+
+        this.logger.debug(`Screenshot generated (${screenshot.length} bytes)`);
+        return screenshot as Buffer;
+      } finally {
+        await page.close();
+      }
+    } finally {
+      await this.releaseBrowser(browser);
+    }
+  }
+
+  /**
    * Health check - try to acquire and release a browser without throwing
    */
   async healthCheck(): Promise<boolean> {
