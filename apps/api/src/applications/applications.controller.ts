@@ -377,6 +377,7 @@ export class ApplicationsController {
     res.set({
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="cover-letter-${id}.pdf"`,
+      'Content-Length': file.length.toString(),
     });
 
     return new StreamableFile(file);
@@ -401,6 +402,7 @@ export class ApplicationsController {
     res.set({
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="resume-${id}.pdf"`,
+      'Content-Length': file.length.toString(),
     });
 
     return new StreamableFile(file);

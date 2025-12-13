@@ -84,6 +84,12 @@ async function bootstrap() {
           if (req.headers['x-no-compression']) {
             return false;
           }
+          // Don't compress PDF download endpoints - PDFs are already compressed
+          // and double-compression corrupts them. Check URL since Content-Type
+          // isn't set yet when middleware runs.
+          if (req.url?.includes('/download/')) {
+            return false;
+          }
           // Use default compression filter (checks Accept-Encoding header)
           return compression.filter(req, res);
         },
@@ -91,7 +97,7 @@ async function bootstrap() {
         level: 6, // Balance between compression speed and ratio (0-9, where 6 is good default)
       }),
     );
-    logger.log('🗜️  Response compression enabled (gzip, level 6, threshold: 1KB)');
+    logger.log('🗜️  Response compression enabled (gzip, level 6, threshold: 1KB, excludes /download/)');
   } else {
     logger.warn('⚠️  Response compression disabled (set ENABLE_COMPRESSION=true to enable)');
   }
