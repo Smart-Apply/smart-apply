@@ -324,7 +324,62 @@ touch tests/e2e/application-flow.spec.ts
 
 ---
 
-### 8. Performance Optimierungen
+### 8. Nur Anschreiben generieren Option
+
+**Aufwand:** 3-4 Stunden  
+**Status:** ❌ Noch nicht gestartet
+
+**Was zu tun ist:**
+
+Benutzer sollen die Möglichkeit haben, nur ein Anschreiben ohne Lebenslauf zu generieren. Nützlich wenn:
+- Der Benutzer bereits einen aktuellen Lebenslauf hat
+- Nur schnell ein Anschreiben für eine Bewerbung benötigt wird
+- Kosten/Zeit bei der Generierung gespart werden sollen
+
+**Backend Änderungen:**
+
+1. **Application DTO erweitern:**
+   ```typescript
+   // create-application.dto.ts
+   export class CreateApplicationDto {
+     jobPostingId: string;
+     notes?: string;
+     generateResume?: boolean; // Default: true
+     generateCoverLetter?: boolean; // Default: true
+   }
+   ```
+
+2. **Application Service anpassen:**
+   - Pipeline so ändern, dass nur gewünschte Dokumente generiert werden
+   - Validierung: Mindestens ein Dokument muss generiert werden
+
+3. **Application Model erweitern:**
+   - Felder `coverLetterKey` und `resumeKey` nullable machen (falls nicht generiert)
+
+**Frontend Änderungen:**
+
+1. **Application Wizard erweitern:**
+   - Checkboxen hinzufügen: "Anschreiben generieren" ✅ / "Lebenslauf generieren" ✅
+   - Mindestens eine Option muss ausgewählt sein
+
+2. **Application Detail Seite anpassen:**
+   - Download-Buttons nur anzeigen wenn entsprechendes Dokument existiert
+
+**Testing:**
+
+```bash
+# Nur Anschreiben
+curl -X POST /api/v1/applications \
+  -d '{"jobPostingId": "...", "generateResume": false, "generateCoverLetter": true}'
+
+# Nur Lebenslauf
+curl -X POST /api/v1/applications \
+  -d '{"jobPostingId": "...", "generateResume": true, "generateCoverLetter": false}'
+```
+
+---
+
+### 9. Performance Optimierungen
 
 **Aufwand:** 4-6 Stunden  
 **Nicht kritisch, aber nice-to-have**
