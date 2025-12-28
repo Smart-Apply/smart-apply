@@ -1,14 +1,15 @@
 'use client';
 
-import { startTransition, useEffect, useMemo, useState } from 'react';
+import { startTransition, useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Briefcase, MapPin, Sparkles, FileText, Save, RefreshCw, CheckCircle2, AlertCircle, Download, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Briefcase, MapPin, Sparkles, FileText, Save, CheckCircle2, AlertCircle, Download, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SubmitButton } from '@/components/ui/submit-button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { CenteredLoader } from '@/components/shared/loading';
 import { ResumeTemplatePreview, CoverLetterTemplatePreview } from '@/components/applications/template-preview';
 import { ATSScoreSidebar } from '@/components/applications/ats-score-sidebar';
@@ -65,30 +66,6 @@ const EMPTY_RESUME: ResumeData = {
   certifications: [],
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  PENDING: 'Ausstehend',
-  GENERATING: 'In Bearbeitung',
-  READY: 'Fertig',
-  FAILED: 'Fehlgeschlagen',
-  OFFER: 'Angebot',
-  WITHDRAWN: 'Zurückgezogen',
-  REJECTED: 'Abgelehnt',
-  INTERVIEW: 'Interview',
-  APPLIED: 'Beworben',
-};
-
-const STATUS_COLORS: Record<string, { variant: "default" | "secondary" | "destructive" | "outline", className?: string }> = {
-  PENDING: { variant: 'secondary' },
-  GENERATING: { variant: 'secondary', className: 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800' },
-  READY: { variant: 'secondary', className: 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800' },
-  FAILED: { variant: 'destructive' },
-  OFFER: { variant: 'secondary', className: 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800' },
-  WITHDRAWN: { variant: 'outline', className: 'text-muted-foreground' },
-  REJECTED: { variant: 'destructive' },
-  INTERVIEW: { variant: 'secondary', className: 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800' },
-  APPLIED: { variant: 'default' },
-};
-
 export default function ApplicationResumeEditorPage() {
   const params = useParams();
   const router = useRouter();
@@ -109,6 +86,7 @@ export default function ApplicationResumeEditorPage() {
   const [instructions, setInstructions] = useState('');
   const [activeTab, setActiveTab] = useState<'resume' | 'cover-letter' | 'ats-score'>('resume');
   const [selectedLanguage, setSelectedLanguage] = useState<'de' | 'en' | 'fr' | 'es' | 'it'>('en');
+  const [aiPopoverOpen, setAiPopoverOpen] = useState(false);
 
   // Trigger ATS score refresh after saving
   const [atsRefreshTrigger, setAtsRefreshTrigger] = useState(0);
@@ -201,18 +179,6 @@ export default function ApplicationResumeEditorPage() {
       setCoverInitialized(true);
     });
   }, [coverLetterText, coverInitialized, coverVersion, hasCoverChanges]);
-
-  const statusBadge = useMemo(() => {
-    if (!application) return null;
-    const label = STATUS_LABELS[application.status] || application.status;
-    const config = STATUS_COLORS[application.status] || { variant: 'outline' };
-
-    return (
-      <Badge variant={config.variant} className={cn("text-sm font-medium px-2.5 py-0.5", config.className)}>
-        {label}
-      </Badge>
-    );
-  }, [application]);
 
   const handleResumeReset = () => {
     if (lastSavedResume) {
@@ -339,11 +305,31 @@ export default function ApplicationResumeEditorPage() {
           setCoverLetterValue(partialContent + '...');
         }
       }, 50); // Update every 50ms for smooth streaming effect
+
+      // Close popover after successful AI generation
+      setAiPopoverOpen(false);
     } catch (err) {
       console.error('❌ AI generation failed', err);
       toast.error('AI-Generierung fehlgeschlagen: ' + (err as Error).message);
     }
   };
+
+  // Keyboard shortcut: Cmd/Ctrl+S to save
+  const handleKeyboardSave = useCallback((e: KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+      e.preventDefault();
+      if (activeTab === 'resume' && hasResumeChanges && !updateResume.isPending) {
+        handleResumeSave();
+      } else if (activeTab === 'cover-letter' && hasCoverChanges && !upsertCoverLetter.isPending) {
+        handleCoverSave();
+      }
+    }
+  }, [activeTab, hasResumeChanges, hasCoverChanges, updateResume.isPending, upsertCoverLetter.isPending]);
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyboardSave);
+    return () => document.removeEventListener('keydown', handleKeyboardSave);
+  }, [handleKeyboardSave]);
 
   if (isLoading) {
     return <CenteredLoader message="Lädt Bewerbungsdaten..." />;
@@ -414,174 +400,222 @@ export default function ApplicationResumeEditorPage() {
     }
   };
 
+  // Determine current unsaved state based on active tab
+  const hasCurrentTabChanges = activeTab === 'resume' ? hasResumeChanges : activeTab === 'cover-letter' ? hasCoverChanges : false;
+  const isCurrentTabSaving = activeTab === 'resume' ? updateResume.isPending : activeTab === 'cover-letter' ? coverMutationPending : false;
+
+  const handleCurrentTabSave = () => {
+    if (activeTab === 'resume') {
+      handleResumeSave();
+    } else if (activeTab === 'cover-letter') {
+      handleCoverSave();
+    }
+  };
+
+  const handleCurrentTabReset = () => {
+    if (activeTab === 'resume') {
+      handleResumeReset();
+    } else if (activeTab === 'cover-letter') {
+      handleCoverReset();
+    }
+  };
+
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Header Section */}
-      <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-        <div className="space-y-4">
-          <Button variant="ghost" size="sm" onClick={() => router.push(`/applications/${applicationId}`)} className="pl-0 hover:pl-2 transition-all text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Zurück zur Übersicht
-          </Button>
+    <TooltipProvider>
+      <div className="flex flex-col h-[calc(100vh-2rem)] animate-in fade-in duration-300">
+        {/* Compact Toolbar */}
+        <div className="flex items-center justify-between gap-4 px-2 py-3 border-b border-border/50 bg-background/80 backdrop-blur-sm shrink-0">
+          {/* Left: Back + Job Info */}
+          <div className="flex items-center gap-4 min-w-0">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => router.push(`/applications/${applicationId}`)}
+                  className="shrink-0 h-8 w-8"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Zurück zur Übersicht</TooltipContent>
+            </Tooltip>
 
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold tracking-tight text-foreground">Unterlagen anpassen</h1>
-              {statusBadge}
-            </div>
-            <p className="text-muted-foreground max-w-2xl">
-              Passe deinen Lebenslauf und dein Anschreiben an, bevor du die finalen PDFs exportierst.
-            </p>
-          </div>
+            <div className="h-5 w-px bg-border/50 shrink-0" />
 
-          {application.jobPosting && (
-            <div className="flex flex-wrap gap-3 text-sm">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50 border border-border/50 text-foreground/80">
-                <Briefcase className="h-3.5 w-3.5 text-primary" />
-                <span className="font-medium">{application.jobPosting.title}</span>
-              </div>
-              {application.jobPosting.company && (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50 border border-border/50 text-foreground/80">
-                  <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-                  <span>{application.jobPosting.company}</span>
+            {application.jobPosting && (
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-1.5 text-sm truncate">
+                  <Briefcase className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <span className="font-medium truncate">{application.jobPosting.title}</span>
                 </div>
-              )}
-              {application.jobPosting.location && (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50 border border-border/50 text-foreground/80">
-                  <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span>{application.jobPosting.location}</span>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Export Card - Compact */}
-        <Card className="w-full md:w-auto min-w-[300px] shadow-soft border-border/50 bg-card/50 backdrop-blur-sm">
-          <CardContent className="p-4 space-y-3">
-            <div className="flex items-center justify-between gap-4">
-              <div className="space-y-1">
-                <p className="font-medium text-sm">PDF Export</p>
-                <p className="text-xs text-muted-foreground">
-                  {exportDisabledReason ? (
-                    <span className="text-orange-600 dark:text-orange-400 flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3" />
-                      Aktion erforderlich
-                    </span>
-                  ) : (
-                    <span className="text-green-600 dark:text-green-400 flex items-center gap-1">
-                      <CheckCircle2 className="h-3 w-3" />
-                      Bereit zum Export
-                    </span>
-                  )}
-                </p>
-              </div>
-              <SubmitButton 
-                onClick={handleExport} 
-                isLoading={exportApplication.isPending || application.status === 'GENERATING'}
-                loadingText="Exportiere..."
-                disabled={!canExport}
-                size="sm" 
-                className="shadow-sm"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Exportieren
-              </SubmitButton>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Tabs
-        value={activeTab}
-        onValueChange={(value) => handleTabChange(value as 'resume' | 'cover-letter' | 'ats-score')}
-        defaultValue="resume"
-        className="space-y-6"
-      >
-        <div className="border-b border-border/50">
-          <TabsList className="bg-transparent p-0 h-auto gap-6">
-            <TabsTrigger
-              value="resume"
-              className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:text-primary border-b-2 border-transparent rounded-none px-2 py-3 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              Lebenslauf
-            </TabsTrigger>
-            {coverLetterWasGenerated && (
-              <TabsTrigger
-                value="cover-letter"
-                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:text-primary border-b-2 border-transparent rounded-none px-2 py-3 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <FileText className="h-4 w-4 mr-2" />
-                Anschreiben
-              </TabsTrigger>
-            )}
-            <TabsTrigger
-              value="ats-score"
-              className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:text-primary border-b-2 border-transparent rounded-none px-2 py-3 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <CheckCircle2 className="h-4 w-4 mr-2" />
-              ATS Score
-            </TabsTrigger>
-          </TabsList>
-        </div>
-
-        <TabsContent value="resume" className="space-y-6 focus-visible:outline-none mt-0">
-          <div className="flex flex-wrap items-center justify-between gap-4 py-2">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <div className={cn("h-2 w-2 rounded-full", hasResumeChanges ? "bg-orange-500" : "bg-green-500")} />
-              {hasResumeChanges ? "Ungespeicherte Änderungen" : "Alle Änderungen gespeichert"}
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={handleResumeReset} disabled={!hasResumeChanges || updateResume.isPending}>
-                Zurücksetzen
-              </Button>
-              <SubmitButton 
-                onClick={handleResumeSave} 
-                isLoading={updateResume.isPending}
-                loadingText="Speichere..."
-                disabled={isSaveDisabled} 
-                size="sm" 
-                className="shadow-sm"
-                title={!hasResumeChanges ? 'Keine Änderungen' : updateResume.isPending ? 'Wird gespeichert...' : 'Lebenslauf speichern'}
-              >
-                <Save className="h-4 w-4 mr-2" />
-                Speichern
-              </SubmitButton>
-            </div>
-          </div>
-
-          <div className="grid gap-6 lg:grid-cols-2">
-            {/* Form Editor - Scrollable independently */}
-            <div className="h-[calc(100vh-200px)] overflow-y-auto pr-2 scrollbar-thin">
-              <div className="space-y-6 pb-10">
-                {parsedResume && (
-                  <ResumeFormEditor
-                    value={parsedResume}
-                    onChange={(resume) => setParsedResume(resume)}
-                    disabled={updateResume.isPending}
-                  />
+                {application.jobPosting.company && (
+                  <>
+                    <span className="text-muted-foreground text-sm shrink-0">@</span>
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground truncate">
+                      <Building2 className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{application.jobPosting.company}</span>
+                    </div>
+                  </>
+                )}
+                {application.jobPosting.location && (
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground truncate">
+                    <MapPin className="h-3 w-3 shrink-0" />
+                    <span className="truncate">{application.jobPosting.location}</span>
+                  </div>
                 )}
               </div>
-            </div>
+            )}
+          </div>
 
-            {/* Live Preview - Scrollable independently */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-end gap-2 px-2">
-                <label className="text-sm font-medium text-muted-foreground">Sprache:</label>
-                <select
-                  value={selectedLanguage}
-                  onChange={(e) => setSelectedLanguage(e.target.value as 'de' | 'en' | 'fr' | 'es' | 'it')}
-                  className="text-sm border border-border/50 rounded-md px-3 py-1.5 bg-background hover:bg-muted/50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20"
-                >
-                  <option value="en">🇬🇧 English</option>
-                  <option value="de">🇩🇪 Deutsch</option>
-                  <option value="fr">🇫🇷 Français</option>
-                  <option value="es">🇪🇸 Español</option>
-                  <option value="it">🇮🇹 Italiano</option>
-                </select>
+          {/* Center: Tabs */}
+          <Tabs
+            value={activeTab}
+            onValueChange={(value) => handleTabChange(value as 'resume' | 'cover-letter' | 'ats-score')}
+            className="shrink-0"
+          >
+            <TabsList className="bg-muted/50 h-8">
+              <TabsTrigger value="resume" className="text-xs px-3 h-7 data-[state=active]:bg-background">
+                <FileText className="h-3.5 w-3.5 mr-1.5" />
+                Lebenslauf
+              </TabsTrigger>
+              {coverLetterWasGenerated && (
+                <TabsTrigger value="cover-letter" className="text-xs px-3 h-7 data-[state=active]:bg-background">
+                  <FileText className="h-3.5 w-3.5 mr-1.5" />
+                  Anschreiben
+                </TabsTrigger>
+              )}
+              <TabsTrigger value="ats-score" className="text-xs px-3 h-7 data-[state=active]:bg-background">
+                <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
+                ATS Score
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          {/* Right: Status + Language + Actions */}
+          <div className="flex items-center gap-3 shrink-0">
+            {/* Unsaved indicator */}
+            {activeTab !== 'ats-score' && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <div className={cn(
+                      "h-2 w-2 rounded-full transition-colors",
+                      hasCurrentTabChanges ? "bg-orange-500" : "bg-green-500"
+                    )} />
+                    <span className="hidden xl:inline">
+                      {hasCurrentTabChanges ? "Ungespeichert" : "Gespeichert"}
+                    </span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {hasCurrentTabChanges ? "Änderungen nicht gespeichert (⌘S)" : "Alle Änderungen gespeichert"}
+                </TooltipContent>
+              </Tooltip>
+            )}
+
+            {/* Language selector */}
+            <select
+              value={selectedLanguage}
+              onChange={(e) => setSelectedLanguage(e.target.value as 'de' | 'en' | 'fr' | 'es' | 'it')}
+              className="text-xs border border-border/50 rounded-md px-2 py-1 bg-background hover:bg-muted/50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20"
+            >
+              <option value="en">🇬🇧 EN</option>
+              <option value="de">🇩🇪 DE</option>
+              <option value="fr">🇫🇷 FR</option>
+              <option value="es">🇪🇸 ES</option>
+              <option value="it">🇮🇹 IT</option>
+            </select>
+
+            <div className="h-5 w-px bg-border/50" />
+
+            {/* Reset button */}
+            {activeTab !== 'ats-score' && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={handleCurrentTabReset} 
+                    disabled={!hasCurrentTabChanges || isCurrentTabSaving}
+                    className="h-8 px-2 text-xs"
+                  >
+                    Zurücksetzen
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Änderungen verwerfen</TooltipContent>
+              </Tooltip>
+            )}
+
+            {/* Save button */}
+            {activeTab !== 'ats-score' && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <SubmitButton 
+                      onClick={handleCurrentTabSave}
+                      isLoading={isCurrentTabSaving}
+                      loadingText="..."
+                      disabled={!hasCurrentTabChanges || isCurrentTabSaving}
+                      size="sm"
+                      className="h-8 px-3 text-xs"
+                    >
+                      <Save className="h-3.5 w-3.5 mr-1.5" />
+                      Speichern
+                    </SubmitButton>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {!hasCurrentTabChanges ? 'Keine Änderungen' : 'Speichern (⌘S)'}
+                </TooltipContent>
+              </Tooltip>
+            )}
+
+            {/* Export button */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <SubmitButton 
+                    onClick={handleExport} 
+                    isLoading={exportApplication.isPending || application.status === 'GENERATING'}
+                    loadingText="..."
+                    disabled={!canExport}
+                    size="sm" 
+                    variant={canExport ? "default" : "outline"}
+                    className="h-8 px-3 text-xs"
+                  >
+                    <Download className="h-3.5 w-3.5 mr-1.5" />
+                    Export
+                  </SubmitButton>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                {exportDisabledReason || 'PDFs exportieren'}
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </div>
+
+        {/* Main Content Area - Full Height */}
+        <div className="flex-1 min-h-0 overflow-hidden">
+          {/* Resume Tab */}
+          {activeTab === 'resume' && (
+            <div className="grid grid-cols-2 gap-4 h-full p-4">
+              {/* Form Editor */}
+              <div className="h-full overflow-y-auto pr-2 scrollbar-thin">
+                <div className="space-y-6 pb-6">
+                  {parsedResume && (
+                    <ResumeFormEditor
+                      value={parsedResume}
+                      onChange={(resume) => setParsedResume(resume)}
+                      disabled={updateResume.isPending}
+                    />
+                  )}
+                </div>
               </div>
-              <div className="h-[calc(100vh-260px)] overflow-y-auto bg-gray-100 rounded-lg shadow-2xl">
+
+              {/* Live Preview */}
+              <div className="h-full overflow-auto bg-gray-100 dark:bg-gray-900 rounded-lg shadow-inner">
                 {parsedResume && (
                   <ResumeTemplatePreview
                     resume={parsedResume}
@@ -591,130 +625,120 @@ export default function ApplicationResumeEditorPage() {
                 )}
               </div>
             </div>
-          </div>
-        </TabsContent>
+          )}
 
-        {coverLetterWasGenerated && (
-          <TabsContent value="cover-letter" className="space-y-6 focus-visible:outline-none mt-0">
-            <div className="flex flex-wrap items-center justify-between gap-4 py-2">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <div className={cn("h-2 w-2 rounded-full", hasCoverChanges ? "bg-orange-500" : "bg-green-500")} />
-                {hasCoverChanges ? "Ungespeicherte Änderungen" : "Alle Änderungen gespeichert"}
-              </div>
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={handleCoverReset} disabled={!hasCoverChanges || coverMutationPending}>
-                  Zurücksetzen
-                </Button>
-                <SubmitButton 
-                  onClick={handleCoverSave} 
-                  isLoading={coverMutationPending}
-                  loadingText="Speichere..."
-                  disabled={isCoverSaveDisabled} 
-                  size="sm" 
-                  className="shadow-sm"
-                  title={!coverHasContent ? 'Anschreiben ist leer' : !hasCoverChanges ? 'Keine Änderungen' : coverMutationPending ? 'Wird gespeichert...' : 'Anschreiben speichern'}
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  Speichern
-                </SubmitButton>
-              </div>
-            </div>
-
-            <div className="grid gap-6 lg:grid-cols-2">
-              {/* Editor - Scrollable independently */}
-              <div className="h-[calc(100vh-200px)] overflow-y-auto pr-2 scrollbar-thin">
-                <Card className="shadow-soft border-border/50">
-                  <CardHeader className="pb-4">
-                    <CardTitle className="text-lg">Anschreiben bearbeiten</CardTitle>
-                    <CardDescription>Bearbeite das Anschreiben direkt im Editor oder generiere es neu.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="space-y-3 p-4 rounded-lg bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20">
-                      <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                        <Sparkles className="h-4 w-4 text-primary" />
-                        AI-Assistent
-                      </label>
-                      <Textarea
-                        value={instructions}
-                        onChange={(event) => setInstructions(event.target.value)}
-                        placeholder="Z.B.: Betone meine React-Erfahrung stärker und füge Details über Remote-Arbeit hinzu..."
-                        rows={3}
-                        disabled={coverMutationPending}
-                        className="resize-none bg-background/80 backdrop-blur-sm border-primary/20 focus:border-primary/40"
-                      />
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground bg-background/50 p-2 rounded">
-                        <AlertCircle className="h-3.5 w-3.5" />
-                        <span>Die AI passt den aktuellen Inhalt an. Danach musst du manuell speichern.</span>
+          {/* Cover Letter Tab */}
+          {activeTab === 'cover-letter' && coverLetterWasGenerated && (
+            <div className="grid grid-cols-2 gap-4 h-full p-4">
+              {/* Editor */}
+              <div className="h-full overflow-y-auto pr-2 scrollbar-thin">
+                <Card className="shadow-soft border-border/50 h-full flex flex-col">
+                  <CardHeader className="pb-3 shrink-0">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="text-base">Anschreiben bearbeiten</CardTitle>
+                        <CardDescription className="text-xs">
+                          Bearbeite den Text direkt oder nutze den AI-Assistenten.
+                        </CardDescription>
                       </div>
-                      <SubmitButton 
-                        variant="default" 
-                        size="sm" 
-                        onClick={handleApplyAIChanges} 
-                        isLoading={coverMutationPending}
-                        loadingText="AI arbeitet..."
-                        disabled={coverMutationPending || !instructions.trim()} 
-                        className="w-full bg-primary hover:bg-primary/90"
-                      >
-                        <Sparkles className="h-3.5 w-3.5 mr-2" />
-                        Änderungen mit AI anwenden
-                      </SubmitButton>
+                      {/* AI Assistant Popover Button */}
+                      <Popover open={aiPopoverOpen} onOpenChange={setAiPopoverOpen}>
+                        <PopoverTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-8 px-3 text-xs border-primary/30 hover:border-primary/50 hover:bg-primary/5"
+                          >
+                            <Sparkles className="h-3.5 w-3.5 mr-1.5 text-primary" />
+                            AI-Assistent
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent side="bottom" align="end" className="w-80">
+                          <div className="space-y-3">
+                            <div className="space-y-1">
+                              <h4 className="font-medium text-sm flex items-center gap-2">
+                                <Sparkles className="h-4 w-4 text-primary" />
+                                AI-Anweisungen
+                              </h4>
+                              <p className="text-xs text-muted-foreground">
+                                Beschreibe, wie das Anschreiben angepasst werden soll.
+                              </p>
+                            </div>
+                            <Textarea
+                              value={instructions}
+                              onChange={(event) => setInstructions(event.target.value)}
+                              placeholder="Z.B.: Betone meine React-Erfahrung stärker..."
+                              rows={3}
+                              disabled={coverMutationPending}
+                              className="resize-none text-sm"
+                            />
+                            <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+                              <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                              <span>Die AI passt den Inhalt an. Danach musst du manuell speichern.</span>
+                            </div>
+                            <SubmitButton 
+                              variant="default" 
+                              size="sm" 
+                              onClick={handleApplyAIChanges} 
+                              isLoading={coverMutationPending}
+                              loadingText="AI arbeitet..."
+                              disabled={coverMutationPending || !instructions.trim()} 
+                              className="w-full"
+                            >
+                              <Sparkles className="h-3.5 w-3.5 mr-2" />
+                              Anwenden
+                            </SubmitButton>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     </div>
-
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-foreground">Inhalt</label>
-                      <CoverLetterEditor value={coverLetterValue} onChange={setCoverLetterValue} disabled={coverMutationPending} />
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Der Editor enthält den kompletten Briefinhalt inkl. Anrede und Schlussformel. Dein Name wird automatisch als Unterschrift hinzugefügt.
-                      </p>
+                  </CardHeader>
+                  <CardContent className="flex-1 min-h-0 flex flex-col">
+                    <div className="flex-1 min-h-0">
+                      <CoverLetterEditor 
+                        value={coverLetterValue} 
+                        onChange={setCoverLetterValue} 
+                        disabled={coverMutationPending} 
+                      />
                     </div>
+                    <p className="text-xs text-muted-foreground mt-3 shrink-0">
+                      Dein Name wird automatisch als Unterschrift hinzugefügt.
+                    </p>
                   </CardContent>
                 </Card>
               </div>
 
-              {/* Live Preview - Scrollable independently */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-end gap-2 px-2">
-                  <label className="text-sm font-medium text-muted-foreground">Sprache:</label>
-                  <select
-                    value={selectedLanguage}
-                    onChange={(e) => setSelectedLanguage(e.target.value as 'de' | 'en' | 'fr' | 'es' | 'it')}
-                    className="text-sm border border-border/50 rounded-md px-3 py-1.5 bg-background hover:bg-muted/50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  >
-                    <option value="en">🇬🇧 English</option>
-                    <option value="de">🇩🇪 Deutsch</option>
-                    <option value="fr">🇫🇷 Français</option>
-                    <option value="es">🇪🇸 Español</option>
-                    <option value="it">🇮🇹 Italiano</option>
-                  </select>
-                </div>
-                <div className="h-[calc(100vh-260px)] overflow-y-auto bg-gray-100 rounded-lg shadow-2xl">
-                  <CoverLetterTemplatePreview
-                    html={coverLetterValue}
-                    candidateName={parsedResume?.candidateName}
-                    email={parsedResume?.email}
-                    phone={parsedResume?.phone}
-                    location={parsedResume?.location}
-                    linkedin={parsedResume?.linkedin}
-                    github={parsedResume?.github}
-                    companyName={application?.jobPosting?.company}
-                    templateId={application?.coverLetterTemplateId}
-                    language={selectedLanguage}
-                  />
-                </div>
+              {/* Live Preview */}
+              <div className="h-full overflow-auto bg-gray-100 dark:bg-gray-900 rounded-lg shadow-inner">
+                <CoverLetterTemplatePreview
+                  html={coverLetterValue}
+                  candidateName={parsedResume?.candidateName}
+                  email={parsedResume?.email}
+                  phone={parsedResume?.phone}
+                  location={parsedResume?.location}
+                  linkedin={parsedResume?.linkedin}
+                  github={parsedResume?.github}
+                  companyName={application?.jobPosting?.company}
+                  templateId={application?.coverLetterTemplateId}
+                  language={selectedLanguage}
+                />
               </div>
             </div>
-          </TabsContent>
-        )}
+          )}
 
-        <TabsContent value="ats-score" className="space-y-6 focus-visible:outline-none mt-0">
-          <div className="max-w-6xl mx-auto">
-            <ATSScoreSidebar
-              applicationId={applicationId}
-              refreshTrigger={atsRefreshTrigger}
-            />
-          </div>
-        </TabsContent>
-      </Tabs>
-    </div>
+          {/* ATS Score Tab */}
+          {activeTab === 'ats-score' && (
+            <div className="h-full overflow-y-auto p-4">
+              <div className="max-w-4xl mx-auto">
+                <ATSScoreSidebar
+                  applicationId={applicationId}
+                  refreshTrigger={atsRefreshTrigger}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </TooltipProvider>
   );
 }

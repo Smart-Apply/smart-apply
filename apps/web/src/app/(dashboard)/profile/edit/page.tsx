@@ -84,8 +84,9 @@ export default function ProfileEditPage() {
       email: '',
       phone: '',
       location: '',
-      linkedIn: '',
-      website: '',
+      linkedinUrl: '',
+      githubUrl: '',
+      portfolioUrl: '',
       summary: '',
     },
   });
@@ -99,8 +100,9 @@ export default function ProfileEditPage() {
         email: user.email || '',
         phone: profile.phone || '',
         location: profile.location || '',
-        linkedIn: profile.linkedinUrl || '',
-        website: profile.portfolioUrl || '',
+        linkedinUrl: profile.linkedinUrl || '',
+        githubUrl: profile.githubUrl || '',
+        portfolioUrl: profile.portfolioUrl || '',
         summary: profile.summary || '',
       });
     }
@@ -162,8 +164,9 @@ export default function ProfileEditPage() {
         lastName: data.lastName || undefined,
         phone: data.phone?.trim() || undefined,
         location: data.location?.trim() || undefined,
-        linkedinUrl: data.linkedIn?.trim() || undefined,
-        portfolioUrl: data.website?.trim() || undefined,
+        linkedinUrl: data.linkedinUrl?.trim() || undefined,
+        githubUrl: data.githubUrl?.trim() || undefined,
+        portfolioUrl: data.portfolioUrl?.trim() || undefined,
         summary: data.summary?.trim() || undefined,
         skills: skills.length > 0 ? skillsForUpdate : undefined,
         experiences: experiencesForUpdate.length > 0 ? experiencesForUpdate : undefined,
@@ -329,7 +332,7 @@ export default function ProfileEditPage() {
                     />
                     <FormField
                       control={form.control}
-                      name="linkedIn"
+                      name="linkedinUrl"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>LinkedIn URL</FormLabel>
@@ -342,7 +345,20 @@ export default function ProfileEditPage() {
                     />
                     <FormField
                       control={form.control}
-                      name="website"
+                      name="githubUrl"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>GitHub URL</FormLabel>
+                          <FormControl>
+                            <Input placeholder="https://github.com/..." {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="portfolioUrl"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Website / Portfolio</FormLabel>

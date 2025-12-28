@@ -100,12 +100,12 @@ export default function DashboardPage() {
         const newStats = {
           total: apps.length,
           active: apps.filter(
-            (a) =>
+            (a: Application) =>
               !['REJECTED', 'WITHDRAWN', 'OFFER', 'ACCEPTED'].includes(a.applicationStatus)
           ).length,
-          interviews: apps.filter((a) => a.applicationStatus === 'INTERVIEW')
+          interviews: apps.filter((a: Application) => a.applicationStatus === 'INTERVIEW')
             .length,
-          offers: apps.filter((a) => ['OFFER', 'ACCEPTED'].includes(a.applicationStatus)).length,
+          offers: apps.filter((a: Application) => ['OFFER', 'ACCEPTED'].includes(a.applicationStatus)).length,
         };
         setStats(newStats);
       } catch (error) {

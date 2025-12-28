@@ -121,7 +121,12 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
     try {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { confirmPassword, ...registerData } = data;
-      const response = await api.auth.register(registerData);
+      const response = await api.auth.register({
+        email: registerData.email,
+        password: registerData.password,
+        firstName: registerData.firstName || '',
+        lastName: registerData.lastName || '',
+      });
       resetAuthRedirectFlag();
       setAuth(response.user);
       toast.success('Account erfolgreich erstellt!');

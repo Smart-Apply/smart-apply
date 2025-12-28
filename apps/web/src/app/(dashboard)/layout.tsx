@@ -229,7 +229,11 @@ export default function DashboardLayout({
 
       {/* Desktop Main Content */}
       <main className="hidden flex-1 md:block overflow-y-auto h-screen">
-        <div className="mx-auto max-w-7xl p-8">{children}</div>
+        {isEditMode ? (
+          <div className="h-full p-4">{children}</div>
+        ) : (
+          <div className="mx-auto max-w-7xl p-8">{children}</div>
+        )}
       </main>
     </div>
   );
