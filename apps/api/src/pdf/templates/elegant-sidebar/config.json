@@ -1,0 +1,13 @@
+{
+  "id": "elegant-sidebar",
+  "name": "Elegant Sidebar",
+  "description": "Ein elegantes zweispaltiges Template mit warmem Farbschema. Professionell und modern mit Sidebar für Kontakt, Skills und Sprachen.",
+  "category": "Professional",
+  "isDefault": true,
+  "isAtsOptimized": false,
+  "previewColor": "#9c7a5b",
+  "customTemplates": {
+    "resume": "resume.hbs",
+    "coverLetter": "cover-letter.hbs"
+  }
+}

@@ -1,0 +1,412 @@
+/* Elegant Sidebar Template */
+/* Warm, professional two-column design */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700;800&display=swap');
+
+:root {
+  /* Brand Colors */
+  --accent-color: #9c7a5b;
+
+  /* Text Colors */
+  --text-primary: #3d3d3d;
+  --text-secondary: #6b6b6b;
+  --text-muted: #8a8a8a;
+  --text-accent: #6b5b4f;
+
+  /* Background Colors */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f0edea;
+  --bg-sidebar: #faf9f7;
+
+  /* Border Colors */
+  --border-light: #faf9f7;
+  --border-dark: #8b7355;
+
+  /* Font Sizes */
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-md: 14px;
+  --font-size-base: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 30px;
+  --font-size-4xl: 36px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.cv-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100%;
+  background: var(--bg-primary);
+}
+
+.cv-header {
+  background: var(--bg-secondary);
+}
+
+.cv-content {
+  display: flex;
+  flex: 1;
+}
+
+.profile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 25px 40px;
+}
+
+.profile-photo-section {
+  display: flex;
+  align-items: center;
+  margin-left: 30px;
+}
+
+.profile-photo {
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid var(--border-light);
+}
+
+.profile-name {
+  font-family: 'Montserrat', sans-serif;
+  font-size: var(--font-size-4xl);
+  font-weight: 700;
+  margin-bottom: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.profile-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: var(--font-size-xl);
+  color: var(--text-accent);
+  letter-spacing: 1px;
+  font-weight: 500;
+}
+
+.cv-sidebar {
+  width: 38%;
+  background: var(--bg-sidebar);
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-section,
+.main-section {
+  margin-bottom: 20px;
+}
+
+.sidebar-section-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--text-accent);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+.contact-info-list,
+.languages-list,
+.experience-list,
+.courses-list,
+.education-sidebar-list,
+.skill-item {
+  list-style: none;
+}
+
+.contact-info-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: var(--font-size-sm);
+}
+
+.contact-info-icon {
+  width: 16px;
+  height: 16px;
+  margin-right: 10px;
+  flex-shrink: 0;
+  color: var(--accent-color);
+}
+
+.contact-link {
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.sidebar-section li:last-child,
+.experience-list li:last-child {
+  margin-bottom: 0;
+}
+
+.education-sidebar-item {
+  margin-bottom: 12px;
+}
+
+.education-institution {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+}
+
+.education-period {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+.skills-list,
+.languages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.skill-item,
+.language-item {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  background: var(--bg-secondary);
+  padding: 7px 14px;
+  border-radius: 20px;
+  font-size: var(--font-size-xs);
+}
+
+.language-item {
+  display: flex;
+  justify-content: space-between;
+}
+
+.language-level {
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.cv-main {
+  flex: 1;
+  padding: 30px 35px;
+  background: var(--bg-primary);
+}
+
+.main-section-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent-color);
+  border-radius: 2px;
+}
+
+.professional-summary {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  text-align: justify;
+  line-height: 1.7;
+}
+
+.experience-item,
+.course-item,
+.project-item {
+  margin-bottom: 15px;
+}
+
+.item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.item-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: var(--font-size-md);
+  letter-spacing: 1px;
+  font-weight: 600;
+  color: var(--text-accent);
+}
+
+.item-period {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  font-weight: 600;
+  background: var(--bg-secondary);
+  padding: 6px 12px;
+  border-radius: 20px;
+}
+
+.item-company,
+.item-institution,
+.education-degree {
+  font-family: 'Montserrat', sans-serif;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+
+.item-description {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
+
+.achievements-list {
+  list-style: disc;
+  padding-left: 14px;
+}
+
+.achievement-item {
+  margin-bottom: 6px;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+/* Cover Letter Styles */
+.cover-letter-container {
+  width: 100%;
+  min-height: 100%;
+  padding: 50px 60px;
+  background: var(--bg-primary);
+}
+
+.cover-letter-header {
+  margin-bottom: 40px;
+  padding-bottom: 25px;
+  border-bottom: 2px solid var(--bg-secondary);
+}
+
+.cover-letter-name {
+  font-family: 'Montserrat', sans-serif;
+  font-size: var(--font-size-3xl);
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 15px;
+  color: var(--text-primary);
+}
+
+.cover-letter-contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.cover-letter-contact-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cover-letter-contact-icon {
+  width: 14px;
+  height: 14px;
+  color: var(--accent-color);
+}
+
+.cover-letter-date {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  margin-bottom: 30px;
+}
+
+.cover-letter-recipient {
+  margin-bottom: 30px;
+}
+
+.cover-letter-recipient p {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  line-height: 1.8;
+}
+
+.cover-letter-recipient strong {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+}
+
+.cover-letter-body {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  line-height: 1.8;
+  text-align: justify;
+}
+
+.cover-letter-body p {
+  margin-bottom: 18px;
+}
+
+.cover-letter-closing {
+  margin-top: 40px;
+}
+
+.cover-letter-closing p {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.cover-letter-signature {
+  font-family: 'Montserrat', sans-serif;
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-accent);
+  margin-top: 25px;
+}
+
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .sidebar-section,
+  .experience-item,
+  .course-item,
+  .project-item {
+    page-break-inside: avoid;
+  }
+
+  .main-section-title,
+  .sidebar-section-title {
+    page-break-after: avoid;
+  }
+
+  .cv-container {
+    min-height: auto;
+  }
+
+  .cover-letter-container {
+    min-height: auto;
+  }
+}

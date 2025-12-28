@@ -284,7 +284,8 @@ model Application {
   @@index([userId, deletedAt]) // For efficient soft delete filtering
   @@index([coverLetterTemplateId])
   @@index([resumeTemplateId])
-  @@unique([userId, jobPostingId])
+  // Note: Partial unique index for (userId, jobPostingId) WHERE deletedAt IS NULL
+  // is created via SQL migration (Prisma doesn't support partial unique indexes)
   @@map("applications")
 }
 

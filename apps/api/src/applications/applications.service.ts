@@ -711,10 +711,12 @@ Summary: ${resume.summary || 'Not provided'}
     }
 
     // 2. Check for existing application (prevent duplicates)
+    // Note: Only check non-deleted applications (deletedAt: null)
     const existingApplication = await this.prisma.application.findFirst({
       where: {
         userId,
         jobPostingId: dto.jobPostingId,
+        deletedAt: null,
       },
       select: {
         id: true,
@@ -812,10 +814,12 @@ Summary: ${resume.summary || 'Not provided'}
     this.logger.log(`Detected language: ${detectedLanguage}`);
 
     // 4. Check if application already exists (prevent duplicates BEFORE generation)
+    // Note: Only check non-deleted applications (deletedAt: null)
     const existingApplication = await this.prisma.application.findFirst({
       where: {
         userId,
         jobPostingId: dto.jobPostingId,
+        deletedAt: null,
       },
       select: {
         id: true,

@@ -6,6 +6,11 @@ Deliver a minimal yet production-grade application with:
 2) **Backend API (NestJS)**: Stores candidate profile (skills, certificates, experiences, projects), ingests job postings (text/URL/file → normalized), generates tailored cover letter + resume via LLM
 3) **PDF Generation**: Exports both as PDFs stored in Azure Blob and retrievable via signed URLs (SAS)
 
+## Agent Instructions
+For specific tasks, refer to these specialized instruction files:
+- **PDF Templates**: See `apps/api/src/pdf/templates/.copilot-instructions.md` for creating/modifying resume and cover letter templates
+- **Template Agent**: See `apps/api/src/pdf/templates/AGENT.md` for the template creation agent workflow
+
 ## Domain-Agnostic Design Principles
 **Smart Apply is designed to work across ALL professions and industries**, not just IT/tech roles. When writing code, documentation, or examples:
 - ✅ **Use diverse profession examples**: Healthcare (Nurse, Doctor), Manufacturing (CNC Operator), Marketing (Content Manager), Sales (Account Executive), Education (Teacher), Finance (Financial Analyst)

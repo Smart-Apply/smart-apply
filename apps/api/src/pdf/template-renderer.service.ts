@@ -85,7 +85,10 @@ export interface Certification {
 export class TemplateRendererService {
   private readonly logger = new Logger(TemplateRendererService.name);
   private templatesDir: string;
-  private stylesDir: string;
+  private stylesDir: string; // Legacy - kept for backward compatibility
+  
+  // Cache for loaded CSS (template id -> combined CSS)
+  private cssCache: Map<string, string> = new Map();
 
   constructor(private readonly templatesService: TemplatesService) {
     // Determine if running from source or dist
@@ -110,9 +113,94 @@ export class TemplateRendererService {
     }
 
     this.logger.log(`Templates directory: ${this.templatesDir}`);
-    this.logger.log(`Styles directory: ${this.stylesDir}`);
+    this.logger.log(`Styles directory (legacy): ${this.stylesDir}`);
 
     this.registerHelpers();
+  }
+  
+  /**
+   * Load CSS from the new folder structure (base.css + template/styles.css)
+   * Falls back to legacy styles directory if new structure not found
+   */
+  private async loadTemplateCSS(templateId: string): Promise<string> {
+    // Check cache first
+    if (this.cssCache.has(templateId)) {
+      return this.cssCache.get(templateId)!;
+    }
+    
+    // Extract template folder name from ID (e.g., "modern-professional-resume" -> "modern-professional")
+    const templateFolder = templateId.replace(/-resume$/, '').replace(/-cover-letter$/, '');
+    const templateDir = path.join(this.templatesDir, templateFolder);
+    const baseCssPath = path.join(this.templatesDir, '_base', 'base.css');
+    const templateCssPath = path.join(templateDir, 'styles.css');
+    
+    let combinedCSS = '';
+    
+    // Try new folder structure first
+    if (fsSync.existsSync(templateCssPath)) {
+      // Load base CSS if available
+      if (fsSync.existsSync(baseCssPath)) {
+        const baseCSS = await fs.readFile(baseCssPath, 'utf-8');
+        combinedCSS = baseCSS + '\n\n';
+      }
+      
+      // Load template-specific CSS
+      const templateCSS = await fs.readFile(templateCssPath, 'utf-8');
+      combinedCSS += `/* Template: ${templateFolder} */\n${templateCSS}`;
+      
+      this.logger.debug(`Loaded CSS from new structure: ${templateFolder}`);
+    } else {
+      // Fallback to legacy styles directory
+      const legacyCssPath = path.join(this.stylesDir, `${templateFolder}.css`);
+      if (fsSync.existsSync(legacyCssPath)) {
+        combinedCSS = await fs.readFile(legacyCssPath, 'utf-8');
+        this.logger.debug(`Loaded CSS from legacy path: ${legacyCssPath}`);
+      }
+    }
+    
+    // Cache the result
+    if (combinedCSS) {
+      this.cssCache.set(templateId, combinedCSS);
+    }
+    
+    return combinedCSS;
+  }
+  
+  /**
+   * Clear CSS cache (useful for development/hot reload)
+   */
+  clearCSSCache(): void {
+    this.cssCache.clear();
+    this.logger.log('CSS cache cleared');
+  }
+  
+  /**
+   * Load a template file from the new folder structure
+   * Checks template folder first, then falls back to _base folder
+   */
+  private async loadTemplateFromFolder(templateFolder: string, fileName: string): Promise<string> {
+    // Try template-specific file first (e.g., templates/creative-two-column/resume.hbs)
+    const templateSpecificPath = path.join(this.templatesDir, templateFolder, fileName);
+    if (fsSync.existsSync(templateSpecificPath)) {
+      this.logger.debug(`Loading template from folder: ${templateFolder}/${fileName}`);
+      return await fs.readFile(templateSpecificPath, 'utf-8');
+    }
+    
+    // Fall back to _base folder (e.g., templates/_base/resume.hbs)
+    const basePath = path.join(this.templatesDir, '_base', fileName);
+    if (fsSync.existsSync(basePath)) {
+      this.logger.debug(`Loading template from _base: ${fileName}`);
+      return await fs.readFile(basePath, 'utf-8');
+    }
+    
+    // Final fallback to legacy flat structure (e.g., templates/resume.hbs)
+    const legacyPath = path.join(this.templatesDir, fileName);
+    if (fsSync.existsSync(legacyPath)) {
+      this.logger.debug(`Loading template from legacy path: ${fileName}`);
+      return await fs.readFile(legacyPath, 'utf-8');
+    }
+    
+    throw new Error(`Template not found: ${fileName} (checked ${templateFolder}, _base, and legacy paths)`);
   }
 
   /**
@@ -194,6 +282,13 @@ export class TemplateRendererService {
       
       const lang = language || 'en';
       const translations: Record<string, Record<string, string>> = {
+        'contact': {
+          en: 'Contact',
+          de: 'Kontakt',
+          fr: 'Contact',
+          es: 'Contacto',
+          it: 'Contatto',
+        },
         'resume.summary': {
           en: 'Professional Summary',
           de: 'Profil',
@@ -263,10 +358,10 @@ export class TemplateRendererService {
       let language = 'en'; // Default language
 
       if (atsOptimized) {
-        // Use ATS-optimized template from filesystem
+        // Use ATS-optimized template from filesystem (new folder structure)
         this.logger.log('Loading ATS-optimized cover letter template');
-        template = await this.loadTemplate('cover-letter-ats.hbs');
-        css = await this.loadStyles(['base-ats.css', 'cover-letter-ats.css']);
+        template = await this.loadTemplateFromFolder('_base', 'cover-letter.hbs');
+        css = await this.loadTemplateCSS('modern-professional'); // Default ATS template
       } else if (templateId) {
         // Load specific template from database
         this.logger.log(`Loading cover letter template: ${templateId}`);
@@ -321,10 +416,10 @@ export class TemplateRendererService {
       let language = 'en'; // Default language
 
       if (atsOptimized) {
-        // Use ATS-optimized template from filesystem
+        // Use ATS-optimized template from filesystem (new folder structure)
         this.logger.log('Loading ATS-optimized resume template');
-        template = await this.loadTemplate('resume-ats.hbs');
-        css = await this.loadStyles(['base-ats.css', 'resume-ats.css']);
+        template = await this.loadTemplateFromFolder('_base', 'resume.hbs');
+        css = await this.loadTemplateCSS('modern-professional'); // Default ATS template
       } else if (templateId) {
         // Load specific template from database
         this.logger.log(`Loading resume template: ${templateId}`);

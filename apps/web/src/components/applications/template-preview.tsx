@@ -21,15 +21,19 @@ function registerHandlebarsHelpers() {
   const hbs = Handlebars as typeof Handlebars & HandlebarsWithFlag;
   if (typeof window !== 'undefined' && !hbs.__helpersRegistered) {
     // Helper to convert string to lowercase
-    Handlebars.registerHelper('toLowerCase', (str: string) => {
-      return str ? str.toLowerCase().replace(/\s+/g, '-') : '';
+    Handlebars.registerHelper('toLowerCase', (str: unknown) => {
+      if (!str) return '';
+      const text = typeof str === 'string' ? str : String(str);
+      return text.toLowerCase().replace(/\s+/g, '-');
     });
 
     // Helper to convert newlines to <br> tags for HTML rendering
-    Handlebars.registerHelper('nl2br', (text: string) => {
+    Handlebars.registerHelper('nl2br', (text: unknown) => {
       if (!text) return '';
+      // Handle SafeString or other objects
+      const str = typeof text === 'string' ? text : (text as { toString(): string }).toString();
       // Convert newlines to <br> tags and return as SafeString (allows HTML)
-      const html = text.replace(/\n/g, '<br>');
+      const html = str.replace(/\n/g, '<br>');
       return new Handlebars.SafeString(html);
     });
 
@@ -94,6 +98,13 @@ function registerHandlebarsHelpers() {
       
       const lang = language || 'en';
       const translations: Record<string, Record<string, string>> = {
+        'contact': {
+          en: 'Contact',
+          de: 'Kontakt',
+          fr: 'Contact',
+          es: 'Contacto',
+          it: 'Contatto',
+        },
         'resume.summary': {
           en: 'Professional Summary',
           de: 'Profil',
@@ -355,20 +366,20 @@ export function ResumeTemplatePreview({ resume, templateId, language = 'en' }: R
   const isDefaultTemplate = !templateId && defaultTemplate?.id === template.id;
 
   return (
-    <div className="w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-      <div className="bg-slate-100 px-3 py-2 border-b border-slate-200">
+    <div className="w-full rounded-lg border border-slate-200 bg-white shadow-sm flex flex-col">
+      <div className="bg-slate-100 px-3 py-2 border-b border-slate-200 shrink-0">
         <p className="text-xs font-medium text-slate-600">
           Template: <span className="text-slate-900">{template.name}</span>
           <span className="ml-2 text-slate-400">({template.category})</span>
           {isDefaultTemplate && <span className="ml-2 text-blue-600">(Standard)</span>}
         </p>
       </div>
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 min-h-0">
         <iframe
           ref={iframeRef}
-          title="Cover Letter Preview"
-          className="w-full h-full border-0"
-          style={{ background: '#f8fafc' }}
+          title="Resume Preview"
+          className="w-full border-0"
+          style={{ background: '#f8fafc', minHeight: '800px' }}
           sandbox="allow-same-origin allow-scripts"
         />
       </div>
@@ -607,7 +618,7 @@ export function CoverLetterTemplatePreview({
   }
 
   return (
-    <div className="w-full h-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm flex flex-col">
+    <div className="w-full h-full rounded-lg border border-slate-200 bg-white shadow-sm flex flex-col">
       <div className="bg-slate-100 px-3 py-2 border-b border-slate-200 flex-shrink-0">
         <p className="text-xs font-medium text-slate-600">
           Template: <span className="text-slate-900">{template.name}</span>
@@ -615,7 +626,7 @@ export function CoverLetterTemplatePreview({
           {isDefaultTemplate && <span className="ml-2 text-blue-600">(Standard)</span>}
         </p>
       </div>
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 min-h-0">
         <iframe
           ref={iframeRef}
           title="Cover Letter Preview"

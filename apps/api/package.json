@@ -33,9 +33,15 @@
     "prisma:generate": "prisma generate --schema=./prisma/schema.prisma",
     "prisma:migrate": "prisma migrate dev --schema=./prisma/schema.prisma",
     "prisma:seed": "dotenv -e .env -- ts-node -r tsconfig-paths/register prisma/seed.ts",
-    "prisma:seed:templates": "dotenv -e .env -- ts-node -r tsconfig-paths/register prisma/seed-multilingual-templates.ts",
+    "prisma:seed:templates": "dotenv -e .env -- ts-node -r tsconfig-paths/register prisma/seed-templates-autodiscover.ts",
+    "prisma:seed:templates:legacy": "dotenv -e .env -- ts-node -r tsconfig-paths/register prisma/seed-multilingual-templates.ts",
     "prisma:cleanup:templates": "dotenv -e .env -- ts-node -r tsconfig-paths/register prisma/cleanup-old-templates.ts",
     "prisma:studio": "prisma studio --schema=./prisma/schema.prisma",
+    "template:create": "ts-node -r tsconfig-paths/register scripts/create-template.ts",
+    "templates:generate-previews": "dotenv -e .env -- ts-node -r tsconfig-paths/register scripts/generate-template-previews.ts",
+    "templates:regenerate-previews": "dotenv -e .env -- ts-node -r tsconfig-paths/register scripts/generate-template-previews.ts --force",
+    "templates:seed-with-previews": "npm run prisma:seed:templates && npm run templates:generate-previews",
+    "templates:cleanup": "ts-node -r tsconfig-paths/register scripts/cleanup-legacy-templates.ts",
     "create-agents": "ts-node -r tsconfig-paths/register scripts/create-agents.ts"
   },
   "dependencies": {
