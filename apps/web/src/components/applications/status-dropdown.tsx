@@ -33,6 +33,11 @@ const STATUS_CONFIG: Record<
     emoji: '🗓️',
     color: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100',
   },
+  OFFER: {
+    label: 'Angebot',
+    emoji: '🎉',
+    color: 'bg-purple-100 text-purple-800 hover:bg-purple-100',
+  },
   ACCEPTED: {
     label: 'Angenommen',
     emoji: '✅',
@@ -42,6 +47,11 @@ const STATUS_CONFIG: Record<
     label: 'Abgelehnt',
     emoji: '❌',
     color: 'bg-red-100 text-red-800 hover:bg-red-100',
+  },
+  WITHDRAWN: {
+    label: 'Zurückgezogen',
+    emoji: '🔙',
+    color: 'bg-orange-100 text-orange-800 hover:bg-orange-100',
   },
 };
 

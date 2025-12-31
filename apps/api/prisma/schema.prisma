@@ -318,7 +318,11 @@ model Template {
   
   // Multilingual support
   language          String   @default("en") // ISO 639-1: "de", "en", "fr", "es", "it"
-  baseTemplateId    String?  // Groups language variants of same design (e.g., all "Modern Professional" templates)
+  baseTemplateId    String?  // Groups language/color variants of same design (e.g., all "Elegant Sidebar" templates)
+  
+  // Color variant support
+  accentColor       String?  // Primary accent color hex (e.g., "#9c7a5b", "#3182ce")
+  colorVariantName  String?  // Display name for color variant (e.g., "Original Brown", "Ocean Blue")
   
   thumbnailUrl      String?
   previewImageKey   String?  // Storage key for cached preview image

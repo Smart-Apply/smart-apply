@@ -1,26 +1,33 @@
 /* Elegant Sidebar Template */
-/* Warm, professional two-column design */
+/* Warm, professional two-column design with full color theming */
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700;800&display=swap');
 
 :root {
-  /* Brand Colors */
+  /* Primary Accent Color - This is the main color that defines the theme */
   --accent-color: #9c7a5b;
-
+  
+  /* Derived Colors - All overridden per color variant */
+  /* Header background (the main accent color) */
+  --header-bg: #9c7a5b;
+  /* Sidebar background (very light tint of accent, ~8%) */
+  --bg-sidebar: #f5f0eb;
+  /* Secondary background (light tint of accent, ~12%) */
+  --bg-secondary: #efe8e0;
+  /* Accent text color (darker shade of accent) */
+  --text-accent: #6b5b4f;
+  /* Border colors derived from accent */
+  --border-light: #f5f0eb;
+  --border-dark: #9c7a5b;
+  
   /* Text Colors */
   --text-primary: #3d3d3d;
   --text-secondary: #6b6b6b;
   --text-muted: #8a8a8a;
-  --text-accent: #6b5b4f;
+  --text-on-header: #ffffff;
 
   /* Background Colors */
   --bg-primary: #ffffff;
-  --bg-secondary: #f0edea;
-  --bg-sidebar: #faf9f7;
-
-  /* Border Colors */
-  --border-light: #faf9f7;
-  --border-dark: #8b7355;
 
   /* Font Sizes - Compact for better PDF density */
   --font-size-5xs: 5px;
@@ -65,7 +72,7 @@ body {
 }
 
 .cv-header {
-  background: var(--bg-secondary);
+  background: var(--header-bg);
 }
 
 .cv-content {
@@ -91,7 +98,7 @@ body {
   height: 90px;
   border-radius: 50%;
   object-fit: cover;
-  border: 3px solid var(--border-light);
+  border: 3px solid rgba(255, 255, 255, 0.3);
 }
 
 .profile-name {
@@ -101,13 +108,15 @@ body {
   margin-bottom: 4px;
   letter-spacing: 1.5px;
   text-transform: uppercase;
+  color: var(--text-on-header);
 }
 
 .target-job-title {
   font-family: 'Poppins', sans-serif;
   font-size: var(--font-size-base);
   font-weight: 400;
-  color: var(--accent-color);
+  color: var(--text-on-header);
+  opacity: 0.9;
   letter-spacing: 1px;
   margin-top: 4px;
 }

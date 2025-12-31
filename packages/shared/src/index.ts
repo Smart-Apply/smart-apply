@@ -173,6 +173,8 @@ export interface Template {
   category: string;
   language: string;
   baseTemplateId?: string;
+  accentColor?: string;         // Primary accent color hex (e.g., "#9c7a5b")
+  colorVariantName?: string;    // Display name for color variant (e.g., "Ocean Blue")
   thumbnailUrl?: string;
   previewImageKey?: string;
   isActive: boolean;

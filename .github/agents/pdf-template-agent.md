@@ -97,6 +97,229 @@ Identify the typography:
 
 **Category Options:** `"Professional"`, `"Creative"`, `"Executive"`, `"Minimal"`, `"Modern"`, `"Academic"`
 
+---
+
+## Adding Color Variants to Templates
+
+Templates can offer multiple color themes (e.g., Blue, Green, Burgundy) that users can select in the wizard. The system automatically generates preview images for each variant and groups them under one template card with color swatches.
+
+### Step 1: Define Color Variants in `config.json`
+
+Add a `colorVariants` array to your template's config.json:
+
+```json
+{
+  "id": "elegant-sidebar",
+  "name": "Elegant Sidebar",
+  "description": "Ein elegantes zweispaltiges Template mit warmem Farbschema.",
+  "category": "Professional",
+  "isDefault": true,
+  "isAtsOptimized": false,
+  "previewColor": "#9c7a5b",
+  "colorVariants": [
+    { 
+      "id": "brown", 
+      "name": "Original Brown", 
+      "accent": "#9c7a5b",
+      "headerBg": "#9c7a5b",
+      "bgSidebar": "#f5f0eb",
+      "bgSecondary": "#efe8e0",
+      "textAccent": "#6b5b4f",
+      "borderLight": "#f5f0eb",
+      "isDefault": true 
+    },
+    { 
+      "id": "blue", 
+      "name": "Ocean Blue", 
+      "accent": "#3182ce",
+      "headerBg": "#3182ce",
+      "bgSidebar": "#ebf4fc",
+      "bgSecondary": "#dbeafe",
+      "textAccent": "#1e4e8c",
+      "borderLight": "#ebf4fc"
+    },
+    { 
+      "id": "green", 
+      "name": "Forest Green", 
+      "accent": "#38a169",
+      "headerBg": "#38a169",
+      "bgSidebar": "#ecfaf2",
+      "bgSecondary": "#dcf5e7",
+      "textAccent": "#256b45",
+      "borderLight": "#ecfaf2"
+    },
+    { 
+      "id": "burgundy", 
+      "name": "Burgundy", 
+      "accent": "#9b2c2c",
+      "headerBg": "#9b2c2c",
+      "bgSidebar": "#faf0f0",
+      "bgSecondary": "#f5e1e1",
+      "textAccent": "#6b1d1d",
+      "borderLight": "#faf0f0"
+    },
+    { 
+      "id": "slate", 
+      "name": "Slate Gray", 
+      "accent": "#4a5568",
+      "headerBg": "#4a5568",
+      "bgSidebar": "#f0f1f3",
+      "bgSecondary": "#e2e4e8",
+      "textAccent": "#2d3748",
+      "borderLight": "#f0f1f3"
+    }
+  ],
+  "customTemplates": {
+    "resume": "resume.hbs",
+    "coverLetter": "cover-letter.hbs"
+  }
+}
+```
+
+**Color Variant Properties:**
+
+| Property | Required | Description |
+|----------|----------|-------------|
+| `id` | Yes | Kebab-case identifier (e.g., "blue", "forest-green") |
+| `name` | Yes | Display name shown in tooltip (e.g., "Ocean Blue") |
+| `accent` | Yes | Primary accent color - icons, links, highlights |
+| `headerBg` | No | Header background color (defaults to `accent`) |
+| `bgSidebar` | No | Sidebar background color |
+| `bgSecondary` | No | Secondary background (cards, alternating rows) |
+| `textAccent` | No | Accent text color (darker shade for readability) |
+| `borderLight` | No | Light border color |
+| `isDefault` | No | Set `true` for the default variant (shown first) |
+
+### Step 2: Update `styles.css` with Derived Color Variables
+
+Your CSS must use variables that can be overridden. Define base colors and derived colors:
+
+```css
+:root {
+  /* ============================================
+     PRIMARY ACCENT COLOR
+     This is the main color that gets overridden per variant
+     ============================================ */
+  --accent-color: #9c7a5b;
+  
+  /* ============================================
+     DERIVED COLORS
+     These are calculated from the accent color.
+     The seed script overrides these per variant.
+     ============================================ */
+  --header-bg: var(--accent-color);           /* Header background */
+  --bg-sidebar: #f5f0eb;                      /* Sidebar background */
+  --bg-secondary: #efe8e0;                    /* Cards, alternating rows */
+  --text-accent: #6b5b4f;                     /* Accent text (darker) */
+  --border-light: #f5f0eb;                    /* Light borders */
+  --border-dark: #e0d5c8;                     /* Dark borders */
+  --text-on-header: #ffffff;                  /* Text on colored header */
+  
+  /* Other variables... */
+}
+
+/* Header uses the header-bg variable */
+.cv-header {
+  background: var(--header-bg);
+  color: var(--text-on-header);
+}
+
+/* Sidebar uses the sidebar variable */
+.cv-sidebar {
+  background: var(--bg-sidebar);
+}
+
+/* Section headers use accent color */
+.section-title {
+  color: var(--accent-color);
+  border-bottom: 2px solid var(--accent-color);
+}
+
+/* Icons and links use accent color */
+.contact-icon svg {
+  fill: var(--accent-color);
+}
+```
+
+**Key Points:**
+- Use `var(--header-bg)` for header backgrounds, NOT hardcoded colors
+- Use `var(--bg-sidebar)` for sidebar backgrounds
+- Use `var(--accent-color)` for icons, links, and decorative elements
+- Use `var(--text-on-header)` for text that sits on colored backgrounds
+- The seed script prepends CSS overrides for each variant
+
+### Step 3: How the Seed Script Processes Variants
+
+The seed script (`prisma/seed-templates-autodiscover.ts`) automatically:
+
+1. **Reads `colorVariants`** from your config.json
+2. **Creates one database entry per variant** with IDs like:
+   - `elegant-sidebar-brown-resume`
+   - `elegant-sidebar-blue-resume`
+   - `elegant-sidebar-green-resume`
+3. **Prepends CSS overrides** to each variant's styles:
+   ```css
+   /* Color Variant: Ocean Blue */
+   :root { 
+     --accent-color: #3182ce !important; 
+     --header-bg: #3182ce !important; 
+     --bg-sidebar: #ebf4fc !important; 
+     --bg-secondary: #dbeafe !important; 
+     --text-accent: #1e4e8c !important; 
+     --border-light: #ebf4fc !important; 
+   }
+   ```
+4. **Sets `baseTemplateId`** to link variants together for UI grouping
+5. **Stores `accentColor` and `colorVariantName`** for frontend display
+
+### Step 4: Run Seed and Generate Previews
+
+After updating config.json and styles.css:
+
+```bash
+# 1. Re-seed templates (creates/updates DB entries)
+cd apps/api
+npm run prisma:seed:templates
+
+# 2. Delete old cached previews (important!)
+rm -rf uploads/templates/<template-name>-*/
+
+# 3. Generate fresh preview images
+npm run templates:generate-previews
+```
+
+### Step 5: Frontend Display
+
+The frontend automatically:
+- Groups templates by `baseTemplateId`
+- Shows one card per template design
+- Displays color swatches below the preview image
+- Updates the preview when user clicks a color swatch
+- Syncs cover letter to matching color variant
+
+**No frontend code changes needed** - the grouping and swatch display is handled automatically.
+
+### Color Design Tips
+
+When creating color variants:
+
+1. **Choose harmonious colors** - Pick colors that work well with the template's overall design
+2. **Ensure contrast** - Text on colored backgrounds must be readable (use white or dark text)
+3. **Lighter derived colors** - Sidebar/secondary backgrounds should be very light tints of the accent
+4. **Darker text accent** - The `textAccent` should be darker than `accent` for readability
+5. **Test print output** - Verify colors look good when printed
+
+**Example: Deriving Colors from an Accent**
+
+For accent `#3182ce` (blue):
+- `headerBg`: Same as accent `#3182ce`
+- `bgSidebar`: Very light tint `#ebf4fc` (5-10% opacity)
+- `bgSecondary`: Light tint `#dbeafe` (10-15% opacity)
+- `textAccent`: Darker shade `#1e4e8c` (for readability)
+- `borderLight`: Same as bgSidebar `#ebf4fc`
+
+---
+
 ### File 2: `styles.css`
 
 **MANDATORY CSS Variables (from `_base/base.css` contract):**
@@ -660,3 +883,31 @@ Always consult these working templates:
 ```handlebars
 {{#each this.skills}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
 ```
+
+### Color Variant CSS Override Pattern
+```css
+/* Define base colors that CAN be overridden */
+:root {
+  --accent-color: #9c7a5b;
+  --header-bg: var(--accent-color);
+  --bg-sidebar: #f5f0eb;
+  --text-on-header: #ffffff;
+}
+
+/* Use variables EVERYWHERE - no hardcoded colors */
+.header { background: var(--header-bg); color: var(--text-on-header); }
+.sidebar { background: var(--bg-sidebar); }
+.icon { fill: var(--accent-color); }
+```
+
+### Quick Color Variant Checklist
+- [ ] `config.json` has `colorVariants` array with all colors defined
+- [ ] Each variant has: `id`, `name`, `accent`, and derived colors
+- [ ] One variant has `isDefault: true`
+- [ ] `styles.css` uses `var(--header-bg)` for header backgrounds
+- [ ] `styles.css` uses `var(--bg-sidebar)` for sidebar backgrounds  
+- [ ] `styles.css` uses `var(--accent-color)` for icons/links
+- [ ] `styles.css` uses `var(--text-on-header)` for text on colored headers
+- [ ] Ran `npm run prisma:seed:templates` after config changes
+- [ ] Deleted old preview cache: `rm -rf uploads/templates/<name>-*/`
+- [ ] Ran `npm run templates:generate-previews`

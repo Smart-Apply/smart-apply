@@ -45,6 +45,18 @@ const prisma = new PrismaClient();
 // TYPES
 // =============================================================================
 
+interface ColorVariant {
+  id: string;
+  name: string;
+  accent: string;
+  headerBg?: string;
+  bgSidebar?: string;
+  bgSecondary?: string;
+  textAccent?: string;
+  borderLight?: string;
+  isDefault?: boolean;
+}
+
 interface TemplateConfig {
   id: string;
   name: string;
@@ -53,6 +65,7 @@ interface TemplateConfig {
   isDefault?: boolean;
   isAtsOptimized?: boolean;
   previewColor?: string;
+  colorVariants?: ColorVariant[];
   customTemplates?: {
     resume?: string;
     coverLetter?: string;
@@ -244,7 +257,7 @@ async function seedTemplates() {
     const templateCSS = readFile(path.join(template.folderPath, 'styles.css'));
 
     // Combine base + template CSS
-    const combinedCSS = baseCSS
+    const baseCombinedCSS = baseCSS
       ? `${baseCSS}\n\n/* Template: ${template.config.name} */\n${templateCSS}`
       : templateCSS;
 
@@ -263,76 +276,135 @@ async function seedTemplates() {
       coverLetterHBS = readFile(path.join(template.folderPath, customPath));
       console.log(`   ✉️  Using custom cover letter template`);
     }
-    
-    // Upsert Resume Template
-    const resumeId = `${template.config.id}-resume`;
-    const existingResume = await prisma.template.findUnique({ where: { id: resumeId } });
-    
-    await prisma.template.upsert({
-      where: { id: resumeId },
-      update: {
-        name: template.config.name,
-        description: template.config.description,
-        category: template.config.category,
-        htmlTemplate: resumeHBS,
-        cssStyles: combinedCSS,
-        isActive: true,
-        isDefault: template.config.isDefault ?? false,
-      },
-      create: {
-        id: resumeId,
-        name: template.config.name,
-        description: template.config.description,
-        type: TemplateType.RESUME,
-        category: template.config.category,
-        htmlTemplate: resumeHBS,
-        cssStyles: combinedCSS,
-        isActive: true,
-        isDefault: template.config.isDefault ?? false,
-      },
-    });
-    
-    if (existingResume) {
-      console.log(`   ↻ Updated: ${resumeId}`);
-      totalUpdated++;
-    } else {
-      console.log(`   ✓ Created: ${resumeId}`);
-      totalCreated++;
-    }
-    
-    // Upsert Cover Letter Template
-    const coverLetterId = `${template.config.id}-cover-letter`;
-    const existingCoverLetter = await prisma.template.findUnique({ where: { id: coverLetterId } });
-    
-    await prisma.template.upsert({
-      where: { id: coverLetterId },
-      update: {
-        name: template.config.name,
-        description: template.config.description,
-        category: template.config.category,
-        htmlTemplate: coverLetterHBS,
-        cssStyles: combinedCSS,
-        isActive: true,
-        isDefault: template.config.isDefault ?? false,
-      },
-      create: {
-        id: coverLetterId,
-        name: template.config.name,
-        description: template.config.description,
-        type: TemplateType.COVER_LETTER,
-        category: template.config.category,
-        htmlTemplate: coverLetterHBS,
-        cssStyles: combinedCSS,
-        isActive: true,
-        isDefault: template.config.isDefault ?? false,
-      },
-    });
-    if (existingCoverLetter) {
-      console.log(`   ↻ Updated: ${coverLetterId}`);
-      totalUpdated++;
-    } else {
-      console.log(`   ✓ Created: ${coverLetterId}`);
-      totalCreated++;
+
+    // Determine variants to create
+    // If colorVariants defined, create one entry per variant; otherwise create single entry
+    const colorVariants: ColorVariant[] = template.config.colorVariants && template.config.colorVariants.length > 0
+      ? template.config.colorVariants
+      : [{ id: '', name: '', accent: template.config.previewColor || '', isDefault: template.config.isDefault }];
+
+    // Base template ID for grouping variants (uses first variant's resume ID as base)
+    const baseTemplateGroupId = `${template.config.id}-resume`;
+
+    for (const variant of colorVariants) {
+      // Build IDs: elegant-sidebar-resume (default) or elegant-sidebar-blue-resume (variant)
+      const variantSuffix = variant.id ? `-${variant.id}` : '';
+      const resumeId = `${template.config.id}${variantSuffix}-resume`;
+      const coverLetterId = `${template.config.id}${variantSuffix}-cover-letter`;
+
+      // Create CSS with accent color override if variant has accent
+      let combinedCSS = baseCombinedCSS;
+      if (variant.accent) {
+        // Build comprehensive color override with all derived colors
+        const colorVars = [
+          `--accent-color: ${variant.accent}`,
+          variant.headerBg ? `--header-bg: ${variant.headerBg}` : `--header-bg: ${variant.accent}`,
+          variant.bgSidebar ? `--bg-sidebar: ${variant.bgSidebar}` : null,
+          variant.bgSecondary ? `--bg-secondary: ${variant.bgSecondary}` : null,
+          variant.textAccent ? `--text-accent: ${variant.textAccent}` : null,
+          variant.borderLight ? `--border-light: ${variant.borderLight}` : null,
+        ].filter(Boolean).join(' !important; ');
+        
+        // Prepend CSS variable override to ensure it takes precedence
+        const colorOverride = `/* Color Variant: ${variant.name || 'Default'} */\n:root { ${colorVars} !important; }\n\n`;
+        combinedCSS = colorOverride + baseCombinedCSS;
+      }
+
+      // Determine if this is the default variant
+      const isVariantDefault = variant.isDefault ?? false;
+      const isTemplateDefault = template.config.isDefault ?? false;
+      const isDefault = isTemplateDefault && isVariantDefault;
+
+      // Display name (base name for default, with color for variants)
+      const displayName = variant.name && variant.id
+        ? template.config.name  // Keep base name, color shown via swatch
+        : template.config.name;
+
+      console.log(`   🎨 ${variant.name || 'Default'} (${variant.accent || 'no color'})`);
+
+      // Upsert Resume Template
+      const existingResume = await prisma.template.findUnique({ where: { id: resumeId } });
+
+      await prisma.template.upsert({
+        where: { id: resumeId },
+        update: {
+          name: displayName,
+          description: template.config.description,
+          category: template.config.category,
+          htmlTemplate: resumeHBS,
+          cssStyles: combinedCSS,
+          accentColor: variant.accent || null,
+          colorVariantName: variant.name || null,
+          baseTemplateId: variant.id ? baseTemplateGroupId : null,  // Link variants to base
+          isActive: true,
+          isDefault: isDefault,
+          previewImageKey: null,  // Reset preview so it regenerates with new color
+        },
+        create: {
+          id: resumeId,
+          name: displayName,
+          description: template.config.description,
+          type: TemplateType.RESUME,
+          category: template.config.category,
+          htmlTemplate: resumeHBS,
+          cssStyles: combinedCSS,
+          accentColor: variant.accent || null,
+          colorVariantName: variant.name || null,
+          baseTemplateId: variant.id ? baseTemplateGroupId : null,
+          isActive: true,
+          isDefault: isDefault,
+        },
+      });
+
+      if (existingResume) {
+        console.log(`      ↻ Updated: ${resumeId}`);
+        totalUpdated++;
+      } else {
+        console.log(`      ✓ Created: ${resumeId}`);
+        totalCreated++;
+      }
+
+      // Upsert Cover Letter Template
+      const existingCoverLetter = await prisma.template.findUnique({ where: { id: coverLetterId } });
+
+      await prisma.template.upsert({
+        where: { id: coverLetterId },
+        update: {
+          name: displayName,
+          description: template.config.description,
+          category: template.config.category,
+          htmlTemplate: coverLetterHBS,
+          cssStyles: combinedCSS,
+          accentColor: variant.accent || null,
+          colorVariantName: variant.name || null,
+          baseTemplateId: variant.id ? `${template.config.id}-cover-letter` : null,  // Link to base cover letter
+          isActive: true,
+          isDefault: isDefault,
+          previewImageKey: null,  // Reset preview so it regenerates with new color
+        },
+        create: {
+          id: coverLetterId,
+          name: displayName,
+          description: template.config.description,
+          type: TemplateType.COVER_LETTER,
+          category: template.config.category,
+          htmlTemplate: coverLetterHBS,
+          cssStyles: combinedCSS,
+          accentColor: variant.accent || null,
+          colorVariantName: variant.name || null,
+          baseTemplateId: variant.id ? `${template.config.id}-cover-letter` : null,
+          isActive: true,
+          isDefault: isDefault,
+        },
+      });
+
+      if (existingCoverLetter) {
+        console.log(`      ↻ Updated: ${coverLetterId}`);
+        totalUpdated++;
+      } else {
+        console.log(`      ✓ Created: ${coverLetterId}`);
+        totalCreated++;
+      }
     }
   }
 

@@ -476,6 +476,58 @@ interface TemplateStepProps {
   onGenerateCoverLetterChange: (value: boolean) => void;
 }
 
+// Helper to group templates by base template (for color variants)
+interface TemplateGroup {
+  baseTemplate: Template;
+  colorVariants: { id: string; accentColor: string; colorVariantName: string }[];
+}
+
+function groupTemplatesByBase(templates: Template[]): TemplateGroup[] {
+  const groups = new Map<string, TemplateGroup>();
+  
+  for (const template of templates) {
+    // Determine group key: use baseTemplateId if it exists, otherwise use the template's own id
+    const groupKey = template.baseTemplateId || template.id;
+    
+    if (!groups.has(groupKey)) {
+      // Find the base template (the one without baseTemplateId or the first in the group)
+      const baseTemplate = template.baseTemplateId 
+        ? templates.find(t => t.id === template.baseTemplateId) || template
+        : template;
+      
+      groups.set(groupKey, {
+        baseTemplate: baseTemplate,
+        colorVariants: [],
+      });
+    }
+    
+    // Add color variant info if this template has an accent color
+    if (template.accentColor) {
+      const group = groups.get(groupKey)!;
+      // Avoid duplicates
+      if (!group.colorVariants.find(v => v.id === template.id)) {
+        group.colorVariants.push({
+          id: template.id,
+          accentColor: template.accentColor,
+          colorVariantName: template.colorVariantName || '',
+        });
+      }
+    }
+  }
+  
+  // Sort color variants within each group (default first)
+  for (const group of groups.values()) {
+    group.colorVariants.sort((a, b) => {
+      // Put the base template's variant first (if it matches)
+      if (a.id === group.baseTemplate.id) return -1;
+      if (b.id === group.baseTemplate.id) return 1;
+      return a.colorVariantName.localeCompare(b.colorVariantName);
+    });
+  }
+  
+  return Array.from(groups.values());
+}
+
 function TemplateStep({
   selectedCoverLetterTemplateId,
   selectedResumeTemplateId,
@@ -487,14 +539,28 @@ function TemplateStep({
   const { data: coverLetterTemplates, isLoading: coverLetterLoading } = useCoverLetterTemplates();
   const { data: resumeTemplates, isLoading: resumeLoading } = useResumeTemplates();
 
-  // API already returns one template per design (grouped by baseTemplateId, preferring those with previews)
+  // Group templates by base template for color variant display
+  const resumeTemplateGroups = resumeTemplates ? groupTemplatesByBase(resumeTemplates) : [];
 
   // Auto-select matching cover letter template when resume template is selected
+  // This now handles color variants by matching the variant suffix
   useEffect(() => {
     if (selectedResumeTemplateId && resumeTemplates && coverLetterTemplates) {
       const selectedResume = resumeTemplates.find((t) => t.id === selectedResumeTemplateId);
       if (selectedResume) {
-        // Find matching cover letter template by category and language
+        // For color variants, extract the base template ID pattern
+        // e.g., "elegant-sidebar-blue-resume" -> look for "elegant-sidebar-blue-cover-letter"
+        const resumeIdWithoutType = selectedResumeTemplateId.replace(/-resume$/, '');
+        const matchingCoverLetterId = `${resumeIdWithoutType}-cover-letter`;
+        
+        // Try to find exact matching cover letter (same color variant)
+        const exactMatch = coverLetterTemplates.find(t => t.id === matchingCoverLetterId);
+        if (exactMatch) {
+          onSelectCoverLetterTemplate(exactMatch.id);
+          return;
+        }
+        
+        // Fallback: Find matching cover letter template by category and language
         const matchingCoverLetter = coverLetterTemplates.find(
           (t) => t.category.toLowerCase() === selectedResume.category.toLowerCase() 
                  && t.language === selectedResume.language
@@ -534,6 +600,19 @@ function TemplateStep({
   if (coverLetterLoading || resumeLoading) {
     return <CenteredLoader message="Vorlagen werden geladen..." />;
   }
+
+  // Check if selected resume template belongs to a group
+  const getSelectedVariantForGroup = (group: TemplateGroup): string | undefined => {
+    // Check if any variant in this group is selected
+    const selectedVariant = group.colorVariants.find(v => v.id === selectedResumeTemplateId);
+    return selectedVariant?.id;
+  };
+
+  // Check if any variant in the group is selected
+  const isGroupSelected = (group: TemplateGroup): boolean => {
+    return group.colorVariants.some(v => v.id === selectedResumeTemplateId) ||
+           group.baseTemplate.id === selectedResumeTemplateId;
+  };
 
   return (
     <div className="space-y-6">
@@ -577,12 +656,14 @@ function TemplateStep({
           </p>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {resumeTemplates?.map((template) => (
+          {resumeTemplateGroups.map((group) => (
             <TemplateCard
-              key={template.id}
-              template={template}
-              isSelected={selectedResumeTemplateId === template.id}
+              key={group.baseTemplate.id}
+              template={group.baseTemplate}
+              isSelected={isGroupSelected(group)}
               onSelect={onSelectResumeTemplate}
+              colorVariants={group.colorVariants.length > 1 ? group.colorVariants : undefined}
+              selectedVariantId={getSelectedVariantForGroup(group)}
             />
           ))}
         </div>

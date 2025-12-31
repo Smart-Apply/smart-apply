@@ -28,9 +28,25 @@ export class TemplateResponseDto {
     example: 'clx1y2z3a4b5c6d7e8f9g0h1',
     required: false,
     nullable: true,
-    description: 'Groups language variants of the same design',
+    description: 'Groups language/color variants of the same design',
   })
   baseTemplateId?: string | null;
+
+  @ApiProperty({
+    example: '#9c7a5b',
+    required: false,
+    nullable: true,
+    description: 'Primary accent color hex for this template variant',
+  })
+  accentColor?: string | null;
+
+  @ApiProperty({
+    example: 'Original Brown',
+    required: false,
+    nullable: true,
+    description: 'Display name for color variant (e.g., "Ocean Blue", "Forest Green")',
+  })
+  colorVariantName?: string | null;
 
   @ApiProperty({
     example: 'https://storage.example.com/thumbnails/professional-cover-letter.png',

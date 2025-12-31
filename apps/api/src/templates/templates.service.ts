@@ -74,6 +74,8 @@ export class TemplatesService {
         category: true,
         language: true,
         baseTemplateId: true,
+        accentColor: true,
+        colorVariantName: true,
         thumbnailUrl: true,
         previewImageKey: true,
         isActive: true,
@@ -83,36 +85,9 @@ export class TemplatesService {
       },
     });
 
-    // Group by baseTemplateId (or category if no baseTemplateId)
-    // Return only one template per design family
-    // Priority: 1. Has preview image, 2. English language, 3. First found
-    const templateMap = new Map<string, (typeof allTemplates)[0]>();
-
-    for (const template of allTemplates) {
-      const groupKey = template.baseTemplateId || template.category;
-      const existing = templateMap.get(groupKey);
-
-      if (!existing) {
-        templateMap.set(groupKey, template);
-      } else {
-        // Prefer template with preview image
-        const hasPreview = !!template.previewImageKey;
-        const existingHasPreview = !!existing.previewImageKey;
-
-        if (hasPreview && !existingHasPreview) {
-          templateMap.set(groupKey, template);
-        } else if (
-          hasPreview === existingHasPreview &&
-          template.language === 'en' &&
-          existing.language !== 'en'
-        ) {
-          // If same preview status, prefer English variant
-          templateMap.set(groupKey, template);
-        }
-      }
-    }
-
-    const result = Array.from(templateMap.values());
+    // Return all templates - frontend will group by baseTemplateId for color variant swatches
+    // Previously we grouped here, but now color variants need to be sent to frontend for UI grouping
+    const result = allTemplates;
 
     // Store in cache
     this.cache.set(cacheKey, result);

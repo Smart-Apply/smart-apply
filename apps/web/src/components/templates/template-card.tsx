@@ -7,19 +7,40 @@ import { Check } from 'lucide-react';
 import Image from 'next/image';
 import type { Template } from '@/types';
 
+interface ColorVariant {
+  id: string;
+  accentColor: string;
+  colorVariantName: string;
+}
+
 interface TemplateCardProps {
   template: Template;
   isSelected: boolean;
   onSelect: (templateId: string) => void;
+  colorVariants?: ColorVariant[];  // All color variants of this template
+  selectedVariantId?: string;      // Currently selected variant ID
 }
 
-export function TemplateCard({ template, isSelected, onSelect }: TemplateCardProps) {
+export function TemplateCard({ 
+  template, 
+  isSelected, 
+  onSelect, 
+  colorVariants = [],
+  selectedVariantId,
+}: TemplateCardProps) {
+  // Determine which template ID to use for preview (selected variant or base template)
+  const displayTemplateId = selectedVariantId || template.id;
+  
+  // Find the currently selected variant for display
+  const selectedVariant = colorVariants.find(v => v.id === selectedVariantId) || 
+    (template.accentColor ? { id: template.id, accentColor: template.accentColor, colorVariantName: template.colorVariantName || '' } : null);
+
   return (
     <Card 
       className={`relative cursor-pointer transition-all hover:shadow-lg ${
         isSelected ? 'ring-2 ring-blue-500 shadow-lg' : ''
       }`}
-      onClick={() => onSelect(template.id)}
+      onClick={() => onSelect(displayTemplateId)}
     >
       {isSelected && (
         <div className="absolute -top-2 -right-2 z-10">
@@ -50,9 +71,10 @@ export function TemplateCard({ template, isSelected, onSelect }: TemplateCardPro
             ? 'border-blue-500 ring-2 ring-blue-200' 
             : 'border-gray-200 hover:border-gray-300'
         }`}>
-          {/* Real Template Preview Image */}
+          {/* Real Template Preview Image - cache bust with templateId to ensure fresh load per variant */}
           <Image
-            src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:3000'}/api/v1/templates/${template.id}/preview`}
+            key={displayTemplateId}
+            src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:3000'}/api/v1/templates/${displayTemplateId}/preview?t=${displayTemplateId}`}
             alt={`${template.name} Preview`}
             fill
             className="object-cover"
@@ -66,6 +88,36 @@ export function TemplateCard({ template, isSelected, onSelect }: TemplateCardPro
             </Badge>
           </div>
         </div>
+
+        {/* Color Swatches */}
+        {colorVariants.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">Farbe:</span>
+            <div className="flex gap-1.5">
+              {colorVariants.map((variant) => {
+                const isVariantSelected = variant.id === selectedVariantId || 
+                  (!selectedVariantId && variant.id === template.id);
+                return (
+                  <button
+                    key={variant.id}
+                    type="button"
+                    title={variant.colorVariantName}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelect(variant.id);
+                    }}
+                    className={`h-5 w-5 rounded-full border-2 transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
+                      isVariantSelected 
+                        ? 'border-blue-500 ring-2 ring-blue-200' 
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                    style={{ backgroundColor: variant.accentColor }}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        )}
       </CardContent>
 
       <CardFooter>
@@ -74,7 +126,7 @@ export function TemplateCard({ template, isSelected, onSelect }: TemplateCardPro
           className="w-full"
           onClick={(e) => {
             e.stopPropagation();
-            onSelect(template.id);
+            onSelect(displayTemplateId);
           }}
         >
           {isSelected ? (
