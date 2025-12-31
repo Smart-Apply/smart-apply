@@ -1,72 +1,22 @@
 # 🎯 Smart Apply - Was noch zu tun ist
 
-**Stand:** 3. Dezember 2025  
+**Stand:** 31. Dezember 2025  
 **MVP Status:** ✅ 98% Complete - PRODUKTIONSBEREIT
 
 ---
 
-## 🔴 Kritisch für Production (8-12 Stunden)
+## 🔴 Kritisch für Production (6-10 Stunden)
 
-### 1. Health Check Endpoint erstellen
+### 1. ~~Health Check Endpoint erstellen~~ ✅ ERLEDIGT
 
-**Aufwand:** 2-3 Stunden  
-**Status:** 🔄 Service-Level Health Checks vorhanden, Endpoint fehlt
+**Status:** ✅ Vollständig implementiert
 
-**Was zu tun ist:**
+Health Endpoints bereits vorhanden unter `apps/api/src/health/`:
+- `GET /api/v1/health` - Umfassender Health Check aller Services
+- `GET /api/v1/health/live` - Kubernetes Liveness Probe
+- `GET /api/v1/health/ready` - Kubernetes Readiness Probe
 
-```bash
-# 1. Modul erstellen
-cd apps/api/src
-mkdir health
-```
-
-**Dateien:**
-
-- `apps/api/src/health/health.module.ts`
-- `apps/api/src/health/health.controller.ts`
-- `apps/api/src/health/health.service.ts`
-
-**Implementation:**
-
-```typescript
-// health.controller.ts
-@Controller('health')
-export class HealthController {
-  @Get()
-  async check(): Promise<HealthStatus> {
-    return {
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      services: {
-        database: await this.checkDatabase(),
-        storage: await this.storageService.healthCheck(),
-        queue: await this.jobsService.healthCheck(),
-        llm: await this.llmService.healthCheck(),
-      },
-    };
-  }
-
-  @Get('live')
-  async liveness() {
-    return { status: 'ok' };
-  }
-
-  @Get('ready')
-  async readiness() {
-    // Check if all services are ready
-    const health = await this.check();
-    return health;
-  }
-}
-```
-
-**Testing:**
-
-```bash
-curl http://localhost:3000/api/v1/health
-curl http://localhost:3000/api/v1/health/live
-curl http://localhost:3000/api/v1/health/ready
-```
+Geprüfte Services: Database, Storage, Queue, Templates, LLM
 
 ---
 
@@ -406,11 +356,11 @@ curl -X POST /api/v1/applications \
 
 ## 📋 Empfohlene Reihenfolge
 
-### Phase 1: Production-Ready (8-12h) 🔴
+### Phase 1: Production-Ready (6-10h) 🔴
 
-1. ✅ Health Check Endpoint (2-3h)
-2. ✅ Azure Resources provisionieren (4-6h)
-3. ✅ CI/CD Pipeline einrichten (3-4h)
+1. ✅ Health Check Endpoint - ERLEDIGT ✓
+2. ⏳ Azure Resources provisionieren (4-6h)
+3. ⏳ CI/CD Pipeline einrichten (3-4h)
 
 **Nach dieser Phase: App ist live!**
 
@@ -425,11 +375,12 @@ curl -X POST /api/v1/applications \
 
 ---
 
-### Phase 3: Quality & Features (18+h) 🟢
+### Phase 3: Quality & Features (25+h) 🟢
 
 6. ⏳ Frontend E2E Tests (8-10h)
 7. ⏳ Neue CV-Templates (10-15h)
-8. ⏳ Performance Optimierungen (4-6h)
+8. ⏳ Nur Anschreiben generieren Option (3-4h)
+9. ⏳ Performance Optimierungen (4-6h)
 
 **Nach dieser Phase: Enterprise-Ready**
 
@@ -452,7 +403,7 @@ curl -X POST /api/v1/applications \
 
 ### Was fehlt für Production (2%):
 
-- 🔴 Health Check Endpoint (2-3h)
+- ✅ Health Check Endpoint - ERLEDIGT
 - 🔴 Azure Resources (4-6h)
 - 🔴 CI/CD Pipeline (3-4h)
 
@@ -460,11 +411,12 @@ curl -X POST /api/v1/applications \
 
 - 🟢 Frontend E2E Tests (8-10h)
 - 🟢 Neue Templates (10-15h)
+- 🟢 Nur Anschreiben generieren Option (3-4h)
 - 🟢 Performance Optimierungen (4-6h)
 
 ---
 
-**Total bis Production:** 8-12 Stunden  
-**Total bis Enterprise:** 30-45 Stunden
+**Total bis Production:** 6-10 Stunden  
+**Total bis Enterprise:** 31-47 Stunden
 
-**Nächster Schritt:** Health Check Endpoint implementieren (2-3h) 🚀
+**Nächster Schritt:** Azure Resources provisionieren (4-6h) 🚀
