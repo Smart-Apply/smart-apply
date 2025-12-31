@@ -282,7 +282,7 @@ export default function ApplicationDetailPage() {
   };
 
   const handleDownloadBoth = async () => {
-    if (!files?.coverLetter || !files?.resume) return;
+    if (!application?.id || !isAuthenticated || application?.status !== 'READY') return;
     
     setIsDownloading((prev) => ({ ...prev, both: true }));
     try {
@@ -300,10 +300,14 @@ export default function ApplicationDetailPage() {
       const company = application?.jobPosting?.company || 'company';
       const zipFilename = `${company.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-bewerbung.zip`;
       
+      // Use direct download endpoints instead of SAS URLs (which are broken in disk storage)
+      const coverLetterUrl = `${process.env.NEXT_PUBLIC_API_URL}/applications/${application.id}/download/cover-letter`;
+      const resumeUrl = `${process.env.NEXT_PUBLIC_API_URL}/applications/${application.id}/download/resume`;
+      
       await handleZipDownload(
         [
-          { url: files.coverLetter.url, filename: coverLetterFilename },
-          { url: files.resume.url, filename: resumeFilename },
+          { url: coverLetterUrl, filename: coverLetterFilename },
+          { url: resumeUrl, filename: resumeFilename },
         ],
         zipFilename,
         handleExpiredUrl
