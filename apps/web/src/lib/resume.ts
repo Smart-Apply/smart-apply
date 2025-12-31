@@ -1,5 +1,6 @@
 import type { Profile, ResumeData, ResumeExperience, ResumeSkillCategory } from '@/types';
-import { htmlToPlainText, plainTextToHtml } from './sanitize';
+import { isHtml } from './markdown';
+import { htmlToPlainText, plainTextToHtml, sanitizeHtml } from './sanitize';
 
 const DEFAULT_CATEGORY = 'Kompetenzen';
 const monthFormatter = new Intl.DateTimeFormat('de-DE', {
@@ -115,6 +116,43 @@ export function parseResumeDraft(resumeText?: string | null): ResumeData | null 
   }
 }
 
+/**
+ * Check if HTML content is effectively empty
+ * Detects: <p></p>, <p><br></p>, <p><br/></p>, whitespace-only HTML
+ */
+function isEmptyHtml(html: string): boolean {
+  const stripped = html
+    .replace(/<p>\s*<\/p>/gi, '')
+    .replace(/<p>\s*<br\s*\/?\s*>\s*<\/p>/gi, '')
+    .replace(/<br\s*\/?\s*>/gi, '')
+    .replace(/<[^>]+>/g, '')
+    .trim();
+  return stripped === '';
+}
+
+/**
+ * Convert value to HTML, handling both plain text and already-HTML content
+ * - If already HTML: sanitize and return (no double-conversion)
+ * - If plain text: convert using plainTextToHtml
+ * - If empty/whitespace: return undefined
+ */
+function toHtmlSafe(value?: string): string | undefined {
+  if (!value) return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  
+  // Check if already HTML
+  if (isHtml(trimmed)) {
+    // Check for empty HTML variants
+    if (isEmptyHtml(trimmed)) return undefined;
+    // Sanitize and return existing HTML
+    return sanitizeHtml(trimmed);
+  }
+  
+  // Plain text - convert to HTML
+  return plainTextToHtml(trimmed);
+}
+
 function withDateRange(experience: ResumeExperience): ResumeExperience {
   const trim = (value?: string) => value?.trim() || undefined;
   const trimPreservingNewlines = (value?: string) => {
@@ -125,7 +163,9 @@ function withDateRange(experience: ResumeExperience): ResumeExperience {
   const toHtml = (value?: string) => {
     if (!value) return undefined;
     const trimmed = trimPreservingNewlines(value);
-    return trimmed ? plainTextToHtml(trimmed) : undefined;
+    if (!trimmed) return undefined;
+    // Use toHtmlSafe which handles both plain text and HTML
+    return toHtmlSafe(trimmed);
   };
   return {
     ...experience,
@@ -137,11 +177,6 @@ function withDateRange(experience: ResumeExperience): ResumeExperience {
 
 export function normalizeResumeForSave(resume: ResumeData): ResumeData {
   const trim = (value?: string) => value?.trim() || undefined;
-  const toHtml = (value?: string) => {
-    if (!value) return undefined;
-    const trimmed = value.trim();
-    return trimmed ? plainTextToHtml(trimmed) : undefined;
-  };
 
   return {
     ...resume,
@@ -151,14 +186,14 @@ export function normalizeResumeForSave(resume: ResumeData): ResumeData {
     location: trim(resume.location),
     linkedin: trim(resume.linkedin),
     github: trim(resume.github),
-    summary: toHtml(resume.summary),
+    summary: toHtmlSafe(resume.summary),
     skillCategories: (resume.skillCategories || [])
       .map((category) => ({
         id: category.id,
         type: category.type.trim(),
         skills: category.skills.map((skill) => skill.trim()).filter(Boolean),
       }))
-      .filter((category) => category.type && category.skills.length),
+      .filter((category) => category.skills.length),
     experiences: (resume.experiences || [])
       .map((experience) => ({
         ...withDateRange(experience),
@@ -171,7 +206,7 @@ export function normalizeResumeForSave(resume: ResumeData): ResumeData {
       ?.map((project) => ({
         ...project,
         name: project.name.trim(),
-        description: toHtml(project.description),
+        description: toHtmlSafe(project.description),
         highlights: project.highlights?.map((item) => item.trim()).filter(Boolean),
       }))
       .filter((project) => project.name),
@@ -182,7 +217,7 @@ export function normalizeResumeForSave(resume: ResumeData): ResumeData {
         institution: education.institution.trim(),
         fieldOfStudy: trim(education.fieldOfStudy),
         gpa: trim(education.gpa),
-        description: toHtml(education.description),
+        description: toHtmlSafe(education.description),
         year: education.year.trim(),
       }))
       .filter((education) => education.degree && education.institution),

@@ -27,6 +27,34 @@ export type ProfileWithRelations = Profile & {
 
 const DEFAULT_CATEGORY = 'Skills';
 
+/**
+ * Sanitize URL by removing duplicate protocol prefixes.
+ * Handles cases like:
+ * - "https://https://linkedin.com" → "https://linkedin.com"
+ * - "https://https//linkedin.com" → "https://linkedin.com" (missing colon)
+ */
+export function sanitizeUrl(url: string | null | undefined): string | undefined {
+  if (!url || url.trim() === '') return undefined;
+
+  let result = url.trim();
+
+  // Remove duplicate protocol prefixes (with or without colon)
+  // Matches: https://https://, https://https//, http://https//, etc.
+  while (/^(https?:\/\/)(https?:?\/?\/?)/.test(result)) {
+    result = result.replace(/^(https?:\/\/)(https?:?\/?\/?)/, '$2');
+  }
+
+  // Fix malformed protocol (https// → https://)
+  result = result.replace(/^(https?)\/?\/+/, '$1://');
+
+  // If URL doesn't start with protocol, add https://
+  if (result && !/^https?:\/\//i.test(result)) {
+    result = `https://${result}`;
+  }
+
+  return result || undefined;
+}
+
 function formatDate(date: Date | null | undefined): string {
   if (!date) {
     return '';
@@ -94,8 +122,8 @@ export function buildResumeTemplateData(
     candidateName,
     email: profile.user.email,
     phone: profile.phone ?? undefined,
-    linkedin: profile.linkedinUrl ?? undefined,
-    github: profile.githubUrl ?? undefined,
+    linkedin: sanitizeUrl(profile.linkedinUrl),
+    github: sanitizeUrl(profile.githubUrl),
     location: profile.location ?? undefined,
     summary: profile.summary ?? undefined,
     skillCategories: buildSkillCategoriesWithCustom(profile.skills, customSkillCategories),

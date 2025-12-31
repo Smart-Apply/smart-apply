@@ -187,6 +187,24 @@ body {
   color: var(--text-muted);
 }
 
+.skill-category {
+  margin-bottom: 10px;
+}
+
+.skill-category:last-child {
+  margin-bottom: 0;
+}
+
+.skill-category-title {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  font-size: var(--font-size-xs);
+  color: var(--text-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
 .skills-list,
 .languages-list {
   display: flex;
@@ -358,21 +376,6 @@ body {
   margin-bottom: 18px;
 }
 
-.cover-letter-recipient {
-  margin-bottom: 18px;
-}
-
-.cover-letter-recipient p {
-  font-size: var(--font-size-sm);
-  color: var(--text-primary);
-  line-height: 1.8;
-}
-
-.cover-letter-recipient strong {
-  font-family: 'Montserrat', sans-serif;
-  font-weight: 600;
-}
-
 .cover-letter-body {
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
@@ -381,7 +384,11 @@ body {
 }
 
 .cover-letter-body p {
-  margin-bottom: 12px;
+  margin-bottom: 12px !important;
+}
+
+.cover-letter-body p:last-child {
+  margin-bottom: 0 !important;
 }
 
 .cover-letter-closing {

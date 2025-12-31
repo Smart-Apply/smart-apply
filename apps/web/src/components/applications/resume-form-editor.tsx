@@ -344,7 +344,7 @@ export function ResumeFormEditor({ value, onChange, disabled }: ResumeFormEditor
                       updateSkillCategory(index, e.target.value, category.skills)
                     }
                     disabled={disabled}
-                    placeholder="Kategorie (z.B. Programming Language, Framework)"
+                    placeholder="Kategorie (optional, z.B. Programmiersprachen)"
                   />
                   <CommaSeparatedTextarea
                     value={category.skills}

@@ -34,7 +34,7 @@ import {
   NotFoundWithCode,
   ConflictWithCode,
 } from '../common/exceptions/coded-http.exception';
-import { buildResumeTemplateData, ProfileWithRelations } from './resume-template.util';
+import { buildResumeTemplateData, ProfileWithRelations, sanitizeUrl } from './resume-template.util';
 import { sanitizeRichText } from '../common/services/html-sanitizer';
 
 // Type for progress callback function
@@ -323,15 +323,15 @@ export class ApplicationsService {
       email: resume.email.trim(),
       phone: trim(resume.phone),
       location: trim(resume.location),
-      linkedin: trim(resume.linkedin),
-      github: trim(resume.github),
+      linkedin: sanitizeUrl(resume.linkedin),
+      github: sanitizeUrl(resume.github),
       summary: trim(resume.summary),
       skillCategories: (resume.skillCategories || [])
         .map((category) => ({
           type: category.type.trim(),
           skills: (category.skills || []).map((skill) => skill.trim()).filter(Boolean),
         }))
-        .filter((category) => category.type && category.skills.length),
+        .filter((category) => category.skills.length),
       experiences: (resume.experiences || []).map(
         ({ id: _id, startDate: _startDate, endDate: _endDate, ...experience }) => ({
           title: experience.title.trim(),
@@ -1483,8 +1483,8 @@ Summary: ${resume.summary || 'Not provided'}
       email: profile.user.email,
       phone: profile.phone || undefined,
       location: profile.location || undefined,
-      linkedin: profile.linkedinUrl || undefined,
-      github: profile.githubUrl || undefined,
+      linkedin: sanitizeUrl(profile.linkedinUrl),
+      github: sanitizeUrl(profile.githubUrl),
       summary: tailoredProfile.customized_summary || profile.summary || undefined,
       skillCategories,
       experiences,

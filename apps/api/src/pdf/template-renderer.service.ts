@@ -383,18 +383,39 @@ export class TemplateRendererService {
         language = defaultTemplate.language || 'en'; // Use template's language
       }
 
+      // Locale mapping for date formatting
+      const localeMap: Record<string, string> = {
+        en: 'en-US',
+        de: 'de-DE',
+        fr: 'fr-FR',
+        es: 'es-ES',
+        it: 'it-IT',
+      };
+
+      // Closing phrase mapping
+      const closingPhraseMap: Record<string, string> = {
+        en: 'Sincerely,',
+        de: 'Mit freundlichen Grüßen',
+        fr: 'Cordialement,',
+        es: 'Atentamente,',
+        it: 'Cordiali saluti,',
+      };
+
+      // Use language from data (passed from export request) or template language
+      const effectiveLanguage = data.language || language;
+
       // Set default values
       const templateData = {
         ...data,
-        language, // Add language to template data for 't' helper
+        language: effectiveLanguage, // Add language to template data for 't' helper
         date:
           data.date ||
-          new Date().toLocaleDateString('en-US', {
+          new Date().toLocaleDateString(localeMap[effectiveLanguage] || 'en-US', {
             year: 'numeric',
             month: 'long',
             day: 'numeric',
           }),
-        closingPhrase: data.closingPhrase || 'Sincerely,',
+        closingPhrase: data.closingPhrase || closingPhraseMap[effectiveLanguage] || 'Sincerely,',
       };
 
       const compiledTemplate = Handlebars.compile(template);

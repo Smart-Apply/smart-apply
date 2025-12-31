@@ -416,6 +416,24 @@ export function CoverLetterTemplatePreview({
   
   const isLoading = templatesLoading || templateLoading;
 
+  // Locale mapping for date formatting
+  const localeMap: Record<string, string> = {
+    en: 'en-US',
+    de: 'de-DE',
+    fr: 'fr-FR',
+    es: 'es-ES',
+    it: 'it-IT',
+  };
+
+  // Closing phrase mapping
+  const closingPhraseMap: Record<string, string> = {
+    en: 'Sincerely,',
+    de: 'Mit freundlichen Grüßen',
+    fr: 'Cordialement,',
+    es: 'Atentamente,',
+    it: 'Cordiali saluti,',
+  };
+
   // Template data for cover letter
   const templateData = useMemo(() => ({
     candidateName,
@@ -429,7 +447,8 @@ export function CoverLetterTemplatePreview({
     // This is critical - even with {{{content}}}, Handlebars needs to know this is safe HTML
     content: new Handlebars.SafeString(html || ''),
     language, // Use selected language from prop
-    date: new Date().toLocaleDateString('de-DE', {
+    closingPhrase: closingPhraseMap[language] || closingPhraseMap.en,
+    date: new Date().toLocaleDateString(localeMap[language] || 'en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',

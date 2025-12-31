@@ -11,7 +11,7 @@
     <header class="cover-letter-header">
         <h1 class="cover-letter-name">{{candidateName}}</h1>
         {{#if targetJobTitle}}
-        <p class="cover-letter-job-title">— {{targetJobTitle}} —</p>
+        <p class="cover-letter-job-title">{{targetJobTitle}}</p>
         {{/if}}
         <div class="cover-letter-contact">
             {{#if email}}
@@ -53,16 +53,6 @@
     <!-- Date -->
     <div class="cover-letter-date">
         {{date}}
-    </div>
-
-    <!-- Recipient -->
-    <div class="cover-letter-recipient">
-        {{#if recipientName}}
-        <p><strong>{{recipientName}}</strong></p>
-        {{/if}}
-        {{#if companyName}}
-        <p>{{companyName}}</p>
-        {{/if}}
     </div>
 
     <!-- Body -->
