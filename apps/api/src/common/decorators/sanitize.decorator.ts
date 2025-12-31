@@ -67,7 +67,9 @@ export function SanitizeArray() {
 
 /**
  * URL sanitization decorator that removes duplicate protocol prefixes.
- * Handles cases like "https://https://linkedin.com" → "https://linkedin.com"
+ * Handles cases like:
+ * - "https://https://linkedin.com" → "https://linkedin.com"
+ * - "https://https//linkedin.com" → "https://linkedin.com" (missing colon)
  *
  * Usage:
  * ```typescript
@@ -80,7 +82,8 @@ export function SanitizeArray() {
  * ```
  *
  * Security:
- * - Removes duplicate https:// or http:// prefixes
+ * - Removes duplicate https:// or http:// prefixes (with or without colon)
+ * - Fixes malformed protocols (https// → https://)
  * - Adds https:// if no protocol is present
  * - Trims whitespace
  * - Returns undefined for empty strings
@@ -95,11 +98,14 @@ export function SanitizeUrl() {
 
     let url = value.trim();
 
-    // Remove duplicate https:// or http:// prefixes
-    // Matches patterns like: https://https://, http://https://, https://http://
-    while (/^(https?:\/\/)(https?:\/\/)/.test(url)) {
-      url = url.replace(/^(https?:\/\/)(https?:\/\/)/, '$2');
+    // Remove duplicate protocol prefixes (with or without colon)
+    // Matches: https://https://, https://https//, http://https//, etc.
+    while (/^(https?:\/\/)(https?:?\/\/)/.test(url)) {
+      url = url.replace(/^(https?:\/\/)(https?:?\/\/)/, '$2');
     }
+
+    // Fix malformed protocol (https// → https://)
+    url = url.replace(/^(https?)\/\//, '$1://');
 
     // If URL doesn't start with protocol, add https://
     if (url && !/^https?:\/\//i.test(url)) {

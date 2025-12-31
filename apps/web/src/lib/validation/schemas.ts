@@ -70,18 +70,23 @@ const phoneRegex = /^\+?[1-9]\d{1,14}$/;
 
 /**
  * Sanitize URL by removing duplicate protocol prefixes
- * Handles cases like "https://https://linkedin.com" → "https://linkedin.com"
+ * Handles cases like:
+ * - "https://https://linkedin.com" → "https://linkedin.com"
+ * - "https://https//linkedin.com" → "https://linkedin.com" (missing colon)
  */
 const sanitizeUrl = (val: string): string => {
   if (!val || val.trim() === '') return '';
   
   let url = val.trim();
   
-  // Remove duplicate https:// or http:// prefixes
-  // Matches patterns like: https://https://, http://https://, https://http://
-  while (/^(https?:\/\/)(https?:\/\/)/.test(url)) {
-    url = url.replace(/^(https?:\/\/)(https?:\/\/)/, '$2');
+  // Remove duplicate protocol prefixes (with or without colon)
+  // Matches: https://https://, https://https//, http://https//, etc.
+  while (/^(https?:\/\/)(https?:?\/\/)/.test(url)) {
+    url = url.replace(/^(https?:\/\/)(https?:?\/\/)/, '$2');
   }
+  
+  // Fix malformed protocol (https// → https://)
+  url = url.replace(/^(https?)\/\//, '$1://');
   
   // If URL doesn't start with protocol, add https://
   if (url && !/^https?:\/\//i.test(url)) {
