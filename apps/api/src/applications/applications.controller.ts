@@ -32,6 +32,7 @@ import { ApplicationFilesResponseDto } from './dto/application-files-response.dt
 import { ApplicationStatusResponseDto } from './dto/application-status-response.dto';
 import { UpdateApplicationStatusDto } from './dto/update-application-status.dto';
 import { UpdateApplicationTitleDto } from './dto/update-application-title.dto';
+import { UpdateTargetJobTitleDto } from './dto/update-target-job-title.dto';
 import { UseThrottler } from '../common/decorators/throttle.decorator';
 import { UpdateResumeDto } from './dto/update-resume.dto';
 import { CoverLetterDto } from './dto/cover-letter.dto';
@@ -217,6 +218,27 @@ export class ApplicationsController {
     @Body() dto: UpdateApplicationTitleDto,
   ): Promise<ApplicationResponseDto> {
     return this.applicationsService.updateTitle(user.id, id, dto.title);
+  }
+
+  @Patch(':id/target-job-title')
+  @ApiOperation({
+    summary: 'Update target job title',
+    description: 'Updates the target job title displayed on CV/Cover Letter (max 100 characters)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Target job title updated successfully',
+    type: ApplicationResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Invalid target job title (too short/long)' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Application not found' })
+  async updateTargetJobTitle(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() dto: UpdateTargetJobTitleDto,
+  ): Promise<ApplicationResponseDto> {
+    return this.applicationsService.updateTargetJobTitle(user.id, id, dto.targetJobTitle);
   }
 
   @Get()

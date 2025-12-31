@@ -32,6 +32,12 @@ export class ApplicationResponseDto {
   })
   title?: string;
 
+  @ApiPropertyOptional({
+    example: 'Senior Software Engineer',
+    description: 'Target job title displayed on CV/Cover Letter (defaults to job posting title)',
+  })
+  targetJobTitle?: string;
+
   @ApiProperty({
     enum: ApplicationTrackingStatus,
     example: ApplicationTrackingStatus.APPLIED,

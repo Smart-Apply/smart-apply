@@ -64,3 +64,48 @@ export function SanitizeArray() {
     return value;
   });
 }
+
+/**
+ * URL sanitization decorator that removes duplicate protocol prefixes.
+ * Handles cases like "https://https://linkedin.com" → "https://linkedin.com"
+ *
+ * Usage:
+ * ```typescript
+ * export class MyDto {
+ *   @SanitizeUrl()
+ *   @IsOptional()
+ *   @IsUrl()
+ *   linkedinUrl?: string;
+ * }
+ * ```
+ *
+ * Security:
+ * - Removes duplicate https:// or http:// prefixes
+ * - Adds https:// if no protocol is present
+ * - Trims whitespace
+ * - Returns undefined for empty strings
+ *
+ * @returns Transform decorator that sanitizes URL values
+ */
+export function SanitizeUrl() {
+  return Transform(({ value }) => {
+    if (typeof value !== 'string' || value.trim() === '') {
+      return undefined;
+    }
+
+    let url = value.trim();
+
+    // Remove duplicate https:// or http:// prefixes
+    // Matches patterns like: https://https://, http://https://, https://http://
+    while (/^(https?:\/\/)(https?:\/\/)/.test(url)) {
+      url = url.replace(/^(https?:\/\/)(https?:\/\/)/, '$2');
+    }
+
+    // If URL doesn't start with protocol, add https://
+    if (url && !/^https?:\/\//i.test(url)) {
+      url = `https://${url}`;
+    }
+
+    return url || undefined;
+  });
+}

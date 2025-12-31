@@ -293,10 +293,10 @@ export class PdfService implements OnModuleInit, OnModuleDestroy {
               left: '0.5in',
             }
           : {
-              top: '20mm',
-              right: '25mm',
-              bottom: '20mm',
-              left: '25mm',
+              top: '0mm',
+              right: '0mm',
+              bottom: '0mm',
+              left: '0mm',
             },
         ...options,
       };
@@ -335,10 +335,10 @@ export class PdfService implements OnModuleInit, OnModuleDestroy {
               left: '0.5in',
             }
           : {
-              top: '15mm',
-              right: '20mm',
-              bottom: '15mm',
-              left: '20mm',
+              top: '0mm',
+              right: '0mm',
+              bottom: '0mm',
+              left: '0mm',
             },
         ...options,
       };

@@ -462,6 +462,12 @@ export const api = {
         body: JSON.stringify({ title }),
       }),
 
+    updateTargetJobTitle: (id: string, targetJobTitle: string) =>
+      apiRequest<Application>(`/applications/${id}/target-job-title`, {
+        method: 'PATCH',
+        body: JSON.stringify({ targetJobTitle }),
+      }),
+
     regenerate: (id: string) =>
       apiRequest<Application>(`/applications/${id}/regenerate`, {
         method: 'POST',

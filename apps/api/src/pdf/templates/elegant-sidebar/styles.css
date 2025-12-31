@@ -22,16 +22,16 @@
   --border-light: #faf9f7;
   --border-dark: #8b7355;
 
-  /* Font Sizes */
-  --font-size-xs: 12px;
-  --font-size-sm: 13px;
-  --font-size-md: 14px;
-  --font-size-base: 16px;
-  --font-size-lg: 18px;
-  --font-size-xl: 20px;
-  --font-size-2xl: 24px;
-  --font-size-3xl: 30px;
-  --font-size-4xl: 36px;
+  /* Font Sizes - Compact for better PDF density */
+  --font-size-xs: 10px;
+  --font-size-sm: 11px;
+  --font-size-md: 12px;
+  --font-size-base: 13px;
+  --font-size-lg: 14px;
+  --font-size-xl: 15px;
+  --font-size-2xl: 18px;
+  --font-size-3xl: 22px;
+  --font-size-4xl: 26px;
 }
 
 * {
@@ -72,30 +72,39 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 25px 40px;
+  padding: 18px 25px;
 }
 
 .profile-photo-section {
   display: flex;
   align-items: center;
-  margin-left: 30px;
+  margin-left: 15px;
 }
 
 .profile-photo {
-  width: 130px;
-  height: 130px;
+  width: 90px;
+  height: 90px;
   border-radius: 50%;
   object-fit: cover;
-  border: 4px solid var(--border-light);
+  border: 3px solid var(--border-light);
 }
 
 .profile-name {
   font-family: 'Montserrat', sans-serif;
   font-size: var(--font-size-4xl);
   font-weight: 700;
-  margin-bottom: 8px;
-  letter-spacing: 2px;
+  margin-bottom: 4px;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
+}
+
+.target-job-title {
+  font-family: 'Poppins', sans-serif;
+  font-size: var(--font-size-base);
+  font-weight: 400;
+  color: var(--accent-color);
+  letter-spacing: 1px;
+  margin-top: 4px;
 }
 
 .profile-title {
@@ -107,26 +116,26 @@ body {
 }
 
 .cv-sidebar {
-  width: 38%;
+  width: 32%;
   background: var(--bg-sidebar);
-  padding: 30px;
+  padding: 15px 18px;
   display: flex;
   flex-direction: column;
 }
 
 .sidebar-section,
 .main-section {
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 .sidebar-section-title {
   font-family: 'Montserrat', sans-serif;
   font-size: var(--font-size-base);
   font-weight: 600;
-  margin-bottom: 12px;
+  margin-bottom: 6px;
   color: var(--text-accent);
   text-transform: uppercase;
-  letter-spacing: 1.5px;
+  letter-spacing: 1px;
 }
 
 .contact-info-list,
@@ -141,7 +150,7 @@ body {
 .contact-info-item {
   display: flex;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 6px;
   font-size: var(--font-size-sm);
 }
 
@@ -164,7 +173,7 @@ body {
 }
 
 .education-sidebar-item {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .education-institution {
@@ -182,7 +191,7 @@ body {
 .languages-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 5px;
 }
 
 .skill-item,
@@ -190,8 +199,8 @@ body {
   font-family: 'Montserrat', sans-serif;
   font-weight: 600;
   background: var(--bg-secondary);
-  padding: 7px 14px;
-  border-radius: 20px;
+  padding: 4px 10px;
+  border-radius: 15px;
   font-size: var(--font-size-xs);
 }
 
@@ -207,7 +216,7 @@ body {
 
 .cv-main {
   flex: 1;
-  padding: 30px 35px;
+  padding: 15px 20px;
   background: var(--bg-primary);
 }
 
@@ -215,10 +224,10 @@ body {
   font-family: 'Montserrat', sans-serif;
   font-size: var(--font-size-lg);
   font-weight: 700;
-  margin-bottom: 12px;
+  margin-bottom: 6px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  padding-left: 10px;
+  padding-left: 8px;
   border-left: 3px solid var(--accent-color);
   border-radius: 2px;
 }
@@ -233,16 +242,16 @@ body {
 .experience-item,
 .course-item,
 .project-item {
-  margin-bottom: 15px;
+  margin-bottom: 8px;
 }
 
 .item-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 6px;
+  margin-bottom: 3px;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 5px;
 }
 
 .item-title {
@@ -258,8 +267,8 @@ body {
   color: var(--text-muted);
   font-weight: 600;
   background: var(--bg-secondary);
-  padding: 6px 12px;
-  border-radius: 20px;
+  padding: 3px 8px;
+  border-radius: 12px;
 }
 
 .item-company,
@@ -268,15 +277,15 @@ body {
   font-family: 'Montserrat', sans-serif;
   font-size: var(--font-size-sm);
   font-weight: 600;
-  margin-bottom: 6px;
+  margin-bottom: 3px;
   letter-spacing: 0.5px;
 }
 
 .item-description {
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
-  margin-bottom: 10px;
-  line-height: 1.6;
+  margin-bottom: 4px;
+  line-height: 1.5;
 }
 
 .achievements-list {
@@ -285,7 +294,7 @@ body {
 }
 
 .achievement-item {
-  margin-bottom: 6px;
+  margin-bottom: 3px;
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
 }
@@ -294,13 +303,13 @@ body {
 .cover-letter-container {
   width: 100%;
   min-height: 100%;
-  padding: 50px 60px;
+  padding: 40px 50px;
   background: var(--bg-primary);
 }
 
 .cover-letter-header {
-  margin-bottom: 40px;
-  padding-bottom: 25px;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
   border-bottom: 2px solid var(--bg-secondary);
 }
 
@@ -308,16 +317,25 @@ body {
   font-family: 'Montserrat', sans-serif;
   font-size: var(--font-size-3xl);
   font-weight: 700;
-  letter-spacing: 2px;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
-  margin-bottom: 15px;
+  margin-bottom: 6px;
   color: var(--text-primary);
+}
+
+.cover-letter-job-title {
+  font-family: 'Poppins', sans-serif;
+  font-size: var(--font-size-base);
+  font-weight: 400;
+  color: var(--accent-color);
+  letter-spacing: 1px;
+  margin-bottom: 12px;
 }
 
 .cover-letter-contact {
   display: flex;
   flex-wrap: wrap;
-  gap: 20px;
+  gap: 15px;
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
 }
@@ -337,11 +355,11 @@ body {
 .cover-letter-date {
   font-size: var(--font-size-sm);
   color: var(--text-muted);
-  margin-bottom: 30px;
+  margin-bottom: 18px;
 }
 
 .cover-letter-recipient {
-  margin-bottom: 30px;
+  margin-bottom: 18px;
 }
 
 .cover-letter-recipient p {
@@ -363,11 +381,11 @@ body {
 }
 
 .cover-letter-body p {
-  margin-bottom: 18px;
+  margin-bottom: 12px;
 }
 
 .cover-letter-closing {
-  margin-top: 40px;
+  margin-top: 25px;
 }
 
 .cover-letter-closing p {
@@ -381,7 +399,49 @@ body {
   font-size: var(--font-size-lg);
   font-weight: 600;
   color: var(--text-accent);
-  margin-top: 25px;
+  margin-top: 15px;
+}
+
+/* Page layout - Sidebar extends through all pages */
+@page {
+  margin: 0;
+  padding: 0;
+  size: A4;
+}
+
+html, body {
+  width: 210mm;
+  min-height: 297mm;
+}
+
+/* Two-column layout that extends through all pages */
+.cv-content {
+  display: flex;
+  flex: 1;
+  min-height: 100%;
+}
+
+/* Sidebar extends through all pages with consistent background */
+.cv-sidebar {
+  position: relative;
+}
+
+/* Create a pseudo-element that extends the sidebar background through all pages */
+.cv-sidebar::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 32%;
+  height: 100%;
+  background: var(--bg-sidebar);
+  z-index: -1;
+}
+
+/* Main content flows naturally to subsequent pages */
+.cv-main {
+  break-inside: auto;
+  page-break-inside: auto;
 }
 
 @media print {
@@ -394,16 +454,24 @@ body {
   .experience-item,
   .course-item,
   .project-item {
+    break-inside: avoid;
     page-break-inside: avoid;
   }
 
   .main-section-title,
   .sidebar-section-title {
+    break-after: avoid;
     page-break-after: avoid;
   }
 
   .cv-container {
     min-height: auto;
+  }
+
+  /* Ensure sidebar background extends on all printed pages */
+  .cv-sidebar::after {
+    position: fixed;
+    height: 100vh;
   }
 
   .cover-letter-container {

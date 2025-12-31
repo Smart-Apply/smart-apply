@@ -8,6 +8,7 @@ import { TemplateType } from '@prisma/client';
 
 export interface CoverLetterTemplateData {
   candidateName: string;
+  targetJobTitle?: string; // Target job title for CV/CL (displayed under name)
   email?: string;
   phone?: string;
   linkedin?: string;
@@ -25,6 +26,7 @@ export interface CoverLetterTemplateData {
 
 export interface ResumeTemplateData {
   candidateName: string;
+  targetJobTitle?: string; // Target job title for CV/CL (displayed under name)
   email?: string;
   phone?: string;
   linkedin?: string;
@@ -86,7 +88,7 @@ export class TemplateRendererService {
   private readonly logger = new Logger(TemplateRendererService.name);
   private templatesDir: string;
   private stylesDir: string; // Legacy - kept for backward compatibility
-  
+
   // Cache for loaded CSS (template id -> combined CSS)
   private cssCache: Map<string, string> = new Map();
 
@@ -117,7 +119,7 @@ export class TemplateRendererService {
 
     this.registerHelpers();
   }
-  
+
   /**
    * Load CSS from the new folder structure (base.css + template/styles.css)
    * Falls back to legacy styles directory if new structure not found
@@ -127,15 +129,15 @@ export class TemplateRendererService {
     if (this.cssCache.has(templateId)) {
       return this.cssCache.get(templateId)!;
     }
-    
+
     // Extract template folder name from ID (e.g., "modern-professional-resume" -> "modern-professional")
     const templateFolder = templateId.replace(/-resume$/, '').replace(/-cover-letter$/, '');
     const templateDir = path.join(this.templatesDir, templateFolder);
     const baseCssPath = path.join(this.templatesDir, '_base', 'base.css');
     const templateCssPath = path.join(templateDir, 'styles.css');
-    
+
     let combinedCSS = '';
-    
+
     // Try new folder structure first
     if (fsSync.existsSync(templateCssPath)) {
       // Load base CSS if available
@@ -143,11 +145,11 @@ export class TemplateRendererService {
         const baseCSS = await fs.readFile(baseCssPath, 'utf-8');
         combinedCSS = baseCSS + '\n\n';
       }
-      
+
       // Load template-specific CSS
       const templateCSS = await fs.readFile(templateCssPath, 'utf-8');
       combinedCSS += `/* Template: ${templateFolder} */\n${templateCSS}`;
-      
+
       this.logger.debug(`Loaded CSS from new structure: ${templateFolder}`);
     } else {
       // Fallback to legacy styles directory
@@ -157,15 +159,15 @@ export class TemplateRendererService {
         this.logger.debug(`Loaded CSS from legacy path: ${legacyCssPath}`);
       }
     }
-    
+
     // Cache the result
     if (combinedCSS) {
       this.cssCache.set(templateId, combinedCSS);
     }
-    
+
     return combinedCSS;
   }
-  
+
   /**
    * Clear CSS cache (useful for development/hot reload)
    */
@@ -173,7 +175,7 @@ export class TemplateRendererService {
     this.cssCache.clear();
     this.logger.log('CSS cache cleared');
   }
-  
+
   /**
    * Load a template file from the new folder structure
    * Checks template folder first, then falls back to _base folder
@@ -185,22 +187,24 @@ export class TemplateRendererService {
       this.logger.debug(`Loading template from folder: ${templateFolder}/${fileName}`);
       return await fs.readFile(templateSpecificPath, 'utf-8');
     }
-    
+
     // Fall back to _base folder (e.g., templates/_base/resume.hbs)
     const basePath = path.join(this.templatesDir, '_base', fileName);
     if (fsSync.existsSync(basePath)) {
       this.logger.debug(`Loading template from _base: ${fileName}`);
       return await fs.readFile(basePath, 'utf-8');
     }
-    
+
     // Final fallback to legacy flat structure (e.g., templates/resume.hbs)
     const legacyPath = path.join(this.templatesDir, fileName);
     if (fsSync.existsSync(legacyPath)) {
       this.logger.debug(`Loading template from legacy path: ${fileName}`);
       return await fs.readFile(legacyPath, 'utf-8');
     }
-    
-    throw new Error(`Template not found: ${fileName} (checked ${templateFolder}, _base, and legacy paths)`);
+
+    throw new Error(
+      `Template not found: ${fileName} (checked ${templateFolder}, _base, and legacy paths)`,
+    );
   }
 
   /**
@@ -247,11 +251,11 @@ export class TemplateRendererService {
     // Format date helper - formats ISO date strings to readable format
     Handlebars.registerHelper('formatDate', function (dateString: string, language?: string) {
       if (!dateString) return '';
-      
+
       try {
         const date = new Date(dateString);
         const lang = (typeof language === 'string' ? language : 'en') || 'en';
-        
+
         const monthNames = {
           en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
           de: ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'],
@@ -259,11 +263,11 @@ export class TemplateRendererService {
           es: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
           it: ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'],
         };
-        
+
         const months = monthNames[lang] || monthNames.en;
         const year = date.getFullYear();
         const month = months[date.getMonth()];
-        
+
         return `${month} ${year}`;
       } catch (error) {
         return dateString;
@@ -276,13 +280,13 @@ export class TemplateRendererService {
       // If language is not provided or is an object (Handlebars context), try to extract from @root
       if (!language || typeof language === 'object') {
         // Try to get from root context if available
-        const context = (this as any);
+        const context = this as any;
         language = context?.language || 'en';
       }
-      
+
       const lang = language || 'en';
       const translations: Record<string, Record<string, string>> = {
-        'contact': {
+        contact: {
           en: 'Contact',
           de: 'Kontakt',
           fr: 'Contact',
@@ -352,6 +356,7 @@ export class TemplateRendererService {
     templateId?: string,
     atsOptimized = false,
   ): Promise<string> {
+    this.logger.log(`[renderCoverLetter] Received targetJobTitle: ${data.targetJobTitle}`);
     try {
       let template: string;
       let css: string;
@@ -410,6 +415,7 @@ export class TemplateRendererService {
     templateId?: string,
     atsOptimized = false,
   ): Promise<string> {
+    this.logger.log(`[renderResume] Received targetJobTitle: ${data.targetJobTitle}`);
     try {
       let template: string;
       let css: string;

@@ -2061,6 +2061,31 @@ Summary: ${resume.summary || 'Not provided'}
   }
 
   /**
+   * Update the target job title of an application (displayed on CV/CL)
+   */
+  async updateTargetJobTitle(
+    userId: string,
+    applicationId: string,
+    targetJobTitle: string,
+  ): Promise<ApplicationResponseDto> {
+    this.logger.log(`Updating application ${applicationId} target job title for user ${userId}`);
+
+    // Update targetJobTitle (validation already handled by DTO)
+    const updated = await this.prisma.application.update({
+      where: { id: applicationId },
+      data: {
+        targetJobTitle,
+      },
+      include: {
+        jobPosting: true,
+      },
+    });
+
+    this.logger.log(`Application ${applicationId} target job title updated to: ${targetJobTitle}`);
+    return this.mapToResponseDto(updated);
+  }
+
+  /**
    * Get only the status of an application (lightweight, for polling)
    */
   async getStatus(userId: string, applicationId: string): Promise<ApplicationStatusResponseDto> {
@@ -2098,6 +2123,7 @@ Summary: ${resume.summary || 'Not provided'}
       userId: application.userId,
       jobPostingId: application.jobPostingId,
       title: application.title,
+      targetJobTitle: application.targetJobTitle,
       applicationStatus: application.applicationStatus,
       statusUpdatedAt: application.statusUpdatedAt,
       status: application.status as ApplicationStatus,

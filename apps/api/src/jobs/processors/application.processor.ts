@@ -25,9 +25,11 @@ export class ApplicationProcessor {
   ) {}
 
   async process(job: Job<ApplicationJobData>): Promise<void> {
-    const { applicationId, userId, jobPostingId, language } = job.data;
+    const { applicationId, userId: _userId, jobPostingId: _jobPostingId, language } = job.data;
 
-    this.logger.log(`Processing application ${applicationId} with language: ${language || 'default'}`);
+    this.logger.log(
+      `Processing application ${applicationId} with language: ${language || 'default'}`,
+    );
 
     try {
       // 1. Load current application state
@@ -82,6 +84,7 @@ export class ApplicationProcessor {
 
         const coverLetterTemplateData = {
           candidateName: resumeData.candidateName,
+          targetJobTitle: application.targetJobTitle || application.jobPosting.title,
           email: resumeData.email || application.user.email,
           phone: resumeData.phone,
           linkedin: resumeData.linkedin,
@@ -117,9 +120,10 @@ export class ApplicationProcessor {
         );
       }
 
-      // Add selected language to resume data
+      // Add selected language and target job title to resume data
       const resumeDataWithLanguage = {
         ...resumeData,
+        targetJobTitle: application.targetJobTitle || application.jobPosting.title,
         language: language || 'en', // Use selected language from export request
       };
 

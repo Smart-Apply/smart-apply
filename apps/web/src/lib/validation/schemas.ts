@@ -68,6 +68,29 @@ export const changePasswordSchema = z.object({
  */
 const phoneRegex = /^\+?[1-9]\d{1,14}$/;
 
+/**
+ * Sanitize URL by removing duplicate protocol prefixes
+ * Handles cases like "https://https://linkedin.com" → "https://linkedin.com"
+ */
+const sanitizeUrl = (val: string): string => {
+  if (!val || val.trim() === '') return '';
+  
+  let url = val.trim();
+  
+  // Remove duplicate https:// or http:// prefixes
+  // Matches patterns like: https://https://, http://https://, https://http://
+  while (/^(https?:\/\/)(https?:\/\/)/.test(url)) {
+    url = url.replace(/^(https?:\/\/)(https?:\/\/)/, '$2');
+  }
+  
+  // If URL doesn't start with protocol, add https://
+  if (url && !/^https?:\/\//i.test(url)) {
+    url = `https://${url}`;
+  }
+  
+  return url;
+};
+
 export const profileSchema = z.object({
   firstName: z.string().min(1, 'Vorname ist erforderlich').optional(),
   lastName: z.string().min(1, 'Nachname ist erforderlich').optional(),
@@ -78,9 +101,9 @@ export const profileSchema = z.object({
     .optional()
     .or(z.literal('')),
   location: z.string().optional(),
-  linkedinUrl: z.string().url('Ungültige URL').optional().or(z.literal('')),
-  githubUrl: z.string().url('Ungültige URL').optional().or(z.literal('')),
-  portfolioUrl: z.string().url('Ungültige URL').optional().or(z.literal('')),
+  linkedinUrl: z.string().transform(sanitizeUrl).pipe(z.string().url('Ungültige URL').or(z.literal(''))).optional().or(z.literal('')),
+  githubUrl: z.string().transform(sanitizeUrl).pipe(z.string().url('Ungültige URL').or(z.literal(''))).optional().or(z.literal('')),
+  portfolioUrl: z.string().transform(sanitizeUrl).pipe(z.string().url('Ungültige URL').or(z.literal(''))).optional().or(z.literal('')),
   summary: z.string().optional(),
 });
 
@@ -95,7 +118,7 @@ export const certificateSchema = z.object({
   name: z.string().min(1, 'Name ist erforderlich'),
   issuer: z.string().min(1, 'Aussteller ist erforderlich'),
   dateObtained: z.string().optional(),
-  url: z.string().url('Ungültige URL').optional().or(z.literal('')),
+  url: z.string().transform(sanitizeUrl).pipe(z.string().url('Ungültige URL').or(z.literal(''))).optional().or(z.literal('')),
 });
 
 export const experienceSchema = z.object({
@@ -114,7 +137,7 @@ export const projectSchema = z.object({
   name: z.string().min(1, 'Projektname ist erforderlich'),
   description: z.string().optional(),
   technologies: z.array(z.string()).optional(),
-  url: z.string().url('Ungültige URL').optional().or(z.literal('')),
+  url: z.string().transform(sanitizeUrl).pipe(z.string().url('Ungültige URL').or(z.literal(''))).optional().or(z.literal('')),
 });
 
 export const educationSchema = z.object({

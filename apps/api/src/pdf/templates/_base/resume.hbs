@@ -9,6 +9,9 @@
   {{! Contact Information - Always at top for ATS }}
   <div class="resume-header no-break">
     <h1>{{candidateName}}</h1>
+    {{#if targetJobTitle}}
+    <p class="target-job-title">{{targetJobTitle}}</p>
+    {{/if}}
     <div class="contact-info">
       {{#if email}}
         {{email}}

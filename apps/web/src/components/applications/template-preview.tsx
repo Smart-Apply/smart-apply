@@ -202,6 +202,7 @@ export function ResumeTemplatePreview({ resume, templateId, language = 'en' }: R
   // Transform ResumeData to match Handlebars template format
   const templateData = useMemo(() => ({
     candidateName: resume.candidateName || 'Dein Name',
+    targetJobTitle: resume.targetJobTitle,
     email: resume.email,
     phone: resume.phone,
     linkedin: resume.linkedin,

@@ -13,6 +13,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { CenteredLoader } from '@/components/shared/loading';
 import { ResumeTemplatePreview, CoverLetterTemplatePreview } from '@/components/applications/template-preview';
 import { ATSScoreSidebar } from '@/components/applications/ats-score-sidebar';
+import { EditableTargetJobTitle } from '@/components/applications/editable-target-job-title';
 import { useApplication, useExportApplication, useUpdateApplicationResume, useUpsertCoverLetter } from '@/hooks/use-applications';
 import { parseResumeDraft, normalizeResumeForSave } from '@/lib/resume';
 import type { ResumeData } from '@/types';
@@ -445,10 +446,11 @@ export default function ApplicationResumeEditorPage() {
 
             {application.jobPosting && (
               <div className="flex items-center gap-2 min-w-0">
-                <div className="flex items-center gap-1.5 text-sm truncate">
-                  <Briefcase className="h-3.5 w-3.5 text-primary shrink-0" />
-                  <span className="font-medium truncate">{application.jobPosting.title}</span>
-                </div>
+                <EditableTargetJobTitle
+                  applicationId={application.id}
+                  initialTargetJobTitle={application.targetJobTitle}
+                  fallbackTitle={application.jobPosting.title || 'Unbekannte Position'}
+                />
                 {application.jobPosting.company && (
                   <>
                     <span className="text-muted-foreground text-sm shrink-0">@</span>
@@ -618,7 +620,10 @@ export default function ApplicationResumeEditorPage() {
               <div className="h-full overflow-auto bg-gray-100 dark:bg-gray-900 rounded-lg shadow-inner">
                 {parsedResume && (
                   <ResumeTemplatePreview
-                    resume={parsedResume}
+                    resume={{
+                      ...parsedResume,
+                      targetJobTitle: application?.targetJobTitle || application?.jobPosting?.title,
+                    }}
                     templateId={application?.resumeTemplateId}
                     language={selectedLanguage}
                   />

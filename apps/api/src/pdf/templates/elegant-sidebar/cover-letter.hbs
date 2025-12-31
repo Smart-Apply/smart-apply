@@ -10,6 +10,9 @@
     <!-- Header -->
     <header class="cover-letter-header">
         <h1 class="cover-letter-name">{{candidateName}}</h1>
+        {{#if targetJobTitle}}
+        <p class="cover-letter-job-title">— {{targetJobTitle}} —</p>
+        {{/if}}
         <div class="cover-letter-contact">
             {{#if email}}
             <span class="cover-letter-contact-item">

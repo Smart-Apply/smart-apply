@@ -237,6 +237,9 @@ model Application {
   // Custom Title (editable by user, LLM-generated on creation)
   title         String? // e.g., "Senior Frontend Developer @ Google"
   
+  // Target Job Title for CV/CL (defaults to jobPosting.title if null)
+  targetJobTitle String?
+  
   // Application Status Tracking (user-facing)
   applicationStatus   ApplicationTrackingStatus @default(CREATED)
   statusUpdatedAt     DateTime?

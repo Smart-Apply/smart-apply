@@ -206,6 +206,7 @@ export interface Application {
   userId: string;
   jobPostingId: string;
   title?: string;
+  targetJobTitle?: string;
   applicationStatus: ApplicationTrackingStatus;
   statusUpdatedAt?: string;
   status: ApplicationGenerationStatus;
@@ -295,6 +296,7 @@ export interface ResumeCertification {
 
 export interface ResumeData {
   candidateName: string;
+  targetJobTitle?: string;
   email: string;
   phone?: string;
   location?: string;

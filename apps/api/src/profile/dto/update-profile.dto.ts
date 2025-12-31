@@ -10,7 +10,7 @@ import {
   IsPhoneNumber,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { Sanitize, SanitizeArray } from '../../common/decorators/sanitize.decorator';
+import { Sanitize, SanitizeArray, SanitizeUrl } from '../../common/decorators/sanitize.decorator';
 
 export class SkillDto {
   @ApiProperty({
@@ -61,6 +61,7 @@ export class CertificateDto {
 
   @ApiProperty({ example: 'https://example.com/cert.pdf', required: false })
   @IsOptional()
+  @SanitizeUrl()
   @IsUrl()
   url?: string;
 }
@@ -151,6 +152,7 @@ export class ProjectDto {
 
   @ApiProperty({ example: 'https://github.com/user/project', required: false })
   @IsOptional()
+  @SanitizeUrl()
   @IsUrl()
   url?: string;
 }
@@ -269,16 +271,19 @@ export class UpdateProfileDto {
 
   @ApiProperty({ example: 'https://linkedin.com/in/johndoe', required: false })
   @IsOptional()
+  @SanitizeUrl()
   @IsUrl()
   linkedinUrl?: string;
 
   @ApiProperty({ example: 'https://github.com/johndoe', required: false })
   @IsOptional()
+  @SanitizeUrl()
   @IsUrl()
   githubUrl?: string;
 
   @ApiProperty({ example: 'https://johndoe.dev', required: false })
   @IsOptional()
+  @SanitizeUrl()
   @IsUrl()
   portfolioUrl?: string;
 
