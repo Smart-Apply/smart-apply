@@ -95,10 +95,8 @@ const TRACKING_STATUS_TABS: {
     { value: 'CREATED', label: 'Entwurf', icon: FileText },
     { value: 'APPLIED', label: 'Beworben', icon: Send },
     { value: 'INTERVIEW', label: 'Interview', icon: Users },
-    { value: 'OFFER', label: 'Angebot', icon: CheckCircle },
     { value: 'ACCEPTED', label: 'Angenommen', icon: ThumbsUp },
     { value: 'REJECTED', label: 'Abgelehnt', icon: ThumbsDown },
-    { value: 'WITHDRAWN', label: 'Zurückgezogen', icon: XCircle },
   ];
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
