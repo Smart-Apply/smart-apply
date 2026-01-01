@@ -50,8 +50,7 @@ I am particularly excited about this opportunity because [Company Name] is known
 
 Thank you for considering my application. I look forward to the opportunity to discuss how my experience and skills align with your needs.
 
-Sincerely,  
-[Your Name]
+Sincerely,
     `.trim();
   }
 

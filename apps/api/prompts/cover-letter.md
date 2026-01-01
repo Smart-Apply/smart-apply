@@ -95,8 +95,34 @@ Gib das Anschreiben als **sauberes HTML** zurück (KEIN Markdown):
 5. **Keine Bullet-Points** im Haupttext - fließender Text
 6. **Personalisierung**: Beziehe dich auf konkrete Aspekte der Stelle/des Unternehmens
 
+## ⚠️ KRITISCH: Schlussformel OHNE Namen
+
+**Der Kandidatenname wird AUTOMATISCH vom Template hinzugefügt!**
+
+❌ **FALSCH** (NIEMALS so ausgeben):
+```html
+<p>Mit freundlichen Grüßen</p>
+<p>Max Mustermann</p>
+```
+
+❌ **FALSCH** (NIEMALS Platzhalter verwenden):
+```html
+<p>Sincerely,</p>
+<p>[Your Name]</p>
+```
+
+✅ **RICHTIG** (NUR die Schlussformel):
+```html
+<p>Mit freundlichen Grüßen</p>
+```
+
+✅ **RICHTIG** (Englisch):
+```html
+<p>Best regards,</p>
+```
+
 ## Output
 
-Gib NUR den HTML-Inhalt zurück, beginnend mit der Anrede `<p>Sehr geehrte...</p>` und endend mit der Schlussformel `<p>Mit freundlichen Grüßen</p>`.
+Gib NUR den HTML-Inhalt zurück, beginnend mit der Anrede `<p>Sehr geehrte...</p>` und endend mit der Schlussformel `<p>Mit freundlichen Grüßen</p>` oder `<p>Best regards,</p>`. **KEIN Name danach!**
 
 Erstelle jetzt ein überzeugendes Anschreiben, das den Kandidaten von der Masse abhebt.

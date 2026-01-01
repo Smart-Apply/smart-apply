@@ -40,7 +40,10 @@ import {
   sanitizeUrl,
   formatDateRange,
 } from './resume-template.util';
-import { sanitizeRichText } from '../common/services/html-sanitizer';
+import {
+  sanitizeRichText,
+  stripLLMPlaceholders,
+} from '../common/services/html-sanitizer';
 
 // Type for progress callback function
 export type ProgressCallback = (progress: number, message: string) => void;
@@ -366,7 +369,10 @@ export class ApplicationsService {
   }
 
   private sanitizeCoverLetter(content: string): string {
-    return sanitizeRichText(content);
+    // First strip any LLM placeholder patterns (e.g., "[Your Name]")
+    const stripped = stripLLMPlaceholders(content);
+    // Then sanitize HTML
+    return sanitizeRichText(stripped);
   }
 
   private parseResume(resumeText?: string | null) {

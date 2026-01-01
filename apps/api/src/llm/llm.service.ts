@@ -201,8 +201,11 @@ export class LLMService {
     };
 
     try {
-      const response = await this.callProvider(prompt, defaultOptions);
+      let response = await this.callProvider(prompt, defaultOptions);
       const duration = Date.now() - startTime;
+
+      // Post-process to remove LLM placeholder patterns (e.g., "[Your Name]")
+      response = this.stripLLMPlaceholders(response);
 
       if (shouldLog) {
         this.logger.log(`LLM callText completed: ${templatePath} (${duration}ms)`);
@@ -868,6 +871,39 @@ HTML-Aufzählung:`;
     }
 
     return rendered;
+  }
+
+  /**
+   * Strip LLM placeholder patterns from generated text
+   * Removes patterns like "[Your Name]", "[Dein Name]", and closing signatures
+   */
+  private stripLLMPlaceholders(content: string): string {
+    if (!content) return '';
+
+    let result = content;
+
+    // Pattern 1: Remove square bracket placeholders (multilingual)
+    // e.g., "[Your Name]", "[Ihr Name]", "[Your Address]", "[Company Name]"
+    const bracketPattern =
+      /\[(?:Your|Ihr|Dein|Their|My|Mein|Our|Unser|The|Der|Die|Das)\s+[\w\s]+\]/gi;
+    result = result.replace(bracketPattern, '');
+
+    // Pattern 2: Remove name line after closing phrase in HTML
+    // Matches: <p>Mit freundlichen Grüßen</p>\n<p>Max Mustermann</p>
+    const htmlClosingWithNamePattern =
+      /(<p>(?:Sincerely|Best regards|Mit freundlichen Grüßen|Beste Grüße|Cordiali saluti|Cordialement|Atentamente),?<\/p>)\s*<p>[A-ZÄÖÜ][a-zA-ZäöüÄÖÜßéèêëàâçîïôûùÿœ]+(?:\s+[A-ZÄÖÜ][a-zA-ZäöüÄÖÜßéèêëàâçîïôûùÿœ]+)*<\/p>\s*$/gi;
+    result = result.replace(htmlClosingWithNamePattern, '$1');
+
+    // Pattern 3: Remove name line after closing phrase in plain text/markdown
+    // Matches: "Sincerely,\n\nJohn Doe" or "Mit freundlichen Grüßen\n\nMax Mustermann"
+    const textClosingWithNamePattern =
+      /(Sincerely|Best regards|Mit freundlichen Grüßen|Beste Grüße|Cordiali saluti|Cordialement|Atentamente),?\s*\n+\s*[A-ZÄÖÜ][a-zA-ZäöüÄÖÜßéèêëàâçîïôûùÿœ]+(?:\s+[A-ZÄÖÜ][a-zA-ZäöüÄÖÜßéèêëàâçîïôûùÿœ]+)*\s*$/gm;
+    result = result.replace(textClosingWithNamePattern, '$1,');
+
+    // Clean up excess newlines and whitespace
+    result = result.replace(/\n{3,}/g, '\n\n').trim();
+
+    return result;
   }
 
   /**

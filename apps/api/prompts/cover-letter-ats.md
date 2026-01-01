@@ -147,8 +147,34 @@ Return the cover letter as **clean HTML** (no markdown).
 5. **No signature:** End with the greeting only (name added by template)
 6. **Keyword focus:** First paragraph is most important for ATS
 
+## ⚠️ CRITICAL: Closing Format - NO NAME!
+
+**The candidate's name is AUTOMATICALLY added by the template!**
+
+❌ **WRONG** (NEVER output this):
+```html
+<p>Sincerely,</p>
+<p>John Smith</p>
+```
+
+❌ **WRONG** (NEVER use placeholders):
+```html
+<p>Best regards,</p>
+<p>[Your Name]</p>
+```
+
+✅ **CORRECT** (ONLY the closing phrase):
+```html
+<p>Best regards,</p>
+```
+
+✅ **CORRECT** (German):
+```html
+<p>Mit freundlichen Grüßen</p>
+```
+
 ## Output
 
-Return ONLY the HTML content in {{languageName}}, starting with the appropriate salutation and ending with the appropriate closing.
+Return ONLY the HTML content in {{languageName}}, starting with the appropriate salutation and ending with the appropriate closing phrase. **NO NAME AFTER THE CLOSING!**
 
 Generate a compelling, keyword-optimized cover letter that will pass ATS screening while impressing human reviewers.
