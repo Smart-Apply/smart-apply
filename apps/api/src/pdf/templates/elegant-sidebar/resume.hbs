@@ -124,7 +124,7 @@
                     {{#each languages}}
                     <li class="language-item">
                         <span class="language-name">{{this.name}}</span>
-                        <span class="language-level">{{this.proficiency}}</span>
+                        {{#if this.level}}<span class="language-level">{{t this.level @root.language}}</span>{{/if}}
                     </li>
                     {{/each}}
                 </ul>

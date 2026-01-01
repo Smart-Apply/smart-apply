@@ -11,15 +11,133 @@ const A4_WIDTH_PX = 794;
 // A4 height in pixels at 96 DPI (297mm ≈ 1123px)
 const A4_HEIGHT_PX = 1123;
 
+/**
+ * Normalize proficiency level to translation key
+ * Maps various user input formats to standardized translation keys (e.g., "level.native")
+ * @param level - User input level string (e.g., "Muttersprache", "Native", "fließend")
+ * @returns Normalized translation key (e.g., "level.native") or original value if no match
+ */
+function normalizeProficiencyLevel(level: string | undefined): string | undefined {
+  if (!level) return undefined;
+  
+  // If already normalized (starts with "level."), return as-is
+  if (level.startsWith('level.')) return level;
+
+  const normalized = level.toLowerCase().trim();
+
+  // Native language variants
+  if (
+    normalized === 'muttersprache' ||
+    normalized === 'native' ||
+    normalized === 'native speaker' ||
+    normalized === 'muttersprachlich' ||
+    normalized === 'langue maternelle' ||
+    normalized === 'madrelingua' ||
+    normalized === 'nativo'
+  ) {
+    return 'level.native';
+  }
+
+  // Fluent variants
+  if (
+    normalized === 'fließend' ||
+    normalized === 'fliessend' ||
+    normalized === 'fluent' ||
+    normalized === 'verhandlungssicher' ||
+    normalized === 'courant' ||
+    normalized === 'fluido' ||
+    normalized === 'fluente'
+  ) {
+    return 'level.fluent';
+  }
+
+  // Advanced variants
+  if (
+    normalized === 'fortgeschritten' ||
+    normalized === 'advanced' ||
+    normalized === 'avancé' ||
+    normalized === 'avanzado' ||
+    normalized === 'avanzato'
+  ) {
+    return 'level.advanced';
+  }
+
+  // Good variants
+  if (
+    normalized === 'gut' ||
+    normalized === 'good' ||
+    normalized === 'sehr gut' ||
+    normalized === 'very good' ||
+    normalized === 'gute kenntnisse' ||
+    normalized === 'bon' ||
+    normalized === 'bueno' ||
+    normalized === 'buono'
+  ) {
+    return 'level.good';
+  }
+
+  // Intermediate variants
+  if (
+    normalized === 'mittelstufe' ||
+    normalized === 'intermediate' ||
+    normalized === 'mittel' ||
+    normalized === 'intermédiaire' ||
+    normalized === 'intermedio'
+  ) {
+    return 'level.intermediate';
+  }
+
+  // Conversational variants
+  if (
+    normalized === 'konversationssicher' ||
+    normalized === 'conversational' ||
+    normalized === 'conversationnel' ||
+    normalized === 'conversacional' ||
+    normalized === 'conversazionale'
+  ) {
+    return 'level.conversational';
+  }
+
+  // Basic variants
+  if (
+    normalized === 'grundkenntnisse' ||
+    normalized === 'basic' ||
+    normalized === 'basics' ||
+    normalized === 'notions de base' ||
+    normalized === 'básico' ||
+    normalized === 'base'
+  ) {
+    return 'level.basic';
+  }
+
+  // Beginner variants
+  if (
+    normalized === 'anfänger' ||
+    normalized === 'beginner' ||
+    normalized === 'débutant' ||
+    normalized === 'principiante'
+  ) {
+    return 'level.beginner';
+  }
+
+  // Return original if no match found (allows custom levels)
+  return level;
+}
+
 // Extend Handlebars type for our custom flag
 interface HandlebarsWithFlag {
   __helpersRegistered?: boolean;
+  __helpersVersion?: number;
 }
+
+// Helper version - increment this to force re-registration after changes
+const HELPERS_VERSION = 2;
 
 // Register Handlebars helpers (same as backend)
 function registerHandlebarsHelpers() {
   const hbs = Handlebars as typeof Handlebars & HandlebarsWithFlag;
-  if (typeof window !== 'undefined' && !hbs.__helpersRegistered) {
+  // Re-register if version changed or not registered yet
+  if (typeof window !== 'undefined' && (!hbs.__helpersRegistered || hbs.__helpersVersion !== HELPERS_VERSION)) {
     // Helper to convert string to lowercase
     Handlebars.registerHelper('toLowerCase', (str: unknown) => {
       if (!str) return '';
@@ -95,15 +213,21 @@ function registerHandlebarsHelpers() {
     });
 
     // Translation helper for multilingual templates
-    // Usage: {{t "resume.summary" language}}
-    Handlebars.registerHelper('t', function (this: unknown, key: string, language?: string) {
-      // If language is not provided or is an object (Handlebars context), try to extract from @root
-      if (!language || typeof language === 'object') {
-        const context = this as Record<string, unknown>;
-        language = (context?.language as string) || 'en';
-      }
+    // Usage: {{t "resume.summary" language}} or {{t this.level @root.language}}
+    Handlebars.registerHelper('t', function (this: unknown, key: string, ...args: unknown[]) {
+      // Handlebars always passes options as the last argument
+      const options = args[args.length - 1] as Handlebars.HelperOptions;
+      const passedLanguage = args.length > 1 ? args[0] : undefined;
       
-      const lang = language || 'en';
+      // Determine the language: use passed value, or get from root context via options.data.root
+      let lang: string;
+      if (typeof passedLanguage === 'string' && passedLanguage) {
+        lang = passedLanguage;
+      } else if (options?.data?.root?.language) {
+        lang = options.data.root.language as string;
+      } else {
+        lang = 'en';
+      }
       const translations: Record<string, Record<string, string>> = {
         'contact': {
           en: 'Contact',
@@ -161,12 +285,70 @@ function registerHandlebarsHelpers() {
           es: 'Proyectos Clave',
           it: 'Progetti Chiave',
         },
+        // Language proficiency levels
+        'level.native': {
+          en: 'Native',
+          de: 'Muttersprache',
+          fr: 'Langue maternelle',
+          es: 'Nativo',
+          it: 'Madrelingua',
+        },
+        'level.fluent': {
+          en: 'Fluent',
+          de: 'Fließend',
+          fr: 'Courant',
+          es: 'Fluido',
+          it: 'Fluente',
+        },
+        'level.good': {
+          en: 'Good',
+          de: 'Gut',
+          fr: 'Bon',
+          es: 'Bueno',
+          it: 'Buono',
+        },
+        'level.basic': {
+          en: 'Basic',
+          de: 'Grundkenntnisse',
+          fr: 'Notions de base',
+          es: 'Básico',
+          it: 'Base',
+        },
+        'level.conversational': {
+          en: 'Conversational',
+          de: 'Konversationssicher',
+          fr: 'Conversationnel',
+          es: 'Conversacional',
+          it: 'Conversazionale',
+        },
+        'level.advanced': {
+          en: 'Advanced',
+          de: 'Fortgeschritten',
+          fr: 'Avancé',
+          es: 'Avanzado',
+          it: 'Avanzato',
+        },
+        'level.intermediate': {
+          en: 'Intermediate',
+          de: 'Mittelstufe',
+          fr: 'Intermédiaire',
+          es: 'Intermedio',
+          it: 'Intermedio',
+        },
+        'level.beginner': {
+          en: 'Beginner',
+          de: 'Anfänger',
+          fr: 'Débutant',
+          es: 'Principiante',
+          it: 'Principiante',
+        },
       };
 
       return translations[key]?.[lang] || translations[key]?.['en'] || key;
     });
 
     hbs.__helpersRegistered = true;
+    hbs.__helpersVersion = HELPERS_VERSION;
   }
 }
 
@@ -255,11 +437,12 @@ export function ResumeTemplatePreview({ resume, templateId, language = 'en' }: R
       issuer: cert.issuer,
       date: cert.date,
     })),
-    // Include languages with both 'level' and 'proficiency' for template compatibility
+    // Include languages with normalized level for translation
+    // Normalize proficiency levels to translation keys (e.g., "Muttersprache" -> "level.native")
     languages: resume.languages?.map(lang => ({
       name: lang.name,
-      level: lang.level,
-      proficiency: lang.level, // Alias for templates that use 'proficiency'
+      level: normalizeProficiencyLevel(lang.level),
+      proficiency: normalizeProficiencyLevel(lang.level), // Alias for templates that use 'proficiency'
     })),
   }), [resume, language]);
 

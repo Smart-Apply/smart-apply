@@ -45,6 +45,116 @@ import { sanitizeRichText } from '../common/services/html-sanitizer';
 // Type for progress callback function
 export type ProgressCallback = (progress: number, message: string) => void;
 
+/**
+ * Normalize proficiency level to translation key
+ * Maps various user input formats to standardized translation keys (e.g., "level.native")
+ * @param level - User input level string (e.g., "Muttersprache", "Native", "fließend")
+ * @returns Normalized translation key (e.g., "level.native") or original value if no match
+ */
+function normalizeProficiencyLevel(level: string | undefined): string | undefined {
+  if (!level) return undefined;
+
+  const normalized = level.toLowerCase().trim();
+
+  // Native language variants
+  if (
+    normalized === 'muttersprache' ||
+    normalized === 'native' ||
+    normalized === 'native speaker' ||
+    normalized === 'muttersprachlich' ||
+    normalized === 'langue maternelle' ||
+    normalized === 'madrelingua' ||
+    normalized === 'nativo'
+  ) {
+    return 'level.native';
+  }
+
+  // Fluent variants
+  if (
+    normalized === 'fließend' ||
+    normalized === 'fliessend' ||
+    normalized === 'fluent' ||
+    normalized === 'verhandlungssicher' ||
+    normalized === 'courant' ||
+    normalized === 'fluido' ||
+    normalized === 'fluente'
+  ) {
+    return 'level.fluent';
+  }
+
+  // Advanced variants
+  if (
+    normalized === 'fortgeschritten' ||
+    normalized === 'advanced' ||
+    normalized === 'avancé' ||
+    normalized === 'avanzado' ||
+    normalized === 'avanzato'
+  ) {
+    return 'level.advanced';
+  }
+
+  // Good variants
+  if (
+    normalized === 'gut' ||
+    normalized === 'good' ||
+    normalized === 'sehr gut' ||
+    normalized === 'very good' ||
+    normalized === 'gute kenntnisse' ||
+    normalized === 'bon' ||
+    normalized === 'bueno' ||
+    normalized === 'buono'
+  ) {
+    return 'level.good';
+  }
+
+  // Intermediate variants
+  if (
+    normalized === 'mittelstufe' ||
+    normalized === 'intermediate' ||
+    normalized === 'mittel' ||
+    normalized === 'intermédiaire' ||
+    normalized === 'intermedio'
+  ) {
+    return 'level.intermediate';
+  }
+
+  // Conversational variants
+  if (
+    normalized === 'konversationssicher' ||
+    normalized === 'conversational' ||
+    normalized === 'conversationnel' ||
+    normalized === 'conversacional' ||
+    normalized === 'conversazionale'
+  ) {
+    return 'level.conversational';
+  }
+
+  // Basic variants
+  if (
+    normalized === 'grundkenntnisse' ||
+    normalized === 'basic' ||
+    normalized === 'basics' ||
+    normalized === 'notions de base' ||
+    normalized === 'básico' ||
+    normalized === 'base'
+  ) {
+    return 'level.basic';
+  }
+
+  // Beginner variants
+  if (
+    normalized === 'anfänger' ||
+    normalized === 'beginner' ||
+    normalized === 'débutant' ||
+    normalized === 'principiante'
+  ) {
+    return 'level.beginner';
+  }
+
+  // Return original if no match found (allows custom levels)
+  return level;
+}
+
 @Injectable()
 export class ApplicationsService {
   private readonly logger = new Logger(ApplicationsService.name);
@@ -1569,42 +1679,12 @@ Summary: ${resume.summary || 'Not provided'}
       }));
     }
 
-    // Map languages - Handle both string[] (legacy) and object[] (new)
-    // Also include all profile languages if LLM didn't return any
-    let languages = (tailoredProfile.selected_languages || [])
-      .map((lang: any) => {
-        // Handle string format (legacy LLM output, e.g., "German (Native)" or just "German")
-        if (typeof lang === 'string') {
-          // Try to parse "Language (Level)" format
-          const match = lang.match(/^(.+?)\s*\((.+?)\)$/);
-          if (match) {
-            return { name: match[1].trim(), level: match[2].trim() };
-          }
-          // Find matching language in profile by name
-          const matchedLang = profile.languages.find(
-            (l) => l.name.toLowerCase() === lang.toLowerCase(),
-          );
-          return {
-            name: lang,
-            level: matchedLang?.level || undefined,
-          };
-        }
-        // Handle object format (new LLM output)
-        if (!lang.name) return null;
-        return {
-          name: lang.name,
-          level: lang.level || undefined,
-        };
-      })
-      .filter(Boolean);
-
-    // Fallback: If no languages from LLM, use all profile languages
-    if (languages.length === 0 && profile.languages.length > 0) {
-      languages = profile.languages.map((lang) => ({
-        name: lang.name,
-        level: lang.level || undefined,
-      }));
-    }
+    // Map languages - ALWAYS use ALL profile languages (not LLM-filtered)
+    // Normalize proficiency levels to translation keys for multilingual support
+    const languages = profile.languages.map((lang) => ({
+      name: lang.name,
+      level: normalizeProficiencyLevel(lang.level),
+    }));
 
     return {
       candidateName,

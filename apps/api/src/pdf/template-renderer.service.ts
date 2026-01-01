@@ -284,16 +284,23 @@ export class TemplateRendererService {
     });
 
     // Translation helper for multilingual templates
-    // Usage: {{t "resume.summary" @root.language}}
-    Handlebars.registerHelper('t', function (key: string, language?: string) {
-      // If language is not provided or is an object (Handlebars context), try to extract from @root
-      if (!language || typeof language === 'object') {
-        // Try to get from root context if available
-        const context = this as any;
-        language = context?.language || 'en';
+    // Usage: {{t "resume.summary" language}} or {{t this.level @root.language}}
+    Handlebars.registerHelper('t', function (...args: unknown[]) {
+      // Handlebars always passes options as the last argument
+      const options = args[args.length - 1] as Handlebars.HelperOptions;
+      const key = args[0] as string;
+      const passedLanguage = args.length > 2 ? args[1] : undefined;
+
+      // Determine the language: use passed value, or get from root context via options.data.root
+      let lang: string;
+      if (typeof passedLanguage === 'string' && passedLanguage) {
+        lang = passedLanguage;
+      } else if (options?.data?.root?.language) {
+        lang = options.data.root.language as string;
+      } else {
+        lang = 'en';
       }
 
-      const lang = language || 'en';
       const translations: Record<string, Record<string, string>> = {
         contact: {
           en: 'Contact',
@@ -350,6 +357,63 @@ export class TemplateRendererService {
           fr: 'Projets Clés',
           es: 'Proyectos Clave',
           it: 'Progetti Chiave',
+        },
+        // Language proficiency levels
+        'level.native': {
+          en: 'Native',
+          de: 'Muttersprache',
+          fr: 'Langue maternelle',
+          es: 'Nativo',
+          it: 'Madrelingua',
+        },
+        'level.fluent': {
+          en: 'Fluent',
+          de: 'Fließend',
+          fr: 'Courant',
+          es: 'Fluido',
+          it: 'Fluente',
+        },
+        'level.good': {
+          en: 'Good',
+          de: 'Gut',
+          fr: 'Bon',
+          es: 'Bueno',
+          it: 'Buono',
+        },
+        'level.basic': {
+          en: 'Basic',
+          de: 'Grundkenntnisse',
+          fr: 'Notions de base',
+          es: 'Básico',
+          it: 'Base',
+        },
+        'level.conversational': {
+          en: 'Conversational',
+          de: 'Konversationssicher',
+          fr: 'Conversationnel',
+          es: 'Conversacional',
+          it: 'Conversazionale',
+        },
+        'level.advanced': {
+          en: 'Advanced',
+          de: 'Fortgeschritten',
+          fr: 'Avancé',
+          es: 'Avanzado',
+          it: 'Avanzato',
+        },
+        'level.intermediate': {
+          en: 'Intermediate',
+          de: 'Mittelstufe',
+          fr: 'Intermédiaire',
+          es: 'Intermedio',
+          it: 'Intermedio',
+        },
+        'level.beginner': {
+          en: 'Beginner',
+          de: 'Anfänger',
+          fr: 'Débutant',
+          es: 'Principiante',
+          it: 'Principiante',
         },
       };
 
