@@ -6,59 +6,6 @@
   "isDefault": false,
   "isAtsOptimized": true,
   "previewColor": "#1a1a1a",
-  "colorVariants": [
-    {
-      "id": "classic",
-      "name": "Classic Black",
-      "accent": "#1a1a1a",
-      "headerBg": "#ffffff",
-      "bgSidebar": "#ffffff",
-      "bgSecondary": "#f9f9f9",
-      "textAccent": "#1a1a1a",
-      "borderLight": "#1a1a1a",
-      "isDefault": true
-    },
-    {
-      "id": "navy",
-      "name": "Navy Blue",
-      "accent": "#1e3a5f",
-      "headerBg": "#ffffff",
-      "bgSidebar": "#ffffff",
-      "bgSecondary": "#f5f7fa",
-      "textAccent": "#1e3a5f",
-      "borderLight": "#1e3a5f"
-    },
-    {
-      "id": "forest",
-      "name": "Forest Green",
-      "accent": "#2d5a3d",
-      "headerBg": "#ffffff",
-      "bgSidebar": "#ffffff",
-      "bgSecondary": "#f5f8f6",
-      "textAccent": "#2d5a3d",
-      "borderLight": "#2d5a3d"
-    },
-    {
-      "id": "burgundy",
-      "name": "Burgundy",
-      "accent": "#722f37",
-      "headerBg": "#ffffff",
-      "bgSidebar": "#ffffff",
-      "bgSecondary": "#faf5f5",
-      "textAccent": "#722f37",
-      "borderLight": "#722f37"
-    },
-    {
-      "id": "charcoal",
-      "name": "Charcoal Gray",
-      "accent": "#4a4a4a",
-      "headerBg": "#ffffff",
-      "bgSidebar": "#ffffff",
-      "bgSecondary": "#f7f7f7",
-      "textAccent": "#4a4a4a",
-      "borderLight": "#4a4a4a"
-    }
-  ],
   "customTemplates": {
     "resume": "resume.hbs",
     "coverLetter": "cover-letter.hbs"
