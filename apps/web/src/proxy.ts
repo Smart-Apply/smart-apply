@@ -16,11 +16,11 @@ export function proxy(request: NextRequest) {
     : `'self' ${apiOrigin}`;
   
   // Set CSP header dynamically based on runtime environment
+  // Note: 'unsafe-eval' is required for Handlebars template compilation in the browser
+  // This is needed for the template preview feature which renders Handlebars templates client-side
   const csp = [
     "default-src 'self'",
-    isDevelopment 
-      ? "script-src 'self' 'unsafe-eval' 'unsafe-inline'" 
-      : "script-src 'self' 'unsafe-inline'",
+    "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
     "style-src 'self' 'unsafe-inline'",
     `img-src 'self' data: https: ${apiOrigin}`,
     "font-src 'self' data:",
