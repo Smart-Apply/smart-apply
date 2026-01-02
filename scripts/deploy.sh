@@ -21,7 +21,11 @@ npm run build --workspace=@smart-apply/shared
 npm run build --workspace=apps/api
 npm run build --workspace=apps/web
 
-echo "🗃️ Database migrations..."
+echo "� Copying static files for standalone..."
+cp -r /home/azureuser/smart-apply/apps/web/.next/static /home/azureuser/smart-apply/apps/web/.next/standalone/apps/web/.next/
+cp -r /home/azureuser/smart-apply/apps/web/public /home/azureuser/smart-apply/apps/web/.next/standalone/apps/web/
+
+echo "�🗃️ Database migrations..."
 cd apps/api
 npx prisma generate
 npx prisma db push --skip-generate
