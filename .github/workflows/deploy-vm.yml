@@ -55,8 +55,15 @@ jobs:
           host: ${{ env.VM_HOST }}
           username: ${{ env.VM_USER }}
           key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
+          port: 22
+          timeout: 60s
+          command_timeout: 30m
           script: |
             set -e
+            
+            # Source Node.js (fnm)
+            export PATH="/home/azureuser/.local/share/fnm:$PATH"
+            eval "$(fnm env)"
             
             echo "📦 Pulling latest code..."
             cd ${{ env.APP_DIR }}
@@ -64,7 +71,7 @@ jobs:
             git reset --hard origin/main
             
             echo "📥 Installing dependencies..."
-            npm ci --omit=dev
+            npm ci
             
             echo "🔨 Building shared package..."
             npm run build --workspace=@smart-apply/shared
