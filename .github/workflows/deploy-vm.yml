@@ -60,14 +60,29 @@ jobs:
           command_timeout: 30m
           debug: true
           script: |
-            set -e
+            set -ex
             
-            # Source Node.js (fnm)
-            export PATH="/home/azureuser/.local/share/fnm:$PATH"
-            eval "$(fnm env)"
+            echo "🔍 Debug info..."
+            whoami
+            pwd
+            
+            # Source Node.js (fnm) - try multiple locations
+            export FNM_PATH="/home/azureuser/.local/share/fnm"
+            if [ -d "$FNM_PATH" ]; then
+              export PATH="$FNM_PATH:$PATH"
+              eval "$(fnm env --shell bash)"
+            elif [ -f "/home/azureuser/.bashrc" ]; then
+              source /home/azureuser/.bashrc
+            fi
+            
+            echo "Node version:"
+            node -v || echo "Node not found!"
+            echo "npm version:"
+            npm -v || echo "npm not found!"
             
             echo "📦 Pulling latest code..."
-            cd ${{ env.APP_DIR }}
+            cd /home/azureuser/smart-apply
+            git status
             git fetch origin main
             git reset --hard origin/main
             
@@ -90,7 +105,7 @@ jobs:
             cd ../..
             
             echo "🔄 Restarting services..."
-            pm2 restart all
+            pm2 restart all || pm2 start ecosystem.config.js
             
             echo "✅ Deployment complete!"
             pm2 status
