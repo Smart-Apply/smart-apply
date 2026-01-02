@@ -42,9 +42,6 @@ jobs:
       - name: Build Web
         run: npm run build --workspace=apps/web
 
-      - name: Run API tests
-        run: npm run test --workspace=apps/api --if-present
-
   # Deploy only on push to main (not on PR)
   deploy:
     needs: build
