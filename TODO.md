@@ -184,8 +184,7 @@ vercel --prod
 - Environment Variables (Production)
 - CI/CD Pipeline (GitHub Actions)
 - Database Migrations
-- Rollback Procedures
-- Troubleshooting
+- Rollback Procedure
 
 ---
 
