@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth-store';
+import { useProfile } from '@/hooks/use-profile';
 import { api } from '@/lib/api-client';
 import { Application, ApplicationTrackingStatus } from '@/types';
+import { calculateProfileStrength } from '@/lib/profile-utils';
 import {
   Card,
   CardContent,
@@ -68,6 +70,7 @@ const STATUS_CONFIG: Record<
 export default function DashboardPage() {
   const router = useRouter();
   const { user } = useAuthStore();
+  const { data: profile, isLoading: isProfileLoading } = useProfile();
   const [applications, setApplications] = useState<Application[]>([]);
   const [stats, setStats] = useState({
     total: 0,
@@ -76,6 +79,9 @@ export default function DashboardPage() {
     offers: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
+
+  // Calculate profile strength using centralized utility
+  const profileStrength = calculateProfileStrength(profile, user);
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -282,39 +288,50 @@ export default function DashboardPage() {
               <CardDescription>Vervollständige dein Profil</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-end justify-between">
-                  <span className="text-2xl font-bold text-primary">85%</span>
-                  <span className="text-sm text-muted-foreground mb-1">Fast geschafft!</span>
+              {isProfileLoading ? (
+                <div className="flex h-32 items-center justify-center">
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
                 </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full bg-primary transition-all duration-500 ease-out"
-                    style={{ width: '85%' }}
-                  />
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-end justify-between">
+                    <span className="text-2xl font-bold text-primary">{profileStrength.score}%</span>
+                    <span className="text-sm text-muted-foreground mb-1">
+                      {profileStrength.score === 100 ? 'Perfekt!' : 'Fast geschafft!'}
+                    </span>
+                  </div>
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full bg-primary transition-all duration-500 ease-out"
+                      style={{ width: `${profileStrength.score}%` }}
+                    />
+                  </div>
+                  <div className="space-y-2 pt-2">
+                    {profileStrength.suggestions.slice(0, 3).map((suggestion, index) => (
+                      <div 
+                        key={index}
+                        className={`flex items-center gap-2 text-sm ${
+                          suggestion.completed ? 'text-muted-foreground' : 'text-foreground font-medium'
+                        }`}
+                      >
+                        {suggestion.completed ? (
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <div className="h-4 w-4 rounded-full border-2 border-primary/30" />
+                        )}
+                        <span>{suggestion.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="w-full mt-2"
+                    onClick={() => router.push('/profile')}
+                  >
+                    Profil bearbeiten
+                  </Button>
                 </div>
-                <div className="space-y-2 pt-2">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>Lebenslauf hochgeladen</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span>Kontaktdaten vollständig</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-foreground font-medium">
-                    <div className="h-4 w-4 rounded-full border-2 border-primary/30" />
-                    <span>LinkedIn verknüpfen</span>
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  className="w-full mt-2"
-                  onClick={() => router.push('/profile')}
-                >
-                  Profil bearbeiten
-                </Button>
-              </div>
+              )}
             </CardContent>
           </Card>
 

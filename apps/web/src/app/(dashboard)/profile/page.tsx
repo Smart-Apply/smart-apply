@@ -2,6 +2,7 @@
 
 import { useProfile } from '@/hooks/use-profile';
 import { useAuthStore } from '@/stores/auth-store';
+import { calculateProfileStrength } from '@/lib/profile-utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -60,21 +61,8 @@ export default function ProfilePage() {
     );
   }
 
-  // Calculate Profile Strength
-  const calculateStrength = () => {
-    let score = 0;
-    if (user?.firstName && user?.lastName) score += 10;
-    if (user?.email) score += 10;
-    if (profile?.phone) score += 10;
-    if (profile?.location) score += 10;
-    if (profile?.summary) score += 15;
-    if (profile?.skills?.length && profile.skills.length > 0) score += 15;
-    if (profile?.experiences?.length && profile.experiences.length > 0) score += 15;
-    if (profile?.education?.length && profile.education.length > 0) score += 15;
-    return Math.min(score, 100);
-  };
-
-  const profileStrength = calculateStrength();
+  // Calculate Profile Strength using centralized utility
+  const profileStrength = calculateProfileStrength(profile, user).score;
   const hasSkills = profile?.skills && profile.skills.length > 0;
   const hasLanguages = profile?.languages && profile.languages.length > 0;
   const hasExperiences = profile?.experiences && profile.experiences.length > 0;
