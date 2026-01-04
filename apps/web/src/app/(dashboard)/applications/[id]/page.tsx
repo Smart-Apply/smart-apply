@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/auth-store';
-import { api } from '@/lib/api-client';
+import { api, authenticatedFetch } from '@/lib/api-client';
 import { useCreateApplication, useRetryApplication } from '@/hooks/use-applications';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -322,9 +322,7 @@ export default function ApplicationDetailPage() {
 
     try {
       const url = `${process.env.NEXT_PUBLIC_API_URL}/applications/${application.id}/download/cover-letter`;
-      const response = await fetch(url, {
-        credentials: 'include',
-      });
+      const response = await authenticatedFetch(url);
 
       if (!response.ok) {
         throw new Error('Failed to fetch PDF');
@@ -354,9 +352,7 @@ export default function ApplicationDetailPage() {
 
     try {
       const url = `${process.env.NEXT_PUBLIC_API_URL}/applications/${application.id}/download/resume`;
-      const response = await fetch(url, {
-        credentials: 'include',
-      });
+      const response = await authenticatedFetch(url);
 
       if (!response.ok) {
         throw new Error('Failed to fetch PDF');

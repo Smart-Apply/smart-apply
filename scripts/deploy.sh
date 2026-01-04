@@ -33,7 +33,7 @@ cd ../..
 
 echo "🔄 Restarting services..."
 pm2 delete all || true
-pm2 start /home/azureuser/smart-apply/dist/apps/api/main.js --name "api"
+pm2 start /home/azureuser/smart-apply/dist/apps/api/main.js --name "api" --cwd /home/azureuser/smart-apply/apps/api
 PORT=3001 pm2 start /home/azureuser/smart-apply/apps/web/.next/standalone/apps/web/server.js --name "web"
 pm2 save
 

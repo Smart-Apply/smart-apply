@@ -3,18 +3,18 @@
  */
 
 import { toast } from 'sonner';
+import { authenticatedFetch } from './api-client';
 
 /**
  * Download a file from a URL with a custom filename
+ * Uses authenticatedFetch for automatic token refresh on 401
  */
 export async function downloadFile(
   url: string, 
   filename: string
 ): Promise<void> {
   try {
-    const response = await fetch(url, { 
-      credentials: 'include' // Send cookies with request
-    });
+    const response = await authenticatedFetch(url);
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -40,6 +40,7 @@ export async function downloadFile(
 
 /**
  * Download multiple files as a ZIP archive
+ * Uses authenticatedFetch for automatic token refresh on 401
  */
 export async function downloadAsZip(
   files: Array<{ url: string; filename: string }>,
@@ -50,9 +51,9 @@ export async function downloadAsZip(
     const JSZip = (await import('jszip')).default;
     const zip = new JSZip();
     
-    // Download all files in parallel
+    // Download all files in parallel with authenticated fetch
     const downloadPromises = files.map(async ({ url, filename }) => {
-      const response = await fetch(url, { credentials: 'include' });
+      const response = await authenticatedFetch(url);
       if (!response.ok) {
         throw new Error(`Failed to download ${filename}`);
       }

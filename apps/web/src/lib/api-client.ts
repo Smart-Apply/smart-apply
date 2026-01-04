@@ -285,6 +285,47 @@ export function resetAuthRedirectFlag(): void {
 }
 
 /**
+ * Authenticated fetch wrapper for non-JSON requests (e.g., PDF downloads, blob fetches)
+ * Handles automatic token refresh on 401 errors
+ * 
+ * Use this instead of raw fetch() for any authenticated endpoint that doesn't return JSON
+ */
+export async function authenticatedFetch(
+  url: string,
+  options: RequestInit = {}
+): Promise<Response> {
+  const makeRequest = async (isRetryAfterRefresh = false): Promise<Response> => {
+    const response = await fetch(url, {
+      ...options,
+      credentials: 'include', // Always include cookies
+    });
+
+    // Handle 401 Unauthorized with automatic token refresh
+    if (response.status === 401 && !isRetryAfterRefresh) {
+      // Don't try to refresh if already redirecting
+      if (isRedirectingToLogin) {
+        throw new Error('Session expired. Redirecting to login...');
+      }
+
+      // Try to refresh the token
+      const refreshed = await refreshAccessToken();
+
+      if (refreshed) {
+        // Retry the original request with new access token
+        return makeRequest(true);
+      } else {
+        // Refresh failed, clear auth and redirect to login
+        handleAuthFailure();
+      }
+    }
+
+    return response;
+  };
+
+  return makeRequest();
+}
+
+/**
  * API Client methods
  */
 export const api = {
