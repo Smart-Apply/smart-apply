@@ -89,11 +89,11 @@ export default function DashboardPage() {
           total: apps.length,
           active: apps.filter(
             (a: Application) =>
-              !['REJECTED', 'WITHDRAWN', 'OFFER', 'ACCEPTED'].includes(a.applicationStatus)
+              !['REJECTED', 'ACCEPTED'].includes(a.applicationStatus)
           ).length,
           interviews: apps.filter((a: Application) => a.applicationStatus === 'INTERVIEW')
             .length,
-          offers: apps.filter((a: Application) => ['OFFER', 'ACCEPTED'].includes(a.applicationStatus)).length,
+          offers: apps.filter((a: Application) => a.applicationStatus === 'ACCEPTED').length,
         };
         setStats(newStats);
       } catch (error) {
