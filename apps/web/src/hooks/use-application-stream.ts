@@ -72,7 +72,7 @@ export function useApplicationStream(applicationId: string | undefined): UseAppl
         }
       } catch (err) {
         console.error('Failed to parse SSE event:', err);
-        setError('Failed to parse status update');
+        setError('Status konnte nicht verarbeitet werden');
       }
     };
 

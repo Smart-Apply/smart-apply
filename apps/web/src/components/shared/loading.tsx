@@ -9,7 +9,7 @@ interface FullPageLoaderProps {
   className?: string
 }
 
-export function FullPageLoader({ message = "Loading...", className }: FullPageLoaderProps) {
+export function FullPageLoader({ message = "Laden...", className }: FullPageLoaderProps) {
   return (
     <div
       className={cn(
@@ -33,7 +33,7 @@ interface CenteredLoaderProps {
   className?: string
 }
 
-export function CenteredLoader({ message = "Loading...", className }: CenteredLoaderProps) {
+export function CenteredLoader({ message = "Laden...", className }: CenteredLoaderProps) {
   return (
     <div className={cn("flex items-center justify-center py-12", className)}>
       <div className="text-center">
@@ -57,7 +57,7 @@ export function InlineLoader({
 }: InlineLoaderProps) {
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      <Spinner size={size} label={message || "Loading..."} />
+      <Spinner size={size} label={message || "Laden..."} />
       {message && <span className="text-sm text-muted-foreground">{message}</span>}
     </div>
   )

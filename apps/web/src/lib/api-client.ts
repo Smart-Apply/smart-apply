@@ -151,7 +151,7 @@ async function apiRequest<T>(
         if (typeof window !== 'undefined') {
           const { toast } = await import('sonner');
           toast.warning(
-            `Nur noch ${rateLimitRemaining} Anfragen verfügbar. ` +
+            `Nur noch ${rateLimitRemaining} Aktionen verfügbar. ` +
             `Limit wird zurückgesetzt in ${minutesUntilReset} Minute${minutesUntilReset !== 1 ? 'n' : ''}.`
           );
         }
@@ -168,7 +168,7 @@ async function apiRequest<T>(
           
           throw new ApiError(
             429,
-            `Zu viele Anfragen. Bitte warte ${retryMinutes} Minute${retryMinutes !== 1 ? 'n' : ''} und versuche es erneut.`,
+            `Zu viele Aktionen. Bitte warte ${retryMinutes} Minute${retryMinutes !== 1 ? 'n' : ''} und versuche es erneut.`,
             errorData
           );
         }

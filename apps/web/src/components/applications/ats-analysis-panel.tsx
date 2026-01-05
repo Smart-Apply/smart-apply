@@ -5,9 +5,16 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
   RefreshCw,
   Sparkles,
   AlertTriangle,
+  Info,
 } from 'lucide-react';
 import { MatchScoreCard } from './match-score-card';
 import { KeywordsOverview } from './keywords-overview';
@@ -116,6 +123,19 @@ export function ATSAnalysisPanel({
           <h2 className="text-xl font-semibold flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
             ATS-Analyse
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="text-xs">
+                    ATS (Applicant Tracking System) = Bewerbermanagementsystem.
+                    Viele Unternehmen filtern Bewerbungen automatisch nach Schlüsselbegriffen.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </h2>
           <p className="text-sm text-muted-foreground">
             Analysiert am {new Date(analysis.analyzedAt).toLocaleDateString('de-DE', {

@@ -117,9 +117,9 @@ export function JobPostingParser({ onSave }: JobPostingParserProps) {
             <div className="flex items-center gap-2">
               <LinkIcon className="h-5 w-5 text-muted-foreground" />
               <div>
-                <CardTitle>Von URL importieren</CardTitle>
+                <CardTitle>Per Link hinzufügen</CardTitle>
                 <CardDescription>
-                  Füge eine Stellenanzeige per URL hinzu und lasse sie automatisch parsen
+                  Füge eine Stellenanzeige per Link hinzu und lasse sie automatisch analysieren
                 </CardDescription>
               </div>
             </div>
@@ -127,7 +127,7 @@ export function JobPostingParser({ onSave }: JobPostingParserProps) {
           <CardContent>
             <form onSubmit={urlForm.handleSubmit(handleUrlParse)} className="space-y-4">
               <div>
-                <Label htmlFor="url">URL der Stellenanzeige</Label>
+                <Label htmlFor="url">Link zur Stellenanzeige</Label>
                 <p className="text-sm text-muted-foreground mb-2">
                   Unterstützt werden LinkedIn, Indeed und weitere Jobportale
                 </p>
@@ -149,7 +149,7 @@ export function JobPostingParser({ onSave }: JobPostingParserProps) {
                 loading={parseJobPosting.isPending}
                 className="w-full"
               >
-                Stellenanzeige parsen
+                Stellenanzeige analysieren
               </Button>
             </form>
           </CardContent>
@@ -162,14 +162,14 @@ export function JobPostingParser({ onSave }: JobPostingParserProps) {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Geparste Stellenanzeige</CardTitle>
+                <CardTitle>Analysierte Stellenanzeige</CardTitle>
                 <CardDescription>
                   Überprüfe die extrahierten Informationen
                 </CardDescription>
               </div>
               <Badge variant="default" className="gap-1">
                 <Check className="h-3 w-3" />
-                Erfolgreich geparst
+                Erfolgreich analysiert
               </Badge>
             </div>
           </CardHeader>
@@ -234,7 +234,7 @@ export function JobPostingParser({ onSave }: JobPostingParserProps) {
                 Bearbeiten
               </Button>
               <Button onClick={handleReset} variant="outline" className="flex-1">
-                Neu parsen
+                Neu analysieren
               </Button>
               {onSave && (
                 <Button onClick={() => onSave(parsedData)} className="flex-1">
@@ -346,7 +346,7 @@ export function JobPostingParser({ onSave }: JobPostingParserProps) {
                 </p>
                 <p className="text-sm text-blue-700">
                   Du kannst Stellenanzeigen von LinkedIn, Indeed und anderen Jobportalen 
-                  importieren. Falls das Parsen fehlschlägt, kannst du die Informationen 
+                  importieren. Falls die Analyse fehlschlägt, kannst du die Informationen 
                   auch manuell eingeben.
                 </p>
               </div>

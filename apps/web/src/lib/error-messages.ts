@@ -74,7 +74,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
   [ErrorCode.USER_NOT_FOUND]: 'Benutzer nicht gefunden. Bitte melde dich erneut an.',
   [ErrorCode.REFRESH_TOKEN_INVALID]: 'Deine Sitzung ist abgelaufen. Bitte melde dich erneut an.',
   [ErrorCode.REFRESH_TOKEN_NOT_FOUND]: 'Deine Sitzung ist abgelaufen. Bitte melde dich erneut an.',
-  [ErrorCode.INVALID_TOKEN_TYPE]: 'Ungültiger Token-Typ. Bitte melde dich erneut an.',
+  [ErrorCode.INVALID_TOKEN_TYPE]: 'Deine Anmeldung ist ungültig. Bitte melde dich erneut an.',
   [ErrorCode.SESSION_EXPIRED]: 'Deine Sitzung ist abgelaufen. Bitte melde dich erneut an.',
   
   // Profile errors
@@ -108,10 +108,10 @@ export const ERROR_MESSAGES: Record<string, string> = {
   // Password errors
   [ErrorCode.PASSWORD_INCORRECT]: 'Das aktuelle Passwort ist falsch. Bitte versuche es erneut.',
   [ErrorCode.PASSWORD_SAME_AS_CURRENT]: 'Das neue Passwort muss sich vom aktuellen Passwort unterscheiden.',
-  [ErrorCode.PASSWORD_CHANGE_OAUTH]: 'Passwort kann für OAuth-Konten nicht geändert werden.',
+  [ErrorCode.PASSWORD_CHANGE_OAUTH]: 'Passwort kann für Konten mit externem Login (z.B. Google) nicht geändert werden.',
   
   // Rate limiting
-  [ErrorCode.RATE_LIMIT_EXCEEDED]: 'Zu viele Anfragen. Bitte warte einen Moment und versuche es erneut.',
+  [ErrorCode.RATE_LIMIT_EXCEEDED]: 'Zu viele Aktionen. Bitte warte einen Moment und versuche es erneut.',
   
   // Client-side errors
   [ErrorCode.NETWORK_ERROR]: 'Keine Internetverbindung. Bitte überprüfe deine Verbindung.',
@@ -119,11 +119,11 @@ export const ERROR_MESSAGES: Record<string, string> = {
   // Generic errors
   [ErrorCode.INTERNAL_SERVER_ERROR]: 'Ein Fehler ist aufgetreten. Bitte versuche es später erneut.',
   [ErrorCode.VALIDATION_ERROR]: 'Ungültige Eingabe. Bitte überprüfe deine Daten.',
-  [ErrorCode.NOT_FOUND]: 'Die angeforderte Ressource wurde nicht gefunden.',
+  [ErrorCode.NOT_FOUND]: 'Der angeforderte Inhalt wurde nicht gefunden.',
   [ErrorCode.FORBIDDEN]: 'Zugriff verweigert. Du hast keine Berechtigung für diese Aktion.',
   
   // CSRF errors (from backend)
-  EBADCSRFTOKEN: 'Sicherheitstoken ungültig. Bitte lade die Seite neu und versuche es erneut.',
+  EBADCSRFTOKEN: 'Die Sicherheitsüberprüfung ist fehlgeschlagen. Bitte lade die Seite neu und versuche es erneut.',
 };
 
 /**

@@ -46,7 +46,7 @@ export function ATSScoreCell({ applicationId, status }: ATSScoreCellProps) {
             </div>
           </TooltipTrigger>
           <TooltipContent>
-            <p className="text-xs">ATS-Analyse nicht verfügbar</p>
+            <p className="text-xs">Bewerbungscheck nicht verfügbar</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>

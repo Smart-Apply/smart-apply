@@ -148,7 +148,7 @@ export function ResumePreview({ resume }: ResumePreviewProps) {
           )}
 
           <Divider />
-          <p className="text-center text-xs text-slate-400">HTML-Vorschau · Finales PDF wird während des Exports gerendert</p>
+          <p className="text-center text-xs text-slate-400">Vorschau · Das finale PDF wird beim Herunterladen erstellt</p>
         </article>
       </div>
     </div>

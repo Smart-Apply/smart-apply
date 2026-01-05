@@ -113,7 +113,7 @@ export function KeywordsOverview({
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-lg">
             <Tag className="h-5 w-5" />
-            ATS-Keywords
+            Schlüsselbegriffe
           </CardTitle>
           <div className="flex items-center gap-2">
             <Badge variant="secondary" className="flex items-center gap-1">

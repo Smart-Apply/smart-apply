@@ -8,7 +8,7 @@ function Skeleton({
     <div
       className={cn("animate-pulse rounded-md bg-muted", className)}
       role="status"
-      aria-label="Loading..."
+      aria-label="Laden..."
       {...props}
     />
   )

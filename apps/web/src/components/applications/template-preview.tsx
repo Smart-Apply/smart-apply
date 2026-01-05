@@ -906,7 +906,7 @@ export function ResumeTemplatePreview({ resume, templateId, language = 'en' }: R
     return (
       <div className="flex items-center justify-center h-64 bg-slate-50 rounded-lg">
         <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
-        <span className="ml-2 text-sm text-slate-500">Template wird geladen...</span>
+        <span className="ml-2 text-sm text-slate-500">Vorlage wird geladen...</span>
       </div>
     );
   }
@@ -914,7 +914,7 @@ export function ResumeTemplatePreview({ resume, templateId, language = 'en' }: R
   if (error || !template) {
     return (
       <div className="flex items-center justify-center h-64 bg-red-50 rounded-lg border border-red-200">
-        <p className="text-sm text-red-600">Template konnte nicht geladen werden</p>
+        <p className="text-sm text-red-600">Vorlage konnte nicht geladen werden</p>
       </div>
     );
   }
@@ -925,7 +925,7 @@ export function ResumeTemplatePreview({ resume, templateId, language = 'en' }: R
     <div className="w-full rounded-lg border border-slate-200 bg-white shadow-sm flex flex-col">
       <div className="bg-slate-100 px-3 py-2 border-b border-slate-200 shrink-0">
         <p className="text-xs font-medium text-slate-600">
-          Template: <span className="text-slate-900">{template.name}</span>
+          Vorlage: <span className="text-slate-900">{template.name}</span>
           <span className="ml-2 text-slate-400">({template.category})</span>
           {isDefaultTemplate && <span className="ml-2 text-blue-600">(Standard)</span>}
         </p>
@@ -933,7 +933,7 @@ export function ResumeTemplatePreview({ resume, templateId, language = 'en' }: R
       <div className="flex-1 min-h-0">
         <iframe
           ref={iframeRef}
-          title="Resume Preview"
+          title="Lebenslauf-Vorschau"
           className="w-full border-0"
           style={{ background: '#f8fafc', minHeight: '800px' }}
           sandbox="allow-same-origin allow-scripts"
@@ -1167,7 +1167,7 @@ export function CoverLetterTemplatePreview({
     return (
       <div className="flex items-center justify-center h-64 bg-slate-50 rounded-lg">
         <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
-        <span className="ml-2 text-sm text-slate-500">Template wird geladen...</span>
+        <span className="ml-2 text-sm text-slate-500">Vorlage wird geladen...</span>
       </div>
     );
   }
@@ -1175,7 +1175,7 @@ export function CoverLetterTemplatePreview({
   if (error || !template) {
     return (
       <div className="flex items-center justify-center h-64 bg-red-50 rounded-lg border border-red-200">
-        <p className="text-sm text-red-600">Template konnte nicht geladen werden</p>
+        <p className="text-sm text-red-600">Vorlage konnte nicht geladen werden</p>
       </div>
     );
   }
@@ -1187,7 +1187,7 @@ export function CoverLetterTemplatePreview({
       <div className="w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
         <div className="bg-slate-100 px-3 py-2 border-b border-slate-200">
           <p className="text-xs font-medium text-slate-600">
-            Template: <span className="text-slate-900">{template.name}</span>
+            Vorlage: <span className="text-slate-900">{template.name}</span>
             {isDefaultTemplate && <span className="ml-2 text-blue-600">(Standard)</span>}
           </p>
         </div>
@@ -1202,7 +1202,7 @@ export function CoverLetterTemplatePreview({
     <div className="w-full h-full rounded-lg border border-slate-200 bg-white shadow-sm flex flex-col">
       <div className="bg-slate-100 px-3 py-2 border-b border-slate-200 flex-shrink-0">
         <p className="text-xs font-medium text-slate-600">
-          Template: <span className="text-slate-900">{template.name}</span>
+          Vorlage: <span className="text-slate-900">{template.name}</span>
           <span className="ml-2 text-slate-400">({template.category})</span>
           {isDefaultTemplate && <span className="ml-2 text-blue-600">(Standard)</span>}
         </p>
@@ -1210,7 +1210,7 @@ export function CoverLetterTemplatePreview({
       <div className="flex-1 min-h-0">
         <iframe
           ref={iframeRef}
-          title="Cover Letter Preview"
+          title="Anschreiben-Vorschau"
           className="w-full border-0"
           style={{ minHeight: '800px', background: '#f8fafc' }}
           sandbox="allow-same-origin allow-scripts"

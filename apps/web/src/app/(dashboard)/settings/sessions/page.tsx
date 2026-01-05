@@ -98,7 +98,7 @@ function SessionCard({ session, isCurrentSession, onRevoke }: {
           </div>
         </div>
         {isCurrentSession && (
-          <Badge variant="default" className="ml-2">Current</Badge>
+          <Badge variant="default" className="ml-2">Aktuell</Badge>
         )}
       </CardHeader>
       <CardContent>
@@ -122,7 +122,7 @@ function SessionCard({ session, isCurrentSession, onRevoke }: {
             className="text-destructive hover:text-destructive"
           >
             <LogOut className="h-4 w-4 mr-2" />
-            {isCurrentSession ? 'Logout' : 'Revoke'}
+            {isCurrentSession ? 'Abmelden' : 'Beenden'}
           </Button>
         </div>
       </CardContent>
@@ -149,9 +149,9 @@ export default function SessionsPage() {
   if (isLoading) {
     return (
       <div className="container mx-auto py-8 px-4">
-        <h1 className="text-3xl font-bold mb-2">Active Sessions</h1>
+        <h1 className="text-3xl font-bold mb-2">Aktive Sitzungen</h1>
         <p className="text-muted-foreground mb-8">
-          Manage your active sessions across different devices.
+          Verwalte deine aktiven Sitzungen auf verschiedenen Geräten.
         </p>
         <div className="space-y-4">
           {[1, 2].map((i) => (
@@ -173,15 +173,15 @@ export default function SessionsPage() {
   if (error) {
     return (
       <div className="container mx-auto py-8 px-4">
-        <h1 className="text-3xl font-bold mb-2">Active Sessions</h1>
+        <h1 className="text-3xl font-bold mb-2">Aktive Sitzungen</h1>
         <Card className="border-destructive">
           <CardHeader>
             <CardTitle className="text-destructive flex items-center gap-2">
               <AlertTriangle className="h-5 w-5" />
-              Error Loading Sessions
+              Fehler beim Laden der Sitzungen
             </CardTitle>
             <CardDescription>
-              {error.message || 'Failed to load active sessions'}
+              {error.message || 'Aktive Sitzungen konnten nicht geladen werden'}
             </CardDescription>
           </CardHeader>
         </Card>
@@ -197,30 +197,30 @@ export default function SessionsPage() {
   return (
     <div className="container mx-auto py-8 px-4 max-w-4xl">
       <div className="flex items-center justify-between mb-2">
-        <h1 className="text-3xl font-bold">Active Sessions</h1>
+        <h1 className="text-3xl font-bold">Aktive Sitzungen</h1>
         {sessions.length > 1 && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="destructive" size="sm">
                 <LogOut className="h-4 w-4 mr-2" />
-                Logout All Devices
+                Von allen Geräten abmelden
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Logout from all devices?</AlertDialogTitle>
+                <AlertDialogTitle>Von allen Geräten abmelden?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will log you out from all {sessions.length} active session{sessions.length !== 1 ? 's' : ''}, including this device. 
-                  You&apos;ll need to login again on all devices.
+                  Du wirst von allen {sessions.length} aktiven Sitzung{sessions.length !== 1 ? 'en' : ''} abgemeldet, einschließlich diesem Gerät.
+                  Du musst dich auf allen Geräten neu anmelden.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={handleRevokeAll}
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
-                  Logout All Devices
+                  Von allen Geräten abmelden
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -229,7 +229,7 @@ export default function SessionsPage() {
       </div>
       
       <p className="text-muted-foreground mb-8">
-        Manage your active sessions across different devices. You can revoke access from any device at any time.
+        Verwalte deine aktiven Sitzungen auf verschiedenen Geräten. Du kannst den Zugriff von jedem Gerät jederzeit beenden.
       </p>
 
       <div className="space-y-6">
@@ -237,7 +237,7 @@ export default function SessionsPage() {
         {currentSession && (
           <div>
             <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
-              Current Session
+              Aktuelle Sitzung
             </h2>
             <SessionCard
               session={currentSession}
@@ -253,7 +253,7 @@ export default function SessionsPage() {
             <Separator />
             <div>
               <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
-                Other Sessions ({otherSessions.length})
+                Andere Sitzungen ({otherSessions.length})
               </h2>
               <div className="space-y-3">
                 {otherSessions.map((session) => (

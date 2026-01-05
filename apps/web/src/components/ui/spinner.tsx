@@ -24,7 +24,7 @@ export interface SpinnerProps
   label?: string
 }
 
-function Spinner({ className, size, label = "Loading...", ...props }: SpinnerProps) {
+function Spinner({ className, size, label = "Laden...", ...props }: SpinnerProps) {
   return (
     <div
       role="status"

@@ -222,7 +222,7 @@ export function ATSScoreSidebar({
                 ))}
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                Füge diese Keywords in deinen Lebenslauf ein, um den ATS-Score zu erhöhen
+                Füge diese Schlüsselbegriffe in deinen Lebenslauf ein, um deine Bewertung zu verbessern
               </p>
             </div>
           )}

@@ -35,19 +35,19 @@ export function useRevokeSession() {
 
       if (isCurrentSession) {
         // User logged out from current session - redirect to login
-        toast.success('Current session logged out');
+        toast.success('Aktuelle Sitzung abgemeldet');
         clearAuth();
         router.push('/login');
       } else {
         // Successfully revoked another session
-        toast.success('Session revoked successfully');
+        toast.success('Sitzung erfolgreich beendet');
         
         // Invalidate sessions query to refresh the list
         queryClient.invalidateQueries({ queryKey: ['sessions'] });
       }
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to revoke session');
+      toast.error(error.message || 'Sitzung konnte nicht beendet werden');
     },
   });
 }
@@ -63,7 +63,7 @@ export function useRevokeAllSessions() {
   return useMutation({
     mutationFn: () => api.sessions.revokeAll(),
     onSuccess: (data: { message: string; revokedCount: number }) => {
-      toast.success(`Logged out from ${data.revokedCount} device${data.revokedCount !== 1 ? 's' : ''}`);
+      toast.success(`Von ${data.revokedCount} Gerät${data.revokedCount !== 1 ? 'en' : ''} abgemeldet`);
       
       // Clear all queries and logout
       queryClient.clear();
@@ -71,7 +71,7 @@ export function useRevokeAllSessions() {
       router.push('/login');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to logout from all devices');
+      toast.error(error.message || 'Abmeldung von allen Geräten fehlgeschlagen');
     },
   });
 }

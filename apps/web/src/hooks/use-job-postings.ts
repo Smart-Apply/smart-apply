@@ -125,7 +125,7 @@ export function useParseJobPosting() {
       queryClient.setQueryData(['job-postings'], (old: JobPosting[] | undefined) => {
         const tempJobPosting: JobPosting = {
           id: 'temp-' + Date.now(),
-          title: parseData.url ? 'Lädt...' : 'Parsing...',
+          title: parseData.url ? 'Lädt...' : 'Wird analysiert...',
           company: parseData.url || 'Unbekannt',
           description: parseData.text || '',
           sourceUrl: parseData.url,
@@ -144,7 +144,7 @@ export function useParseJobPosting() {
       if (context?.previousJobPostings) {
         queryClient.setQueryData(['job-postings'], context.previousJobPostings);
       }
-      toastError(error, 'Fehler beim Parsen der Stellenanzeige');
+      toastError(error, 'Fehler beim Analysieren der Stellenanzeige');
     },
     
     // Replace temp ID with real data on success
@@ -155,7 +155,7 @@ export function useParseJobPosting() {
           jp.id.startsWith('temp-') ? parsedJobPosting : jp
         );
       });
-      toastSuccess('Stellenanzeige erfolgreich geparst');
+      toastSuccess('Stellenanzeige erfolgreich analysiert');
     },
     
     // Always refetch after mutation for data consistency
