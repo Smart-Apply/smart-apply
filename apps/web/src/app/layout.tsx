@@ -21,12 +21,6 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   title: "Smart Apply - KI-gestützte Bewerbungen",
   description: "Erstelle personalisierte Bewerbungen mit KI-Unterstützung",
-  icons: {
-    icon: [
-      { url: '/Logo/favicon-icon.png', type: 'image/png' },
-    ],
-    apple: '/Logo/favicon-icon.png',
-  },
   openGraph: {
     title: 'Smart Apply - KI-gestützte Bewerbungen',
     description: 'Erstelle personalisierte Bewerbungen mit KI-Unterstützung',
