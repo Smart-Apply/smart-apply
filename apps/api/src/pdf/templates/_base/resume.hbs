@@ -148,7 +148,7 @@
   <div class="section no-break">
     <h2>{{t 'resume.languages'}}</h2>
     <p class="languages-list">
-      {{#each languages}}{{name}}{{#if level}} ({{t level @root.language}}){{/if}}{{#unless @last}}, {{/unless}}{{/each}}
+      {{#each languages}}{{translateLang name @root.language}}{{#if level}} ({{t level @root.language}}){{/if}}{{#unless @last}}, {{/unless}}{{/each}}
     </p>
   </div>
   {{/if}}

@@ -131,7 +131,7 @@ interface HandlebarsWithFlag {
 }
 
 // Helper version - increment this to force re-registration after changes
-const HELPERS_VERSION = 2;
+const HELPERS_VERSION = 3;
 
 // Register Handlebars helpers (same as backend)
 function registerHandlebarsHelpers() {
@@ -342,9 +342,254 @@ function registerHandlebarsHelpers() {
           es: 'Principiante',
           it: 'Principiante',
         },
+        // Language names
+        'lang.english': {
+          en: 'English',
+          de: 'Englisch',
+          fr: 'Anglais',
+          es: 'Inglés',
+          it: 'Inglese',
+        },
+        'lang.german': {
+          en: 'German',
+          de: 'Deutsch',
+          fr: 'Allemand',
+          es: 'Alemán',
+          it: 'Tedesco',
+        },
+        'lang.french': {
+          en: 'French',
+          de: 'Französisch',
+          fr: 'Français',
+          es: 'Francés',
+          it: 'Francese',
+        },
+        'lang.spanish': {
+          en: 'Spanish',
+          de: 'Spanisch',
+          fr: 'Espagnol',
+          es: 'Español',
+          it: 'Spagnolo',
+        },
+        'lang.italian': {
+          en: 'Italian',
+          de: 'Italienisch',
+          fr: 'Italien',
+          es: 'Italiano',
+          it: 'Italiano',
+        },
+        'lang.portuguese': {
+          en: 'Portuguese',
+          de: 'Portugiesisch',
+          fr: 'Portugais',
+          es: 'Portugués',
+          it: 'Portoghese',
+        },
+        'lang.russian': {
+          en: 'Russian',
+          de: 'Russisch',
+          fr: 'Russe',
+          es: 'Ruso',
+          it: 'Russo',
+        },
+        'lang.chinese': {
+          en: 'Chinese',
+          de: 'Chinesisch',
+          fr: 'Chinois',
+          es: 'Chino',
+          it: 'Cinese',
+        },
+        'lang.japanese': {
+          en: 'Japanese',
+          de: 'Japanisch',
+          fr: 'Japonais',
+          es: 'Japonés',
+          it: 'Giapponese',
+        },
+        'lang.arabic': {
+          en: 'Arabic',
+          de: 'Arabisch',
+          fr: 'Arabe',
+          es: 'Árabe',
+          it: 'Arabo',
+        },
+        'lang.dutch': {
+          en: 'Dutch',
+          de: 'Niederländisch',
+          fr: 'Néerlandais',
+          es: 'Neerlandés',
+          it: 'Olandese',
+        },
+        'lang.polish': {
+          en: 'Polish',
+          de: 'Polnisch',
+          fr: 'Polonais',
+          es: 'Polaco',
+          it: 'Polacco',
+        },
+        'lang.turkish': {
+          en: 'Turkish',
+          de: 'Türkisch',
+          fr: 'Turc',
+          es: 'Turco',
+          it: 'Turco',
+        },
+        'lang.swedish': {
+          en: 'Swedish',
+          de: 'Schwedisch',
+          fr: 'Suédois',
+          es: 'Sueco',
+          it: 'Svedese',
+        },
+        'lang.norwegian': {
+          en: 'Norwegian',
+          de: 'Norwegisch',
+          fr: 'Norvégien',
+          es: 'Noruego',
+          it: 'Norvegese',
+        },
+        'lang.danish': {
+          en: 'Danish',
+          de: 'Dänisch',
+          fr: 'Danois',
+          es: 'Danés',
+          it: 'Danese',
+        },
+        'lang.finnish': {
+          en: 'Finnish',
+          de: 'Finnisch',
+          fr: 'Finnois',
+          es: 'Finlandés',
+          it: 'Finlandese',
+        },
+        'lang.greek': {
+          en: 'Greek',
+          de: 'Griechisch',
+          fr: 'Grec',
+          es: 'Griego',
+          it: 'Greco',
+        },
+        'lang.czech': {
+          en: 'Czech',
+          de: 'Tschechisch',
+          fr: 'Tchèque',
+          es: 'Checo',
+          it: 'Ceco',
+        },
+        'lang.hungarian': {
+          en: 'Hungarian',
+          de: 'Ungarisch',
+          fr: 'Hongrois',
+          es: 'Húngaro',
+          it: 'Ungherese',
+        },
+        'lang.romanian': {
+          en: 'Romanian',
+          de: 'Rumänisch',
+          fr: 'Roumain',
+          es: 'Rumano',
+          it: 'Rumeno',
+        },
       };
 
       return translations[key]?.[lang] || translations[key]?.['en'] || key;
+    });
+
+    // Helper to normalize and translate language names
+    // Usage: {{translateLang this.name @root.language}}
+    Handlebars.registerHelper('translateLang', function (this: unknown, languageName: string, ...args: unknown[]) {
+      const options = args[args.length - 1] as Handlebars.HelperOptions;
+      const passedLanguage = args.length > 1 ? args[0] : undefined;
+
+      if (!languageName) return '';
+
+      // Determine target language
+      let lang: string;
+      if (typeof passedLanguage === 'string' && passedLanguage) {
+        lang = passedLanguage;
+      } else if (options?.data?.root?.language) {
+        lang = options.data.root.language as string;
+      } else {
+        lang = 'en';
+      }
+
+      // Normalize language name to translation key
+      const normalized = languageName.toLowerCase().trim();
+      let key = '';
+
+      if (normalized === 'english' || normalized === 'englisch' || normalized === 'anglais' || normalized === 'inglés' || normalized === 'inglese') {
+        key = 'lang.english';
+      } else if (normalized === 'german' || normalized === 'deutsch' || normalized === 'allemand' || normalized === 'alemán' || normalized === 'tedesco') {
+        key = 'lang.german';
+      } else if (normalized === 'french' || normalized === 'französisch' || normalized === 'français' || normalized === 'francés' || normalized === 'francese') {
+        key = 'lang.french';
+      } else if (normalized === 'spanish' || normalized === 'spanisch' || normalized === 'espagnol' || normalized === 'español' || normalized === 'spagnolo') {
+        key = 'lang.spanish';
+      } else if (normalized === 'italian' || normalized === 'italienisch' || normalized === 'italien' || normalized === 'italiano') {
+        key = 'lang.italian';
+      } else if (normalized === 'portuguese' || normalized === 'portugiesisch' || normalized === 'portugais' || normalized === 'portugués' || normalized === 'portoghese') {
+        key = 'lang.portuguese';
+      } else if (normalized === 'russian' || normalized === 'russisch' || normalized === 'russe' || normalized === 'ruso' || normalized === 'russo') {
+        key = 'lang.russian';
+      } else if (normalized === 'chinese' || normalized === 'chinesisch' || normalized === 'chinois' || normalized === 'chino' || normalized === 'cinese') {
+        key = 'lang.chinese';
+      } else if (normalized === 'japanese' || normalized === 'japanisch' || normalized === 'japonais' || normalized === 'japonés' || normalized === 'giapponese') {
+        key = 'lang.japanese';
+      } else if (normalized === 'arabic' || normalized === 'arabisch' || normalized === 'arabe' || normalized === 'árabe' || normalized === 'arabo') {
+        key = 'lang.arabic';
+      } else if (normalized === 'dutch' || normalized === 'niederländisch' || normalized === 'néerlandais' || normalized === 'neerlandés' || normalized === 'olandese') {
+        key = 'lang.dutch';
+      } else if (normalized === 'polish' || normalized === 'polnisch' || normalized === 'polonais' || normalized === 'polaco' || normalized === 'polacco') {
+        key = 'lang.polish';
+      } else if (normalized === 'turkish' || normalized === 'türkisch' || normalized === 'turc' || normalized === 'turco') {
+        key = 'lang.turkish';
+      } else if (normalized === 'swedish' || normalized === 'schwedisch' || normalized === 'suédois' || normalized === 'sueco' || normalized === 'svedese') {
+        key = 'lang.swedish';
+      } else if (normalized === 'norwegian' || normalized === 'norwegisch' || normalized === 'norvégien' || normalized === 'noruego' || normalized === 'norvegese') {
+        key = 'lang.norwegian';
+      } else if (normalized === 'danish' || normalized === 'dänisch' || normalized === 'danois' || normalized === 'danés' || normalized === 'danese') {
+        key = 'lang.danish';
+      } else if (normalized === 'finnish' || normalized === 'finnisch' || normalized === 'finnois' || normalized === 'finlandés' || normalized === 'finlandese') {
+        key = 'lang.finnish';
+      } else if (normalized === 'greek' || normalized === 'griechisch' || normalized === 'grec' || normalized === 'griego' || normalized === 'greco') {
+        key = 'lang.greek';
+      } else if (normalized === 'czech' || normalized === 'tschechisch' || normalized === 'tchèque' || normalized === 'checo' || normalized === 'ceco') {
+        key = 'lang.czech';
+      } else if (normalized === 'hungarian' || normalized === 'ungarisch' || normalized === 'hongrois' || normalized === 'húngaro' || normalized === 'ungherese') {
+        key = 'lang.hungarian';
+      } else if (normalized === 'romanian' || normalized === 'rumänisch' || normalized === 'roumain' || normalized === 'rumano' || normalized === 'rumeno') {
+        key = 'lang.romanian';
+      } else {
+        // Return original if not found
+        return languageName;
+      }
+
+      // Translation mapping (reuse from 't' helper)
+      const translations: Record<string, Record<string, string>> = {
+        'lang.english': { en: 'English', de: 'Englisch', fr: 'Anglais', es: 'Inglés', it: 'Inglese' },
+        'lang.german': { en: 'German', de: 'Deutsch', fr: 'Allemand', es: 'Alemán', it: 'Tedesco' },
+        'lang.french': { en: 'French', de: 'Französisch', fr: 'Français', es: 'Francés', it: 'Francese' },
+        'lang.spanish': { en: 'Spanish', de: 'Spanisch', fr: 'Espagnol', es: 'Español', it: 'Spagnolo' },
+        'lang.italian': { en: 'Italian', de: 'Italienisch', fr: 'Italien', es: 'Italiano', it: 'Italiano' },
+        'lang.portuguese': { en: 'Portuguese', de: 'Portugiesisch', fr: 'Portugais', es: 'Portugués', it: 'Portoghese' },
+        'lang.russian': { en: 'Russian', de: 'Russisch', fr: 'Russe', es: 'Ruso', it: 'Russo' },
+        'lang.chinese': { en: 'Chinese', de: 'Chinesisch', fr: 'Chinois', es: 'Chino', it: 'Cinese' },
+        'lang.japanese': { en: 'Japanese', de: 'Japanisch', fr: 'Japonais', es: 'Japonés', it: 'Giapponese' },
+        'lang.arabic': { en: 'Arabic', de: 'Arabisch', fr: 'Arabe', es: 'Árabe', it: 'Arabo' },
+        'lang.dutch': { en: 'Dutch', de: 'Niederländisch', fr: 'Néerlandais', es: 'Neerlandés', it: 'Olandese' },
+        'lang.polish': { en: 'Polish', de: 'Polnisch', fr: 'Polonais', es: 'Polaco', it: 'Polacco' },
+        'lang.turkish': { en: 'Turkish', de: 'Türkisch', fr: 'Turc', es: 'Turco', it: 'Turco' },
+        'lang.swedish': { en: 'Swedish', de: 'Schwedisch', fr: 'Suédois', es: 'Sueco', it: 'Svedese' },
+        'lang.norwegian': { en: 'Norwegian', de: 'Norwegisch', fr: 'Norvégien', es: 'Noruego', it: 'Norvegese' },
+        'lang.danish': { en: 'Danish', de: 'Dänisch', fr: 'Danois', es: 'Danés', it: 'Danese' },
+        'lang.finnish': { en: 'Finnish', de: 'Finnisch', fr: 'Finnois', es: 'Finlandés', it: 'Finlandese' },
+        'lang.greek': { en: 'Greek', de: 'Griechisch', fr: 'Grec', es: 'Griego', it: 'Greco' },
+        'lang.czech': { en: 'Czech', de: 'Tschechisch', fr: 'Tchèque', es: 'Checo', it: 'Ceco' },
+        'lang.hungarian': { en: 'Hungarian', de: 'Ungarisch', fr: 'Hongrois', es: 'Húngaro', it: 'Ungherese' },
+        'lang.romanian': { en: 'Romanian', de: 'Rumänisch', fr: 'Roumain', es: 'Rumano', it: 'Rumeno' },
+      };
+
+      return translations[key]?.[lang] || translations[key]?.['en'] || languageName;
     });
 
     hbs.__helpersRegistered = true;
