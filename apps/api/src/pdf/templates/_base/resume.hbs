@@ -49,7 +49,9 @@
     <h2>{{t 'resume.skills'}}</h2>
     {{#each skillCategories}}
     <div class="skill-category">
+      {{#if type}}
       <p class="skill-category-title">{{type}}:</p>
+      {{/if}}
       <p class="skill-list">
         {{#each skills}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
       </p>
