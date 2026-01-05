@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/auth-store';
 import { api, authenticatedFetch } from '@/lib/api-client';
 import { useCreateApplication, useRetryApplication } from '@/hooks/use-applications';
+import { useProfile } from '@/hooks/use-profile';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -108,9 +109,14 @@ export default function ApplicationDetailPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const user = useAuthStore((state) => state.user);
   const applicationId = params.id as string;
   const createApplication = useCreateApplication();
   const retryMutation = useRetryApplication();
+  
+  // Fetch profile for filename generation
+  const { data: profile } = useProfile();
+  
   const [previewFile, setPreviewFile] = useState<{
     url: string;
     blob?: Blob;
@@ -255,7 +261,9 @@ export default function ApplicationDetailPage() {
       const filename = generateFilename(
         'cover-letter',
         application?.jobPosting?.company,
-        application?.jobPosting?.title
+        application?.jobPosting?.title,
+        user?.lastName || profile?.user?.lastName,
+        user?.firstName || profile?.user?.firstName
       );
       const url = `${process.env.NEXT_PUBLIC_API_URL}/applications/${application.id}/download/cover-letter`;
       await handleDownload(url, filename, handleExpiredUrl);
@@ -272,7 +280,9 @@ export default function ApplicationDetailPage() {
       const filename = generateFilename(
         'resume',
         application?.jobPosting?.company,
-        application?.jobPosting?.title
+        application?.jobPosting?.title,
+        user?.lastName || profile?.user?.lastName,
+        user?.firstName || profile?.user?.firstName
       );
       const url = `${process.env.NEXT_PUBLIC_API_URL}/applications/${application.id}/download/resume`;
       await handleDownload(url, filename, handleExpiredUrl);
@@ -286,19 +296,30 @@ export default function ApplicationDetailPage() {
     
     setIsDownloading((prev) => ({ ...prev, both: true }));
     try {
+      const lastName = user?.lastName || profile?.user?.lastName;
+      const firstName = user?.firstName || profile?.user?.firstName;
+      
       const coverLetterFilename = generateFilename(
         'cover-letter',
         application?.jobPosting?.company,
-        application?.jobPosting?.title
+        application?.jobPosting?.title,
+        lastName,
+        firstName
       );
       const resumeFilename = generateFilename(
         'resume',
         application?.jobPosting?.company,
-        application?.jobPosting?.title
+        application?.jobPosting?.title,
+        lastName,
+        firstName
       );
       
+      // Generate ZIP filename using normalized company name or lastname
       const company = application?.jobPosting?.company || 'company';
-      const zipFilename = `${company.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-bewerbung.zip`;
+      const normalizedCompany = company.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+      const zipFilename = lastName 
+        ? `${lastName.toLowerCase()}-${normalizedCompany}-bewerbung.zip`
+        : `${normalizedCompany}-bewerbung.zip`;
       
       // Use direct download endpoints instead of SAS URLs (which are broken in disk storage)
       const coverLetterUrl = `${process.env.NEXT_PUBLIC_API_URL}/applications/${application.id}/download/cover-letter`;
@@ -337,7 +358,9 @@ export default function ApplicationDetailPage() {
         filename: generateFilename(
           'cover-letter',
           application?.jobPosting?.company,
-          application?.jobPosting?.title
+          application?.jobPosting?.title,
+          user?.lastName || profile?.user?.lastName,
+          user?.firstName || profile?.user?.firstName
         ),
         title: 'Anschreiben',
       });
@@ -367,7 +390,9 @@ export default function ApplicationDetailPage() {
         filename: generateFilename(
           'resume',
           application?.jobPosting?.company,
-          application?.jobPosting?.title
+          application?.jobPosting?.title,
+          user?.lastName || profile?.user?.lastName,
+          user?.firstName || profile?.user?.firstName
         ),
         title: 'Lebenslauf',
       });
