@@ -158,7 +158,9 @@
         <div class="skills-container">
             {{#each skillCategories}}
             <div class="skill-row">
-                <span class="skill-category-label">{{this.type}}</span>
+                {{#if this.type}}
+                <span class="skill-category-label">{{this.type}}:</span>
+                {{/if}}
                 <span class="skill-list">{{#each this.skills}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}</span>
             </div>
             {{/each}}

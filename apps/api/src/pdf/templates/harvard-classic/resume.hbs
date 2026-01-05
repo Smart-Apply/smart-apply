@@ -171,7 +171,7 @@
         <h2 class="section-header">{{t "resume.skills" language}}</h2>
         {{#each skillCategories}}
         <div class="skill-line">
-            <span class="skill-type">{{this.type}}:</span>
+            <span class="skill-type">{{#if this.type}}{{this.type}}: {{/if}}</span>
             <span class="skill-items">{{#each this.skills}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}</span>
         </div>
         {{/each}}

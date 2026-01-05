@@ -263,10 +263,6 @@ body {
   white-space: nowrap;
 }
 
-.skill-category-label::after {
-  content: ':';
-}
-
 .skill-list {
   color: var(--text-primary);
 }
