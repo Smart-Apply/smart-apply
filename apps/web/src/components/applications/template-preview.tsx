@@ -131,7 +131,7 @@ interface HandlebarsWithFlag {
 }
 
 // Helper version - increment this to force re-registration after changes
-const HELPERS_VERSION = 3;
+const HELPERS_VERSION = 4;
 
 // Register Handlebars helpers (same as backend)
 function registerHandlebarsHelpers() {
@@ -490,6 +490,76 @@ function registerHandlebarsHelpers() {
           es: 'Rumano',
           it: 'Rumeno',
         },
+        'lang.albanian': {
+          en: 'Albanian',
+          de: 'Albanisch',
+          fr: 'Albanais',
+          es: 'Albanés',
+          it: 'Albanese',
+        },
+        'lang.serbian': {
+          en: 'Serbian',
+          de: 'Serbisch',
+          fr: 'Serbe',
+          es: 'Serbio',
+          it: 'Serbo',
+        },
+        'lang.croatian': {
+          en: 'Croatian',
+          de: 'Kroatisch',
+          fr: 'Croate',
+          es: 'Croata',
+          it: 'Croato',
+        },
+        'lang.bosnian': {
+          en: 'Bosnian',
+          de: 'Bosnisch',
+          fr: 'Bosniaque',
+          es: 'Bosnio',
+          it: 'Bosniaco',
+        },
+        'lang.macedonian': {
+          en: 'Macedonian',
+          de: 'Mazedonisch',
+          fr: 'Macédonien',
+          es: 'Macedonio',
+          it: 'Macedone',
+        },
+        'lang.slovenian': {
+          en: 'Slovenian',
+          de: 'Slowenisch',
+          fr: 'Slovène',
+          es: 'Esloveno',
+          it: 'Sloveno',
+        },
+        'lang.bulgarian': {
+          en: 'Bulgarian',
+          de: 'Bulgarisch',
+          fr: 'Bulgare',
+          es: 'Búlgaro',
+          it: 'Bulgaro',
+        },
+        'lang.ukrainian': {
+          en: 'Ukrainian',
+          de: 'Ukrainisch',
+          fr: 'Ukrainien',
+          es: 'Ucraniano',
+          it: 'Ucraino',
+        },
+        'lang.korean': {
+          en: 'Korean',
+          de: 'Koreanisch',
+          fr: 'Coréen',
+          es: 'Coreano',
+          it: 'Coreano',
+        },
+        'lang.hindi': {
+          en: 'Hindi',
+          de: 'Hindi',
+          fr: 'Hindi',
+          es: 'Hindi',
+          it: 'Hindi',
+        },
       };
 
       return translations[key]?.[lang] || translations[key]?.['en'] || key;
@@ -559,6 +629,26 @@ function registerHandlebarsHelpers() {
         key = 'lang.hungarian';
       } else if (normalized === 'romanian' || normalized === 'rumänisch' || normalized === 'roumain' || normalized === 'rumano' || normalized === 'rumeno') {
         key = 'lang.romanian';
+      } else if (normalized === 'albanian' || normalized === 'albanisch' || normalized === 'albanais' || normalized === 'albanés' || normalized === 'albanese') {
+        key = 'lang.albanian';
+      } else if (normalized === 'serbian' || normalized === 'serbisch' || normalized === 'serbe' || normalized === 'serbio' || normalized === 'serbo') {
+        key = 'lang.serbian';
+      } else if (normalized === 'croatian' || normalized === 'kroatisch' || normalized === 'croate' || normalized === 'croata' || normalized === 'croato') {
+        key = 'lang.croatian';
+      } else if (normalized === 'bosnian' || normalized === 'bosnisch' || normalized === 'bosniaque' || normalized === 'bosnio' || normalized === 'bosniaco') {
+        key = 'lang.bosnian';
+      } else if (normalized === 'macedonian' || normalized === 'mazedonisch' || normalized === 'macédonien' || normalized === 'macedonio' || normalized === 'macedone') {
+        key = 'lang.macedonian';
+      } else if (normalized === 'slovenian' || normalized === 'slowenisch' || normalized === 'slovène' || normalized === 'esloveno' || normalized === 'sloveno') {
+        key = 'lang.slovenian';
+      } else if (normalized === 'bulgarian' || normalized === 'bulgarisch' || normalized === 'bulgare' || normalized === 'búlgaro' || normalized === 'bulgaro') {
+        key = 'lang.bulgarian';
+      } else if (normalized === 'ukrainian' || normalized === 'ukrainisch' || normalized === 'ukrainien' || normalized === 'ucraniano' || normalized === 'ucraino') {
+        key = 'lang.ukrainian';
+      } else if (normalized === 'korean' || normalized === 'koreanisch' || normalized === 'coréen' || normalized === 'coreano') {
+        key = 'lang.korean';
+      } else if (normalized === 'hindi') {
+        key = 'lang.hindi';
       } else {
         // Return original if not found
         return languageName;
@@ -587,6 +677,16 @@ function registerHandlebarsHelpers() {
         'lang.czech': { en: 'Czech', de: 'Tschechisch', fr: 'Tchèque', es: 'Checo', it: 'Ceco' },
         'lang.hungarian': { en: 'Hungarian', de: 'Ungarisch', fr: 'Hongrois', es: 'Húngaro', it: 'Ungherese' },
         'lang.romanian': { en: 'Romanian', de: 'Rumänisch', fr: 'Roumain', es: 'Rumano', it: 'Rumeno' },
+        'lang.albanian': { en: 'Albanian', de: 'Albanisch', fr: 'Albanais', es: 'Albanés', it: 'Albanese' },
+        'lang.serbian': { en: 'Serbian', de: 'Serbisch', fr: 'Serbe', es: 'Serbio', it: 'Serbo' },
+        'lang.croatian': { en: 'Croatian', de: 'Kroatisch', fr: 'Croate', es: 'Croata', it: 'Croato' },
+        'lang.bosnian': { en: 'Bosnian', de: 'Bosnisch', fr: 'Bosniaque', es: 'Bosnio', it: 'Bosniaco' },
+        'lang.macedonian': { en: 'Macedonian', de: 'Mazedonisch', fr: 'Macédonien', es: 'Macedonio', it: 'Macedone' },
+        'lang.slovenian': { en: 'Slovenian', de: 'Slowenisch', fr: 'Slovène', es: 'Esloveno', it: 'Sloveno' },
+        'lang.bulgarian': { en: 'Bulgarian', de: 'Bulgarisch', fr: 'Bulgare', es: 'Búlgaro', it: 'Bulgaro' },
+        'lang.ukrainian': { en: 'Ukrainian', de: 'Ukrainisch', fr: 'Ukrainien', es: 'Ucraniano', it: 'Ucraino' },
+        'lang.korean': { en: 'Korean', de: 'Koreanisch', fr: 'Coréen', es: 'Coreano', it: 'Coreano' },
+        'lang.hindi': { en: 'Hindi', de: 'Hindi', fr: 'Hindi', es: 'Hindi', it: 'Hindi' },
       };
 
       return translations[key]?.[lang] || translations[key]?.['en'] || languageName;

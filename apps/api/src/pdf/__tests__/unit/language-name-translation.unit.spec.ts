@@ -303,5 +303,37 @@ describe('TemplateRendererService - Language Name Translation', () => {
       expect(html).toContain('<h2>Sprachen</h2>');
       expect(html).not.toContain('<h2>Languages</h2>');
     });
+
+    it('should translate Albanian and Balkan languages to Spanish', async () => {
+      jest.spyOn(templatesService, 'findDefault').mockResolvedValueOnce({
+        ...mockTemplate,
+        language: 'es',
+      } as any);
+
+      const resumeData: ResumeTemplateData = {
+        candidateName: 'Test User',
+        email: 'test@example.com',
+        languages: [
+          { name: 'Albanisch', level: 'level.native' },
+          { name: 'Deutsch', level: 'level.native' },
+          { name: 'Englisch', level: 'level.fluent' },
+          { name: 'Spanisch', level: 'level.good' },
+        ],
+        language: 'es',
+      };
+
+      const html = await service.renderResume(resumeData, undefined, false);
+
+      // Should translate German language names to Spanish
+      expect(html).toContain('Albanés'); // Albanian in Spanish
+      expect(html).toContain('Alemán'); // German in Spanish
+      expect(html).toContain('Inglés'); // English in Spanish
+      expect(html).toContain('Español'); // Spanish in Spanish
+      
+      // Proficiency levels should also be in Spanish
+      expect(html).toContain('Nativo'); // Native in Spanish
+      expect(html).toContain('Fluido'); // Fluent in Spanish
+      expect(html).toContain('Bueno'); // Good in Spanish
+    });
   });
 });

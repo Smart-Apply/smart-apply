@@ -197,7 +197,7 @@
         <div class="languages-list">
             {{#each languages}}
             <span class="language-item">
-                {{this.name}}{{#if this.level}} <span class="language-level">({{t this.level @root.language}})</span>{{/if}}
+                {{translateLang this.name @root.language}}{{#if this.level}} <span class="language-level">({{t this.level @root.language}})</span>{{/if}}
             </span>
             {{/each}}
         </div>

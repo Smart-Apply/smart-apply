@@ -123,7 +123,7 @@
                 <ul class="languages-list">
                     {{#each languages}}
                     <li class="language-item">
-                        <span class="language-name">{{this.name}}</span>
+                        <span class="language-name">{{translateLang this.name @root.language}}</span>
                         {{#if this.level}}<span class="language-level">{{t this.level @root.language}}</span>{{/if}}
                     </li>
                     {{/each}}

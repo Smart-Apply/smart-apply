@@ -186,7 +186,7 @@
             <span class="skill-type">{{t "resume.languages" language}}:</span>
             <span class="skill-items">
                 {{#each languages}}
-                <span class="language-item">{{this.name}}{{#if this.level}} ({{t this.level @root.language}}){{/if}}</span>{{#unless @last}}, {{/unless}}
+                <span class="language-item">{{translateLang this.name @root.language}}{{#if this.level}} ({{t this.level @root.language}}){{/if}}</span>{{#unless @last}}, {{/unless}}
                 {{/each}}
             </span>
         </div>
