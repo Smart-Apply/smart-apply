@@ -3,9 +3,6 @@ name: Deploy to Azure VM
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
-    types: [closed]
 
 # Only allow one deployment at a time
 concurrency:
