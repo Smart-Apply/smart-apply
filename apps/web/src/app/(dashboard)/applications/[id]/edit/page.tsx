@@ -786,7 +786,7 @@ export default function ApplicationResumeEditorPage() {
                         disabled={coverMutationPending} 
                       />
                     </div>
-                    <p className="text-xs text-muted-foreground mt-3 shrink-0">
+                    <p className="text-xs text-muted-foreground mt-auto pt-3 shrink-0">
                       Dein Name wird automatisch als Unterschrift hinzugefügt.
                     </p>
                   </CardContent>
