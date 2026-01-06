@@ -1,4 +1,41 @@
 /**
+ * Rewritten experience with professional descriptions
+ */
+export interface RewrittenExperience {
+  /** Maps to Experience.id in DB (must match a selected_experience) */
+  profileExperienceId: string;
+  /** Professionally rewritten description with action verbs and metrics */
+  rewritten_description: string;
+  /** Rewritten achievements with quantified results */
+  rewritten_achievements: string[];
+}
+
+/**
+ * Rewritten project with professional descriptions
+ */
+export interface RewrittenProject {
+  /** Maps to Project.id in DB (must match a selected_project) */
+  profileProjectId: string;
+  /** Professionally rewritten description emphasizing relevant technologies */
+  rewritten_description: string;
+  /** Key highlights with quantified impact */
+  rewritten_highlights: string[];
+}
+
+/**
+ * Output from resume-rewrite LLM call
+ * Contains professionally rewritten profile content tailored to the job
+ */
+export interface RewrittenProfileDto {
+  /** Summary rewritten to target the specific role and company */
+  rewritten_summary: string;
+  /** Professionally rewritten experiences with action verbs and metrics */
+  rewritten_experiences: RewrittenExperience[];
+  /** Professionally rewritten projects emphasizing job-relevant technologies */
+  rewritten_projects: RewrittenProject[];
+}
+
+/**
  * Selected experience from candidate profile
  */
 export interface SelectedExperience {
