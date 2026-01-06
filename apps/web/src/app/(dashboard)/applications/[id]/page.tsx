@@ -6,7 +6,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/auth-store';
 import { api, authenticatedFetch } from '@/lib/api-client';
 import { useCreateApplication, useRetryApplication } from '@/hooks/use-applications';
-import { useProfile } from '@/hooks/use-profile';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -113,9 +112,6 @@ export default function ApplicationDetailPage() {
   const applicationId = params.id as string;
   const createApplication = useCreateApplication();
   const retryMutation = useRetryApplication();
-  
-  // Fetch profile for filename generation
-  const { data: profile } = useProfile();
   
   const [previewFile, setPreviewFile] = useState<{
     url: string;
@@ -262,8 +258,8 @@ export default function ApplicationDetailPage() {
         'cover-letter',
         application?.jobPosting?.company,
         application?.jobPosting?.title,
-        user?.lastName || profile?.user?.lastName,
-        user?.firstName || profile?.user?.firstName
+        user?.lastName,
+        user?.firstName
       );
       const url = `${process.env.NEXT_PUBLIC_API_URL}/applications/${application.id}/download/cover-letter`;
       await handleDownload(url, filename, handleExpiredUrl);
@@ -281,8 +277,8 @@ export default function ApplicationDetailPage() {
         'resume',
         application?.jobPosting?.company,
         application?.jobPosting?.title,
-        user?.lastName || profile?.user?.lastName,
-        user?.firstName || profile?.user?.firstName
+        user?.lastName,
+        user?.firstName
       );
       const url = `${process.env.NEXT_PUBLIC_API_URL}/applications/${application.id}/download/resume`;
       await handleDownload(url, filename, handleExpiredUrl);
@@ -296,8 +292,8 @@ export default function ApplicationDetailPage() {
     
     setIsDownloading((prev) => ({ ...prev, both: true }));
     try {
-      const lastName = user?.lastName || profile?.user?.lastName;
-      const firstName = user?.firstName || profile?.user?.firstName;
+      const lastName = user?.lastName;
+      const firstName = user?.firstName;
       
       const coverLetterFilename = generateFilename(
         'cover-letter',
@@ -359,8 +355,8 @@ export default function ApplicationDetailPage() {
           'cover-letter',
           application?.jobPosting?.company,
           application?.jobPosting?.title,
-          user?.lastName || profile?.user?.lastName,
-          user?.firstName || profile?.user?.firstName
+          user?.lastName,
+          user?.firstName
         ),
         title: 'Anschreiben',
       });
@@ -391,8 +387,8 @@ export default function ApplicationDetailPage() {
           'resume',
           application?.jobPosting?.company,
           application?.jobPosting?.title,
-          user?.lastName || profile?.user?.lastName,
-          user?.firstName || profile?.user?.firstName
+          user?.lastName,
+          user?.firstName
         ),
         title: 'Lebenslauf',
       });
