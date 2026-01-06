@@ -50,10 +50,9 @@ jobs:
           # Copy built API
           cp -r dist deploy-artifacts/
           
-          # Copy Next.js standalone build
-          cp -r apps/web/.next/standalone deploy-artifacts/web-standalone
-          cp -r apps/web/.next/static deploy-artifacts/web-standalone/apps/web/.next/
-          cp -r apps/web/public deploy-artifacts/web-standalone/apps/web/
+          # Copy Next.js standalone build with correct structure
+          mkdir -p deploy-artifacts/web-standalone
+          cp -r apps/web/.next/standalone/* deploy-artifacts/web-standalone/
           
           # Copy Prisma files for migrations
           cp -r apps/api/prisma deploy-artifacts/prisma
@@ -136,6 +135,8 @@ jobs:
             echo "📂 Copying build artifacts..."
             rm -rf dist
             cp -r /tmp/deploy-extract/dist .
+            
+            # Setup Next.js standalone (this contains the full standalone output)
             rm -rf apps/web/.next/standalone
             mkdir -p apps/web/.next
             cp -r /tmp/deploy-extract/web-standalone apps/web/.next/standalone
@@ -167,9 +168,17 @@ jobs:
               pm2 start dist/apps/api/main.js --name "api" --cwd /home/azureuser/smart-apply/apps/api
             fi
             
-            # Web restart - delete if errored, then start fresh
+            # Web restart - verify server.js exists first
+            WEB_SERVER_PATH="apps/web/.next/standalone/apps/web/server.js"
+            if [ ! -f "$WEB_SERVER_PATH" ]; then
+              echo "❌ Error: server.js not found at $WEB_SERVER_PATH"
+              echo "Directory listing:"
+              ls -la apps/web/.next/standalone/apps/web/ 2>/dev/null || echo "Directory does not exist"
+              exit 1
+            fi
+            
             pm2 delete web 2>/dev/null || true
-            PORT=3001 pm2 start apps/web/.next/standalone/apps/web/server.js --name "web"
+            PORT=3001 pm2 start "$WEB_SERVER_PATH" --name "web" --cwd "$(pwd)/apps/web/.next/standalone/apps/web"
             
             pm2 save
             
