@@ -15,8 +15,8 @@ env:
   APP_DIR: /home/azureuser/smart-apply
 
 jobs:
-  # Build and test first
-  build:
+  # Build once in CI, then deploy artifacts to VM
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -70,32 +70,97 @@ jobs:
       - name: Build Web
         run: npm run build --workspace=apps/web
 
-  # Deploy only on push to main (not on PR)
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    
-    steps:
-      - name: Deploy to VM via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ env.VM_HOST }}
-          username: ${{ env.VM_USER }}
-          key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
-          port: 22
-          timeout: 120s
-          command_timeout: 30m
-          debug: true
-          script: |
-            # Run deploy script (already on VM)
+      # Create deployment package (only built artifacts + production deps)
+      - name: Prepare deployment package
+        run: |
+          mkdir -p deploy-package
+          
+          # Copy built API
+          cp -r dist deploy-package/
+          cp -r apps/api/prisma deploy-package/prisma
+          
+          # Copy built Web (standalone)
+          mkdir -p deploy-package/apps/web/.next
+          cp -r apps/web/.next/standalone deploy-package/apps/web/.next/
+          cp -r apps/web/.next/static deploy-package/apps/web/.next/
+          cp -r apps/web/public deploy-package/apps/web/
+          
+          # Copy package files for production install
+          cp package.json package-lock.json deploy-package/
+          cp apps/api/package.json deploy-package/apps-api-package.json
+          
+          # Create tarball
+          tar -czf deploy.tar.gz -C deploy-package .
+          ls -lh deploy.tar.gz
+
+      # Setup SSH key
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VM_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ env.VM_HOST }} >> ~/.ssh/known_hosts
+
+      # Transfer and deploy (rsync is faster than scp for updates)
+      - name: Deploy to VM
+        run: |
+          echo "📦 Transferring deployment package..."
+          scp -o StrictHostKeyChecking=no deploy.tar.gz ${{ env.VM_USER }}@${{ env.VM_HOST }}:/tmp/
+          
+          echo "🚀 Deploying on VM..."
+          ssh -o StrictHostKeyChecking=no ${{ env.VM_USER }}@${{ env.VM_HOST }} << 'DEPLOY_SCRIPT'
+            set -e
             cd /home/azureuser/smart-apply
-            bash scripts/deploy.sh
+            
+            # Extract new build
+            echo "📂 Extracting deployment package..."
+            tar -xzf /tmp/deploy.tar.gz -C /home/azureuser/smart-apply --overwrite
+            rm /tmp/deploy.tar.gz
+            
+            # Setup static files for Next.js standalone
+            mkdir -p apps/web/.next/standalone/apps/web/.next
+            cp -r apps/web/.next/static apps/web/.next/standalone/apps/web/.next/
+            cp -r apps/web/public apps/web/.next/standalone/apps/web/
+            
+            # Install production dependencies only (much faster)
+            echo "📥 Installing production dependencies..."
+            export PATH="/home/azureuser/.local/share/fnm:$PATH"
+            eval "$(/home/azureuser/.local/share/fnm/fnm env)"
+            npm ci --omit=dev --ignore-scripts || npm install --omit=dev --ignore-scripts
+            
+            # Database migrations
+            echo "🗃️ Running database migrations..."
+            cd apps/api || cd /home/azureuser/smart-apply
+            npx prisma generate --schema=/home/azureuser/smart-apply/prisma/schema.prisma || true
+            npx prisma db push --schema=/home/azureuser/smart-apply/prisma/schema.prisma --skip-generate || true
+            cd /home/azureuser/smart-apply
+            
+            # Restart services
+            echo "🔄 Restarting services..."
+            pm2 delete all 2>/dev/null || true
+            pm2 start /home/azureuser/smart-apply/dist/apps/api/main.js --name "api" --cwd /home/azureuser/smart-apply/apps/api
+            PORT=3001 pm2 start /home/azureuser/smart-apply/apps/web/.next/standalone/apps/web/server.js --name "web"
+            pm2 save
+            
+            # Wait for API to be ready
+            echo "⏳ Waiting for API..."
+            sleep 10
+            for i in {1..6}; do
+              if curl -sf --max-time 5 http://localhost:3000/api/v1/health > /dev/null 2>&1; then
+                echo "✅ API is healthy!"
+                break
+              fi
+              sleep 5
+            done
+            
+            pm2 status
+            echo "✅ Deployment complete!"
+          DEPLOY_SCRIPT
 
       - name: Health Check (with retry)
         run: |
-          echo "⏳ Waiting for services to start..."
-          MAX_RETRIES=12
+          echo "⏳ Verifying external health..."
+          MAX_RETRIES=6
           RETRY_INTERVAL=10
           
           for i in $(seq 1 $MAX_RETRIES); do
