@@ -26,7 +26,7 @@ import { ApplicationStatusResponseDto } from './dto/application-status-response.
 import { UpdateResumeDto } from './dto/update-resume.dto';
 import { CoverLetterDto } from './dto/cover-letter.dto';
 import { ApplicationKeywordsResponseDto } from './dto/application-keywords.dto';
-import { TailoredProfileDto } from './dto/tailored-profile.dto';
+import { TailoredProfileDto, RewrittenProfileDto } from './dto/tailored-profile.dto';
 import { AtsKeywordsOutputDto } from '../keywords/dto/ats-keywords.dto';
 import { ErrorCode } from '../common/constants/error-codes';
 import {
@@ -917,48 +917,73 @@ Summary: ${resume.summary || 'Not provided'}
         `Profile tailored: ${tailoredProfile.selected_hard_skills.length} hard skills, ${tailoredProfile.selected_experiences.length} experiences`,
       );
 
-      // Step 2: Generate cover letter (if enabled)
-      let coverLetterMarkdown: string | null = null;
-      if (shouldGenerateCoverLetter) {
-        this.logger.log('Step 3: Generating cover letter...');
-        coverLetterMarkdown = await this.llmService.callText('v1/cover-letter.md', {
+      // Step 2: Parallel generation - Cover letter + Resume rewrite + ATS keywords
+      this.logger.log('Step 2: Parallel generation (cover letter, resume rewrite, ATS keywords)...');
+
+      // Prepare parallel promises
+      const coverLetterPromise = shouldGenerateCoverLetter
+        ? this.llmService.callText('v1/cover-letter.md', {
+            job: this.serializeJobPosting(jobPosting),
+            tailoredProfile,
+            language: detectedLanguage,
+            userId,
+            jobPostingId: jobPosting.id,
+          })
+        : Promise.resolve(null);
+
+      const resumeRewritePromise = this.callResumeRewrite(
+        tailoredProfile,
+        jobPosting,
+        detectedLanguage,
+        userId,
+      );
+
+      const atsKeywordsPromise = this.llmService
+        .callJson('v1/ats-keywords.md', {
           job: this.serializeJobPosting(jobPosting),
-          tailoredProfile,
-          language: detectedLanguage,
           userId,
           jobPostingId: jobPosting.id,
+        })
+        .then((extractedKeywords) => {
+          this.logger.log('Step 2b: Matching keywords against profile (deterministic)...');
+          return this.matchKeywordsAgainstProfile(extractedKeywords, profile);
+        })
+        .catch((error) => {
+          this.logger.warn('Failed to extract ATS keywords, continuing without them', error);
+          return null;
         });
+
+      // Execute all in parallel
+      const [coverLetterMarkdown, rewrittenProfile, atsKeywords] = await Promise.all([
+        coverLetterPromise,
+        resumeRewritePromise,
+        atsKeywordsPromise,
+      ]);
+
+      // Log results
+      if (rewrittenProfile) {
+        this.logger.log(
+          `Resume rewrite completed: ${rewrittenProfile.rewritten_experiences?.length || 0} experiences, ${rewrittenProfile.rewritten_projects?.length || 0} projects`,
+        );
       }
-
-      // Step 3: Extract ATS keywords from job posting (LLM extracts, no comparison yet)
-      this.logger.log('Step 3: Extracting ATS keywords from job posting...');
-      let atsKeywords: any = null;
-      try {
-        const extractedKeywords = await this.llmService.callJson('v1/ats-keywords.md', {
-          job: this.serializeJobPosting(jobPosting),
-          userId,
-          jobPostingId: jobPosting.id,
-        });
-
-        // Step 3b: Deterministically match keywords against profile
-        this.logger.log('Step 3b: Matching keywords against profile (deterministic)...');
-        atsKeywords = this.matchKeywordsAgainstProfile(extractedKeywords, profile);
-
+      if (atsKeywords) {
         const totalKeywords =
           (atsKeywords.hard_skills?.length || 0) + (atsKeywords.soft_skills?.length || 0);
         const matchedCount = this.countMatchedKeywords(atsKeywords);
         this.logger.log(
           `Extracted ${totalKeywords} ATS keywords (${matchedCount} matched in profile)`,
         );
-      } catch (error) {
-        this.logger.warn('Failed to extract ATS keywords, continuing without them', error);
       }
 
-      // Step 4: Convert tailoredProfile to JSON format for frontend editor
-      this.logger.log('Step 4: Converting resume to JSON format for editor...');
-      const resumeJson = this.convertTailoredProfileToResumeJson(profile, tailoredProfile);
+      // Step 3: Convert tailoredProfile to JSON format for frontend editor
+      this.logger.log('Step 3: Converting resume to JSON format for editor...');
+      const resumeJson = this.convertTailoredProfileToResumeJson(
+        profile,
+        tailoredProfile,
+        rewrittenProfile,
+      );
 
-      // Step 5: Update application with generated content
+      // Step 4: Update application with generated content
       // Note: resumeText stores JSON for editor, Markdown can be regenerated from tailoredProfile
       const updatedApplication = await this.prisma.application.update({
         where: { id: application.id },
@@ -1358,6 +1383,48 @@ Summary: ${resume.summary || 'Not provided'}
   }
 
   /**
+   * Call resume-rewrite LLM with graceful degradation
+   * If the LLM call fails, returns null and the pipeline continues with original profile data
+   */
+  private async callResumeRewrite(
+    tailoredProfile: TailoredProfileDto,
+    jobPosting: any,
+    language: string,
+    userId: string,
+  ): Promise<RewrittenProfileDto | null> {
+    try {
+      const rewrittenProfile = await this.llmService.callJson<RewrittenProfileDto>(
+        'v1/resume-rewrite.md',
+        {
+          tailoredProfile,
+          job: this.serializeJobPosting(jobPosting),
+          language,
+          userId,
+          jobPostingId: jobPosting.id,
+        },
+        {
+          temperature: 0.35, // Balanced: consistent but creative
+          maxTokens: 2000,
+        },
+      );
+
+      // Validate response structure
+      if (!rewrittenProfile || typeof rewrittenProfile !== 'object') {
+        this.logger.warn('Resume rewrite returned invalid structure, using original profile data');
+        return null;
+      }
+
+      return rewrittenProfile;
+    } catch (error) {
+      // Graceful degradation: log warning and continue with original data
+      this.logger.warn(
+        `Resume rewrite LLM call failed, continuing with original profile data: ${error.message}`,
+      );
+      return null;
+    }
+  }
+
+  /**
    * Serialize job posting for LLM consumption
    */
   private serializeJobPosting(job: any): Record<string, any> {
@@ -1373,13 +1440,25 @@ Summary: ${resume.summary || 'Not provided'}
   /**
    * Convert tailoredProfile to JSON ResumeData format for frontend editor
    * Maps the selected/filtered profile data from LLM back to the expected JSON structure
+   * @param profile - Full profile with relations
+   * @param tailoredProfile - LLM-selected relevant profile data
+   * @param rewrittenProfile - Optional LLM-rewritten professional content
    */
   private convertTailoredProfileToResumeJson(
     profile: ProfileWithRelations,
     tailoredProfile: any,
+    rewrittenProfile?: RewrittenProfileDto | null,
   ): any {
     const candidateName =
       `${profile.user.firstName || ''} ${profile.user.lastName || ''}`.trim() || profile.user.email;
+
+    // Create lookup maps for rewritten content (by profileExperienceId/profileProjectId)
+    const rewrittenExperienceMap = new Map(
+      (rewrittenProfile?.rewritten_experiences || []).map((exp) => [exp.profileExperienceId, exp]),
+    );
+    const rewrittenProjectMap = new Map(
+      (rewrittenProfile?.rewritten_projects || []).map((proj) => [proj.profileProjectId, proj]),
+    );
 
     // Build skill categories from selected hard skills AND tools
     const skillCategories: any[] = [];
@@ -1437,31 +1516,48 @@ Summary: ${resume.summary || 'Not provided'}
 
     // Include ALL profile experiences (not just LLM-selected ones)
     // Users can remove unwanted ones in the editor; sorted by start date (most recent first)
+    // Use rewritten descriptions/achievements if available, with fallback to original
     const experiences = profile.experiences
       .slice() // Create copy to avoid mutating original
       .sort((a, b) => b.startDate.getTime() - a.startDate.getTime())
-      .map((exp) => ({
-        id: exp.id,
-        title: exp.title,
-        company: exp.company,
-        dateRange: formatDateRange(exp.startDate, exp.endDate, exp.isCurrent),
-        startDate: exp.startDate?.toISOString() || undefined,
-        endDate: exp.endDate?.toISOString() || undefined,
-        location: exp.location || undefined,
-        description: exp.description || undefined,
-        achievements: exp.achievements || [],
-      }));
+      .map((exp) => {
+        const rewritten = rewrittenExperienceMap.get(exp.id);
+        return {
+          id: exp.id,
+          title: exp.title,
+          company: exp.company,
+          dateRange: formatDateRange(exp.startDate, exp.endDate, exp.isCurrent),
+          startDate: exp.startDate?.toISOString() || undefined,
+          endDate: exp.endDate?.toISOString() || undefined,
+          location: exp.location || undefined,
+          // Use rewritten description if available, fallback to original
+          description: rewritten?.rewritten_description || exp.description || undefined,
+          // Use rewritten achievements if available, fallback to original
+          achievements:
+            rewritten?.rewritten_achievements && rewritten.rewritten_achievements.length > 0
+              ? rewritten.rewritten_achievements
+              : exp.achievements || [],
+        };
+      });
 
     // Include ALL profile projects (not just LLM-selected ones)
     // Users can remove unwanted ones in the editor
-    const projects = profile.projects.map((proj) => ({
-      id: proj.id,
-      name: proj.name,
-      description: proj.description || undefined,
-      date: proj.startDate?.toISOString() || undefined,
-      // Map technologies to highlights (frontend expects this)
-      highlights: proj.technologies || [],
-    }));
+    // Use rewritten descriptions/highlights if available, with fallback to original
+    const projects = profile.projects.map((proj) => {
+      const rewritten = rewrittenProjectMap.get(proj.id);
+      return {
+        id: proj.id,
+        name: proj.name,
+        // Use rewritten description if available, fallback to original
+        description: rewritten?.rewritten_description || proj.description || undefined,
+        date: proj.startDate?.toISOString() || undefined,
+        // Use rewritten highlights if available, fallback to technologies
+        highlights:
+          rewritten?.rewritten_highlights && rewritten.rewritten_highlights.length > 0
+            ? rewritten.rewritten_highlights
+            : proj.technologies || [],
+      };
+    });
 
     // Map selected education - Handle both string[] (legacy) and object[] (new)
     let education = (tailoredProfile.selected_education || [])
@@ -1590,7 +1686,12 @@ Summary: ${resume.summary || 'Not provided'}
       location: profile.location || undefined,
       linkedin: sanitizeUrl(profile.linkedinUrl),
       github: sanitizeUrl(profile.githubUrl),
-      summary: tailoredProfile.customized_summary || profile.summary || undefined,
+      // Priority: rewritten_summary > customized_summary > profile.summary
+      summary:
+        rewrittenProfile?.rewritten_summary ||
+        tailoredProfile.customized_summary ||
+        profile.summary ||
+        undefined,
       skillCategories,
       experiences,
       projects: projects.length > 0 ? projects : undefined,
