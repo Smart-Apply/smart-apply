@@ -93,20 +93,16 @@ jobs:
           tar -czf deploy.tar.gz -C deploy-package .
           ls -lh deploy.tar.gz
 
-      # Setup SSH with webfactory/ssh-agent (more reliable)
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
-
-      - name: Add VM to known hosts
-        run: ssh-keyscan -H ${{ env.VM_HOST }} >> ~/.ssh/known_hosts
-
-      # Transfer deployment package
+      # Transfer deployment package using appleboy/scp-action
       - name: Transfer to VM
-        run: |
-          echo "📦 Transferring deployment package..."
-          scp deploy.tar.gz ${{ env.VM_USER }}@${{ env.VM_HOST }}:/tmp/
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ env.VM_HOST }}
+          username: ${{ env.VM_USER }}
+          key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
+          port: 22
+          source: "deploy.tar.gz"
+          target: "/tmp"
 
       # Deploy on VM
       - name: Deploy on VM
