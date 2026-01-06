@@ -15,8 +15,8 @@ env:
   APP_DIR: /home/azureuser/smart-apply
 
 jobs:
-  # Build once in CI, then deploy artifacts to VM
-  build-and-deploy:
+  # Quick validation in CI (parallel with deploy)
+  validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,7 +26,7 @@ jobs:
         with:
           node-version: '20'
 
-      # Cache node_modules directly (faster than npm cache)
+      # Cache node_modules directly
       - name: Cache node_modules
         id: cache-node-modules
         uses: actions/cache@v4
@@ -43,103 +43,71 @@ jobs:
         if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: npm ci --prefer-offline
 
-      # Cache Turbo build artifacts
-      - name: Cache Turbo
-        uses: actions/cache@v4
-        with:
-          path: .turbo
-          key: ${{ runner.os }}-turbo-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-turbo-
-
-      # Cache Next.js build
-      - name: Cache Next.js
-        uses: actions/cache@v4
-        with:
-          path: apps/web/.next/cache
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('apps/web/**/*.ts', 'apps/web/**/*.tsx') }}
-          restore-keys: |
-            ${{ runner.os }}-nextjs-
-
-      - name: Build shared package
-        run: npm run build --workspace=@smart-apply/shared
-
-      - name: Build API
-        run: npm run build --workspace=apps/api
-
-      - name: Build Web
-        run: npm run build --workspace=apps/web
-
-      # Create deployment package (only built artifacts + production deps)
-      - name: Prepare deployment package
+      - name: Type check & Lint
         run: |
-          mkdir -p deploy-package
-          
-          # Copy built API
-          cp -r dist deploy-package/
-          cp -r apps/api/prisma deploy-package/prisma
-          
-          # Copy built Web (standalone)
-          mkdir -p deploy-package/apps/web/.next
-          cp -r apps/web/.next/standalone deploy-package/apps/web/.next/
-          cp -r apps/web/.next/static deploy-package/apps/web/.next/
-          cp -r apps/web/public deploy-package/apps/web/
-          
-          # Copy package files for production install
-          cp package.json package-lock.json deploy-package/
-          cp apps/api/package.json deploy-package/apps-api-package.json
-          
-          # Create tarball
-          tar -czf deploy.tar.gz -C deploy-package .
-          ls -lh deploy.tar.gz
+          npm run build --workspace=@smart-apply/shared
+          cd apps/api && npx tsc --noEmit
+          cd ../web && npm run lint
 
-      # Transfer deployment package using appleboy/scp-action
-      - name: Transfer to VM
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ env.VM_HOST }}
-          username: ${{ env.VM_USER }}
-          key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
-          port: 22
-          source: "deploy.tar.gz"
-          target: "/tmp"
-
-      # Deploy on VM
-      - name: Deploy on VM
+  # Deploy to VM (runs in parallel with validate)
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to VM
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ env.VM_HOST }}
           username: ${{ env.VM_USER }}
           key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
           port: 22
-          timeout: 60s
-          command_timeout: 10m
+          timeout: 120s
+          command_timeout: 20m
           script: |
             set -e
+            
+            # Setup Node.js
+            export PATH="/home/azureuser/.local/share/fnm:$PATH"
+            eval "$(/home/azureuser/.local/share/fnm/fnm env)"
+            
             cd /home/azureuser/smart-apply
             
-            # Extract new build
-            echo "📂 Extracting deployment package..."
-            tar -xzf /tmp/deploy.tar.gz -C /home/azureuser/smart-apply --overwrite
-            rm /tmp/deploy.tar.gz
+            # Pull latest code
+            echo "📦 Pulling latest code..."
+            git fetch origin main
+            git reset --hard origin/main
             
-            # Setup static files for Next.js standalone
-            mkdir -p apps/web/.next/standalone/apps/web/.next
+            # Check if dependencies changed
+            LOCK_HASH=$(md5sum package-lock.json | cut -d' ' -f1)
+            CACHED_HASH=""
+            if [ -f .npm-cache-hash ]; then
+              CACHED_HASH=$(cat .npm-cache-hash)
+            fi
+            
+            if [ "$LOCK_HASH" != "$CACHED_HASH" ]; then
+              echo "📥 Dependencies changed, running npm ci..."
+              npm ci
+              echo "$LOCK_HASH" > .npm-cache-hash
+            else
+              echo "✅ Dependencies cached, skipping npm ci"
+            fi
+            
+            # Build
+            echo "🔨 Building..."
+            npm run build --workspace=@smart-apply/shared
+            npm run build --workspace=apps/api
+            npm run build --workspace=apps/web
+            
+            # Setup Next.js standalone
+            echo "📂 Copying static files..."
             cp -r apps/web/.next/static apps/web/.next/standalone/apps/web/.next/
             cp -r apps/web/public apps/web/.next/standalone/apps/web/
             
-            # Install production dependencies only (much faster)
-            echo "📥 Installing production dependencies..."
-            export PATH="/home/azureuser/.local/share/fnm:$PATH"
-            eval "$(/home/azureuser/.local/share/fnm/fnm env)"
-            npm ci --omit=dev --ignore-scripts || npm install --omit=dev --ignore-scripts
-            
             # Database migrations
-            echo "🗃️ Running database migrations..."
-            cd apps/api || cd /home/azureuser/smart-apply
-            npx prisma generate --schema=/home/azureuser/smart-apply/prisma/schema.prisma || true
-            npx prisma db push --schema=/home/azureuser/smart-apply/prisma/schema.prisma --skip-generate || true
-            cd /home/azureuser/smart-apply
+            echo "🗃️ Database migrations..."
+            cd apps/api
+            npx prisma generate
+            npx prisma db push --skip-generate
+            cd ../..
             
             # Restart services
             echo "🔄 Restarting services..."
@@ -148,7 +116,7 @@ jobs:
             PORT=3001 pm2 start /home/azureuser/smart-apply/apps/web/.next/standalone/apps/web/server.js --name "web"
             pm2 save
             
-            # Wait for API to be ready
+            # Wait for API
             echo "⏳ Waiting for API..."
             sleep 10
             for i in {1..6}; do
