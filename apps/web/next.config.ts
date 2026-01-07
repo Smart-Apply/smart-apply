@@ -12,10 +12,7 @@ const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
   
-  // Standalone output for Docker container deployment
-  output: 'standalone',
-  
-  // Set workspace root for file tracing (monorepo setup)
+  // Monorepo file tracing
   outputFileTracingRoot: path.join(__dirname, "../../"),
 
   // Enable gzip compression for production builds (default: true in production)
