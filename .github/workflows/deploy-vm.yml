@@ -67,16 +67,38 @@ jobs:
           mkdir -p deploy-artifacts/web-standalone
           cp -r apps/web/.next/standalone/* deploy-artifacts/web-standalone/
           
-          # Copy static assets and public folder into standalone structure
-          mkdir -p deploy-artifacts/web-standalone/apps/web/.next/static
-          cp -r apps/web/.next/static/* deploy-artifacts/web-standalone/apps/web/.next/static/
+          # Copy complete .next directory (all manifest files, BUILD_ID, static assets) into standalone structure
+          mkdir -p deploy-artifacts/web-standalone/apps/web/.next
+          # Copy all manifest and config files required by Next.js
+          cp apps/web/.next/BUILD_ID deploy-artifacts/web-standalone/apps/web/.next/
+          cp apps/web/.next/routes-manifest.json deploy-artifacts/web-standalone/apps/web/.next/
+          cp apps/web/.next/prerender-manifest.json deploy-artifacts/web-standalone/apps/web/.next/
+          cp apps/web/.next/required-server-files.json deploy-artifacts/web-standalone/apps/web/.next/
+          cp apps/web/.next/build-manifest.json deploy-artifacts/web-standalone/apps/web/.next/
+          cp apps/web/.next/app-path-routes-manifest.json deploy-artifacts/web-standalone/apps/web/.next/ || true
+          # Copy static assets
+          cp -r apps/web/.next/static deploy-artifacts/web-standalone/apps/web/.next/
+          # Copy server directory
+          cp -r apps/web/.next/server deploy-artifacts/web-standalone/apps/web/.next/
+          
+          # Copy public folder with verification
           mkdir -p deploy-artifacts/web-standalone/apps/web/public
-          cp -r apps/web/public/* deploy-artifacts/web-standalone/apps/web/public/
+          if [ -d "apps/web/public" ] && [ "$(ls -A apps/web/public)" ]; then
+            cp -r apps/web/public/* deploy-artifacts/web-standalone/apps/web/public/
+            echo "✅ Public folder copied ($(ls apps/web/public | wc -l) files)"
+          else
+            echo "⚠️  Warning: Public folder is empty or missing"
+          fi
           
           # Verify structure
           echo "Verifying Next.js standalone structure:"
           ls -la deploy-artifacts/web-standalone/apps/web/
+          echo ""
+          echo "Verifying .next directory:"
           ls -la deploy-artifacts/web-standalone/apps/web/.next/
+          echo ""
+          echo "Verifying public directory:"
+          ls -la deploy-artifacts/web-standalone/apps/web/public/
           
           # Copy Prisma files for migrations
           cp -r apps/api/prisma deploy-artifacts/prisma
@@ -193,18 +215,28 @@ jobs:
             fi
             
             # Web restart - verify server.js exists first
-            WEB_SERVER_PATH="/home/azureuser/smart-apply/apps/web/.next/standalone/apps/web/server.js"
-            WEB_CWD="/home/azureuser/smart-apply/apps/web/.next/standalone/apps/web"
+            # Note: Next.js standalone must be run from the standalone root directory
+            WEB_STANDALONE_ROOT="/home/azureuser/smart-apply/apps/web/.next/standalone"
+            WEB_SERVER_PATH="$WEB_STANDALONE_ROOT/apps/web/server.js"
             
             if [ ! -f "$WEB_SERVER_PATH" ]; then
               echo "❌ Error: server.js not found at $WEB_SERVER_PATH"
               echo "Directory listing:"
-              ls -la "$WEB_CWD" 2>/dev/null || echo "Directory does not exist"
+              ls -la "$WEB_STANDALONE_ROOT/apps/web" 2>/dev/null || echo "Directory does not exist"
               exit 1
             fi
             
+            # Verify all required files are present before starting
+            echo "🔍 Verifying deployment files..."
+            [ -f "$WEB_STANDALONE_ROOT/apps/web/.next/BUILD_ID" ] && echo "✅ BUILD_ID" || echo "❌ BUILD_ID missing"
+            [ -f "$WEB_STANDALONE_ROOT/apps/web/.next/routes-manifest.json" ] && echo "✅ routes-manifest.json" || echo "❌ routes-manifest.json missing"
+            [ -d "$WEB_STANDALONE_ROOT/apps/web/public" ] && echo "✅ public directory" || echo "❌ public directory missing"
+            
             pm2 delete web 2>/dev/null || true
-            PORT=3001 pm2 start "$WEB_SERVER_PATH" --name "web" --cwd "$WEB_CWD"
+            # Run from standalone root with environment variables
+            cd "$WEB_STANDALONE_ROOT"
+            NODE_ENV=production PORT=3001 NEXT_PUBLIC_API_URL=https://smartapplymvp.swedencentral.cloudapp.azure.com/api/v1 \
+              pm2 start "apps/web/server.js" --name "web" --cwd "$WEB_STANDALONE_ROOT"
             
             pm2 save
             
