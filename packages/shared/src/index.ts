@@ -494,3 +494,56 @@ export interface ApiErrorResponse {
     method: string;
   };
 }
+
+// ============================================
+// Resume Parser Types
+// ============================================
+
+/**
+ * Extracted profile data from resume parsing
+ */
+export interface ExtractedProfile {
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  location?: string;
+  linkedinUrl?: string;
+  githubUrl?: string;
+  portfolioUrl?: string;
+  summary?: string;
+  skills?: Array<{ name: string; level?: string }>;
+  experiences?: Array<{
+    title: string;
+    company: string;
+    location?: string;
+    startDate: string;
+    endDate?: string;
+    description?: string;
+    current?: boolean;
+  }>;
+  education?: Array<{
+    degree: string;
+    institution: string;
+    fieldOfStudy?: string;
+    startYear?: string;
+    endYear?: string;
+    gpa?: string;
+    description?: string;
+  }>;
+  certificates?: Array<{
+    name: string;
+    issuer: string;
+    dateObtained?: string;
+    url?: string;
+  }>;
+  projects?: Array<{
+    name: string;
+    description?: string;
+    technologies?: string[];
+    url?: string;
+  }>;
+  languages?: Array<{
+    name: string;
+    level: string;
+  }>;
+}

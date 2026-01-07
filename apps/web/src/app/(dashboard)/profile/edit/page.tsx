@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -17,9 +17,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SkillsManager } from '@/components/forms/skills-manager';
 import { LanguagesManager } from '@/components/forms/languages-manager';
 import { CertificatesManager } from '@/components/forms/certificates-manager';
-import { ArrowLeft, Loader2, User, Briefcase, GraduationCap, Code, Award, Save } from 'lucide-react';
+import { ResumeImportDialog } from '@/components/forms/resume-import-dialog';
+import { ArrowLeft, Loader2, User, Briefcase, GraduationCap, Code, Award, Save, Upload } from 'lucide-react';
 import { profileFormSchema, type ProfileFormValues } from '@/lib/validation/profile-schema';
-import type { Skill, Experience, Education, Certificate, Project, Language } from '@/types';
+import type { Skill, Experience, Education, Certificate, Project, Language, ExtractedProfile } from '@/types';
+import type { ImportableSection } from '@/hooks/use-parse-resume';
+import { toastSuccess } from '@/lib/toast';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -129,6 +132,92 @@ export default function ProfileEditPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile]);
 
+  // Handle importing data from parsed resume
+  const handleResumeImport = useCallback((data: ExtractedProfile, sections: ImportableSection[]) => {
+    let importedCount = 0;
+
+    sections.forEach((section) => {
+      switch (section) {
+        case 'personal':
+          if (data.firstName) { form.setValue('firstName', data.firstName); importedCount++; }
+          if (data.lastName) { form.setValue('lastName', data.lastName); importedCount++; }
+          if (data.phone) { form.setValue('phone', data.phone); importedCount++; }
+          if (data.location) { form.setValue('location', data.location); importedCount++; }
+          if (data.linkedinUrl) { form.setValue('linkedinUrl', data.linkedinUrl); importedCount++; }
+          if (data.githubUrl) { form.setValue('githubUrl', data.githubUrl); importedCount++; }
+          if (data.portfolioUrl) { form.setValue('portfolioUrl', data.portfolioUrl); importedCount++; }
+          break;
+        case 'summary':
+          if (data.summary) { form.setValue('summary', data.summary); importedCount++; }
+          break;
+        case 'skills':
+          if (data.skills && data.skills.length > 0) {
+            setSkills(data.skills.map(s => ({ name: s.name, level: s.level })));
+            importedCount += data.skills.length;
+          }
+          break;
+        case 'experiences':
+          if (data.experiences && data.experiences.length > 0) {
+            setExperiences(data.experiences.map(e => ({
+              title: e.title,
+              company: e.company,
+              location: e.location || null,
+              startDate: e.startDate,
+              endDate: e.endDate || null,
+              description: e.description || null,
+              current: e.current || false,
+            })));
+            importedCount += data.experiences.length;
+          }
+          break;
+        case 'education':
+          if (data.education && data.education.length > 0) {
+            setEducation(data.education.map(edu => ({
+              degree: edu.degree,
+              institution: edu.institution,
+              fieldOfStudy: edu.fieldOfStudy,
+              startYear: edu.startYear ? parseInt(edu.startYear.split('-')[0]) : undefined,
+              endYear: edu.endYear ? parseInt(edu.endYear.split('-')[0]) : null,
+              gpa: edu.gpa,
+              description: edu.description,
+            })));
+            importedCount += data.education.length;
+          }
+          break;
+        case 'certificates':
+          if (data.certificates && data.certificates.length > 0) {
+            setCertificates(data.certificates.map(c => ({
+              name: c.name,
+              issuer: c.issuer,
+              dateObtained: c.dateObtained,
+              url: c.url,
+            })));
+            importedCount += data.certificates.length;
+          }
+          break;
+        case 'projects':
+          if (data.projects && data.projects.length > 0) {
+            setProjects(data.projects.map(p => ({
+              name: p.name,
+              description: p.description ?? undefined,
+              technologies: p.technologies,
+              url: p.url,
+            })));
+            importedCount += data.projects.length;
+          }
+          break;
+        case 'languages':
+          if (data.languages && data.languages.length > 0) {
+            setLanguages(data.languages.map(l => ({ name: l.name, level: l.level })));
+            importedCount += data.languages.length;
+          }
+          break;
+      }
+    });
+
+    toastSuccess(`${sections.length} Abschnitte erfolgreich importiert`);
+  }, [form]);
+
   const onSubmit = async (data: ProfileFormValues) => {
     try {
       // Wait a tiny bit for any pending state updates to propagate
@@ -217,15 +306,27 @@ export default function ProfileEditPage() {
             <p className="text-muted-foreground">Aktualisiere deine Informationen</p>
           </div>
         </div>
-        <SubmitButton 
-          onClick={form.handleSubmit(onSubmit)} 
-          isLoading={updateProfile.isPending}
-          loadingText="Speichere..."
-          className="shadow-lg shadow-primary/20"
-        >
-          <Save className="mr-2 h-4 w-4" />
-          Speichern
-        </SubmitButton>
+        <div className="flex items-center gap-2">
+          <ResumeImportDialog
+            onImport={handleResumeImport}
+            trigger={
+              <Button variant="outline" className="gap-2">
+                <Upload className="h-4 w-4" />
+                <span className="hidden sm:inline">Lebenslauf importieren</span>
+                <span className="sm:hidden">Import</span>
+              </Button>
+            }
+          />
+          <SubmitButton 
+            onClick={form.handleSubmit(onSubmit)} 
+            isLoading={updateProfile.isPending}
+            loadingText="Speichere..."
+            className="shadow-lg shadow-primary/20"
+          >
+            <Save className="mr-2 h-4 w-4" />
+            Speichern
+          </SubmitButton>
+        </div>
       </div>
 
       <Tabs defaultValue="basic" className="space-y-6">

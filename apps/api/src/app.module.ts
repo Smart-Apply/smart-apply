@@ -69,6 +69,11 @@ import { TimeoutMiddleware } from './common/middleware';
               ttl: 60000, // 60 seconds
               limit: 600, // 600 requests per minute (10/sec) - very generous for polling
             },
+            {
+              name: 'resume-parser',
+              ttl: 3600000, // 1 hour
+              limit: 10, // 10 resume parses per hour per user - LLM calls are expensive
+            },
           ],
         };
       },

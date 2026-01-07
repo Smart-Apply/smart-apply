@@ -20,6 +20,7 @@ import type {
   UserPreferences,
   UpdateUserPreferencesDto,
   PaginatedResponse,
+  ExtractedProfile,
 } from '@/types';
 import { ApiError, NetworkError, shouldRetry, getRetryDelay, isPermanentAuthFailure } from './errors';
 import { getCsrfToken, refreshCsrfToken } from './csrf';
@@ -285,6 +286,112 @@ export function resetAuthRedirectFlag(): void {
 }
 
 /**
+ * Generic fetch wrapper for FormData (multipart/form-data) requests
+ * Does NOT set Content-Type header (browser sets it with boundary automatically)
+ */
+async function apiRequestFormData<T>(
+  endpoint: string,
+  options: RequestOptions = {}
+): Promise<T> {
+  const { retry = true, maxRetries = 3, ...fetchOptions } = options;
+
+  const makeRequest = async (isRetryAfterRefresh = false): Promise<T> => {
+    const headers: Record<string, string> = {
+      // Do NOT set Content-Type for FormData - browser sets it automatically with boundary
+      ...(fetchOptions.headers as Record<string, string>),
+    };
+    // Remove Content-Type if accidentally set
+    delete headers['Content-Type'];
+
+    // Include CSRF token for state-changing requests
+    const csrfToken = getCsrfToken();
+    if (csrfToken) {
+      headers['X-CSRF-Token'] = csrfToken;
+    }
+
+    try {
+      const baseUrl = await getApiBaseUrl();
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        ...fetchOptions,
+        headers,
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+
+        // Handle rate limit errors (429 Too Many Requests)
+        if (response.status === 429) {
+          const retryAfter = response.headers.get('Retry-After');
+          const retrySeconds = retryAfter ? parseInt(retryAfter) : 3600; // Default 1 hour for resume-parser
+          const retryMinutes = Math.ceil(retrySeconds / 60);
+
+          throw new ApiError(
+            429,
+            `Zu viele Uploads. Du kannst maximal 10 Lebensläufe pro Stunde analysieren. Bitte warte ${retryMinutes} Minute${retryMinutes !== 1 ? 'n' : ''}.`,
+            errorData
+          );
+        }
+
+        // Handle CSRF token errors
+        if (response.status === 403 && errorData?.code === 'EBADCSRFTOKEN') {
+          if (!isRetryAfterRefresh) {
+            await refreshCsrfToken();
+            return makeRequest(true);
+          }
+          throw new ApiError(response.status, 'CSRF token invalid or expired after retry.', errorData);
+        }
+
+        // Handle 401 Unauthorized
+        if (response.status === 401) {
+          if (isRedirectingToLogin) {
+            throw new ApiError(response.status, 'Unauthorized', { message: 'Redirecting to login...' });
+          }
+
+          const errorMessage = errorData?.message || '';
+          if (isPermanentAuthFailure(errorMessage)) {
+            handleAuthFailure();
+          }
+
+          if (!isRetryAfterRefresh) {
+            const refreshed = await refreshAccessToken();
+            if (refreshed) {
+              return makeRequest(true);
+            }
+          }
+
+          handleAuthFailure();
+        }
+
+        throw new ApiError(
+          response.status,
+          errorData?.message || 'Ein Fehler ist aufgetreten',
+          errorData
+        );
+      }
+
+      // Parse JSON response
+      const json = await response.json();
+      
+      // Unwrap standardized API response format { data, meta }
+      if (json && typeof json === 'object' && 'data' in json && 'meta' in json) {
+        return json.data as T;
+      }
+      
+      // Fallback for backward compatibility
+      return json as T;
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      throw new NetworkError('Netzwerkfehler. Bitte überprüfe deine Internetverbindung.');
+    }
+  };
+
+  return makeRequest();
+}
+
+/**
  * Authenticated fetch wrapper for non-JSON requests (e.g., PDF downloads, blob fetches)
  * Handles automatic token refresh on 401 errors
  * 
@@ -394,6 +501,15 @@ export const api = {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
+
+    parseResume: (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return apiRequestFormData<ExtractedProfile>('/profile/parse-resume', {
+        method: 'POST',
+        body: formData,
+      });
+    },
   },
 
   // Job Postings
