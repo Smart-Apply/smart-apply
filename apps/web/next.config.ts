@@ -12,6 +12,9 @@ const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
   
+  // Standalone output for Docker deployment
+  output: 'standalone',
+  
   // Monorepo file tracing
   outputFileTracingRoot: path.join(__dirname, "../../"),
 

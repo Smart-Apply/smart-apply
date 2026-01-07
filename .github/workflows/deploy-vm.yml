@@ -17,94 +17,72 @@ env:
   VM_HOST: smartapplymvp.swedencentral.cloudapp.azure.com
   VM_USER: azureuser
   APP_DIR: /home/azureuser/smart-apply
-  NODE_VERSION: '20'
+  REGISTRY: ghcr.io
+  API_IMAGE: ghcr.io/${{ github.repository_owner }}/smartapply-api
+  WEB_IMAGE: ghcr.io/${{ github.repository_owner }}/smartapply-web
 
 jobs:
-  # Build artifacts in CI (faster runners, cached)
+  # Build Docker images with caching
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Cache node_modules directly for faster installs
-      - name: Cache node_modules
-        id: cache-node-modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            node_modules
-            apps/*/node_modules
-            packages/*/node_modules
-          key: ${{ runner.os }}-node-${{ env.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-${{ env.NODE_VERSION }}-
-
-      - name: Install dependencies
-        if: steps.cache-node-modules.outputs.cache-hit != 'true'
-        run: npm ci --prefer-offline --no-audit --no-fund
-
-      - name: Build all packages (parallel via turbo)
-        run: npx turbo run build --concurrency=3
-
-      - name: Type check API
-        run: cd apps/api && npx tsc --noEmit
-
-      # Create deployment artifact
-      - name: Package artifacts
+      - name: Generate image tags
+        id: meta
         run: |
-          # Create artifact directory
-          mkdir -p deploy-artifacts
-          
-          # Copy built API (NestJS compiled output)
-          cp -r dist deploy-artifacts/
-          
-          # Copy complete Next.js build (not standalone, just the full .next directory)
-          mkdir -p deploy-artifacts/web
-          cp -r apps/web/.next deploy-artifacts/web/.next
-          cp -r apps/web/public deploy-artifacts/web/public
-          cp apps/web/package.json deploy-artifacts/web/package.json
-          
-          # Copy node_modules for web (production dependencies only)
-          mkdir -p deploy-artifacts/web/node_modules
-          cd apps/web && npm ci --production --ignore-scripts && cd ../..
-          cp -r apps/web/node_modules deploy-artifacts/web/node_modules
-          
-          # Copy Prisma files for migrations
-          cp -r apps/api/prisma deploy-artifacts/prisma
-          
-          # Copy package files
-          cp package.json deploy-artifacts/
-          cp package-lock.json deploy-artifacts/
-          
-          # Verify structure
-          echo "✅ Deployment package created:"
-          du -sh deploy-artifacts/*
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          echo "sha_tag=$SHORT_SHA" >> $GITHUB_OUTPUT
+          echo "date_tag=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
 
-      - name: Upload deployment artifact
-        uses: actions/upload-artifact@v4
+      - name: Build and push API image
+        uses: docker/build-push-action@v5
         with:
-          name: deploy-package
-          path: deploy-artifacts/
-          retention-days: 1
-          compression-level: 9
+          context: .
+          file: infra/Dockerfile
+          target: runner
+          push: true
+          tags: |
+            ${{ env.API_IMAGE }}:latest
+            ${{ env.API_IMAGE }}:${{ steps.meta.outputs.sha_tag }}
+          cache-from: type=registry,ref=${{ env.API_IMAGE }}:buildcache
+          cache-to: type=registry,ref=${{ env.API_IMAGE }}:buildcache,mode=max
 
-  # Deploy pre-built artifacts to VM
+      - name: Build and push Web image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: infra/Dockerfile.web
+          push: true
+          tags: |
+            ${{ env.WEB_IMAGE }}:latest
+            ${{ env.WEB_IMAGE }}:${{ steps.meta.outputs.sha_tag }}
+          build-args: |
+            NEXT_PUBLIC_API_URL=https://smartapplymvp.swedencentral.cloudapp.azure.com/api/v1
+          cache-from: type=registry,ref=${{ env.WEB_IMAGE }}:buildcache
+          cache-to: type=registry,ref=${{ env.WEB_IMAGE }}:buildcache,mode=max
+
+  # Deploy from registry to VM
   deploy:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - name: Download deployment artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: deploy-package
-          path: deploy-artifacts/
+      - uses: actions/checkout@v4
 
-      - name: Stream artifacts to VM via SSH
+      - name: Deploy with Docker Compose
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ env.VM_HOST }}
@@ -112,130 +90,93 @@ jobs:
           key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
           port: 22
           timeout: 60s
-          command_timeout: 5m
-          script: |
-            # Create temp directory on VM
-            mkdir -p /tmp/deploy-extract
-            rm -rf /tmp/deploy-extract/*
-
-      - name: Copy artifacts using rsync over SSH
-        run: |
-          # Setup SSH key
-          mkdir -p ~/.ssh
-          echo "${{ secrets.VM_SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          
-          # Use rsync for efficient transfer (compressed, delta transfer)
-          rsync -avz --delete -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
-            deploy-artifacts/ \
-            ${{ env.VM_USER }}@${{ env.VM_HOST }}:/tmp/deploy-extract/
-          
-          # Cleanup key
-          rm -f ~/.ssh/deploy_key
-
-      - name: Deploy to VM
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ env.VM_HOST }}
-          username: ${{ env.VM_USER }}
-          key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
-          port: 22
-          timeout: 60s
-          command_timeout: 5m
+          command_timeout: 10m
           script: |
             set -e
             
-            # Setup Node.js
-            export PATH="/home/azureuser/.local/share/fnm:$PATH"
-            eval "$(/home/azureuser/.local/share/fnm/fnm env)"
-            
             cd /home/azureuser/smart-apply
             
-            # Pull latest code (for config files, .env, etc.)
+            # Pull latest code (for docker-compose.prod.yml)
             echo "📦 Syncing code..."
             git fetch origin main --depth=1
             git reset --hard origin/main
             
-            # Copy pre-built artifacts from temp location
-            echo "📂 Copying build artifacts..."
-            rm -rf dist
-            cp -r /tmp/deploy-extract/dist .
+            # Login to GitHub Container Registry
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
-            # Setup Next.js build
-            rm -rf apps/web/.next apps/web/public apps/web/node_modules
-            cp -r /tmp/deploy-extract/web/.next apps/web/.next
-            cp -r /tmp/deploy-extract/web/public apps/web/public
-            cp -r /tmp/deploy-extract/web/node_modules apps/web/node_modules
+            # Pull latest images from registry
+            echo "📦 Pulling Docker images..."
+            docker pull ${{ env.API_IMAGE }}:latest
+            docker pull ${{ env.WEB_IMAGE }}:latest
             
-            # Check if node_modules needs update
-            LOCK_HASH=$(md5sum package-lock.json | cut -d' ' -f1)
-            CACHED_HASH=$(cat .npm-cache-hash 2>/dev/null || echo "")
+            # Tag images for local use
+            docker tag ${{ env.API_IMAGE }}:latest smartapply-api:latest
+            docker tag ${{ env.WEB_IMAGE }}:latest smartapply-web:latest
             
-            if [ "$LOCK_HASH" != "$CACHED_HASH" ]; then
-              echo "📥 Dependencies changed, running npm ci..."
-              npm ci --prefer-offline --no-audit --no-fund --ignore-scripts
-              cd apps/api && npx prisma generate && cd ../..
-              echo "$LOCK_HASH" > .npm-cache-hash
-            fi
+            # Stop PM2 if running (cleanup from old setup)
+            pm2 delete all 2>/dev/null || true
+            pm2 save --force 2>/dev/null || true
             
-            # Database migrations (skip generate since we did it above or it's cached)
-            echo "🗃️ Database migrations..."
-            cd apps/api
-            npx prisma db push --skip-generate --accept-data-loss 2>/dev/null || npx prisma db push --skip-generate
-            cd ../..
+            # Stop existing containers
+            docker compose -f infra/docker-compose.prod.yml down --remove-orphans 2>/dev/null || true
             
-            # Graceful restart (zero-downtime)
-            echo "🔄 Restarting services..."
+            # Start services with Docker Compose
+            echo "🚀 Starting services..."
+            docker compose -f infra/docker-compose.prod.yml up -d
             
-            # API restart
-            if pm2 describe api > /dev/null 2>&1; then
-              pm2 reload api --update-env
-            else
-              pm2 start dist/apps/api/main.js --name "api" --cwd /home/azureuser/smart-apply/apps/api
-            fi
-            
-            # Web restart - start Next.js in production mode
-            if pm2 describe web > /dev/null 2>&1; then
-              pm2 delete web
-            fi
-            
-            cd /home/azureuser/smart-apply/apps/web
-            NODE_ENV=production PORT=3001 NEXT_PUBLIC_API_URL=https://smartapplymvp.swedencentral.cloudapp.azure.com/api/v1 \
-              pm2 start npm --name "web" -- start
-            
-            pm2 save
-            
-            # Quick health check (API should be fast after reload)
-            echo "⏳ Waiting for API..."
-            for i in {1..4}; do
-              if curl -sf --max-time 3 http://localhost:3000/api/v1/health > /dev/null 2>&1; then
+            # Wait for API to be healthy
+            echo "⏳ Waiting for API to be healthy..."
+            for i in {1..30}; do
+              if docker compose -f infra/docker-compose.prod.yml exec -T api wget -q --spider http://localhost:3000/api/v1/health 2>/dev/null; then
                 echo "✅ API is healthy!"
                 break
               fi
+              echo "  Waiting... ($i/30)"
               sleep 2
             done
             
-            # Cleanup
-            rm -rf /tmp/deploy-extract
+            # Run database migrations
+            echo "🗃️ Running migrations..."
+            docker compose -f infra/docker-compose.prod.yml exec -T api npx prisma db push --skip-generate --accept-data-loss 2>/dev/null || \
+              docker compose -f infra/docker-compose.prod.yml exec -T api npx prisma db push --skip-generate
             
-            pm2 status
+            # Show status
+            echo ""
+            echo "📊 Container status:"
+            docker compose -f infra/docker-compose.prod.yml ps
+            
+            # Cleanup old images
+            docker image prune -f 2>/dev/null || true
+            
+            echo ""
             echo "✅ Deployment complete!"
 
       - name: Health Check
         run: |
           echo "⏳ Verifying external health..."
-          sleep 3
-          for i in {1..4}; do
-            if curl -sf --max-time 8 https://${{ env.VM_HOST }}/api/v1/health; then
+          sleep 5
+          for i in {1..6}; do
+            if curl -sf --max-time 10 https://${{ env.VM_HOST }}/api/v1/health; then
               echo -e "\n✅ Health check passed!"
               exit 0
             fi
-            echo "Attempt $i/4 - waiting 5s..."
+            echo "Attempt $i/6 - waiting 5s..."
             sleep 5
           done
           echo "❌ Health check failed"
           exit 1
 
-      - name: Notify on failure
+      - name: Show logs on failure
         if: failure()
-        run: echo "❌ Deployment failed! Check the logs above."
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ env.VM_HOST }}
+          username: ${{ env.VM_USER }}
+          key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            echo "=== API Logs ==="
+            docker logs smartapply-api --tail 50 2>&1 || true
+            echo ""
+            echo "=== Web Logs ==="
+            docker logs smartapply-web --tail 50 2>&1 || true
