@@ -73,7 +73,7 @@ export class PdfService implements OnModuleInit, OnModuleDestroy {
         idleTimeoutMillis: this.configService.puppeteerIdleTimeoutMs,
         evictionRunIntervalMillis: this.configService.puppeteerEvictionIntervalMs,
         testOnBorrow: true, // Validate browser before use
-        acquireTimeoutMillis: 30000, // Wait up to 30s for a browser
+        acquireTimeoutMillis: 60000, // Wait up to 60s for a browser (increased from 30s)
       },
     );
 
@@ -118,6 +118,15 @@ export class PdfService implements OnModuleInit, OnModuleDestroy {
       this.poolMetrics.totalAcquires++;
       this.poolMetrics.currentlyAcquired++;
 
+      // Log pool status before acquire attempt
+      const poolStatus = {
+        size: this.browserPool.size,
+        available: this.browserPool.available,
+        borrowed: this.browserPool.borrowed,
+        pending: this.browserPool.pending,
+      };
+      this.logger.debug(`Acquiring browser... Pool status: ${JSON.stringify(poolStatus)}`);
+
       const browser = await this.browserPool.acquire();
 
       // Log pool metrics after acquire
@@ -128,7 +137,20 @@ export class PdfService implements OnModuleInit, OnModuleDestroy {
       return browser;
     } catch (error) {
       this.poolMetrics.totalErrors++;
-      this.logger.error('Failed to acquire browser from pool', error);
+      this.poolMetrics.currentlyAcquired--;
+      
+      // Log detailed error info
+      const poolStatus = {
+        size: this.browserPool.size,
+        available: this.browserPool.available,
+        borrowed: this.browserPool.borrowed,
+        pending: this.browserPool.pending,
+      };
+      this.logger.error(
+        `Failed to acquire browser from pool. Status: ${JSON.stringify(poolStatus)}`,
+        error,
+      );
+      
       throw new Error(`Browser pool exhausted: ${error.message}`);
     }
   }
