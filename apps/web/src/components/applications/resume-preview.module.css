@@ -127,6 +127,26 @@
   font-size: 0.875rem;
 }
 
+.timelineDescription {
+  color: #334155;
+  line-height: 1.45;
+  font-size: 0.875rem;
+  margin-top: 0.45rem;
+}
+
+.timelineDescription p {
+  margin-bottom: 0.25rem;
+}
+
+.timelineDescription ul {
+  margin-left: 0.85rem;
+  list-style-type: disc;
+}
+
+.timelineDescription li {
+  margin-bottom: 0.25rem;
+}
+
 .timelineList {
   margin-left: 0.85rem;
   color: #334155;

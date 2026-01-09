@@ -235,8 +235,24 @@ export function ResumeFormEditor({
     }
   }, [onAiProjectRequest, projectInstructions, value, onChange]);
 
+  // Helper to compute fullAddress from address components
+  const computeFullAddress = (data: ResumeData): string => {
+    const parts: string[] = [];
+    if (data.street) parts.push(data.street);
+    if (data.postalCode || data.city) {
+      parts.push([data.postalCode, data.city].filter(Boolean).join(' '));
+    }
+    if (data.country) parts.push(data.country);
+    return parts.join(', ');
+  };
+
   const updateField = <K extends keyof ResumeData>(field: K, newValue: ResumeData[K]) => {
-    onChange({ ...value, [field]: newValue });
+    const updated = { ...value, [field]: newValue };
+    // Auto-update fullAddress when any address field changes
+    if (['street', 'postalCode', 'city', 'country'].includes(field as string)) {
+      updated.fullAddress = computeFullAddress(updated);
+    }
+    onChange(updated);
   };
 
   const addSkillCategory = () => {
@@ -404,14 +420,45 @@ export function ResumeFormEditor({
                 placeholder="+49 123 456789"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="location">Standort</Label>
+            <div className="space-y-2 col-span-2">
+              <Label htmlFor="street">Straße und Hausnummer</Label>
               <Input
-                id="location"
-                value={value.location || ''}
-                onChange={(e) => updateField('location', e.target.value)}
+                id="street"
+                value={value.street || ''}
+                onChange={(e) => updateField('street', e.target.value)}
                 disabled={disabled}
-                placeholder="Stadt, Land"
+                placeholder="Musterstraße 123"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="postalCode">Postleitzahl</Label>
+              <Input
+                id="postalCode"
+                value={value.postalCode || ''}
+                onChange={(e) => updateField('postalCode', e.target.value)}
+                disabled={disabled}
+                placeholder="47057"
+                maxLength={5}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="city">Stadt</Label>
+              <Input
+                id="city"
+                value={value.city || ''}
+                onChange={(e) => updateField('city', e.target.value)}
+                disabled={disabled}
+                placeholder="Duisburg"
+              />
+            </div>
+            <div className="space-y-2 col-span-2">
+              <Label htmlFor="country">Land <span className="text-muted-foreground text-xs font-normal">(optional)</span></Label>
+              <Input
+                id="country"
+                value={value.country || ''}
+                onChange={(e) => updateField('country', e.target.value)}
+                disabled={disabled}
+                placeholder="z.B. Deutschland"
               />
             </div>
             <div className="space-y-2">

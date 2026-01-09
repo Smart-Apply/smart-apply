@@ -3,6 +3,64 @@ import { isHtml } from './markdown';
 import { htmlToPlainText, plainTextToHtml, sanitizeHtml } from './sanitize';
 
 const DEFAULT_CATEGORY = '';
+
+/**
+ * Convert an achievements array to HTML bullet points
+ * @param achievements - Array of achievement strings
+ * @returns HTML string with <ul><li> structure, or empty string if no achievements
+ */
+function achievementsToHtml(achievements?: string[]): string {
+  if (!achievements || achievements.length === 0) return '';
+  const items = achievements
+    .filter(Boolean)
+    .map((a) => `<li>${a}</li>`)
+    .join('');
+  return items ? `<ul>${items}</ul>` : '';
+}
+
+/**
+ * Merge achievements into description for editor display.
+ * If description already contains bullet points (HTML or plain text with "- "),
+ * we assume achievements are already included and skip merging.
+ *
+ * @param description - The description field (may be HTML or plain text)
+ * @param achievements - Array of achievement strings
+ * @returns Combined HTML with description (if any) followed by achievement bullets
+ */
+function mergeAchievementsIntoDescription(
+  description?: string,
+  achievements?: string[],
+): string | undefined {
+  const hasAchievements = achievements && achievements.filter(Boolean).length > 0;
+
+  if (!description && !hasAchievements) {
+    return undefined;
+  }
+
+  // If description is empty, just return achievements as bullet points
+  if (!description || description.trim() === '') {
+    return hasAchievements ? achievementsToHtml(achievements) : undefined;
+  }
+
+  // Check if description already has bullet points (HTML or Markdown-style)
+  const hasBulletPoints = /<(ul|ol|li)/i.test(description) || /^[\s]*[-•*]\s/m.test(description);
+
+  if (hasBulletPoints) {
+    // Description already contains bullet points, don't duplicate
+    return description;
+  }
+
+  // Merge: description paragraph + achievements as bullet points
+  if (!hasAchievements) {
+    return description;
+  }
+
+  // Ensure description is wrapped in HTML if it's plain text
+  const htmlDescription = isHtml(description) ? description : `<p>${description}</p>`;
+  const htmlAchievements = achievementsToHtml(achievements);
+
+  return `${htmlDescription}${htmlAchievements}`;
+}
 const monthFormatter = new Intl.DateTimeFormat('de-DE', {
   month: 'short',
   year: 'numeric',
@@ -61,11 +119,24 @@ export function buildResumeFromProfile(
   profile: Profile,
   options?: { candidateName?: string; email?: string },
 ): ResumeData {
+  // Build full address from components
+  const addressParts: string[] = [];
+  if (profile.street) addressParts.push(profile.street);
+  if (profile.postalCode || profile.city) {
+    addressParts.push([profile.postalCode, profile.city].filter(Boolean).join(' '));
+  }
+  if (profile.country) addressParts.push(profile.country);
+  const fullAddress = addressParts.join(', ');
+
   return {
     candidateName: options?.candidateName || 'Vorname Nachname',
     email: options?.email || '',
     phone: profile.phone || '',
-    location: profile.location || '',
+    street: profile.street || '',
+    postalCode: profile.postalCode || '',
+    city: profile.city || '',
+    country: profile.country || '',
+    fullAddress: fullAddress || '',
     linkedin: profile.linkedinUrl || '',
     github: profile.githubUrl || '',
     summary: profile.summary ? htmlToPlainText(profile.summary) : '',
@@ -116,11 +187,67 @@ export function parseResumeDraft(resumeText?: string | null): ResumeData | null 
   }
 
   try {
-    return JSON.parse(resumeText) as ResumeData;
+    const data = JSON.parse(resumeText) as ResumeData;
+
+    // Merge achievements into description for each experience
+    // This allows users to edit bullet points in the description editor
+    if (data.experiences && data.experiences.length > 0) {
+      data.experiences = data.experiences.map((exp) => ({
+        ...exp,
+        description: mergeAchievementsIntoDescription(exp.description, exp.achievements),
+        // Keep achievements for backward compatibility with preview,
+        // but it will be empty since content is now in description
+        achievements: [],
+      }));
+    }
+
+    // Also merge highlights into description for projects
+    if (data.projects && data.projects.length > 0) {
+      data.projects = data.projects.map((proj) => ({
+        ...proj,
+        description: mergeAchievementsIntoDescription(proj.description, proj.highlights),
+        highlights: [],
+      }));
+    }
+
+    return data;
   } catch (error) {
     console.error('Failed to parse resume JSON', error);
     return null;
   }
+}
+
+/**
+ * Normalize translated resume data for editor display.
+ * Merges achievements/highlights into description so they're editable in the rich text editor.
+ * Use this function when receiving translated content from the API.
+ *
+ * @param resume - The translated ResumeData object from the API
+ * @returns Normalized ResumeData with achievements merged into description
+ */
+export function normalizeTranslatedResume(resume: ResumeData): ResumeData {
+  const result = { ...resume };
+
+  // Merge achievements into description for each experience
+  if (result.experiences && result.experiences.length > 0) {
+    result.experiences = result.experiences.map((exp) => ({
+      ...exp,
+      description: mergeAchievementsIntoDescription(exp.description, exp.achievements),
+      // Clear achievements since they're now in description
+      achievements: [],
+    }));
+  }
+
+  // Also merge highlights into description for projects
+  if (result.projects && result.projects.length > 0) {
+    result.projects = result.projects.map((proj) => ({
+      ...proj,
+      description: mergeAchievementsIntoDescription(proj.description, proj.highlights),
+      highlights: [],
+    }));
+  }
+
+  return result;
 }
 
 /**
@@ -147,7 +274,7 @@ function toHtmlSafe(value?: string): string | undefined {
   if (!value) return undefined;
   const trimmed = value.trim();
   if (!trimmed) return undefined;
-  
+
   // Check if already HTML
   if (isHtml(trimmed)) {
     // Check for empty HTML variants
@@ -155,7 +282,7 @@ function toHtmlSafe(value?: string): string | undefined {
     // Sanitize and return existing HTML
     return sanitizeHtml(trimmed);
   }
-  
+
   // Plain text - convert to HTML
   return plainTextToHtml(trimmed);
 }
@@ -164,7 +291,13 @@ function withDateRange(experience: ResumeExperience): ResumeExperience {
   const trimPreservingNewlines = (value?: string) => {
     if (!value) return undefined;
     // Trim each line individually but preserve newlines
-    return value.split('\n').map(line => line.trim()).join('\n').trim() || undefined;
+    return (
+      value
+        .split('\n')
+        .map((line) => line.trim())
+        .join('\n')
+        .trim() || undefined
+    );
   };
   const toHtml = (value?: string) => {
     if (!value) return undefined;
@@ -186,12 +319,30 @@ function withDateRange(experience: ResumeExperience): ResumeExperience {
 export function normalizeResumeForSave(resume: ResumeData): ResumeData {
   const trim = (value?: string) => value?.trim() || undefined;
 
+  // Compute fullAddress from components
+  const street = trim(resume.street);
+  const postalCode = trim(resume.postalCode);
+  const city = trim(resume.city);
+  const country = trim(resume.country);
+
+  const addressParts: string[] = [];
+  if (street) addressParts.push(street);
+  if (postalCode || city) {
+    addressParts.push([postalCode, city].filter(Boolean).join(' '));
+  }
+  if (country) addressParts.push(country);
+  const fullAddress = addressParts.join(', ') || undefined;
+
   return {
     ...resume,
     candidateName: resume.candidateName.trim(),
     email: resume.email.trim(),
     phone: trim(resume.phone),
-    location: trim(resume.location),
+    street,
+    postalCode,
+    city,
+    country,
+    fullAddress,
     linkedin: trim(resume.linkedin),
     github: trim(resume.github),
     summary: toHtmlSafe(resume.summary),

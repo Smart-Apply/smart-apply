@@ -13,16 +13,16 @@
     <p class="target-job-title">{{targetJobTitle}}</p>
     {{/if}}
     <div class="contact-info">
+      {{#if fullAddress}}
+        {{fullAddress}}
+      {{/if}}
       {{#if email}}
+        <span class="separator">|</span>
         {{email}}
       {{/if}}
       {{#if phone}}
         <span class="separator">|</span>
         {{phone}}
-      {{/if}}
-      {{#if location}}
-        <span class="separator">|</span>
-        {{location}}
       {{/if}}
       {{#if linkedin}}
         <span class="separator">|</span>

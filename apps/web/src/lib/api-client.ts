@@ -21,6 +21,8 @@ import type {
   UpdateUserPreferencesDto,
   PaginatedResponse,
   ExtractedProfile,
+  TranslationResponse,
+  TranslationCacheStatusResponse,
 } from '@/types';
 import { ApiError, NetworkError, shouldRetry, getRetryDelay, isPermanentAuthFailure } from './errors';
 import { getCsrfToken, refreshCsrfToken } from './csrf';
@@ -566,7 +568,7 @@ export const api = {
         body: JSON.stringify(data),
       }),
 
-    createWithGeneration: (data: { jobPostingId: string; coverLetterTemplateId?: string; resumeTemplateId?: string; generateCoverLetter?: boolean }) =>
+    createWithGeneration: (data: { jobPostingId: string; coverLetterTemplateId?: string; resumeTemplateId?: string; generateCoverLetter?: boolean; language?: string }) =>
       apiRequest<Application>('/applications/create-with-generation', {
         method: 'POST',
         body: JSON.stringify(data),
@@ -677,6 +679,16 @@ export const api = {
 
     getKeywordsAnalysis: (id: string) =>
       apiRequest<ApplicationKeywordsResponse>(`/applications/${id}/keywords`),
+
+    // Translation endpoints
+    translate: (id: string, data: { targetLanguage: string; force?: boolean; sections?: string[] }) =>
+      apiRequest<TranslationResponse>(`/applications/${id}/translate`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    getTranslationCacheStatus: (id: string) =>
+      apiRequest<TranslationCacheStatusResponse>(`/applications/${id}/cache-status`),
   },
 
   // Sessions

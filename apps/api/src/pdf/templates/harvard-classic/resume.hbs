@@ -15,8 +15,8 @@
 
     {{! =========== CONTACT INFO =========== }}
     <div class="contact-info">
-        {{#if location}}<span>{{location}}</span>{{/if}}
-        {{#if location}}{{#if email}}<span class="contact-separator">•</span>{{/if}}{{/if}}
+        {{#if fullAddress}}<span>{{fullAddress}}</span>{{/if}}
+        {{#if fullAddress}}{{#if email}}<span class="contact-separator">•</span>{{/if}}{{/if}}
         {{#if email}}<span><a href="mailto:{{email}}">{{email}}</a></span>{{/if}}
         {{#if email}}{{#if phone}}<span class="contact-separator">•</span>{{/if}}{{/if}}
         {{#if phone}}<span>{{phone}}</span>{{/if}}
@@ -57,7 +57,7 @@
                 </div>
             </div>
             {{#if this.description}}
-            <p class="description">{{{this.description}}}</p>
+            <div class="description">{{{this.description}}}</div>
             {{/if}}
             {{#if this.achievements}}
             <ul class="item-bullets">
@@ -94,7 +94,7 @@
                 </div>
             </div>
             {{#if this.description}}
-            <p class="description">{{{this.description}}}</p>
+            <div class="description">{{{this.description}}}</div>
             {{/if}}
             {{#if this.achievements}}
             <ul class="item-bullets">
@@ -125,7 +125,7 @@
                 {{/if}}
             </div>
             {{#if this.description}}
-            <p class="description">{{{this.description}}}</p>
+            <div class="description">{{{this.description}}}</div>
             {{/if}}
             {{#if this.highlights}}
             <ul class="item-bullets">

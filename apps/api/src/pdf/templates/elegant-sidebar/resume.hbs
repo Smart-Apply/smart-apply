@@ -27,6 +27,14 @@
             <div class="sidebar-section">
                 <h2 class="sidebar-section-title">{{t "contact" language}}</h2>
                 <ul class="contact-info-list">
+                    {{#if fullAddress}}
+                    <li class="contact-info-item">
+                        <svg class="contact-info-icon" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
+                        </svg>
+                        {{fullAddress}}
+                    </li>
+                    {{/if}}
                     {{#if email}}
                     <li class="contact-info-item">
                         <svg class="contact-info-icon" fill="currentColor" viewBox="0 0 20 20">
@@ -42,14 +50,6 @@
                             <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
                         </svg>
                         {{phone}}
-                    </li>
-                    {{/if}}
-                    {{#if location}}
-                    <li class="contact-info-item">
-                        <svg class="contact-info-icon" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
-                        </svg>
-                        {{location}}
                     </li>
                     {{/if}}
                     {{#if website}}
@@ -155,7 +155,7 @@
                         </div>
                         <div class="item-company">{{this.company}}{{#if this.location}} · {{this.location}}{{/if}}</div>
                         {{#if this.description}}
-                        <p class="item-description">{{nl2br this.description}}</p>
+                        <div class="item-description">{{{this.description}}}</div>
                         {{/if}}
                         {{#if this.achievements}}
                         <ul class="achievements-list">
@@ -184,7 +184,7 @@
                             {{/if}}
                         </div>
                         {{#if this.description}}
-                        <p class="item-description">{{nl2br this.description}}</p>
+                        <div class="item-description">{{{this.description}}}</div>
                         {{/if}}
                         {{#if this.technologies}}
                         <p class="item-description"><strong>Technologies:</strong> {{this.technologies}}</p>

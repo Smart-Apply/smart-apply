@@ -25,7 +25,10 @@ Extract all relevant profile information from the resume text and return it as s
 - **firstName**: Extract the first name (given name)
 - **lastName**: Extract the last name (family name/surname)
 - **phone**: Extract phone number, normalize to international format if possible (e.g., +49123456789)
-- **location**: Extract city/location (e.g., "Berlin, Germany" or "München")
+- **street**: Extract street address if present (e.g., "Musterstraße 123", "Hauptstr. 45")
+- **postalCode**: Extract postal code/ZIP code if present (e.g., "47057", "10115")
+- **city**: Extract city name (e.g., "Berlin", "München", "Duisburg")
+- **country**: Extract country if stated (e.g., "Deutschland", "Germany", "Österreich"). Default to "Deutschland" if German address format is detected.
 - **linkedinUrl**: Extract LinkedIn URL if present
 - **githubUrl**: Extract GitHub URL if present
 - **portfolioUrl**: Extract personal website/portfolio URL if present
@@ -110,7 +113,10 @@ Return **ONLY valid JSON** with no markdown formatting, no code blocks, no expla
   "firstName": "string or null",
   "lastName": "string or null",
   "phone": "string or null",
-  "location": "string or null",
+  "street": "string or null",
+  "postalCode": "string or null",
+  "city": "string or null",
+  "country": "string or null",
   "linkedinUrl": "string or null",
   "githubUrl": "string or null",
   "portfolioUrl": "string or null",

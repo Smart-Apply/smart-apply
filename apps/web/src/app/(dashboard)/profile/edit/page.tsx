@@ -86,7 +86,10 @@ export default function ProfileEditPage() {
       lastName: '',
       email: '',
       phone: '',
-      location: '',
+      street: '',
+      postalCode: '',
+      city: '',
+      country: '',
       linkedinUrl: '',
       githubUrl: '',
       portfolioUrl: '',
@@ -102,7 +105,10 @@ export default function ProfileEditPage() {
         lastName: user.lastName || '',
         email: user.email || '',
         phone: profile.phone || '',
-        location: profile.location || '',
+        street: profile.street || '',
+        postalCode: profile.postalCode || '',
+        city: profile.city || '',
+        country: profile.country || '',
         linkedinUrl: profile.linkedinUrl || '',
         githubUrl: profile.githubUrl || '',
         portfolioUrl: profile.portfolioUrl || '',
@@ -142,7 +148,10 @@ export default function ProfileEditPage() {
           if (data.firstName) { form.setValue('firstName', data.firstName); importedCount++; }
           if (data.lastName) { form.setValue('lastName', data.lastName); importedCount++; }
           if (data.phone) { form.setValue('phone', data.phone); importedCount++; }
-          if (data.location) { form.setValue('location', data.location); importedCount++; }
+          if (data.street) { form.setValue('street', data.street); importedCount++; }
+          if (data.postalCode) { form.setValue('postalCode', data.postalCode); importedCount++; }
+          if (data.city) { form.setValue('city', data.city); importedCount++; }
+          if (data.country) { form.setValue('country', data.country); importedCount++; }
           if (data.linkedinUrl) { form.setValue('linkedinUrl', data.linkedinUrl); importedCount++; }
           if (data.githubUrl) { form.setValue('githubUrl', data.githubUrl); importedCount++; }
           if (data.portfolioUrl) { form.setValue('portfolioUrl', data.portfolioUrl); importedCount++; }
@@ -252,7 +261,10 @@ export default function ProfileEditPage() {
         firstName: data.firstName || undefined,
         lastName: data.lastName || undefined,
         phone: data.phone?.trim() || undefined,
-        location: data.location?.trim() || undefined,
+        street: data.street?.trim() || undefined,
+        postalCode: data.postalCode?.trim() || undefined,
+        city: data.city?.trim() || undefined,
+        country: data.country?.trim() || undefined,
         linkedinUrl: data.linkedinUrl?.trim() || undefined,
         githubUrl: data.githubUrl?.trim() || undefined,
         portfolioUrl: data.portfolioUrl?.trim() || undefined,
@@ -420,12 +432,51 @@ export default function ProfileEditPage() {
                     />
                     <FormField
                       control={form.control}
-                      name="location"
+                      name="street"
+                      render={({ field }) => (
+                        <FormItem className="col-span-2">
+                          <FormLabel>Straße und Hausnummer</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Musterstraße 123" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="postalCode"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Standort</FormLabel>
+                          <FormLabel>Postleitzahl</FormLabel>
                           <FormControl>
-                            <Input placeholder="Berlin, Deutschland" {...field} />
+                            <Input placeholder="47057" maxLength={5} {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="city"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Stadt</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Duisburg" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="country"
+                      render={({ field }) => (
+                        <FormItem className="col-span-2">
+                          <FormLabel>Land <span className="text-muted-foreground text-xs font-normal">(optional)</span></FormLabel>
+                          <FormControl>
+                            <Input placeholder="z.B. Deutschland" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

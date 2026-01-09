@@ -40,6 +40,11 @@ import { SummaryDto } from './dto/summary.dto';
 import { ExperienceDescriptionDto } from './dto/experience-description.dto';
 import { ProjectDescriptionDto } from './dto/project-description.dto';
 import { ApplicationKeywordsResponseDto } from './dto/application-keywords.dto';
+import {
+  TranslateApplicationDto,
+  TranslateApplicationResponseDto,
+  CacheStatusResponseDto,
+} from './dto/translate-application.dto';
 
 @ApiTags('applications')
 @ApiBearerAuth()
@@ -249,6 +254,51 @@ export class ApplicationsController {
     @Body() dto: ProjectDescriptionDto,
   ): Promise<{ description: string }> {
     return this.applicationsService.generateProjectDescription(user.id, id, dto);
+  }
+
+  @Post(':id/translate')
+  @UseThrottler('translation') // Strict rate limiting: 10 requests per 15 minutes
+  @ApiOperation({
+    summary: 'Translate application content to target language',
+    description:
+      'Translates resume and cover letter content to the target language. Uses smart caching to avoid redundant LLM calls. Returns cached translation if content hash matches.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Content translated successfully',
+    type: TranslateApplicationResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Invalid target language' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Application not found' })
+  @ApiResponse({ status: 429, description: 'Too many requests (max 10 per 15 minutes)' })
+  @ApiResponse({ status: 503, description: 'Translation service unavailable' })
+  async translate(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() dto: TranslateApplicationDto,
+  ): Promise<TranslateApplicationResponseDto> {
+    return this.applicationsService.translateApplication(user.id, id, dto);
+  }
+
+  @Get(':id/cache-status')
+  @ApiOperation({
+    summary: 'Get translation cache status',
+    description:
+      'Returns which languages have valid cached translations. Used for UI to show cache badges in language selector.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Cache status retrieved',
+    type: CacheStatusResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Application not found' })
+  async getCacheStatus(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+  ): Promise<CacheStatusResponseDto> {
+    return this.applicationsService.getTranslationCacheStatus(user.id, id);
   }
 
   @Post(':id/export')

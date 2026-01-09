@@ -118,6 +118,7 @@ export function useCreateApplicationWithGeneration() {
       coverLetterTemplateId?: string; 
       resumeTemplateId?: string; 
       generateCoverLetter?: boolean;
+      language?: string;
     }) =>
       api.applications.createWithGeneration(data),
     onSuccess: (application) => {

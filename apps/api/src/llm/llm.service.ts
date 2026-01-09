@@ -94,6 +94,55 @@ export class LLMService {
     }
   }
 
+  /**
+   * Detect the language of the provided text content
+   * Uses simple heuristics based on common words and patterns
+   * Returns 'en' or 'de' (defaults to 'en' if uncertain)
+   */
+  private detectContentLanguage(text: string): 'en' | 'de' {
+    if (!text || text.trim().length === 0) return 'en';
+
+    // Strip HTML tags for analysis
+    const plainText = text.replace(/<[^>]+>/g, ' ').toLowerCase();
+
+    // German-specific words and patterns
+    const germanPatterns = [
+      /\b(und|oder|der|die|das|für|mit|bei|auf|aus|von|zu|im|ist|sind|wurde|wurden|als|auch|nach)\b/gi,
+      /\b(entwickelt|implementiert|führte|optimiert|erstellt|koordiniert|verbessert|reduziert|steigerte)\b/gi,
+      /\b(erfahrung|projekt|entwicklung|umsetzung|verantwortlich|erfolgreich|prozess|system)\b/gi,
+      /[äöüß]/gi,
+    ];
+
+    // English-specific words and patterns
+    const englishPatterns = [
+      /\b(the|and|or|for|with|from|was|were|has|have|been|into|this|that|which)\b/gi,
+      /\b(developed|implemented|led|optimized|created|coordinated|improved|reduced|increased)\b/gi,
+      /\b(experience|project|development|implementation|responsible|successful|process|system)\b/gi,
+    ];
+
+    let germanScore = 0;
+    let englishScore = 0;
+
+    for (const pattern of germanPatterns) {
+      const matches = plainText.match(pattern);
+      if (matches) germanScore += matches.length;
+    }
+
+    for (const pattern of englishPatterns) {
+      const matches = plainText.match(pattern);
+      if (matches) englishScore += matches.length;
+    }
+
+    // If German umlauts or ß are present, heavily weight towards German
+    if (/[äöüß]/i.test(plainText)) {
+      germanScore += 10;
+    }
+
+    this.logger.debug(`Language detection: German=${germanScore}, English=${englishScore}`);
+
+    return germanScore > englishScore ? 'de' : 'en';
+  }
+
   async generateCoverLetter(context: CoverLetterContext): Promise<string> {
     const template = await this.loadTemplate('cover-letter.md');
     const prompt = this.renderTemplate(template, context);
@@ -590,6 +639,383 @@ ${summary}
   }
 
   /**
+   * Translate a full resume section (experience, project, or education)
+   * Handles job titles, locations, dates, and descriptions
+   *
+   * @param sectionType - Type of section: 'experience', 'project', 'education'
+   * @param content - Section content (title, company/institution, description, dates)
+   * @param fromLanguage - Source language code (de, en, fr, es, it)
+   * @param toLanguage - Target language code
+   * @returns Translated section content
+   */
+  async translateResumeSection(
+    sectionType: 'experience' | 'project' | 'education',
+    content: {
+      title?: string;
+      company?: string;
+      institution?: string;
+      location?: string;
+      description?: string;
+      startDate?: string;
+      endDate?: string;
+      dateRange?: string; // Formatted date range like "Jan 2020 – Heute"
+      fieldOfStudy?: string;
+      name?: string; // For projects
+      year?: string; // For education (formatted year range)
+      achievements?: string[]; // Bullet points for experiences
+      highlights?: string[]; // Bullet points for projects
+    },
+    fromLanguage: string,
+    toLanguage: string,
+  ): Promise<typeof content> {
+    if (fromLanguage === toLanguage) {
+      return content;
+    }
+
+    const languageNames: Record<string, string> = {
+      de: 'German',
+      en: 'English',
+      fr: 'French',
+      es: 'Spanish',
+      it: 'Italian',
+    };
+
+    const fromLang = languageNames[fromLanguage] || fromLanguage;
+    const toLang = languageNames[toLanguage] || toLanguage;
+
+    this.logger.log(`Translating ${sectionType} section from ${fromLang} to ${toLang}`);
+
+    const sectionTypeLabels: Record<string, { de: string; en: string }> = {
+      experience: { de: 'Berufserfahrung', en: 'Work Experience' },
+      project: { de: 'Projekt', en: 'Project' },
+      education: { de: 'Ausbildung', en: 'Education' },
+    };
+
+    // Build content string for translation
+    const contentParts: string[] = [];
+    if (content.title) contentParts.push(`Title: ${content.title}`);
+    if (content.name) contentParts.push(`Name: ${content.name}`);
+    if (content.company) contentParts.push(`Company: ${content.company}`);
+    if (content.institution) contentParts.push(`Institution: ${content.institution}`);
+    if (content.location) contentParts.push(`Location: ${content.location}`);
+    if (content.fieldOfStudy) contentParts.push(`Field of Study: ${content.fieldOfStudy}`);
+    if (content.startDate) contentParts.push(`Start Date: ${content.startDate}`);
+    if (content.endDate) contentParts.push(`End Date: ${content.endDate}`);
+    if (content.dateRange) contentParts.push(`Date Range: ${content.dateRange}`);
+    if (content.year) contentParts.push(`Year: ${content.year}`);
+    if (content.description) contentParts.push(`Description: ${content.description}`);
+    if (content.achievements?.length) {
+      contentParts.push(
+        `Achievements (bullet points):\n${content.achievements.map((a, i) => `  ${i + 1}. ${a}`).join('\n')}`,
+      );
+    }
+    if (content.highlights?.length) {
+      contentParts.push(
+        `Highlights (bullet points):\n${content.highlights.map((h, i) => `  ${i + 1}. ${h}`).join('\n')}`,
+      );
+    }
+
+    const prompt = `Translate the following ${sectionTypeLabels[sectionType]?.en || sectionType} section from ${fromLang} to ${toLang}.
+
+**Original Content (${fromLang}):**
+${contentParts.join('\n')}
+
+**Translation Rules:**
+1. Translate job titles appropriately (e.g., "Software Engineer" → "Software-Ingenieur" for German, or "Softwareentwickler" → "Software Developer" for English)
+2. Translate city/country names (e.g., "Köln, Deutschland" → "Cologne, Germany", "Munich" → "München")
+3. Translate date formats and month names (e.g., "Juli 2025" → "July 2025", "May 2026" → "Mai 2026")
+4. Translate descriptions while maintaining professional tone
+5. Keep technical terms in English (React, Docker, AWS, TypeScript, etc.)
+6. Keep company/institution names unchanged (they are proper nouns)
+7. Return the result as JSON with the same field names
+8. **Important:** Translate dateRange/year fields with proper month names and "Present/Current" terms:
+   - German → English: "Heute", "Aktuell" → "Present"
+   - English → German: "Present", "Current" → "Heute"
+   - Keep the format (e.g., "Jan 2020 – Heute" → "Jan 2020 – Present")
+
+**Example Date Range Translations:**
+- German → English: "Jan 2020 – Heute" → "Jan 2020 – Present", "März 2018 – Dez 2022" → "Mar 2018 – Dec 2022"
+- English → German: "Jan 2020 – Present" → "Jan 2020 – Heute", "Mar 2018 – Dec 2022" → "März 2018 – Dez 2022"
+
+**Example Month Translations:**
+- German → English: "Januar" → "January", "Februar" → "February", "März" → "March", "Mai" → "May", "Juni" → "June", "Juli" → "July", "Oktober" → "October", "Dezember" → "December"
+- English → German: "January" → "Januar", "February" → "Februar", "March" → "März", "May" → "Mai", "June" → "Juni", "July" → "Juli", "October" → "Oktober", "December" → "Dezember"
+
+9. **Translate achievements/highlights arrays:** Each bullet point should be translated while preserving professional tone and action verbs
+
+**Return ONLY valid JSON** in this format (include only non-empty fields):
+{
+  "title": "translated title or null",
+  "name": "translated name or null",
+  "company": "original company name",
+  "institution": "original institution name",
+  "location": "translated location or null",
+  "fieldOfStudy": "translated field or null",
+  "startDate": "translated date or null",
+  "endDate": "translated date or null",
+  "dateRange": "translated date range or null",
+  "year": "translated year or null",
+  "description": "translated description or null",
+  "achievements": ["translated bullet point 1", "translated bullet point 2"],
+  "highlights": ["translated highlight 1", "translated highlight 2"]
+}`;
+
+    try {
+      const response = await this.callProvider(prompt, {
+        temperature: 0.2, // Lower temperature for accurate translation
+        maxTokens: 1500,
+        systemMessage: `You are an expert translator specializing in professional resume and CV content. You accurately translate job titles, locations, dates, date ranges, and descriptions while preserving technical terms in English. Always return valid JSON.`,
+      });
+
+      // Parse JSON response
+      const parsed = this.parseJsonResponse<
+        typeof content & { achievements?: string[]; highlights?: string[] }
+      >(response, 'translate-section');
+
+      // Merge with original content to preserve any fields not translated
+      return {
+        ...content,
+        title: parsed.title || content.title,
+        name: parsed.name || content.name,
+        location: parsed.location || content.location,
+        fieldOfStudy: parsed.fieldOfStudy || content.fieldOfStudy,
+        startDate: parsed.startDate || content.startDate,
+        endDate: parsed.endDate || content.endDate,
+        dateRange: parsed.dateRange || content.dateRange,
+        year: parsed.year || content.year,
+        description: parsed.description || content.description,
+        achievements: parsed.achievements?.length ? parsed.achievements : content.achievements,
+        highlights: parsed.highlights?.length ? parsed.highlights : content.highlights,
+        // Keep company/institution unchanged
+        company: content.company,
+        institution: content.institution,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to translate ${sectionType} section`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Translate cover letter content from one language to another
+   * Preserves HTML formatting and structure
+   *
+   * @param html - Cover letter HTML content
+   * @param fromLanguage - Source language code
+   * @param toLanguage - Target language code
+   * @returns Translated HTML content
+   */
+  async translateCoverLetter(
+    html: string,
+    fromLanguage: string,
+    toLanguage: string,
+  ): Promise<string> {
+    if (!html || fromLanguage === toLanguage) {
+      return html;
+    }
+
+    const languageNames: Record<string, string> = {
+      de: 'German',
+      en: 'English',
+      fr: 'French',
+      es: 'Spanish',
+      it: 'Italian',
+    };
+
+    const fromLang = languageNames[fromLanguage] || fromLanguage;
+    const toLang = languageNames[toLanguage] || toLanguage;
+
+    this.logger.log(`Translating cover letter from ${fromLang} to ${toLang}`);
+
+    const prompt = `Translate the following cover letter from ${fromLang} to ${toLang}.
+
+**Original Cover Letter (${fromLang}):**
+${html}
+
+**Translation Rules:**
+1. Translate all text content accurately while maintaining professional, formal tone
+2. Preserve HTML tags exactly as they are (<p>, <strong>, <ul>, <li>, etc.)
+3. Translate salutations appropriately:
+   - German → English: "Sehr geehrte Damen und Herren" → "Dear Hiring Manager" / "Dear Sir or Madam"
+   - English → German: "Dear Hiring Manager" → "Sehr geehrte Damen und Herren"
+   - German → English: "Mit freundlichen Grüßen" → "Sincerely" / "Best regards"
+   - English → German: "Sincerely" / "Best regards" → "Mit freundlichen Grüßen"
+4. Keep technical terms in English (React, Docker, AWS, TypeScript, etc.)
+5. Keep company names and product names unchanged
+6. Translate date references (e.g., "seit Juli 2023" → "since July 2023")
+7. Return ONLY the translated HTML, no explanations or markdown
+
+**Translated Cover Letter (${toLang}):**`;
+
+    return this.callProvider(prompt, {
+      temperature: 0.3,
+      maxTokens: 2500,
+      systemMessage: `You are an expert translator specializing in professional business correspondence and cover letters. You translate accurately while maintaining formal professional tone and preserving HTML structure exactly.`,
+    });
+  }
+
+  /**
+   * Translate full resume content (all sections)
+   * Used for batch translation and prewarming
+   *
+   * @param resume - Full resume data object
+   * @param coverLetter - Cover letter HTML
+   * @param fromLanguage - Source language
+   * @param toLanguage - Target language
+   * @param sectionsToTranslate - Optional: specific sections to translate (for partial translation)
+   * @returns Translated resume and cover letter
+   */
+  async translateFullContent(
+    resume: any,
+    coverLetter: string | null,
+    fromLanguage: string,
+    toLanguage: string,
+    sectionsToTranslate?: string[],
+  ): Promise<{ resume: any; coverLetter: string }> {
+    if (fromLanguage === toLanguage) {
+      return { resume, coverLetter: coverLetter || '' };
+    }
+
+    this.logger.log(
+      `Translating full content from ${fromLanguage} to ${toLanguage}${
+        sectionsToTranslate ? ` (sections: ${sectionsToTranslate.join(', ')})` : ''
+      }`,
+    );
+
+    const translateAll = !sectionsToTranslate || sectionsToTranslate.length === 0;
+    const translatedResume = { ...resume };
+
+    // Translate summary
+    if (translateAll || sectionsToTranslate?.includes('summary')) {
+      if (resume.summary) {
+        translatedResume.summary = await this.translateSummary(
+          resume.summary,
+          fromLanguage,
+          toLanguage,
+        );
+      }
+    }
+
+    // Translate experiences
+    if (resume.experiences?.length > 0) {
+      translatedResume.experiences = await Promise.all(
+        resume.experiences.map(async (exp: any, index: number) => {
+          if (translateAll || sectionsToTranslate?.includes(`experience.${index}`)) {
+            const translated = await this.translateResumeSection(
+              'experience',
+              {
+                title: exp.title,
+                company: exp.company,
+                location: exp.location,
+                description: exp.description,
+                startDate: exp.startDate,
+                endDate: exp.endDate,
+                dateRange: exp.dateRange, // Include formatted date range for translation
+                achievements: exp.achievements, // Include achievements for translation
+              },
+              fromLanguage,
+              toLanguage,
+            );
+            return {
+              ...exp,
+              title: translated.title,
+              location: translated.location,
+              description: translated.description,
+              startDate: translated.startDate,
+              endDate: translated.endDate,
+              dateRange: translated.dateRange, // Return translated date range
+              achievements: translated.achievements, // Return translated achievements
+            };
+          }
+          return exp;
+        }),
+      );
+    }
+
+    // Translate projects
+    if (resume.projects?.length > 0) {
+      translatedResume.projects = await Promise.all(
+        resume.projects.map(async (proj: any, index: number) => {
+          if (translateAll || sectionsToTranslate?.includes(`project.${index}`)) {
+            const translated = await this.translateResumeSection(
+              'project',
+              {
+                name: proj.name,
+                description: proj.description,
+                startDate: proj.startDate,
+                endDate: proj.endDate,
+                dateRange: proj.date, // Projects use 'date' field which contains the formatted date
+                highlights: proj.highlights, // Include highlights for translation
+              },
+              fromLanguage,
+              toLanguage,
+            );
+            return {
+              ...proj,
+              name: translated.name,
+              description: translated.description,
+              startDate: translated.startDate,
+              endDate: translated.endDate,
+              date: translated.dateRange || proj.date, // Update the formatted date field
+              highlights: translated.highlights, // Return translated highlights
+            };
+          }
+          return proj;
+        }),
+      );
+    }
+
+    // Translate education
+    if (resume.education?.length > 0) {
+      translatedResume.education = await Promise.all(
+        resume.education.map(async (edu: any, index: number) => {
+          if (translateAll || sectionsToTranslate?.includes(`education.${index}`)) {
+            const translated = await this.translateResumeSection(
+              'education',
+              {
+                title: edu.degree,
+                institution: edu.institution,
+                fieldOfStudy: edu.fieldOfStudy,
+                description: edu.description,
+                startDate: edu.startYear,
+                endDate: edu.endYear,
+                year: edu.year, // Include the formatted year field for translation
+              },
+              fromLanguage,
+              toLanguage,
+            );
+            return {
+              ...edu,
+              degree: translated.title,
+              fieldOfStudy: translated.fieldOfStudy,
+              description: translated.description,
+              startYear: translated.startDate,
+              endYear: translated.endDate,
+              year: translated.year || edu.year, // Update the formatted year field
+            };
+          }
+          return edu;
+        }),
+      );
+    }
+
+    // Translate cover letter
+    let translatedCoverLetter = coverLetter || '';
+    if (coverLetter && (translateAll || sectionsToTranslate?.includes('coverLetter'))) {
+      translatedCoverLetter = await this.translateCoverLetter(
+        coverLetter,
+        fromLanguage,
+        toLanguage,
+      );
+    }
+
+    return {
+      resume: translatedResume,
+      coverLetter: translatedCoverLetter,
+    };
+  }
+
+  /**
    * Modify existing cover letter content based on user instructions
    * Applies AI-based changes to current content while preserving structure
    */
@@ -654,7 +1080,10 @@ Geändertes Anschreiben:`;
     const skillsList = context.skills?.length ? context.skills.join(', ') : 'Keine angegeben';
     const experiencesList = context.experiences?.length
       ? context.experiences
-          .map((exp) => `- ${exp.title} bei ${exp.company}${exp.description ? `: ${exp.description.substring(0, 100)}...` : ''}`)
+          .map(
+            (exp) =>
+              `- ${exp.title} bei ${exp.company}${exp.description ? `: ${exp.description.substring(0, 100)}...` : ''}`,
+          )
           .join('\n')
       : 'Keine angegeben';
 
@@ -662,14 +1091,22 @@ Geändertes Anschreiben:`;
 
     const prompt = `Du bist ein professioneller Karriereberater und hilfst einem Kandidaten, seine berufliche Zusammenfassung für den Lebenslauf zu ${hasExistingSummary ? 'verbessern' : 'erstellen'}.
 
-${hasExistingSummary ? `Aktuelle Zusammenfassung:
+${
+  hasExistingSummary
+    ? `Aktuelle Zusammenfassung:
 ${currentSummary}
 
-` : ''}**Zielposition:** ${context.jobTitle}
+`
+    : ''
+}**Zielposition:** ${context.jobTitle}
 **Unternehmen:** ${context.companyName}
-${context.jobDescription ? `**Stellenbeschreibung (Auszug):**
+${
+  context.jobDescription
+    ? `**Stellenbeschreibung (Auszug):**
 ${context.jobDescription.substring(0, 500)}...
-` : ''}
+`
+    : ''
+}
 **Kandidaten-Skills:** ${skillsList}
 
 **Relevante Berufserfahrung:**
@@ -701,6 +1138,9 @@ Professionelle Zusammenfassung:`;
    * Modify or generate experience description using AI
    * Tailors bullet points to job requirements with action verbs and quantifiable achievements
    * Returns HTML formatted bullets for Tiptap editor
+   *
+   * IMPORTANT: Responds in the same language as the existing content.
+   * Only translates if explicitly requested in instructions.
    */
   async modifyExperienceDescription(
     currentDescription: string | undefined,
@@ -719,55 +1159,138 @@ Professionelle Zusammenfassung:`;
       `Modifying experience description for ${context.experienceTitle} at ${context.experienceCompany} with instructions: ${instructions.substring(0, 50)}...`,
     );
 
-    const skillsList = context.skills?.length ? context.skills.join(', ') : 'Keine angegeben';
+    const skillsList = context.skills?.length ? context.skills.join(', ') : 'Not specified';
     const hasExistingDescription = currentDescription && currentDescription.trim().length > 0;
 
-    const prompt = `Du bist ein professioneller Karriereberater und hilfst einem Kandidaten, die Beschreibung seiner Berufserfahrung für den Lebenslauf zu ${hasExistingDescription ? 'verbessern' : 'erstellen'}.
+    // Detect language of existing content to maintain consistency
+    const contentLanguage = hasExistingDescription
+      ? this.detectContentLanguage(currentDescription)
+      : 'en'; // Default to English for new content
 
-**BERUFSERFAHRUNG DIE BEARBEITET WIRD:**
-- Position: ${context.experienceTitle}
-- Unternehmen: ${context.experienceCompany}
-${context.experienceDateRange ? `- Zeitraum: ${context.experienceDateRange}` : ''}
+    const isGerman = contentLanguage === 'de';
 
-${hasExistingDescription ? `**Aktuelle Beschreibung:**
+    this.logger.log(`Detected content language: ${contentLanguage}`);
+
+    // Language-specific labels
+    const labels = isGerman
+      ? {
+          role: 'Karriereberater',
+          action: hasExistingDescription ? 'verbessern' : 'erstellen',
+          experience: 'BERUFSERFAHRUNG DIE BEARBEITET WIRD',
+          position: 'Position',
+          company: 'Unternehmen',
+          period: 'Zeitraum',
+          currentDesc: 'Aktuelle Beschreibung',
+          targetJob: 'ZIELSTELLE (für Relevanz)',
+          jobDesc: 'Stellenbeschreibung (Auszug)',
+          skills: 'Relevante Skills des Kandidaten',
+          userInstructions: 'Anweisungen des Kandidaten',
+          rules: 'WICHTIGE REGELN',
+          rule1: hasExistingDescription
+            ? 'Wende die gewünschten Änderungen präzise an'
+            : 'Erstelle 3-5 aussagekräftige Bullet-Points',
+          rule2:
+            'Jeder Bullet-Point MUSS mit einem starken Aktionsverb beginnen (Entwickelte, Führte, Implementierte, Steigerte, Optimierte, etc.)',
+          rule3: 'Quantifiziere Erfolge wo möglich (%, €, Anzahl, Zeit, etc.)',
+          rule4: 'Fokussiere auf Erfolge und Impact, nicht nur Aufgaben',
+          rule5: 'Priorisiere Punkte nach Relevanz zur Zielstelle',
+          rule6: 'Halte jeden Punkt auf 1-2 Zeilen (maximal 20 Wörter pro Punkt)',
+          rule7: 'Gib die Antwort als HTML-Aufzählung zurück (KEIN Markdown!)',
+          rule8:
+            'ANTWORTE AUF DEUTSCH, es sei denn die Anweisungen verlangen explizit eine Übersetzung',
+          outputFormat: 'OUTPUT FORMAT (HTML)',
+          example1: 'Erster Bullet-Point mit Aktionsverb und messbarem Erfolg',
+          important: 'Gib NUR das <ul>...</ul> HTML zurück, keine Erklärungen, kein Markdown!',
+          htmlList: 'HTML-Aufzählung',
+          systemMsg:
+            'Du bist ein Experte für ATS-optimierte Lebensläufe. Du schreibst prägnante, wirkungsvolle Bullet-Points mit Aktionsverben und quantifizierbaren Erfolgen. Antworte auf Deutsch. Gib nur HTML-formatierte Listen zurück, kein Markdown.',
+        }
+      : {
+          role: 'career coach',
+          action: hasExistingDescription ? 'improve' : 'create',
+          experience: 'WORK EXPERIENCE BEING EDITED',
+          position: 'Position',
+          company: 'Company',
+          period: 'Period',
+          currentDesc: 'Current Description',
+          targetJob: 'TARGET POSITION (for relevance)',
+          jobDesc: 'Job Description (excerpt)',
+          skills: "Candidate's relevant skills",
+          userInstructions: "User's Instructions",
+          rules: 'IMPORTANT RULES',
+          rule1: hasExistingDescription
+            ? 'Apply the requested changes precisely'
+            : 'Create 3-5 impactful bullet points',
+          rule2:
+            'Each bullet point MUST start with a strong action verb (Developed, Led, Implemented, Increased, Optimized, etc.)',
+          rule3: 'Quantify achievements where possible (%, $, numbers, time, etc.)',
+          rule4: 'Focus on achievements and impact, not just tasks',
+          rule5: 'Prioritize points by relevance to target position',
+          rule6: 'Keep each point to 1-2 lines (max 20 words per point)',
+          rule7: 'Return the answer as an HTML list (NO Markdown!)',
+          rule8: 'RESPOND IN ENGLISH, unless the instructions explicitly request translation',
+          outputFormat: 'OUTPUT FORMAT (HTML)',
+          example1: 'First bullet point with action verb and measurable achievement',
+          important: 'Return ONLY the <ul>...</ul> HTML, no explanations, no Markdown!',
+          htmlList: 'HTML List',
+          systemMsg:
+            'You are an expert in ATS-optimized resumes. You write concise, impactful bullet points with action verbs and quantifiable achievements. Respond in English. Return only HTML-formatted lists, no Markdown.',
+        };
+
+    const prompt = `You are a professional ${labels.role} helping a candidate ${labels.action} their work experience description for their resume.
+
+**${labels.experience}:**
+- ${labels.position}: ${context.experienceTitle}
+- ${labels.company}: ${context.experienceCompany}
+${context.experienceDateRange ? `- ${labels.period}: ${context.experienceDateRange}` : ''}
+
+${
+  hasExistingDescription
+    ? `**${labels.currentDesc}:**
 ${currentDescription}
 
-` : ''}**ZIELSTELLE (für Relevanz):**
-- Position: ${context.jobTitle}
-- Unternehmen: ${context.companyName}
-${context.jobDescription ? `- Stellenbeschreibung (Auszug):
+`
+    : ''
+}**${labels.targetJob}:**
+- ${labels.position}: ${context.jobTitle}
+- ${labels.company}: ${context.companyName}
+${
+  context.jobDescription
+    ? `- ${labels.jobDesc}:
 ${context.jobDescription.substring(0, 600)}...
-` : ''}
-**Relevante Skills des Kandidaten:** ${skillsList}
+`
+    : ''
+}
+**${labels.skills}:** ${skillsList}
 
-**Anweisungen des Kandidaten:**
+**${labels.userInstructions}:**
 ${instructions}
 
-**WICHTIGE REGELN:**
-1. ${hasExistingDescription ? 'Wende die gewünschten Änderungen präzise an' : 'Erstelle 3-5 aussagekräftige Bullet-Points'}
-2. **Jeder Bullet-Point MUSS mit einem starken Aktionsverb beginnen** (Entwickelte, Führte, Implementierte, Steigerte, Optimierte, Koordinierte, etc.)
-3. **Quantifiziere Erfolge wo möglich** (%, €, Anzahl, Zeit, etc.) - z.B. "Steigerte Conversion-Rate um 25%"
-4. **Fokussiere auf Erfolge und Impact**, nicht nur Aufgaben
-5. **Priorisiere Punkte nach Relevanz zur Zielstelle**
-6. Halte jeden Punkt auf 1-2 Zeilen (maximal 20 Wörter pro Punkt)
-7. **Gib die Antwort als HTML-Aufzählung zurück** (KEIN Markdown!)
+**${labels.rules}:**
+1. ${labels.rule1}
+2. **${labels.rule2}**
+3. **${labels.rule3}**
+4. **${labels.rule4}**
+5. **${labels.rule5}**
+6. ${labels.rule6}
+7. **${labels.rule7}**
+8. **${labels.rule8}**
 
-**OUTPUT FORMAT (HTML):**
+**${labels.outputFormat}:**
 <ul>
-<li>Erster Bullet-Point mit Aktionsverb und messbarem Erfolg</li>
-<li>Zweiter Bullet-Point...</li>
-<li>Dritter Bullet-Point...</li>
+<li>${labels.example1}</li>
+<li>Second bullet point...</li>
+<li>Third bullet point...</li>
 </ul>
 
-**WICHTIG:** Gib NUR das <ul>...</ul> HTML zurück, keine Erklärungen, kein Markdown!
+**${labels.important}**
 
-HTML-Aufzählung:`;
+${labels.htmlList}:`;
 
     return this.callProvider(prompt, {
       temperature: 0.7,
       maxTokens: 800,
-      systemMessage:
-        'Du bist ein Experte für ATS-optimierte Lebensläufe. Du schreibst prägnante, wirkungsvolle Bullet-Points mit Aktionsverben und quantifizierbaren Erfolgen. Du gibst nur HTML-formatierte Listen zurück, kein Markdown.',
+      systemMessage: labels.systemMsg,
     });
   }
 
@@ -775,6 +1298,9 @@ HTML-Aufzählung:`;
    * Modify or generate project description using AI
    * Tailors bullet points to highlight technologies, outcomes, and impact
    * Returns HTML formatted bullets for Tiptap editor
+   *
+   * IMPORTANT: Responds in the same language as the existing content.
+   * Only translates if explicitly requested in instructions.
    */
   async modifyProjectDescription(
     currentDescription: string | undefined,
@@ -792,55 +1318,143 @@ HTML-Aufzählung:`;
       `Modifying project description for ${context.projectName} with instructions: ${instructions.substring(0, 50)}...`,
     );
 
-    const skillsList = context.skills?.length ? context.skills.join(', ') : 'Keine angegeben';
+    const skillsList = context.skills?.length ? context.skills.join(', ') : 'Not specified';
     const hasExistingDescription = currentDescription && currentDescription.trim().length > 0;
 
-    const prompt = `Du bist ein professioneller Karriereberater und hilfst einem Kandidaten, die Beschreibung seines Projekts für den Lebenslauf zu ${hasExistingDescription ? 'verbessern' : 'erstellen'}.
+    // Detect language of existing content to maintain consistency
+    const contentLanguage = hasExistingDescription
+      ? this.detectContentLanguage(currentDescription)
+      : 'en'; // Default to English for new content
 
-**PROJEKT DAS BEARBEITET WIRD:**
-- Name: ${context.projectName}
-${context.projectDate ? `- Zeitraum: ${context.projectDate}` : ''}
+    const isGerman = contentLanguage === 'de';
 
-${hasExistingDescription ? `**Aktuelle Beschreibung:**
+    this.logger.log(`Detected content language: ${contentLanguage}`);
+
+    // Language-specific labels
+    const labels = isGerman
+      ? {
+          role: 'Karriereberater',
+          action: hasExistingDescription ? 'verbessern' : 'erstellen',
+          project: 'PROJEKT DAS BEARBEITET WIRD',
+          name: 'Name',
+          period: 'Zeitraum',
+          currentDesc: 'Aktuelle Beschreibung',
+          targetJob: 'ZIELSTELLE (für Relevanz)',
+          position: 'Position',
+          company: 'Unternehmen',
+          jobDesc: 'Stellenbeschreibung (Auszug)',
+          skills: 'Relevante Skills des Kandidaten',
+          userInstructions: 'Anweisungen des Kandidaten',
+          rules: 'WICHTIGE REGELN',
+          rule1: hasExistingDescription
+            ? 'Wende die gewünschten Änderungen präzise an'
+            : 'Erstelle 3-5 aussagekräftige Bullet-Points',
+          rule2:
+            'Jeder Bullet-Point MUSS mit einem starken Aktionsverb beginnen (Entwickelte, Implementierte, Konzipierte, Optimierte, etc.)',
+          rule3: 'Betone verwendete Technologien und Tools wo relevant',
+          rule4:
+            'Quantifiziere Ergebnisse und Impact (%, Anzahl User, Performance-Verbesserung, etc.)',
+          rule5: 'Fokussiere auf Problemlösung und Ergebnisse, nicht nur Features',
+          rule6: 'Priorisiere Punkte nach Relevanz zur Zielstelle',
+          rule7: 'Halte jeden Punkt auf 1-2 Zeilen (maximal 20 Wörter pro Punkt)',
+          rule8: 'Gib die Antwort als HTML-Aufzählung zurück (KEIN Markdown!)',
+          rule9:
+            'ANTWORTE AUF DEUTSCH, es sei denn die Anweisungen verlangen explizit eine Übersetzung',
+          outputFormat: 'OUTPUT FORMAT (HTML)',
+          example1: 'Erster Bullet-Point mit Technologie und messbarem Ergebnis',
+          important: 'Gib NUR das <ul>...</ul> HTML zurück, keine Erklärungen, kein Markdown!',
+          htmlList: 'HTML-Aufzählung',
+          systemMsg:
+            'Du bist ein Experte für ATS-optimierte Lebensläufe. Du schreibst prägnante, wirkungsvolle Projekt-Beschreibungen mit Technologie-Fokus und quantifizierbaren Ergebnissen. Antworte auf Deutsch. Gib nur HTML-formatierte Listen zurück, kein Markdown.',
+        }
+      : {
+          role: 'career coach',
+          action: hasExistingDescription ? 'improve' : 'create',
+          project: 'PROJECT BEING EDITED',
+          name: 'Name',
+          period: 'Period',
+          currentDesc: 'Current Description',
+          targetJob: 'TARGET POSITION (for relevance)',
+          position: 'Position',
+          company: 'Company',
+          jobDesc: 'Job Description (excerpt)',
+          skills: "Candidate's relevant skills",
+          userInstructions: "User's Instructions",
+          rules: 'IMPORTANT RULES',
+          rule1: hasExistingDescription
+            ? 'Apply the requested changes precisely'
+            : 'Create 3-5 impactful bullet points',
+          rule2:
+            'Each bullet point MUST start with a strong action verb (Developed, Implemented, Designed, Optimized, etc.)',
+          rule3: 'Emphasize technologies and tools used where relevant',
+          rule4: 'Quantify results and impact (%, user count, performance improvements, etc.)',
+          rule5: 'Focus on problem-solving and outcomes, not just features',
+          rule6: 'Prioritize points by relevance to target position',
+          rule7: 'Keep each point to 1-2 lines (max 20 words per point)',
+          rule8: 'Return the answer as an HTML list (NO Markdown!)',
+          rule9: 'RESPOND IN ENGLISH, unless the instructions explicitly request translation',
+          outputFormat: 'OUTPUT FORMAT (HTML)',
+          example1: 'First bullet point with technology and measurable outcome',
+          important: 'Return ONLY the <ul>...</ul> HTML, no explanations, no Markdown!',
+          htmlList: 'HTML List',
+          systemMsg:
+            'You are an expert in ATS-optimized resumes. You write concise, impactful project descriptions with technology focus and quantifiable outcomes. Respond in English. Return only HTML-formatted lists, no Markdown.',
+        };
+
+    const prompt = `You are a professional ${labels.role} helping a candidate ${labels.action} their project description for their resume.
+
+**${labels.project}:**
+- ${labels.name}: ${context.projectName}
+${context.projectDate ? `- ${labels.period}: ${context.projectDate}` : ''}
+
+${
+  hasExistingDescription
+    ? `**${labels.currentDesc}:**
 ${currentDescription}
 
-` : ''}**ZIELSTELLE (für Relevanz):**
-- Position: ${context.jobTitle}
-- Unternehmen: ${context.companyName}
-${context.jobDescription ? `- Stellenbeschreibung (Auszug):
+`
+    : ''
+}**${labels.targetJob}:**
+- ${labels.position}: ${context.jobTitle}
+- ${labels.company}: ${context.companyName}
+${
+  context.jobDescription
+    ? `- ${labels.jobDesc}:
 ${context.jobDescription.substring(0, 600)}...
-` : ''}
-**Relevante Skills des Kandidaten:** ${skillsList}
+`
+    : ''
+}
+**${labels.skills}:** ${skillsList}
 
-**Anweisungen des Kandidaten:**
+**${labels.userInstructions}:**
 ${instructions}
 
-**WICHTIGE REGELN:**
-1. ${hasExistingDescription ? 'Wende die gewünschten Änderungen präzise an' : 'Erstelle 3-5 aussagekräftige Bullet-Points'}
-2. **Jeder Bullet-Point MUSS mit einem starken Aktionsverb beginnen** (Entwickelte, Implementierte, Konzipierte, Optimierte, Automatisierte, etc.)
-3. **Betone verwendete Technologien und Tools** wo relevant
-4. **Quantifiziere Ergebnisse und Impact** (%, Anzahl User, Performance-Verbesserung, etc.)
-5. **Fokussiere auf Problemlösung und Ergebnisse**, nicht nur Features
-6. **Priorisiere Punkte nach Relevanz zur Zielstelle**
-7. Halte jeden Punkt auf 1-2 Zeilen (maximal 20 Wörter pro Punkt)
-8. **Gib die Antwort als HTML-Aufzählung zurück** (KEIN Markdown!)
+**${labels.rules}:**
+1. ${labels.rule1}
+2. **${labels.rule2}**
+3. **${labels.rule3}**
+4. **${labels.rule4}**
+5. **${labels.rule5}**
+6. **${labels.rule6}**
+7. ${labels.rule7}
+8. **${labels.rule8}**
+9. **${labels.rule9}**
 
-**OUTPUT FORMAT (HTML):**
+**${labels.outputFormat}:**
 <ul>
-<li>Erster Bullet-Point mit Technologie und messbarem Ergebnis</li>
-<li>Zweiter Bullet-Point...</li>
-<li>Dritter Bullet-Point...</li>
+<li>${labels.example1}</li>
+<li>Second bullet point...</li>
+<li>Third bullet point...</li>
 </ul>
 
-**WICHTIG:** Gib NUR das <ul>...</ul> HTML zurück, keine Erklärungen, kein Markdown!
+**${labels.important}**
 
-HTML-Aufzählung:`;
+${labels.htmlList}:`;
 
     return this.callProvider(prompt, {
       temperature: 0.7,
       maxTokens: 800,
-      systemMessage:
-        'Du bist ein Experte für ATS-optimierte Lebensläufe. Du schreibst prägnante, wirkungsvolle Projekt-Beschreibungen mit Technologie-Fokus und quantifizierbaren Ergebnissen. Du gibst nur HTML-formatierte Listen zurück, kein Markdown.',
+      systemMessage: labels.systemMsg,
     });
   }
 

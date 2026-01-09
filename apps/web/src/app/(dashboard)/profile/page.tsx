@@ -89,10 +89,14 @@ export default function ProfilePage() {
                 Bewerber
               </p>
               <div className="mt-2 flex flex-wrap gap-4 text-sm text-muted-foreground">
-                {profile?.location && (
+                {(profile?.street || profile?.city) && (
                   <div className="flex items-center gap-1">
                     <MapPin className="h-4 w-4" />
-                    {profile.location}
+                    {[
+                      profile?.street,
+                      [profile?.postalCode, profile?.city].filter(Boolean).join(' '),
+                      profile?.country
+                    ].filter(Boolean).join(', ')}
                   </div>
                 )}
                 <div className="flex items-center gap-1">
@@ -163,10 +167,14 @@ export default function ProfilePage() {
                     <span>{profile.phone}</span>
                   </div>
                 )}
-                {profile?.location && (
+                {(profile?.street || profile?.city || profile?.country) && (
                   <div className="flex items-center gap-3 text-sm">
                     <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span>{profile.location}</span>
+                    <span>{[
+                      profile.street,
+                      [profile.postalCode, profile.city].filter(Boolean).join(' '),
+                      profile.country
+                    ].filter(Boolean).join(', ')}</span>
                   </div>
                 )}
               </div>

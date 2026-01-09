@@ -428,11 +428,11 @@ export class ApplicationsService {
     matchedKeywords: KeywordMatch[],
     missingKeywords: KeywordMatch[],
   ) {
-    // Detect language from job posting
+    // Detect language from job posting (fallback to German as default)
     const detectedLanguage =
       jobPosting.language ||
       (jobPosting.fullText ? this.detectLanguage(jobPosting.fullText) : null) ||
-      'en';
+      'de';
     // Format profile information
     const skills = (resume.skillCategories || [])
       .flatMap((category: { skills: string[] }) => category.skills)
@@ -490,11 +490,11 @@ Summary: ${resume.summary || 'Not provided'}
     matchedKeywords: KeywordMatch[],
     missingKeywords: KeywordMatch[],
   ) {
-    // Detect language from job posting
+    // Detect language from job posting (fallback to German as default)
     const detectedLanguage =
       jobPosting.language ||
       (jobPosting.fullText ? this.detectLanguage(jobPosting.fullText) : null) ||
-      'en';
+      'de';
 
     const profileString = JSON.stringify(resume, null, 2);
 
@@ -820,10 +820,10 @@ Summary: ${resume.summary || 'Not provided'}
     // 2. Get profile data
     const profile = await this.getProfileWithRelations(userId);
 
-    // 3. Detect language
+    // 3. Detect language (prioritize user selection, then job posting, then auto-detect, default to German)
     const detectedLanguage =
-      jobPosting.language || this.detectLanguage(jobPosting.fullText) || 'en';
-    this.logger.log(`Detected language: ${detectedLanguage}`);
+      dto.language || jobPosting.language || this.detectLanguage(jobPosting.fullText) || 'de';
+    this.logger.log(`Using language: ${detectedLanguage} (source: ${dto.language ? 'user selection' : jobPosting.language ? 'job posting' : 'auto-detected/default'})`);
 
     // 4. Check if application already exists (prevent duplicates BEFORE generation)
     // Note: Only check non-deleted applications (deletedAt: null)
@@ -878,6 +878,7 @@ Summary: ${resume.summary || 'Not provided'}
           notes: dto.notes,
           coverLetterTemplateId: resolvedCoverLetterTemplateId,
           resumeTemplateId: resolvedResumeTemplateId,
+          language: detectedLanguage,
         },
         include: {
           jobPosting: true,
@@ -1334,12 +1335,25 @@ Summary: ${resume.summary || 'Not provided'}
    * Serialize profile data for LLM consumption
    */
   private serializeProfile(profile: ProfileWithRelations): Record<string, any> {
+    // Build full address from components
+    const addressParts: string[] = [];
+    if (profile.street) addressParts.push(profile.street);
+    if (profile.postalCode || profile.city) {
+      addressParts.push(`${profile.postalCode || ''} ${profile.city || ''}`.trim());
+    }
+    if (profile.country) addressParts.push(profile.country);
+    const fullAddress = addressParts.join(', ');
+
     return {
       fullName:
         `${profile.user.firstName || ''} ${profile.user.lastName || ''}`.trim() || 'Unknown',
       email: profile.user.email,
       phone: profile.phone || '',
-      location: profile.location || '',
+      street: profile.street || '',
+      postalCode: profile.postalCode || '',
+      city: profile.city || '',
+      country: profile.country || '',
+      fullAddress: fullAddress || '',
       linkedinUrl: profile.linkedinUrl || '',
       githubUrl: profile.githubUrl || '',
       portfolioUrl: profile.portfolioUrl || '',
@@ -1679,11 +1693,24 @@ Summary: ${resume.summary || 'Not provided'}
       level: normalizeProficiencyLevel(lang.level),
     }));
 
+    // Build full address from components
+    const addressParts: string[] = [];
+    if (profile.street) addressParts.push(profile.street);
+    if (profile.postalCode || profile.city) {
+      addressParts.push(`${profile.postalCode || ''} ${profile.city || ''}`.trim());
+    }
+    if (profile.country) addressParts.push(profile.country);
+    const fullAddress = addressParts.join(', ');
+
     return {
       candidateName,
       email: profile.user.email,
       phone: profile.phone || undefined,
-      location: profile.location || undefined,
+      street: profile.street || undefined,
+      postalCode: profile.postalCode || undefined,
+      city: profile.city || undefined,
+      country: profile.country || undefined,
+      fullAddress: fullAddress || undefined,
       linkedin: sanitizeUrl(profile.linkedinUrl),
       github: sanitizeUrl(profile.githubUrl),
       // Priority: rewritten_summary > customized_summary > profile.summary
@@ -1713,15 +1740,27 @@ Summary: ${resume.summary || 'Not provided'}
 
     const normalized = this.normalizeResumeData(dto.resume);
 
+    // Calculate new content hash for translation cache invalidation
+    const { calculateContentHash } = await import('./utils/translation.util');
+    const coverLetter = application.coverLetterText || '';
+    const newContentHash = await calculateContentHash(normalized, coverLetter);
+
     const updated = await this.prisma.application.update({
       where: { id: applicationId },
       data: {
         resumeText: JSON.stringify(normalized),
+        // Update content hash and clear stale translations (they'll be regenerated on demand)
+        contentHash: newContentHash,
       },
       include: {
         jobPosting: true,
       },
     });
+
+    // Trigger async prewarming for opposite language (non-blocking)
+    this.triggerTranslationPrewarming(applicationId, application.sourceLanguage || application.language || 'de').catch(
+      (err) => this.logger.warn(`Prewarming failed for ${applicationId}`, err),
+    );
 
     // IMPORTANT: After saving resume, automatically re-match keywords against updated resume
     // This ensures ATS score reflects the latest changes without requiring manual refresh
@@ -1833,10 +1872,17 @@ Summary: ${resume.summary || 'Not provided'}
 
     const sanitizedContent = this.sanitizeCoverLetter(content);
 
+    // Calculate new content hash for translation cache invalidation
+    const { calculateContentHash } = await import('./utils/translation.util');
+    const resumeForHash = this.parseResume(application.resumeText);
+    const newContentHash = await calculateContentHash(resumeForHash || {}, sanitizedContent);
+
     const updated = await this.prisma.application.update({
       where: { id: applicationId },
       data: {
         coverLetterText: sanitizedContent,
+        // Update content hash to invalidate stale translations
+        contentHash: newContentHash,
         // Keep existing status (READY), don't reset to PENDING
         // Keep existing PDFs, they'll be regenerated on next export
       },
@@ -1844,6 +1890,11 @@ Summary: ${resume.summary || 'Not provided'}
         jobPosting: true,
       },
     });
+
+    // Trigger async prewarming for opposite language (non-blocking)
+    this.triggerTranslationPrewarming(applicationId, application.sourceLanguage || application.language || 'de').catch(
+      (err) => this.logger.warn(`Prewarming failed for ${applicationId}`, err),
+    );
 
     return this.mapToResponseDto(updated);
   }
@@ -2501,6 +2552,7 @@ Summary: ${resume.summary || 'Not provided'}
       resumeFileKey: application.resumeFileKey,
       coverLetterTemplateId: application.coverLetterTemplateId,
       resumeTemplateId: application.resumeTemplateId,
+      language: application.language,
       errorMessage: application.errorMessage,
       createdAt: application.createdAt,
       updatedAt: application.updatedAt,
@@ -3162,5 +3214,406 @@ Summary: ${resume.summary || 'Not provided'}
       strengths,
       weaknesses,
     };
+  }
+
+  // ============ Translation Methods ============
+
+  /**
+   * Translate application content to target language
+   * Uses smart caching to avoid redundant LLM calls
+   */
+  async translateApplication(
+    userId: string,
+    applicationId: string,
+    dto: {
+      targetLanguage: string;
+      force?: boolean;
+      sections?: string[];
+    },
+  ): Promise<{
+    resumeText: any;
+    coverLetterText: string;
+    cached: boolean;
+    translatedSections: string[];
+    fromCache: string[];
+    sourceLanguage: string;
+    targetLanguage: string;
+  }> {
+    const {
+      calculateContentHash,
+      isCacheValid,
+      evictOldLanguages,
+      mergeCachedTranslations,
+      identifyChangedSections,
+    } = await import('./utils/translation.util');
+
+    this.logger.log(
+      `Translating application ${applicationId} to ${dto.targetLanguage}${dto.force ? ' (forced)' : ''}`,
+    );
+
+    const application = await this.ensureApplicationOwnership(userId, applicationId, true);
+
+    // Parse current content
+    const resume = this.parseResume(application.resumeText);
+    const coverLetter = application.coverLetterText || '';
+
+    // Get source language (from application or default to 'de')
+    const sourceLanguage = application.sourceLanguage || application.language || 'de';
+
+    // If target equals source, return current content (no translation needed)
+    if (dto.targetLanguage === sourceLanguage && !dto.force) {
+      this.logger.log(`Target language ${dto.targetLanguage} matches source, returning original`);
+      return {
+        resumeText: resume,
+        coverLetterText: coverLetter,
+        cached: true,
+        translatedSections: [],
+        fromCache: ['all'],
+        sourceLanguage,
+        targetLanguage: dto.targetLanguage,
+      };
+    }
+
+    // Calculate content hash for cache validation
+    const contentHash = await calculateContentHash(resume, coverLetter);
+
+    // Get existing cache
+    let cache = (application.cachedTranslations as any) || {
+      languages: {},
+      lastUsed: [],
+      prewarmFailures: {},
+    };
+
+    // Check if we have a valid cached translation
+    const cachedTranslation = cache.languages?.[dto.targetLanguage];
+    const cacheIsValid = !dto.force && isCacheValid(cachedTranslation, contentHash);
+
+    if (cacheIsValid && cachedTranslation) {
+      this.logger.log(`Cache hit for ${dto.targetLanguage}, returning cached translation`);
+
+      // Update LRU
+      cache = evictOldLanguages(cache, dto.targetLanguage, 2);
+      await this.prisma.application.update({
+        where: { id: applicationId },
+        data: { cachedTranslations: cache },
+      });
+
+      return {
+        resumeText: cachedTranslation.resume,
+        coverLetterText: cachedTranslation.coverLetter,
+        cached: true,
+        translatedSections: [],
+        fromCache: ['all'],
+        sourceLanguage,
+        targetLanguage: dto.targetLanguage,
+      };
+    }
+
+    // Determine which sections need translation
+    let sectionsToTranslate = dto.sections || [];
+
+    // If no specific sections provided, check what changed from cached version
+    if (sectionsToTranslate.length === 0 && cachedTranslation) {
+      // Compare current content hash with cached hash to find changed sections
+      const cachedResume = cachedTranslation.resume;
+      sectionsToTranslate = identifyChangedSections(
+        cachedResume,
+        resume,
+        cachedTranslation.coverLetter,
+        coverLetter,
+      );
+      this.logger.log(`Identified ${sectionsToTranslate.length} changed sections for partial translation`);
+    }
+
+    // If still empty (no cache or full translation needed), translate all
+    const translateAll = sectionsToTranslate.length === 0;
+
+    try {
+      // Call LLM to translate content
+      const translated = await this.llmService.translateFullContent(
+        resume,
+        coverLetter,
+        sourceLanguage,
+        dto.targetLanguage,
+        translateAll ? undefined : sectionsToTranslate,
+      );
+
+      // Merge with existing cache if partial translation
+      const mergedTranslation = mergeCachedTranslations(
+        cachedTranslation,
+        translated,
+        sectionsToTranslate,
+        contentHash,
+      );
+
+      // Update cache with LRU eviction
+      cache.languages = cache.languages || {};
+      cache.languages[dto.targetLanguage] = mergedTranslation;
+      cache = evictOldLanguages(cache, dto.targetLanguage, 2);
+
+      // Reset prewarm failures on successful translation
+      if (cache.prewarmFailures?.[dto.targetLanguage]) {
+        delete cache.prewarmFailures[dto.targetLanguage];
+      }
+
+      // Save updated cache
+      await this.prisma.application.update({
+        where: { id: applicationId },
+        data: {
+          cachedTranslations: cache,
+          contentHash: contentHash,
+        },
+      });
+
+      this.logger.log(
+        `Translation to ${dto.targetLanguage} completed, ${translateAll ? 'full' : sectionsToTranslate.length + ' sections'} translated`,
+      );
+
+      return {
+        resumeText: mergedTranslation.resume,
+        coverLetterText: mergedTranslation.coverLetter,
+        cached: false,
+        translatedSections: translateAll ? ['all'] : sectionsToTranslate,
+        fromCache: translateAll ? [] : this.getSectionsFromCache(sectionsToTranslate, resume),
+        sourceLanguage,
+        targetLanguage: dto.targetLanguage,
+      };
+    } catch (error) {
+      this.logger.error(`Translation to ${dto.targetLanguage} failed`, error);
+
+      // Increment prewarm failure counter for monitoring
+      cache.prewarmFailures = cache.prewarmFailures || {};
+      cache.prewarmFailures[dto.targetLanguage] =
+        (cache.prewarmFailures[dto.targetLanguage] || 0) + 1;
+
+      await this.prisma.application.update({
+        where: { id: applicationId },
+        data: { cachedTranslations: cache },
+      });
+
+      throw error;
+    }
+  }
+
+  /**
+   * Get translation cache status for UI badges
+   */
+  async getTranslationCacheStatus(
+    userId: string,
+    applicationId: string,
+  ): Promise<{
+    cachedLanguages: string[];
+    contentHash: string;
+    sourceLanguage: string;
+  }> {
+    const { calculateContentHash, getCachedLanguages } = await import('./utils/translation.util');
+
+    const application = await this.ensureApplicationOwnership(userId, applicationId, true);
+
+    const resume = this.parseResume(application.resumeText);
+    const coverLetter = application.coverLetterText || '';
+    const contentHash = await calculateContentHash(resume, coverLetter);
+
+    const cache = application.cachedTranslations as any;
+    const cachedLanguages = getCachedLanguages(cache, contentHash);
+
+    // Always include source language as "cached" (no translation needed)
+    const sourceLanguage = application.sourceLanguage || application.language || 'de';
+    if (!cachedLanguages.includes(sourceLanguage)) {
+      cachedLanguages.push(sourceLanguage);
+    }
+
+    return {
+      cachedLanguages,
+      contentHash,
+      sourceLanguage,
+    };
+  }
+
+  /**
+   * Helper to get sections that were loaded from cache
+   */
+  private getSectionsFromCache(translatedSections: string[], resume: any): string[] {
+    const allSections: string[] = ['summary', 'coverLetter'];
+    
+    if (resume?.experiences) {
+      resume.experiences.forEach((_: any, i: number) => allSections.push(`experience.${i}`));
+    }
+    if (resume?.projects) {
+      resume.projects.forEach((_: any, i: number) => allSections.push(`project.${i}`));
+    }
+    if (resume?.education) {
+      resume.education.forEach((_: any, i: number) => allSections.push(`education.${i}`));
+    }
+
+    return allSections.filter((s) => !translatedSections.includes(s));
+  }
+
+  /**
+   * Trigger async translation prewarming for the opposite language
+   * DE → EN and EN → DE bidirectional prewarming
+   */
+  private async triggerTranslationPrewarming(
+    applicationId: string,
+    sourceLanguage: string,
+  ): Promise<void> {
+    const { determinePrewarmTargets } = await import('./utils/translation.util');
+    const prewarmTargets = determinePrewarmTargets(sourceLanguage);
+
+    if (prewarmTargets.length === 0) {
+      this.logger.debug(`No prewarming targets for source language: ${sourceLanguage}`);
+      return;
+    }
+
+    // Get application without ownership check (already validated in caller)
+    const application = await this.prisma.application.findUnique({
+      where: { id: applicationId },
+      select: {
+        id: true,
+        userId: true,
+        resumeText: true,
+        coverLetterText: true,
+        cachedTranslations: true,
+        sourceLanguage: true,
+        language: true,
+      },
+    });
+
+    if (!application) {
+      return;
+    }
+
+    const resume = this.parseResume(application.resumeText);
+    const coverLetter = application.coverLetterText || '';
+    const cache = (application.cachedTranslations as any) || {
+      languages: {},
+      lastUsed: [],
+      prewarmFailures: {},
+    };
+
+    for (const targetLang of prewarmTargets) {
+      // Skip if already cached
+      if (cache.languages?.[targetLang]?.contentHash) {
+        const { calculateContentHash, isCacheValid } = await import('./utils/translation.util');
+        const contentHash = await calculateContentHash(resume, coverLetter);
+        if (isCacheValid(cache.languages[targetLang], contentHash)) {
+          this.logger.debug(`Skipping prewarm for ${targetLang} - already cached`);
+          continue;
+        }
+      }
+
+      // Check failure count (skip if >= 3 consecutive failures)
+      const failures = cache.prewarmFailures?.[targetLang] || 0;
+      if (failures >= 3) {
+        this.logger.warn(
+          `Skipping prewarm for ${targetLang} - ${failures} consecutive failures (alert threshold reached)`,
+        );
+        continue;
+      }
+
+      // Fire and forget - don't block the main request
+      this.logger.log(`Prewarming translation to ${targetLang} for application ${applicationId}`);
+      
+      // Use setImmediate to defer execution
+      setImmediate(async () => {
+        try {
+          // Translate without userId verification (internal prewarming)
+          await this.translateApplicationInternal(applicationId, targetLang);
+          this.logger.log(`Prewarm to ${targetLang} completed for application ${applicationId}`);
+        } catch (error) {
+          this.logger.warn(`Prewarm to ${targetLang} failed for application ${applicationId}`, error);
+        }
+      });
+    }
+  }
+
+  /**
+   * Internal translation method for prewarming (no user ownership check)
+   */
+  private async translateApplicationInternal(
+    applicationId: string,
+    targetLanguage: string,
+  ): Promise<void> {
+    const {
+      calculateContentHash,
+      isCacheValid,
+      evictOldLanguages,
+    } = await import('./utils/translation.util');
+
+    const application = await this.prisma.application.findUnique({
+      where: { id: applicationId },
+      include: { jobPosting: true },
+    });
+
+    if (!application) {
+      return;
+    }
+
+    const resume = this.parseResume(application.resumeText);
+    const coverLetter = application.coverLetterText || '';
+    const sourceLanguage = application.sourceLanguage || application.language || 'de';
+
+    if (targetLanguage === sourceLanguage) {
+      return;
+    }
+
+    const contentHash = await calculateContentHash(resume, coverLetter);
+    let cache = (application.cachedTranslations as any) || {
+      languages: {},
+      lastUsed: [],
+      prewarmFailures: {},
+    };
+
+    // Check if already cached
+    const cachedTranslation = cache.languages?.[targetLanguage];
+    if (isCacheValid(cachedTranslation, contentHash)) {
+      return;
+    }
+
+    try {
+      // Full translation for prewarming
+      const translated = await this.llmService.translateFullContent(
+        resume,
+        coverLetter,
+        sourceLanguage,
+        targetLanguage,
+      );
+
+      // Store in cache
+      cache.languages = cache.languages || {};
+      cache.languages[targetLanguage] = {
+        resume: translated.resume,
+        coverLetter: translated.coverLetter,
+        contentHash,
+        translatedAt: new Date().toISOString(),
+      };
+
+      // Apply LRU eviction
+      cache = evictOldLanguages(cache, targetLanguage, 2);
+
+      // Reset failure count on success
+      if (cache.prewarmFailures?.[targetLanguage]) {
+        delete cache.prewarmFailures[targetLanguage];
+      }
+
+      await this.prisma.application.update({
+        where: { id: applicationId },
+        data: {
+          cachedTranslations: cache,
+          contentHash,
+        },
+      });
+    } catch (error) {
+      // Increment failure count
+      cache.prewarmFailures = cache.prewarmFailures || {};
+      cache.prewarmFailures[targetLanguage] = (cache.prewarmFailures[targetLanguage] || 0) + 1;
+
+      await this.prisma.application.update({
+        where: { id: applicationId },
+        data: { cachedTranslations: cache },
+      });
+
+      throw error;
+    }
   }
 }

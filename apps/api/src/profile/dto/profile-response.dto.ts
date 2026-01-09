@@ -118,8 +118,17 @@ export class ProfileResponseDto {
   @ApiProperty({ required: false })
   phone?: string;
 
-  @ApiProperty({ required: false })
-  location?: string;
+  @ApiProperty({ required: false, description: 'Street and house number' })
+  street?: string;
+
+  @ApiProperty({ required: false, description: 'Postal code (PLZ)' })
+  postalCode?: string;
+
+  @ApiProperty({ required: false, description: 'City name' })
+  city?: string;
+
+  @ApiProperty({ required: false, description: 'Country name' })
+  country?: string;
 
   @ApiProperty({ required: false })
   linkedinUrl?: string;

@@ -15,8 +15,8 @@
 
     {{! =========== CONTACT INFO =========== }}
     <div class="cover-letter-contact">
-        {{#if location}}<span>{{location}}</span>{{/if}}
-        {{#if location}}{{#if email}}<span class="contact-separator">•</span>{{/if}}{{/if}}
+        {{#if fullAddress}}<span>{{fullAddress}}</span>{{/if}}
+        {{#if fullAddress}}{{#if email}}<span class="contact-separator">•</span>{{/if}}{{/if}}
         {{#if email}}<span><a href="mailto:{{email}}">{{email}}</a></span>{{/if}}
         {{#if email}}{{#if phone}}<span class="contact-separator">•</span>{{/if}}{{/if}}
         {{#if phone}}<span>{{phone}}</span>{{/if}}
