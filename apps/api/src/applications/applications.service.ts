@@ -1604,6 +1604,27 @@ Summary: ${resume.summary || 'Not provided'}
             `No rewritten content found for experience "${exp.title}" (ID: ${exp.id}) - using original text`,
           );
         }
+        // Determine if LLM provided rewritten content (achievements take priority)
+        const hasRewrittenAchievements =
+          rewritten?.rewritten_achievements && rewritten.rewritten_achievements.length > 0;
+        const hasRewrittenDescription =
+          rewritten?.rewritten_description && rewritten.rewritten_description.trim() !== '';
+
+        // IMPORTANT: If LLM provided achievements but no description, use ONLY achievements
+        // (don't mix English original description with German achievements)
+        let description: string | undefined;
+        if (hasRewrittenDescription) {
+          // LLM provided a rewritten description - use it
+          description = rewritten.rewritten_description;
+        } else if (hasRewrittenAchievements) {
+          // LLM provided achievements but no description - leave description empty
+          // Frontend will display only the achievements
+          description = undefined;
+        } else {
+          // No rewritten content at all - fallback to original
+          description = exp.description || undefined;
+        }
+
         return {
           id: exp.id,
           title: exp.title,
@@ -1612,13 +1633,11 @@ Summary: ${resume.summary || 'Not provided'}
           startDate: exp.startDate?.toISOString() || undefined,
           endDate: exp.endDate?.toISOString() || undefined,
           location: exp.location || undefined,
-          // Use rewritten description if available, fallback to original
-          description: rewritten?.rewritten_description || exp.description || undefined,
+          description,
           // Use rewritten achievements if available, fallback to original
-          achievements:
-            rewritten?.rewritten_achievements && rewritten.rewritten_achievements.length > 0
-              ? rewritten.rewritten_achievements
-              : exp.achievements || [],
+          achievements: hasRewrittenAchievements
+            ? rewritten.rewritten_achievements
+            : exp.achievements || [],
         };
       });
 
@@ -1627,17 +1646,33 @@ Summary: ${resume.summary || 'Not provided'}
     // Use rewritten descriptions/highlights if available, with fallback to original
     const projects = profile.projects.map((proj) => {
       const rewritten = rewrittenProjectMap.get(proj.id);
+
+      // Determine if LLM provided rewritten content (highlights take priority)
+      const hasRewrittenHighlights =
+        rewritten?.rewritten_highlights && rewritten.rewritten_highlights.length > 0;
+      const hasRewrittenDescription =
+        rewritten?.rewritten_description && rewritten.rewritten_description.trim() !== '';
+
+      // IMPORTANT: If LLM provided highlights but no description, use ONLY highlights
+      // (don't mix English original description with German highlights)
+      let description: string | undefined;
+      if (hasRewrittenDescription) {
+        description = rewritten.rewritten_description;
+      } else if (hasRewrittenHighlights) {
+        // LLM provided highlights but no description - leave description empty
+        description = undefined;
+      } else {
+        description = proj.description || undefined;
+      }
+
       return {
         id: proj.id,
         name: proj.name,
-        // Use rewritten description if available, fallback to original
-        description: rewritten?.rewritten_description || proj.description || undefined,
+        description,
         date: proj.startDate?.toISOString() || undefined,
-        // Use rewritten highlights if available, fallback to technologies
-        highlights:
-          rewritten?.rewritten_highlights && rewritten.rewritten_highlights.length > 0
-            ? rewritten.rewritten_highlights
-            : proj.technologies || [],
+        highlights: hasRewrittenHighlights
+          ? rewritten.rewritten_highlights
+          : proj.technologies || [],
       };
     });
 
