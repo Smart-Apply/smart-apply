@@ -131,6 +131,8 @@ Sincerely,
 - Common opening: "Sehr geehrte Damen und Herren" (or specific name if known)
 - Common closing: "Mit freundlichen Grüßen"
 - Technical/domain-specific terms remain in English when appropriate (React, Docker, AWS, EMR, CNC, GAAP)
+- Technical job titles remain in English (Software Engineer, DevOps Engineer, etc.)
+- **Content must read like a native German speaker wrote it, NOT a machine translation**
 
 ### English (language = "en")
 
@@ -139,6 +141,59 @@ Sincerely,
 - Standard business letter format
 - Opening: "Dear Hiring Manager" (or specific name if known)
 - Closing: "Sincerely" or "Best regards"
+
+---
+
+## FORBIDDEN AI-STYLE PHRASES (CRITICAL)
+
+These patterns sound robotic and unnatural. **NEVER use them:**
+
+### German Forbidden Phrases:
+- ❌ "Ich bin begeistert von der Möglichkeit" → Use: Direct statement about interest
+- ❌ "Entwickelt und geliefert" → Use noun-based forms: "Entwicklung von..."
+- ❌ "Signifikant beigetragen" → Use specific contributions
+- ❌ "Leidenschaftlich" (unless truly relevant) → Use: Professional interest statements
+- ❌ "Ich bin überzeugt, dass ich..." (overused) → Be specific about fit
+- ❌ Generic superlatives without substance
+
+### English Forbidden Phrases:
+- ❌ "I am passionate about..." → Use: Specific interest with examples
+- ❌ "I am excited about the opportunity" → Use: Direct professional interest
+- ❌ "Developed and delivered" → Use: Specific outcomes
+- ❌ "Successfully implemented" → Use: Concrete results
+- ❌ "Played a key role" → Use: "Led", "Drove", "Owned"
+
+---
+
+## MANDATORY TRANSLATION RULES
+
+**ALL text must be in {{language}}.** Never leave sentences untranslated.
+
+### What to Translate:
+- All paragraphs, sentences, and phrases
+- Achievement descriptions
+- Business language and greetings
+
+### What to Keep in English (Exceptions):
+- Technical terms: React, Docker, AWS, Kubernetes, CI/CD, API
+- Product names: Microsoft 365, Azure, GitHub, Jira
+- Programming languages: TypeScript, Python, Java
+
+### Job Titles - Translation Rules:
+- ✅ TRANSLATE: "Working Student" → "Werkstudent", "Intern" → "Praktikant", "Team Lead" → "Teamleiter"
+- ❌ Keep in English: "Software Engineer", "DevOps Engineer", "Full-Stack Developer", "Scrum Master"
+
+---
+
+## EMPTY FIELD HANDLING
+
+**If profile lacks relevant data for a section, skip gracefully. Do NOT fabricate.**
+
+### Rules:
+1. If no relevant projects exist → focus body paragraph 2 on additional experiences instead
+2. If experience lacks specific achievements → describe responsibilities without inventing metrics
+3. **NEVER generate placeholder content** like "various projects" or "multiple achievements"
+4. Better to have a shorter, genuine letter than a longer fabricated one
 
 ---
 
@@ -162,7 +217,7 @@ Before generating, ensure:
 **German (IT role):**
 "Sehr geehrte Damen und Herren,
 
-mit großem Interesse habe ich Ihre Stellenausschreibung für die Position als Senior Full-Stack Developer auf Ihrer Website entdeckt. Mit über 6 Jahren Erfahrung in der Entwicklung skalierbarer Webanwendungen und fundierter Expertise in React und Node.js bin ich überzeugt, dass ich einen wertvollen Beitrag zu Ihrem Team leisten kann."
+hiermit bewerbe ich mich auf die ausgeschriebene Position als Senior Full-Stack Developer. Mit über 6 Jahren Erfahrung in der Entwicklung skalierbarer Webanwendungen mit React und Node.js bringe ich die technische Expertise mit, die Ihr Team benötigt."
 
 **English (IT role):**
 "Dear Hiring Manager,

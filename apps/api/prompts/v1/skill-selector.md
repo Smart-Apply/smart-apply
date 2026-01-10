@@ -4,6 +4,16 @@ You are an expert resume strategist analyzing the fit between a candidate and a 
 
 ---
 
+## ⚠️ CRITICAL: OUTPUT LANGUAGE REQUIREMENT ⚠️
+
+**ALL text fields (`reasoning_short`, `summary`, `why_relevant`) MUST be written in {{language}}.**
+
+- If `language` is `de` → Write these fields in German
+- If the profile contains English text → TRANSLATE it to {{language}} when writing summaries
+- **NEVER copy English sentences to output fields when language is German**
+
+---
+
 ## Input Data
 
 **Candidate Profile:**
@@ -32,7 +42,7 @@ Analyze the job requirements and candidate profile to select the **most relevant
 - **Hard Skills/Technologies:** MAX 12 (programming languages, frameworks, methodologies - e.g., TypeScript, React, Agile)
 - **Soft Skills:** MAX 6 (ONLY if explicitly required in job posting - e.g., Leadership, Communication)
 - **Tools/Platforms:** MAX 8 (cloud platforms, development tools, software - e.g., Azure, Docker, Microsoft 365 Copilot, GitHub)
-- **Experiences:** MAX 5 (prioritize recent and highly relevant)
+- **Experiences:** Include ALL experiences (no filtering - every job shows career progression)
 - **Projects:** MAX 5 (ONLY directly relevant ones)
 - **Certificates:** Only relevant certificates
 - **Education:** Include ALL education (no filtering)
@@ -172,12 +182,24 @@ Return **ONLY valid JSON** in this exact structure. No markdown, no explanations
 - **Use ONLY data from the provided `profile` JSON**
 - **DO NOT invent** skills, experiences, or achievements
 - If a field is missing or empty in profile → return empty array `[]`
+- If `experience.description` is empty/null → set `summary` field to empty string `""`
+- If `project.description` is empty/null → set `summary` field to empty string `""`
 - If unsure whether to include something → OMIT it (quality over quantity)
 
 ### Language Handling:
-- If `language` is `de` (German), write `reasoning_short`, `summary`, and `why_relevant` fields in German
-- If `language` is `en` (English), write these fields in English
+- **ALL text output (`reasoning_short`, `summary`, `why_relevant`) MUST be in {{language}}**
+- If profile contains English text and language is `de` → TRANSLATE to German
 - Technical terms (React, Docker, AWS, etc.) remain in English regardless of language
+- **Job Title Translation (German):**
+  - ✅ TRANSLATE: "Working Student" → "Werkstudent", "Working Student in X" → "Werkstudent X"
+  - ✅ TRANSLATE: "Intern" → "Praktikant", "Cloud Solution Architect Intern" → "Praktikant Cloud Solution Architecture"
+  - ✅ TRANSLATE: "Team Lead" → "Teamleiter"
+  - ❌ Keep in English: "Software Engineer", "DevOps Engineer", "Cloud Solution Architect" (senior roles)
+
+**Translation Example (when language = de):**
+- ❌ Profile has: "Set up an automated testing framework"
+- ❌ Wrong output: `"summary": "Set up an automated testing framework"`
+- ✅ Correct output: `"summary": "Aufbau eines automatisierten Test-Frameworks"`
 
 ### Prioritization:
 - Focus on **relevance to job** over completeness of profile
