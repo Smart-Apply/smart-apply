@@ -101,6 +101,9 @@ function getTemplatesDir(): string {
     path.join(basePath, 'src/pdf/templates'),
     path.join(basePath, '../src/pdf/templates'),
     path.join(basePath, '../../apps/api/src/pdf/templates'),
+    // Docker production paths
+    '/app/apps/api/src/pdf/templates',
+    path.join(basePath, '../../../apps/api/src/pdf/templates'),
   ];
   
   for (const p of possiblePaths) {
