@@ -22,7 +22,13 @@ import type {
   PaginatedResponse,
   ExtractedProfile,
 } from '@/types';
-import { ApiError, NetworkError, shouldRetry, getRetryDelay, isPermanentAuthFailure } from './errors';
+import {
+  ApiError,
+  NetworkError,
+  shouldRetry,
+  getRetryDelay,
+  isPermanentAuthFailure,
+} from './errors';
 import { getCsrfToken, refreshCsrfToken } from './csrf';
 import { getApiBaseUrl } from './config';
 
@@ -45,17 +51,19 @@ let isRedirectingToLogin = false;
 function handleAuthFailure(): never {
   if (typeof window !== 'undefined' && !isRedirectingToLogin) {
     isRedirectingToLogin = true;
-    
+
     // Clear auth store to prevent further authenticated requests
     // This also disables queries that depend on isAuthenticated
-    import('@/stores/auth-store').then(({ useAuthStore }) => {
-      useAuthStore.getState().clearAuth();
-    }).catch(console.error);
-    
+    import('@/stores/auth-store')
+      .then(({ useAuthStore }) => {
+        useAuthStore.getState().clearAuth();
+      })
+      .catch(console.error);
+
     console.warn('Authentication failed. Redirecting to login...');
     window.location.href = '/login?session_expired=true';
   }
-  
+
   // Throw error to stop further processing in the request chain
   throw new ApiError(401, 'Unauthorized', { message: 'Session expired. Redirecting to login...' });
 }
@@ -69,7 +77,7 @@ async function refreshAccessToken(): Promise<boolean> {
   if (isRedirectingToLogin) {
     return false;
   }
-  
+
   // If already refreshing, return the existing promise
   if (isRefreshing && refreshPromise) {
     return refreshPromise;
@@ -108,10 +116,7 @@ async function refreshAccessToken(): Promise<boolean> {
 /**
  * Generic fetch wrapper with error handling, retry logic, and automatic token refresh
  */
-async function apiRequest<T>(
-  endpoint: string,
-  options: RequestOptions = {}
-): Promise<T> {
+async function apiRequest<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const { retry = true, maxRetries = 3, ...fetchOptions } = options;
   let retryCount = 0;
 
@@ -144,36 +149,41 @@ async function apiRequest<T>(
       const rateLimitLimit = response.headers.get('X-RateLimit-Limit');
 
       // Warn user if close to rate limit (less than 10 requests remaining)
-      if (rateLimitRemaining && rateLimitLimit && parseInt(rateLimitRemaining) < 10 && parseInt(rateLimitRemaining) > 0) {
+      if (
+        rateLimitRemaining &&
+        rateLimitLimit &&
+        parseInt(rateLimitRemaining) < 10 &&
+        parseInt(rateLimitRemaining) > 0
+      ) {
         const resetTime = rateLimitReset ? parseInt(rateLimitReset) : Date.now();
         const minutesUntilReset = Math.ceil((resetTime - Date.now()) / 60000);
-        
+
         // Only show toast on client side
         if (typeof window !== 'undefined') {
           const { toast } = await import('sonner');
           toast.warning(
             `Nur noch ${rateLimitRemaining} Aktionen verfügbar. ` +
-            `Limit wird zurückgesetzt in ${minutesUntilReset} Minute${minutesUntilReset !== 1 ? 'n' : ''}.`
+              `Limit wird zurückgesetzt in ${minutesUntilReset} Minute${minutesUntilReset !== 1 ? 'n' : ''}.`,
           );
         }
       }
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
-        
+
         // Handle rate limit errors (429 Too Many Requests)
         if (response.status === 429) {
           const retryAfter = response.headers.get('Retry-After');
           const retrySeconds = retryAfter ? parseInt(retryAfter) : 60;
           const retryMinutes = Math.ceil(retrySeconds / 60);
-          
+
           throw new ApiError(
             429,
             `Zu viele Aktionen. Bitte warte ${retryMinutes} Minute${retryMinutes !== 1 ? 'n' : ''} und versuche es erneut.`,
-            errorData
+            errorData,
           );
         }
-        
+
         // Handle CSRF token errors (403 Forbidden with CSRF error)
         if (response.status === 403 && errorData?.code === 'EBADCSRFTOKEN') {
           // Refresh CSRF token and retry ONCE (only if not already retried)
@@ -182,40 +192,47 @@ async function apiRequest<T>(
             return makeRequest(true); // Retry with new CSRF token
           }
           // If already retried, throw error (don't retry infinitely)
-          throw new ApiError(response.status, 'CSRF token invalid or expired after retry.', errorData);
+          throw new ApiError(
+            response.status,
+            'CSRF token invalid or expired after retry.',
+            errorData,
+          );
         }
 
         // Handle 401 Unauthorized
         if (response.status === 401) {
           // If we're already redirecting, throw immediately to stop further processing
           if (isRedirectingToLogin) {
-            throw new ApiError(response.status, 'Unauthorized', { message: 'Redirecting to login...' });
+            throw new ApiError(response.status, 'Unauthorized', {
+              message: 'Redirecting to login...',
+            });
           }
-          
+
           // Check for permanent authentication failures (user/token deleted from DB)
           // These should NOT trigger token refresh attempts
           const errorMessage = errorData?.message || '';
-          const isPermAuthFailure = 
+          const isPermAuthFailure =
             errorMessage.includes('User not found') ||
             errorMessage.includes('Refresh token not found') ||
             errorMessage.includes('token not found or revoked');
-          
+
           if (isPermAuthFailure) {
             // User or tokens were deleted from database - redirect to login immediately
             handleAuthFailure();
           }
-          
+
           // For other 401 errors, attempt token refresh (only once)
           if (!isRetryAfterRefresh) {
             // Don't try to refresh on auth endpoints or refresh endpoint itself
-            const isAuthEndpoint = endpoint.startsWith('/auth/login') || 
-                                   endpoint.startsWith('/auth/register') ||
-                                   endpoint.startsWith('/auth/refresh');
-            
+            const isAuthEndpoint =
+              endpoint.startsWith('/auth/login') ||
+              endpoint.startsWith('/auth/register') ||
+              endpoint.startsWith('/auth/refresh');
+
             if (!isAuthEndpoint) {
               // Try to refresh the token
               const refreshed = await refreshAccessToken();
-              
+
               if (refreshed) {
                 // Retry the original request with new access token
                 return makeRequest(true);
@@ -226,7 +243,7 @@ async function apiRequest<T>(
             }
           }
         }
-        
+
         throw new ApiError(response.status, response.statusText, errorData);
       }
 
@@ -237,13 +254,13 @@ async function apiRequest<T>(
 
       // Parse JSON response
       const json = await response.json();
-      
+
       // Unwrap standardized API response format { data, meta }
       // All endpoints now return this format (except 204 No Content)
       if (json && typeof json === 'object' && 'data' in json && 'meta' in json) {
         return json.data as T;
       }
-      
+
       // Fallback for backward compatibility (shouldn't happen after migration)
       return json as T;
     } catch (error) {
@@ -265,7 +282,7 @@ async function apiRequest<T>(
       if (isPermanentAuthFailure(error)) {
         throw error;
       }
-      
+
       if (retry && shouldRetry(error, retryCount, maxRetries)) {
         retryCount++;
         const delay = getRetryDelay(retryCount);
@@ -289,10 +306,7 @@ export function resetAuthRedirectFlag(): void {
  * Generic fetch wrapper for FormData (multipart/form-data) requests
  * Does NOT set Content-Type header (browser sets it with boundary automatically)
  */
-async function apiRequestFormData<T>(
-  endpoint: string,
-  options: RequestOptions = {}
-): Promise<T> {
+async function apiRequestFormData<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const { retry = true, maxRetries = 3, ...fetchOptions } = options;
 
   const makeRequest = async (isRetryAfterRefresh = false): Promise<T> => {
@@ -329,7 +343,7 @@ async function apiRequestFormData<T>(
           throw new ApiError(
             429,
             `Zu viele Uploads. Du kannst maximal 10 Lebensläufe pro Stunde analysieren. Bitte warte ${retryMinutes} Minute${retryMinutes !== 1 ? 'n' : ''}.`,
-            errorData
+            errorData,
           );
         }
 
@@ -339,13 +353,19 @@ async function apiRequestFormData<T>(
             await refreshCsrfToken();
             return makeRequest(true);
           }
-          throw new ApiError(response.status, 'CSRF token invalid or expired after retry.', errorData);
+          throw new ApiError(
+            response.status,
+            'CSRF token invalid or expired after retry.',
+            errorData,
+          );
         }
 
         // Handle 401 Unauthorized
         if (response.status === 401) {
           if (isRedirectingToLogin) {
-            throw new ApiError(response.status, 'Unauthorized', { message: 'Redirecting to login...' });
+            throw new ApiError(response.status, 'Unauthorized', {
+              message: 'Redirecting to login...',
+            });
           }
 
           const errorMessage = errorData?.message || '';
@@ -366,18 +386,18 @@ async function apiRequestFormData<T>(
         throw new ApiError(
           response.status,
           errorData?.message || 'Ein Fehler ist aufgetreten',
-          errorData
+          errorData,
         );
       }
 
       // Parse JSON response
       const json = await response.json();
-      
+
       // Unwrap standardized API response format { data, meta }
       if (json && typeof json === 'object' && 'data' in json && 'meta' in json) {
         return json.data as T;
       }
-      
+
       // Fallback for backward compatibility
       return json as T;
     } catch (error) {
@@ -394,12 +414,12 @@ async function apiRequestFormData<T>(
 /**
  * Authenticated fetch wrapper for non-JSON requests (e.g., PDF downloads, blob fetches)
  * Handles automatic token refresh on 401 errors
- * 
+ *
  * Use this instead of raw fetch() for any authenticated endpoint that doesn't return JSON
  */
 export async function authenticatedFetch(
   url: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): Promise<Response> {
   const makeRequest = async (isRetryAfterRefresh = false): Promise<Response> => {
     const response = await fetch(url, {
@@ -450,15 +470,12 @@ export const api = {
         body: JSON.stringify(data),
       }),
 
-    logout: () =>
-      apiRequest<{ message: string }>('/auth/logout'),
-      // GET request (no method specified = GET), no CSRF token required
+    logout: () => apiRequest<{ message: string }>('/auth/logout'),
+    // GET request (no method specified = GET), no CSRF token required
 
-    me: () =>
-      apiRequest<User>('/auth/me'),
+    me: () => apiRequest<User>('/auth/me'),
 
-    getCsrfToken: () =>
-      apiRequest<{ csrfToken: string; message: string }>('/auth/csrf-token'),
+    getCsrfToken: () => apiRequest<{ csrfToken: string; message: string }>('/auth/csrf-token'),
 
     updateProfile: (data: { firstName?: string; lastName?: string }) =>
       apiRequest<User>('/auth/profile', {
@@ -481,8 +498,7 @@ export const api = {
 
   // User Preferences
   userPreferences: {
-    get: () =>
-      apiRequest<UserPreferences>('/user-preferences'),
+    get: () => apiRequest<UserPreferences>('/user-preferences'),
 
     update: (data: UpdateUserPreferencesDto) =>
       apiRequest<UserPreferences>('/user-preferences', {
@@ -493,8 +509,7 @@ export const api = {
 
   // Profile
   profile: {
-    get: () =>
-      apiRequest<Profile>('/profile'),
+    get: () => apiRequest<Profile>('/profile'),
 
     update: (data: UpdateProfileDto) =>
       apiRequest<Profile>('/profile', {
@@ -537,11 +552,9 @@ export const api = {
         body: JSON.stringify(data),
       }),
 
-    list: () =>
-      apiRequest<PaginatedResponse<JobPosting>>('/job-postings'),
+    list: () => apiRequest<PaginatedResponse<JobPosting>>('/job-postings'),
 
-    getById: (id: string) =>
-      apiRequest<JobPosting>(`/job-postings/${id}`),
+    getById: (id: string) => apiRequest<JobPosting>(`/job-postings/${id}`),
 
     delete: (id: string) =>
       apiRequest<void>(`/job-postings/${id}`, {
@@ -554,54 +567,69 @@ export const api = {
     list: (type?: 'COVER_LETTER' | 'RESUME' | 'BOTH') =>
       apiRequest<Template[]>(`/templates${type ? `?type=${type}` : ''}`),
 
-    getById: (id: string) =>
-      apiRequest<TemplateWithContent>(`/templates/${id}`),
+    getById: (id: string) => apiRequest<TemplateWithContent>(`/templates/${id}`),
   },
 
   // Applications
   applications: {
-    create: (data: { jobPostingId: string; coverLetterTemplateId?: string; resumeTemplateId?: string; generateCoverLetter?: boolean }) =>
+    create: (data: {
+      jobPostingId: string;
+      coverLetterTemplateId?: string;
+      resumeTemplateId?: string;
+      generateCoverLetter?: boolean;
+    }) =>
       apiRequest<Application>('/applications', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
 
-    createWithGeneration: (data: { jobPostingId: string; coverLetterTemplateId?: string; resumeTemplateId?: string; generateCoverLetter?: boolean }) =>
+    createWithGeneration: (data: {
+      jobPostingId: string;
+      coverLetterTemplateId?: string;
+      resumeTemplateId?: string;
+      generateCoverLetter?: boolean;
+      language?: string;
+    }) =>
       apiRequest<Application>('/applications/create-with-generation', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
 
     list: (options?: { includeJobPosting?: boolean }) =>
-      apiRequest<PaginatedResponse<Application>>(`/applications${options?.includeJobPosting ? '?includeJobPosting=true' : ''}`),
+      apiRequest<PaginatedResponse<Application>>(
+        `/applications${options?.includeJobPosting ? '?includeJobPosting=true' : ''}`,
+      ),
 
-    getById: (id: string) =>
-      apiRequest<Application>(`/applications/${id}`),
+    getById: (id: string) => apiRequest<Application>(`/applications/${id}`),
 
-    getStatus: (id: string) =>
-      apiRequest<ApplicationStatusResponse>(`/applications/${id}/status`),
+    getStatus: (id: string) => apiRequest<ApplicationStatusResponse>(`/applications/${id}/status`),
 
-    getFiles: (id: string) =>
-      apiRequest<ApplicationFilesResponse>(`/applications/${id}/files`),
+    getFiles: (id: string) => apiRequest<ApplicationFilesResponse>(`/applications/${id}/files`),
 
     delete: (id: string) =>
       apiRequest<void>(`/applications/${id}`, {
         method: 'DELETE',
       }),
 
-    updateResume: (id: string, data: { resume: ResumeData }) =>
+    updateResume: (id: string, data: { resume: ResumeData; contentLanguage?: string }) =>
       apiRequest<Application>(`/applications/${id}/resume`, {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
 
-    upsertCoverLetter: (id: string, data: { instructions?: string; content?: string; regenerate?: boolean }) =>
+    upsertCoverLetter: (
+      id: string,
+      data: { instructions?: string; content?: string; regenerate?: boolean },
+    ) =>
       apiRequest<Application>(`/applications/${id}/cover-letter`, {
         method: 'POST',
         body: JSON.stringify(data),
       }),
 
-    generateSummary: (id: string, data: { instructions: string; currentSummary?: string; regenerate?: boolean }) =>
+    generateSummary: (
+      id: string,
+      data: { instructions: string; currentSummary?: string; regenerate?: boolean },
+    ) =>
       apiRequest<{ summary: string }>(`/applications/${id}/summary`, {
         method: 'POST',
         body: JSON.stringify(data),
@@ -681,8 +709,7 @@ export const api = {
 
   // Sessions
   sessions: {
-    list: () =>
-      apiRequest<SessionsResponse>('/auth/sessions'),
+    list: () => apiRequest<SessionsResponse>('/auth/sessions'),
 
     revoke: (sessionId: string) =>
       apiRequest<{ message: string }>(`/auth/sessions/${sessionId}`, {

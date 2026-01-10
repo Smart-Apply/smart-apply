@@ -96,6 +96,12 @@ const sanitizeUrl = (val: string): string => {
   return url;
 };
 
+/**
+ * German postal code (PLZ) validation regex
+ * Must be exactly 5 digits
+ */
+const GERMAN_PLZ_REGEX = /^\d{5}$/;
+
 export const profileSchema = z.object({
   firstName: z.string().min(1, 'Vorname ist erforderlich').optional(),
   lastName: z.string().min(1, 'Nachname ist erforderlich').optional(),
@@ -105,7 +111,14 @@ export const profileSchema = z.object({
     .regex(phoneRegex, 'Telefonnummer muss im internationalen Format sein (z.B. +49123456789)')
     .optional()
     .or(z.literal('')),
-  location: z.string().optional(),
+  street: z.string().max(200, 'Straße darf maximal 200 Zeichen haben').optional().or(z.literal('')),
+  postalCode: z
+    .string()
+    .regex(GERMAN_PLZ_REGEX, 'PLZ muss genau 5 Ziffern haben')
+    .optional()
+    .or(z.literal('')),
+  city: z.string().max(100, 'Stadt darf maximal 100 Zeichen haben').optional().or(z.literal('')),
+  country: z.string().max(100, 'Land darf maximal 100 Zeichen haben').optional().or(z.literal('')),
   linkedinUrl: z.string().transform(sanitizeUrl).pipe(z.string().url('Ungültige URL').or(z.literal(''))).optional().or(z.literal('')),
   githubUrl: z.string().transform(sanitizeUrl).pipe(z.string().url('Ungültige URL').or(z.literal(''))).optional().or(z.literal('')),
   portfolioUrl: z.string().transform(sanitizeUrl).pipe(z.string().url('Ungültige URL').or(z.literal(''))).optional().or(z.literal('')),

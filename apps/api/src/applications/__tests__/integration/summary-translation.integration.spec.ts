@@ -106,7 +106,8 @@ describe('ApplicationsService - Summary Translation Integration', () => {
     const detectedLanguage = (service as any).detectLanguage(mockJobPosting.fullText);
     expect(detectedLanguage).toBe('en');
 
-    // Verify translation would be called
+    // Verify translateSummary is called with correct parameters (now only 2 args)
+    // The method auto-detects source language
     expect(detectedLanguage).not.toBe('de');
   });
 

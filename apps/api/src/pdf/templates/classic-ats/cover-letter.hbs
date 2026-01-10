@@ -17,6 +17,10 @@
         {{/if}}
         
         <div class="contact-info">
+            {{#if fullAddress}}
+            <span>{{fullAddress}}</span>
+            {{/if}}
+            {{#if fullAddress}}{{#if phone}}<span class="separator">|</span>{{/if}}{{/if}}
             {{#if phone}}
             <span>{{phone}}</span>
             {{/if}}
@@ -27,10 +31,6 @@
             {{#if email}}{{#if linkedin}}<span class="separator">|</span>{{/if}}{{/if}}
             {{#if linkedin}}
             <a href="{{linkedin}}" target="_blank">LinkedIn</a>
-            {{/if}}
-            {{#if linkedin}}{{#if location}}<span class="separator">|</span>{{/if}}{{/if}}
-            {{#if location}}
-            <span>{{location}}</span>
             {{/if}}
         </div>
     </header>

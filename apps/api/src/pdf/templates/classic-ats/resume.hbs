@@ -17,6 +17,10 @@
         {{/if}}
         
         <div class="contact-info">
+            {{#if fullAddress}}
+            <span>{{fullAddress}}</span>
+            {{/if}}
+            {{#if fullAddress}}{{#if phone}}<span class="separator">|</span>{{/if}}{{/if}}
             {{#if phone}}
             <span>{{phone}}</span>
             {{/if}}
@@ -35,10 +39,6 @@
             {{#if github}}{{#if website}}<span class="separator">|</span>{{/if}}{{/if}}
             {{#if website}}
             <a href="{{website}}" target="_blank">{{website}}</a>
-            {{/if}}
-            {{#if location}}
-            <span class="separator">|</span>
-            <span>{{location}}</span>
             {{/if}}
         </div>
     </header>
@@ -101,7 +101,7 @@
                 {{/if}}
             </div>
             {{#if this.description}}
-            <p class="item-description">{{{this.description}}}</p>
+            <div class="item-description">{{{this.description}}}</div>
             {{/if}}
             {{#if this.achievements}}
             <ul class="achievements-list">
@@ -135,7 +135,7 @@
             </div>
             {{/if}}
             {{#if this.description}}
-            <p class="item-description">{{{this.description}}}</p>
+            <div class="item-description">{{{this.description}}}</div>
             {{/if}}
             {{#if this.highlights}}
             <ul class="achievements-list">

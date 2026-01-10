@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { SubmitButton } from '@/components/ui/submit-button';
+import { useCallback } from 'react';
 
 export interface AiAssistantPopoverProps {
   /** Whether the popover is open */
@@ -60,14 +61,23 @@ export function AiAssistantPopover({
   buttonSize = 'sm',
   buttonClassName = 'h-8 px-3 text-xs border-primary/30 hover:border-primary/50 hover:bg-primary/5',
 }: AiAssistantPopoverProps) {
+  // Handle Enter key to submit (Shift+Enter for new line)
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        if (instructions.trim() && !isLoading) {
+          onApply();
+        }
+      }
+    },
+    [instructions, isLoading, onApply],
+  );
+
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>
-        <Button
-          variant={buttonVariant}
-          size={buttonSize}
-          className={buttonClassName}
-        >
+        <Button variant={buttonVariant} size={buttonSize} className={buttonClassName}>
           <Sparkles className="h-3.5 w-3.5 mr-1.5 text-primary" />
           AI-Assistent
         </Button>
@@ -79,13 +89,12 @@ export function AiAssistantPopover({
               <Sparkles className="h-4 w-4 text-primary" />
               {title}
             </h4>
-            <p className="text-xs text-muted-foreground">
-              {description}
-            </p>
+            <p className="text-xs text-muted-foreground">{description}</p>
           </div>
           <Textarea
             value={instructions}
             onChange={(event) => onInstructionsChange(event.target.value)}
+            onKeyDown={handleKeyDown}
             placeholder={placeholder}
             rows={3}
             disabled={isLoading}

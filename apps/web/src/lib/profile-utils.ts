@@ -53,14 +53,14 @@ export function calculateProfileStrength(
     completed: hasPhone,
   });
 
-  // Location (10 points)
-  const hasLocation = !!profile?.location;
-  if (hasLocation) {
+  // Address (10 points) - at least city should be filled
+  const hasAddress = !!(profile?.city || profile?.street);
+  if (hasAddress) {
     score += 10;
   }
   suggestions.push({
-    text: 'Standort angeben',
-    completed: hasLocation,
+    text: 'Adresse angeben',
+    completed: hasAddress,
   });
 
   // Summary (15 points)

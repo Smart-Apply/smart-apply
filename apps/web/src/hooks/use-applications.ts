@@ -16,7 +16,9 @@ export function useApplications(options?: {
   return useQuery<Application[]>({
     queryKey: ['applications', { includeJobPosting: options?.includeJobPosting }],
     queryFn: async () => {
-      const response = await api.applications.list({ includeJobPosting: options?.includeJobPosting });
+      const response = await api.applications.list({
+        includeJobPosting: options?.includeJobPosting,
+      });
       // Extract items from paginated response
       return response.items;
     },
@@ -51,17 +53,16 @@ export function useCreateApplication() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: { jobPostingId: string }) =>
-      api.applications.create(data),
-    
+    mutationFn: (data: { jobPostingId: string }) => api.applications.create(data),
+
     // Optimistic update: Add application to list immediately
     onMutate: async (newApplication) => {
       // Cancel outgoing refetches to avoid overwriting optimistic update
       await queryClient.cancelQueries({ queryKey: ['applications'] });
-      
+
       // Snapshot previous value for rollback
       const previousApplications = queryClient.getQueryData(['applications']);
-      
+
       // Optimistically update cache with temporary application
       queryClient.setQueryData(['applications'], (old: Application[] | undefined) => {
         const tempApp: Application = {
@@ -75,11 +76,11 @@ export function useCreateApplication() {
         };
         return [tempApp, ...(old || [])];
       });
-      
+
       // Return context with snapshot for rollback
       return { previousApplications };
     },
-    
+
     // Rollback on error
     onError: (error: unknown, _variables, context) => {
       if (context?.previousApplications) {
@@ -87,18 +88,16 @@ export function useCreateApplication() {
       }
       toastError(error, 'Fehler beim Erstellen der Bewerbung');
     },
-    
+
     // Replace temp ID with real data on success
     onSuccess: (newApplication) => {
       queryClient.setQueryData(['applications'], (old: Application[] | undefined) => {
         if (!old) return [newApplication];
-        return old.map(app => 
-          app.id.startsWith('temp-') ? newApplication : app
-        );
+        return old.map((app) => (app.id.startsWith('temp-') ? newApplication : app));
       });
       toastSuccess('Bewerbung wird erstellt...');
     },
-    
+
     // Always refetch after mutation for data consistency
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['applications'] });
@@ -113,13 +112,13 @@ export function useCreateApplicationWithGeneration() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: { 
-      jobPostingId: string; 
-      coverLetterTemplateId?: string; 
-      resumeTemplateId?: string; 
+    mutationFn: (data: {
+      jobPostingId: string;
+      coverLetterTemplateId?: string;
+      resumeTemplateId?: string;
       generateCoverLetter?: boolean;
-    }) =>
-      api.applications.createWithGeneration(data),
+      language?: string;
+    }) => api.applications.createWithGeneration(data),
     onSuccess: (application) => {
       queryClient.invalidateQueries({ queryKey: ['applications'] });
       queryClient.setQueryData(['applications', application.id], application);
@@ -150,32 +149,31 @@ export function useDeleteApplication() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) =>
-      api.applications.delete(id),
-    
+    mutationFn: (id: string) => api.applications.delete(id),
+
     // Optimistic update: Remove application from list immediately
     onMutate: async (deletedId) => {
       // Cancel outgoing refetches to avoid overwriting optimistic update
       await queryClient.cancelQueries({ queryKey: ['applications'] });
       await queryClient.cancelQueries({ queryKey: ['applications', deletedId] });
-      
+
       // Snapshot previous values for rollback
       const previousApplications = queryClient.getQueryData(['applications']);
       const previousApplication = queryClient.getQueryData(['applications', deletedId]);
-      
+
       // Optimistically remove from list
       queryClient.setQueryData(['applications'], (old: Application[] | undefined) => {
         if (!old) return [];
-        return old.filter(app => app.id !== deletedId);
+        return old.filter((app) => app.id !== deletedId);
       });
-      
+
       // Remove from detail cache
       queryClient.removeQueries({ queryKey: ['applications', deletedId] });
-      
+
       // Return context with snapshots for rollback
       return { previousApplications, previousApplication, deletedId };
     },
-    
+
     // Rollback on error
     onError: (error: unknown, _variables, context) => {
       if (context?.previousApplications) {
@@ -186,12 +184,12 @@ export function useDeleteApplication() {
       }
       toastError(error, 'Fehler beim Löschen der Bewerbung');
     },
-    
+
     // Show success message
     onSuccess: () => {
       toastSuccess('Bewerbung wurde gelöscht');
     },
-    
+
     // Always refetch after mutation for data consistency
     onSettled: (_data, _error, variables) => {
       queryClient.invalidateQueries({ queryKey: ['applications'] });
@@ -204,12 +202,17 @@ export function useUpdateApplicationResume(applicationId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (resume: ResumeData) => api.applications.updateResume(applicationId, { resume }),
+    mutationFn: (data: { resume: ResumeData; contentLanguage?: string }) =>
+      api.applications.updateResume(applicationId, data),
     onSuccess: (updatedApplication) => {
       // Optimistic update: Update cache directly without refetching
       queryClient.setQueryData(['applications', applicationId], updatedApplication);
-      // Also invalidate keywords query (secondary data)
+      // Invalidate keywords query (secondary data)
       queryClient.invalidateQueries({ queryKey: ['applications', applicationId, 'keywords'] });
+      // Invalidate translation cache status (contentLanguage may have changed)
+      queryClient.invalidateQueries({
+        queryKey: ['applications', applicationId, 'translation-cache-status'],
+      });
       toastSuccess('Lebenslauf gespeichert');
     },
     onError: (error: unknown) => {
@@ -297,7 +300,8 @@ export function useExportApplication(applicationId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (language?: 'de' | 'en' | 'fr' | 'es' | 'it') => api.applications.export(applicationId, language),
+    mutationFn: (language?: 'de' | 'en' | 'fr' | 'es' | 'it') =>
+      api.applications.export(applicationId, language),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['applications', applicationId] });
       toastSuccess('PDF-Export gestartet');

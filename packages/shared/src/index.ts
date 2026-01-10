@@ -74,7 +74,10 @@ export interface Profile {
   userId: number;
   summary?: string;
   phone?: string;
-  location?: string;
+  street?: string; // Street and house number (e.g., "Musterstraße 123")
+  postalCode?: string; // Postal code / PLZ (e.g., "47057")
+  city?: string; // City name (e.g., "Duisburg")
+  country?: string; // Country name (e.g., "Deutschland")
   portfolioUrl?: string;
   linkedinUrl?: string;
   githubUrl?: string;
@@ -126,7 +129,10 @@ export interface UpdateProfileDto {
   firstName?: string;
   lastName?: string;
   phone?: string;
-  location?: string;
+  street?: string; // Street and house number
+  postalCode?: string; // Postal code / PLZ
+  city?: string; // City name
+  country?: string; // Country name
   linkedinUrl?: string;
   githubUrl?: string;
   portfolioUrl?: string;
@@ -173,8 +179,8 @@ export interface Template {
   category: string;
   language: string;
   baseTemplateId?: string;
-  accentColor?: string;         // Primary accent color hex (e.g., "#9c7a5b")
-  colorVariantName?: string;    // Display name for color variant (e.g., "Ocean Blue")
+  accentColor?: string; // Primary accent color hex (e.g., "#9c7a5b")
+  colorVariantName?: string; // Display name for color variant (e.g., "Ocean Blue")
   thumbnailUrl?: string;
   previewImageKey?: string;
   isActive: boolean;
@@ -220,6 +226,7 @@ export interface Application {
   errorMessage?: string;
   coverLetterTemplateId?: string;
   resumeTemplateId?: string;
+  language?: string;
   createdAt: string;
   updatedAt: string;
   jobPosting?: JobPosting;
@@ -299,7 +306,12 @@ export interface ResumeData {
   targetJobTitle?: string;
   email: string;
   phone?: string;
-  location?: string;
+  // Address fields (replaces old 'location' field)
+  street?: string;
+  postalCode?: string;
+  city?: string;
+  country?: string;
+  fullAddress?: string; // Computed: "Straße, PLZ Stadt, Land"
   linkedin?: string;
   github?: string;
   summary?: string;
@@ -506,7 +518,10 @@ export interface ExtractedProfile {
   firstName?: string;
   lastName?: string;
   phone?: string;
-  location?: string;
+  street?: string;
+  postalCode?: string;
+  city?: string;
+  country?: string;
   linkedinUrl?: string;
   githubUrl?: string;
   portfolioUrl?: string;
@@ -547,3 +562,4 @@ export interface ExtractedProfile {
     level: string;
   }>;
 }
+

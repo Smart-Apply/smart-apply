@@ -2,7 +2,18 @@
 
 import { startTransition, useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Briefcase, MapPin, Sparkles, FileText, Save, CheckCircle2, AlertCircle, Download, Building2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  Briefcase,
+  MapPin,
+  Sparkles,
+  FileText,
+  Save,
+  CheckCircle2,
+  AlertCircle,
+  Download,
+  Building2,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SubmitButton } from '@/components/ui/submit-button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,14 +22,27 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { CenteredLoader } from '@/components/shared/loading';
-import { ResumeTemplatePreview, CoverLetterTemplatePreview } from '@/components/applications/template-preview';
+import {
+  ResumeTemplatePreview,
+  CoverLetterTemplatePreview,
+} from '@/components/applications/template-preview';
 import { ATSScoreSidebar } from '@/components/applications/ats-score-sidebar';
-import { EditableTargetJobTitle } from '@/components/applications/editable-target-job-title';
 import { AiAssistantPopover } from '@/components/ui/ai-assistant-popover';
-import { useApplication, useExportApplication, useUpdateApplicationResume, useUpsertCoverLetter, useGenerateSummary, useGenerateExperienceDescription, useGenerateProjectDescription } from '@/hooks/use-applications';
+import { LanguageSelector } from '@/components/applications/language-selector';
+import {
+  useApplication,
+  useExportApplication,
+  useUpdateApplicationResume,
+  useUpsertCoverLetter,
+  useGenerateSummary,
+  useGenerateExperienceDescription,
+  useGenerateProjectDescription,
+} from '@/hooks/use-applications';
 import { parseResumeDraft, normalizeResumeForSave } from '@/lib/resume';
 import type { ResumeData } from '@/types';
 import { toast } from 'sonner';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '@/lib/api-client';
 import { stripHtml } from '@/lib/sanitize';
 import { toTiptapHtml } from '@/lib/markdown';
 import { cn } from '@/lib/utils';
@@ -28,19 +52,25 @@ import { Skeleton } from '@/components/ui/skeleton';
 // Dynamic imports for heavy Tiptap-based editors (saves ~200KB)
 // Only loaded when user navigates to edit page
 const ResumeFormEditor = dynamic(
-  () => import('@/components/applications/resume-form-editor').then(mod => ({ default: mod.ResumeFormEditor })),
+  () =>
+    import('@/components/applications/resume-form-editor').then((mod) => ({
+      default: mod.ResumeFormEditor,
+    })),
   {
     loading: () => <Skeleton className="h-96 w-full" />,
     ssr: false,
-  }
+  },
 );
 
 const CoverLetterEditor = dynamic(
-  () => import('@/components/applications/cover-letter-editor').then(mod => ({ default: mod.CoverLetterEditor })),
+  () =>
+    import('@/components/applications/cover-letter-editor').then((mod) => ({
+      default: mod.CoverLetterEditor,
+    })),
   {
     loading: () => <Skeleton className="h-96 w-full" />,
     ssr: false,
-  }
+  },
 );
 
 /**
@@ -57,7 +87,11 @@ const EMPTY_RESUME: ResumeData = {
   candidateName: 'Vorname Nachname',
   email: 'du@example.com',
   phone: '',
-  location: '',
+  street: '',
+  postalCode: '',
+  city: '',
+  country: '',
+  fullAddress: '',
   linkedin: '',
   github: '',
   summary: '',
@@ -95,16 +129,62 @@ export default function ApplicationResumeEditorPage() {
   const [coverVersion, setCoverVersion] = useState<string | null>(null);
   const [instructions, setInstructions] = useState('');
   const [activeTab, setActiveTab] = useState<'resume' | 'cover-letter' | 'ats-score'>('resume');
-  const [selectedLanguage, setSelectedLanguage] = useState<'de' | 'en' | 'fr' | 'es' | 'it'>('en');
+  const [selectedLanguage, setSelectedLanguage] = useState<'de' | 'en' | 'fr' | 'es' | 'it'>('de');
+  const [languageInitialized, setLanguageInitialized] = useState(false);
   const [aiPopoverOpen, setAiPopoverOpen] = useState(false);
 
   // Trigger ATS score refresh after saving
   const [atsRefreshTrigger, setAtsRefreshTrigger] = useState(0);
 
+  // Target job title state (for Stellendetails section)
+  const [targetJobTitle, setTargetJobTitle] = useState<string>('');
+  const [targetJobTitleInitialized, setTargetJobTitleInitialized] = useState(false);
+  const queryClient = useQueryClient();
+
   const upsertCoverLetter = useUpsertCoverLetter(applicationId);
   const exportApplication = useExportApplication(applicationId);
   const resumeText = application?.resumeText ?? null;
-  const coverLetterText = application ? application.coverLetterText ?? '' : null;
+  const coverLetterText = application ? (application.coverLetterText ?? '') : null;
+
+  // Mutation for updating target job title
+  const updateTargetJobTitleMutation = useMutation({
+    mutationFn: (newTitle: string) => api.applications.updateTargetJobTitle(applicationId, newTitle),
+    onSuccess: (updatedApp) => {
+      queryClient.setQueryData(['applications', applicationId], updatedApp);
+      queryClient.invalidateQueries({ queryKey: ['applications'] });
+      toast.success('Zielposition aktualisiert');
+    },
+    onError: (error: Error) => {
+      toast.error(`Fehler beim Aktualisieren: ${error.message}`);
+    },
+  });
+
+  // Initialize target job title from application
+  useEffect(() => {
+    if (application && !targetJobTitleInitialized) {
+      setTargetJobTitle(application.targetJobTitle || application.jobPosting?.title || '');
+      setTargetJobTitleInitialized(true);
+    }
+  }, [application, targetJobTitleInitialized]);
+
+  // Save target job title on blur
+  const handleTargetJobTitleSave = useCallback((title: string) => {
+    const trimmedTitle = title.trim();
+    if (trimmedTitle.length >= 2 && trimmedTitle.length <= 100) {
+      updateTargetJobTitleMutation.mutate(trimmedTitle);
+    }
+  }, [updateTargetJobTitleMutation]);
+
+  // Initialize language from application when it loads
+  useEffect(() => {
+    if (application?.language && !languageInitialized) {
+      const lang = application.language as 'de' | 'en' | 'fr' | 'es' | 'it';
+      if (['de', 'en', 'fr', 'es', 'it'].includes(lang)) {
+        setSelectedLanguage(lang);
+      }
+      setLanguageInitialized(true);
+    }
+  }, [application?.language, languageInitialized]);
 
   const hasResumeChanges = JSON.stringify(parsedResume) !== JSON.stringify(lastSavedResume);
   const hasCoverChanges = normalizeHtml(coverLetterValue) !== normalizeHtml(lastSavedCoverLetter);
@@ -201,8 +281,9 @@ export default function ApplicationResumeEditorPage() {
 
     try {
       const normalized = normalizeResumeForSave(parsedResume);
-      await updateResume.mutateAsync(normalized);
-      
+      // Pass the current viewing language so backend knows what language the content is in
+      await updateResume.mutateAsync({ resume: normalized, contentLanguage: selectedLanguage });
+
       // Simply mark the current state as saved - no complex re-parsing
       setLastSavedResume(normalized);
       setParsedResume(normalized);
@@ -228,7 +309,7 @@ export default function ApplicationResumeEditorPage() {
 
     try {
       await upsertCoverLetter.mutateAsync({ content: coverLetterValue });
-      
+
       // Simply mark current state as saved
       setLastSavedCoverLetter(coverLetterValue);
       toast.success('Anschreiben gespeichert');
@@ -238,6 +319,8 @@ export default function ApplicationResumeEditorPage() {
       toast.error('Anschreiben konnte nicht gespeichert werden');
     }
   };
+
+
 
   const handleApplyAIChanges = async () => {
     if (!instructions.trim()) {
@@ -251,9 +334,10 @@ export default function ApplicationResumeEditorPage() {
 
     try {
       // If there's existing content in editor, send it as base for modifications
-      const currentContent = coverLetterValue && stripHtml(coverLetterValue).trim().length > 0 
-        ? coverLetterValue 
-        : undefined;
+      const currentContent =
+        coverLetterValue && stripHtml(coverLetterValue).trim().length > 0
+          ? coverLetterValue
+          : undefined;
 
       console.log('📤 Sending to API:', {
         hasContent: !!currentContent,
@@ -279,7 +363,7 @@ export default function ApplicationResumeEditorPage() {
 
       // Convert LLM output (Markdown) to Tiptap-compatible HTML
       const sanitized = toTiptapHtml(updated.coverLetterText);
-      
+
       console.log('🔄 Converted to HTML:', {
         sanitizedLength: sanitized.length,
         sanitizedPreview: sanitized.substring(0, 100),
@@ -299,14 +383,14 @@ export default function ApplicationResumeEditorPage() {
 
       const streamInterval = setInterval(() => {
         currentIndex += wordsPerUpdate;
-        
+
         if (currentIndex >= totalWords) {
           // Final update with complete content
           setCoverLetterValue(sanitized);
           setCoverVersion(sanitized);
           setCoverInitialized(true);
           clearInterval(streamInterval);
-          
+
           console.log('✅ Streaming complete');
           toast.success('AI-Änderungen angewendet. Bitte speichern.');
         } else {
@@ -328,115 +412,134 @@ export default function ApplicationResumeEditorPage() {
    * Handle AI summary generation for resume
    * Calls the API and applies a streaming effect to the result
    */
-  const handleAiSummaryRequest = useCallback(async (
-    instructions: string,
-    currentSummary: string
-  ): Promise<string> => {
-    toast.info('AI generiert Zusammenfassung...');
-    
-    const result = await generateSummary.mutateAsync({
-      instructions,
-      currentSummary: currentSummary || undefined,
-      regenerate: true,
-    });
+  const handleAiSummaryRequest = useCallback(
+    async (instructions: string, currentSummary: string): Promise<string> => {
+      toast.info('AI generiert Zusammenfassung...');
 
-    if (!result.summary) {
-      throw new Error('Keine Zusammenfassung vom Server erhalten');
-    }
+      const result = await generateSummary.mutateAsync({
+        instructions,
+        currentSummary: currentSummary || undefined,
+        regenerate: true,
+      });
 
-    // Convert to Tiptap HTML (handles markdown formatting)
-    const sanitized = toTiptapHtml(result.summary);
-    
-    toast.success('Zusammenfassung generiert. Bitte speichern.');
-    
-    return sanitized;
-  }, [generateSummary]);
+      if (!result.summary) {
+        throw new Error('Keine Zusammenfassung vom Server erhalten');
+      }
+
+      // Convert to Tiptap HTML (handles markdown formatting)
+      const sanitized = toTiptapHtml(result.summary);
+
+      toast.success('Zusammenfassung generiert. Bitte speichern.');
+
+      return sanitized;
+    },
+    [generateSummary],
+  );
 
   /**
    * Handle AI experience description generation for resume
    * Calls the API and returns HTML-formatted bullet points
    */
-  const handleAiExperienceRequest = useCallback(async (
-    instructions: string,
-    experienceIndex: number,
-    currentDescription: string,
-    experienceTitle: string,
-    experienceCompany: string,
-    experienceDateRange: string,
-  ): Promise<string> => {
-    setExperienceAiLoadingIndex(experienceIndex);
-    toast.info('AI generiert Beschreibung...');
-    
-    try {
-      const result = await generateExperienceDescription.mutateAsync({
-        instructions,
-        experienceIndex,
-        currentDescription: currentDescription || undefined,
-        experienceTitle,
-        experienceCompany,
-        experienceDateRange: experienceDateRange || undefined,
-        regenerate: true,
-      });
+  const handleAiExperienceRequest = useCallback(
+    async (
+      instructions: string,
+      experienceIndex: number,
+      currentDescription: string,
+      experienceTitle: string,
+      experienceCompany: string,
+      experienceDateRange: string,
+    ): Promise<string> => {
+      setExperienceAiLoadingIndex(experienceIndex);
+      toast.info('AI generiert Beschreibung...');
 
-      if (!result.description) {
-        throw new Error('Keine Beschreibung vom Server erhalten');
+      try {
+        const result = await generateExperienceDescription.mutateAsync({
+          instructions,
+          experienceIndex,
+          currentDescription: currentDescription || undefined,
+          experienceTitle,
+          experienceCompany,
+          experienceDateRange: experienceDateRange || undefined,
+          regenerate: true,
+        });
+
+        if (!result.description) {
+          throw new Error('Keine Beschreibung vom Server erhalten');
+        }
+
+        toast.success('Beschreibung generiert. Bitte speichern.');
+
+        return result.description;
+      } finally {
+        setExperienceAiLoadingIndex(-1);
       }
-
-      toast.success('Beschreibung generiert. Bitte speichern.');
-      
-      return result.description;
-    } finally {
-      setExperienceAiLoadingIndex(-1);
-    }
-  }, [generateExperienceDescription]);
+    },
+    [generateExperienceDescription],
+  );
 
   /**
    * Handle AI project description generation for resume
    * Calls the API and returns HTML-formatted bullet points
    */
-  const handleAiProjectRequest = useCallback(async (
-    instructions: string,
-    projectIndex: number,
-    currentDescription: string,
-    projectName: string,
-    projectDate: string,
-  ): Promise<string> => {
-    setProjectAiLoadingIndex(projectIndex);
-    toast.info('AI generiert Beschreibung...');
-    
-    try {
-      const result = await generateProjectDescription.mutateAsync({
-        instructions,
-        projectIndex,
-        currentDescription: currentDescription || undefined,
-        projectName,
-        projectDate: projectDate || undefined,
-        regenerate: true,
-      });
+  const handleAiProjectRequest = useCallback(
+    async (
+      instructions: string,
+      projectIndex: number,
+      currentDescription: string,
+      projectName: string,
+      projectDate: string,
+    ): Promise<string> => {
+      setProjectAiLoadingIndex(projectIndex);
+      toast.info('AI generiert Beschreibung...');
 
-      if (!result.description) {
-        throw new Error('Keine Beschreibung vom Server erhalten');
+      try {
+        const result = await generateProjectDescription.mutateAsync({
+          instructions,
+          projectIndex,
+          currentDescription: currentDescription || undefined,
+          projectName,
+          projectDate: projectDate || undefined,
+          regenerate: true,
+        });
+
+        if (!result.description) {
+          throw new Error('Keine Beschreibung vom Server erhalten');
+        }
+
+        toast.success('Beschreibung generiert. Bitte speichern.');
+
+        return result.description;
+      } finally {
+        setProjectAiLoadingIndex(-1);
       }
-
-      toast.success('Beschreibung generiert. Bitte speichern.');
-      
-      return result.description;
-    } finally {
-      setProjectAiLoadingIndex(-1);
-    }
-  }, [generateProjectDescription]);
+    },
+    [generateProjectDescription],
+  );
 
   // Keyboard shortcut: Cmd/Ctrl+S to save
-  const handleKeyboardSave = useCallback((e: KeyboardEvent) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === 's') {
-      e.preventDefault();
-      if (activeTab === 'resume' && hasResumeChanges && !updateResume.isPending) {
-        handleResumeSave();
-      } else if (activeTab === 'cover-letter' && hasCoverChanges && !upsertCoverLetter.isPending) {
-        handleCoverSave();
+  const handleKeyboardSave = useCallback(
+    (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        e.preventDefault();
+        if (activeTab === 'resume' && hasResumeChanges && !updateResume.isPending) {
+          handleResumeSave();
+        } else if (
+          activeTab === 'cover-letter' &&
+          hasCoverChanges &&
+          !upsertCoverLetter.isPending
+        ) {
+          handleCoverSave();
+        }
       }
-    }
-  }, [activeTab, hasResumeChanges, hasCoverChanges, updateResume.isPending, upsertCoverLetter.isPending]);
+    },
+    [
+      activeTab,
+      hasResumeChanges,
+      hasCoverChanges,
+      updateResume.isPending,
+      upsertCoverLetter.isPending,
+    ],
+  );
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyboardSave);
@@ -470,11 +573,13 @@ export default function ApplicationResumeEditorPage() {
 
   // Check if data exists in the application (saved data), not just in editor state
   const hasSavedResume = application?.resumeText && application.resumeText.trim().length > 0;
-  const hasSavedCoverLetter = application?.coverLetterText && stripHtml(application.coverLetterText).trim().length > 0;
+  const hasSavedCoverLetter =
+    application?.coverLetterText && stripHtml(application.coverLetterText).trim().length > 0;
 
   // Cover letter is only required if it was generated (coverLetterText exists)
   // If user opted out of cover letter generation, we don't require it for export
-  const coverLetterWasGenerated = application?.coverLetterText !== null && application?.coverLetterText !== undefined;
+  const coverLetterWasGenerated =
+    application?.coverLetterText !== null && application?.coverLetterText !== undefined;
 
   const exportDisabledReason = (() => {
     if (application.status === 'GENERATING') {
@@ -513,8 +618,18 @@ export default function ApplicationResumeEditorPage() {
   };
 
   // Determine current unsaved state based on active tab
-  const hasCurrentTabChanges = activeTab === 'resume' ? hasResumeChanges : activeTab === 'cover-letter' ? hasCoverChanges : false;
-  const isCurrentTabSaving = activeTab === 'resume' ? updateResume.isPending : activeTab === 'cover-letter' ? coverMutationPending : false;
+  const hasCurrentTabChanges =
+    activeTab === 'resume'
+      ? hasResumeChanges
+      : activeTab === 'cover-letter'
+        ? hasCoverChanges
+        : false;
+  const isCurrentTabSaving =
+    activeTab === 'resume'
+      ? updateResume.isPending
+      : activeTab === 'cover-letter'
+        ? coverMutationPending
+        : false;
 
   const handleCurrentTabSave = () => {
     if (activeTab === 'resume') {
@@ -537,13 +652,13 @@ export default function ApplicationResumeEditorPage() {
       <div className="flex flex-col h-[calc(100vh-2rem)] animate-in fade-in duration-300">
         {/* Compact Toolbar */}
         <div className="flex items-center justify-between gap-4 px-2 py-3 border-b border-border/50 bg-background/80 backdrop-blur-sm shrink-0">
-          {/* Left: Back + Job Info */}
+          {/* Left: Back */}
           <div className="flex items-center gap-4 min-w-0">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={() => router.push(`/applications/${applicationId}`)}
                   className="shrink-0 h-8 w-8"
                 >
@@ -552,53 +667,37 @@ export default function ApplicationResumeEditorPage() {
               </TooltipTrigger>
               <TooltipContent>Zurück zur Übersicht</TooltipContent>
             </Tooltip>
-
-            <div className="h-5 w-px bg-border/50 shrink-0" />
-
-            {application.jobPosting && (
-              <div className="flex items-center gap-2 min-w-0">
-                <EditableTargetJobTitle
-                  applicationId={application.id}
-                  initialTargetJobTitle={application.targetJobTitle}
-                  fallbackTitle={application.jobPosting.title || 'Unbekannte Position'}
-                />
-                {application.jobPosting.company && (
-                  <>
-                    <span className="text-muted-foreground text-sm shrink-0">@</span>
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground truncate">
-                      <Building2 className="h-3 w-3 shrink-0" />
-                      <span className="truncate">{application.jobPosting.company}</span>
-                    </div>
-                  </>
-                )}
-                {application.jobPosting.location && (
-                  <div className="flex items-center gap-1 text-sm text-muted-foreground truncate">
-                    <MapPin className="h-3 w-3 shrink-0" />
-                    <span className="truncate">{application.jobPosting.location}</span>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
           {/* Center: Tabs */}
           <Tabs
             value={activeTab}
-            onValueChange={(value) => handleTabChange(value as 'resume' | 'cover-letter' | 'ats-score')}
+            onValueChange={(value) =>
+              handleTabChange(value as 'resume' | 'cover-letter' | 'ats-score')
+            }
             className="shrink-0"
           >
             <TabsList className="bg-muted/50 h-8">
-              <TabsTrigger value="resume" className="text-xs px-3 h-7 data-[state=active]:bg-background">
+              <TabsTrigger
+                value="resume"
+                className="text-xs px-3 h-7 data-[state=active]:bg-background"
+              >
                 <FileText className="h-3.5 w-3.5 mr-1.5" />
                 Lebenslauf
               </TabsTrigger>
               {coverLetterWasGenerated && (
-                <TabsTrigger value="cover-letter" className="text-xs px-3 h-7 data-[state=active]:bg-background">
+                <TabsTrigger
+                  value="cover-letter"
+                  className="text-xs px-3 h-7 data-[state=active]:bg-background"
+                >
                   <FileText className="h-3.5 w-3.5 mr-1.5" />
                   Anschreiben
                 </TabsTrigger>
               )}
-              <TabsTrigger value="ats-score" className="text-xs px-3 h-7 data-[state=active]:bg-background">
+              <TabsTrigger
+                value="ats-score"
+                className="text-xs px-3 h-7 data-[state=active]:bg-background"
+              >
                 <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
                 ATS Score
               </TabsTrigger>
@@ -612,33 +711,27 @@ export default function ApplicationResumeEditorPage() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <div className={cn(
-                      "h-2 w-2 rounded-full transition-colors",
-                      hasCurrentTabChanges ? "bg-orange-500" : "bg-green-500"
-                    )} />
+                    <div
+                      className={cn(
+                        'h-2 w-2 rounded-full transition-colors',
+                        hasCurrentTabChanges ? 'bg-orange-500' : 'bg-green-500',
+                      )}
+                    />
                     <span className="hidden xl:inline">
-                      {hasCurrentTabChanges ? "Ungespeichert" : "Gespeichert"}
+                      {hasCurrentTabChanges ? 'Ungespeichert' : 'Gespeichert'}
                     </span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  {hasCurrentTabChanges ? "Änderungen nicht gespeichert (⌘S)" : "Alle Änderungen gespeichert"}
+                  {hasCurrentTabChanges
+                    ? 'Änderungen nicht gespeichert (⌘S)'
+                    : 'Alle Änderungen gespeichert'}
                 </TooltipContent>
               </Tooltip>
             )}
 
-            {/* Language selector */}
-            <select
-              value={selectedLanguage}
-              onChange={(e) => setSelectedLanguage(e.target.value as 'de' | 'en' | 'fr' | 'es' | 'it')}
-              className="text-xs border border-border/50 rounded-md px-2 py-1 bg-background hover:bg-muted/50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20"
-            >
-              <option value="en">🇬🇧 EN</option>
-              <option value="de">🇩🇪 DE</option>
-              <option value="fr">🇫🇷 FR</option>
-              <option value="es">🇪🇸 ES</option>
-              <option value="it">🇮🇹 IT</option>
-            </select>
+            {/* Language indicator (read-only) */}
+            <LanguageSelector value={selectedLanguage} />
 
             <div className="h-5 w-px bg-border/50" />
 
@@ -646,10 +739,10 @@ export default function ApplicationResumeEditorPage() {
             {activeTab !== 'ats-score' && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={handleCurrentTabReset} 
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleCurrentTabReset}
                     disabled={!hasCurrentTabChanges || isCurrentTabSaving}
                     className="h-8 px-2 text-xs"
                   >
@@ -665,7 +758,7 @@ export default function ApplicationResumeEditorPage() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span>
-                    <SubmitButton 
+                    <SubmitButton
                       onClick={handleCurrentTabSave}
                       isLoading={isCurrentTabSaving}
                       loadingText="..."
@@ -688,13 +781,13 @@ export default function ApplicationResumeEditorPage() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <span>
-                  <SubmitButton 
-                    onClick={handleExport} 
+                  <SubmitButton
+                    onClick={handleExport}
                     isLoading={exportApplication.isPending || application.status === 'GENERATING'}
                     loadingText="..."
                     disabled={!canExport}
-                    size="sm" 
-                    variant={canExport ? "default" : "outline"}
+                    size="sm"
+                    variant={canExport ? 'default' : 'outline'}
                     className="h-8 px-3 text-xs"
                   >
                     <Download className="h-3.5 w-3.5 mr-1.5" />
@@ -702,9 +795,7 @@ export default function ApplicationResumeEditorPage() {
                   </SubmitButton>
                 </span>
               </TooltipTrigger>
-              <TooltipContent>
-                {exportDisabledReason || 'PDFs exportieren'}
-              </TooltipContent>
+              <TooltipContent>{exportDisabledReason || 'PDFs exportieren'}</TooltipContent>
             </Tooltip>
           </div>
         </div>
@@ -723,6 +814,11 @@ export default function ApplicationResumeEditorPage() {
                       onChange={(resume) => setParsedResume(resume)}
                       disabled={updateResume.isPending}
                       applicationId={applicationId}
+                      targetJobTitle={targetJobTitle}
+                      company={application?.jobPosting?.company}
+                      onTargetJobTitleChange={setTargetJobTitle}
+                      onTargetJobTitleBlur={handleTargetJobTitleSave}
+                      isTargetJobTitleLoading={updateTargetJobTitleMutation.isPending}
                       onAiSummaryRequest={handleAiSummaryRequest}
                       isAiSummaryLoading={generateSummary.isPending}
                       onAiExperienceRequest={handleAiExperienceRequest}
@@ -740,7 +836,7 @@ export default function ApplicationResumeEditorPage() {
                   <ResumeTemplatePreview
                     resume={{
                       ...parsedResume,
-                      targetJobTitle: application?.targetJobTitle || application?.jobPosting?.title,
+                      targetJobTitle: targetJobTitle || application?.jobPosting?.title,
                     }}
                     templateId={application?.resumeTemplateId}
                     language={selectedLanguage}
@@ -778,15 +874,15 @@ export default function ApplicationResumeEditorPage() {
                       />
                     </div>
                   </CardHeader>
-                  <CardContent className="flex-1 min-h-0 flex flex-col">
-                    <div className="flex-1 min-h-0">
-                      <CoverLetterEditor 
-                        value={coverLetterValue} 
-                        onChange={setCoverLetterValue} 
-                        disabled={coverMutationPending} 
+                  <CardContent className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                    <div className="flex-1 min-h-0 overflow-auto">
+                      <CoverLetterEditor
+                        value={coverLetterValue}
+                        onChange={setCoverLetterValue}
+                        disabled={coverMutationPending}
                       />
                     </div>
-                    <p className="text-xs text-muted-foreground mt-auto pt-3 shrink-0">
+                    <p className="text-xs text-muted-foreground pt-3 border-t mt-3">
                       Dein Name wird automatisch als Unterschrift hinzugefügt.
                     </p>
                   </CardContent>
@@ -800,7 +896,7 @@ export default function ApplicationResumeEditorPage() {
                   candidateName={parsedResume?.candidateName}
                   email={parsedResume?.email}
                   phone={parsedResume?.phone}
-                  location={parsedResume?.location}
+                  fullAddress={parsedResume?.fullAddress}
                   linkedin={parsedResume?.linkedin}
                   github={parsedResume?.github}
                   companyName={application?.jobPosting?.company}
@@ -815,10 +911,7 @@ export default function ApplicationResumeEditorPage() {
           {activeTab === 'ats-score' && (
             <div className="h-full overflow-y-auto p-4">
               <div className="max-w-4xl mx-auto">
-                <ATSScoreSidebar
-                  applicationId={applicationId}
-                  refreshTrigger={atsRefreshTrigger}
-                />
+                <ATSScoreSidebar applicationId={applicationId} refreshTrigger={atsRefreshTrigger} />
               </div>
             </div>
           )}

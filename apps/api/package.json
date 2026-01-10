@@ -85,6 +85,7 @@
     "langchain-core": "^0.0.4",
     "mammoth": "^1.6.0",
     "markdown-it": "^14.1.0",
+    "marked": "^17.0.1",
     "node-cache": "^5.1.2",
     "opossum": "^9.0.0",
     "passport": "^0.7.0",
@@ -105,6 +106,7 @@
     "validator": "^13.15.23",
     "winston": "^3.18.3",
     "winston-daily-rotate-file": "^5.0.0",
+    "xxhash-wasm": "^1.1.0",
     "zod": "^3.22.4",
     "zod-to-json-schema": "^3.24.6"
   },

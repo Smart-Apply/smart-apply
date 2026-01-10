@@ -263,11 +263,29 @@ export class UpdateProfileDto {
   @IsString()
   phone?: string;
 
-  @ApiProperty({ example: 'San Francisco, CA', required: false })
+  @ApiProperty({ example: 'Musterstraße 123', required: false, description: 'Street and house number' })
   @IsOptional()
   @Sanitize()
   @IsString()
-  location?: string;
+  street?: string;
+
+  @ApiProperty({ example: '47057', required: false, description: 'Postal code (PLZ for Germany)' })
+  @IsOptional()
+  @Sanitize()
+  @IsString()
+  postalCode?: string;
+
+  @ApiProperty({ example: 'Duisburg', required: false, description: 'City name' })
+  @IsOptional()
+  @Sanitize()
+  @IsString()
+  city?: string;
+
+  @ApiProperty({ example: 'Deutschland', required: false, description: 'Country name' })
+  @IsOptional()
+  @Sanitize()
+  @IsString()
+  country?: string;
 
   @ApiProperty({ example: 'https://linkedin.com/in/johndoe', required: false })
   @IsOptional()

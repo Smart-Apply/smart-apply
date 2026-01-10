@@ -28,7 +28,11 @@ describe('TemplateRendererService - Experience Description', () => {
       candidateName: 'Max Mustermann',
       email: 'max@example.com',
       phone: '+49 123 456789',
-      location: 'Berlin, Germany',
+      street: 'Musterstraße 123',
+      postalCode: '10115',
+      city: 'Berlin',
+      country: 'Deutschland',
+      fullAddress: 'Musterstraße 123, 10115 Berlin, Deutschland',
       summary: 'Experienced Full-Stack Developer with 5+ years of experience.',
       skillCategories: [
         {

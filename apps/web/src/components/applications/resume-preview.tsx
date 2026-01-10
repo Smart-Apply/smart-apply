@@ -10,9 +10,9 @@ const Divider = () => <div className="h-px w-full bg-slate-200 my-6" />;
 
 export function ResumePreview({ resume }: ResumePreviewProps) {
   const contactItems = [
+    resume.fullAddress,
     resume.email,
     resume.phone,
-    resume.location,
     resume.linkedin,
     resume.github,
   ].filter(Boolean);
@@ -75,6 +75,14 @@ export function ResumePreview({ resume }: ResumePreviewProps) {
                     {experience.company}
                     {experience.location ? ` • ${experience.location}` : ''}
                   </p>
+                  {/* Render description with HTML (may include bullet points) */}
+                  {experience.description && (
+                    <div 
+                      className={styles.timelineDescription}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(experience.description) }}
+                    />
+                  )}
+                  {/* Fallback to achievements array if description doesn't contain bullets */}
                   {experience.achievements && experience.achievements.length > 0 && (
                     <ul className={styles.timelineList}>
                       {experience.achievements.map((achievement, index) => (
@@ -96,9 +104,14 @@ export function ResumePreview({ resume }: ResumePreviewProps) {
                     <span>{project.name}</span>
                     {project.date && <span className="text-slate-500">{project.date}</span>}
                   </div>
+                  {/* Render description with HTML (may include bullet points from highlights merge) */}
                   {project.description && (
-                    <p className="mt-2 text-sm text-slate-600">{project.description}</p>
+                    <div 
+                      className="mt-2 text-sm text-slate-600 [&>p]:mb-1 [&>ul]:mt-2 [&>ul]:list-disc [&>ul]:pl-4 [&>li]:mb-1"
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(project.description) }}
+                    />
                   )}
+                  {/* Fallback to highlights array if description doesn't contain bullets */}
                   {project.highlights && project.highlights.length > 0 && (
                     <ul className="mt-2 list-disc pl-4 text-sm text-slate-700">
                       {project.highlights.map((highlight, index) => (

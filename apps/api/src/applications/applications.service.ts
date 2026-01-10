@@ -6,6 +6,7 @@ import {
   Logger,
   MessageEvent,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import type { Application } from '@prisma/client';
 import { ApplicationTrackingStatus } from '@prisma/client';
 import { Observable, timer } from 'rxjs';
@@ -41,10 +42,7 @@ import {
   formatDateRange,
   normalizeProficiencyLevel,
 } from './resume-template.util';
-import {
-  sanitizeRichText,
-  stripLLMPlaceholders,
-} from '../common/services/html-sanitizer';
+import { sanitizeRichText, stripLLMPlaceholders } from '../common/services/html-sanitizer';
 
 // Type for progress callback function
 export type ProgressCallback = (progress: number, message: string) => void;
@@ -266,6 +264,37 @@ export class ApplicationsService {
     return sanitizeRichText(stripped);
   }
 
+  /**
+   * Convert Markdown cover letter to HTML
+   * The LLM generates Markdown but the PDF template expects HTML with <p> tags
+   */
+  private convertCoverLetterToHtml(content: string | null): string | null {
+    if (!content || content.trim() === '') {
+      return content;
+    }
+
+    // If content already has <p> tags, it's already HTML (was edited and saved)
+    if (/<p[^>]*>/i.test(content)) {
+      return content;
+    }
+
+    // Simple Markdown to HTML conversion for paragraphs
+    // Split by double newlines (paragraph breaks) and wrap each in <p> tags
+    const paragraphs = content
+      .split(/\n\n+/)
+      .map(p => p.trim())
+      .filter(p => p.length > 0);
+
+    if (paragraphs.length === 0) {
+      return '<p></p>';
+    }
+
+    // Convert each paragraph, preserving single newlines as <br> within paragraphs
+    return paragraphs
+      .map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`)
+      .join('\n');
+  }
+
   private parseResume(resumeText?: string | null) {
     if (!resumeText) {
       return null;
@@ -428,11 +457,11 @@ export class ApplicationsService {
     matchedKeywords: KeywordMatch[],
     missingKeywords: KeywordMatch[],
   ) {
-    // Detect language from job posting
+    // Detect language from job posting (fallback to German as default)
     const detectedLanguage =
       jobPosting.language ||
       (jobPosting.fullText ? this.detectLanguage(jobPosting.fullText) : null) ||
-      'en';
+      'de';
     // Format profile information
     const skills = (resume.skillCategories || [])
       .flatMap((category: { skills: string[] }) => category.skills)
@@ -490,11 +519,11 @@ Summary: ${resume.summary || 'Not provided'}
     matchedKeywords: KeywordMatch[],
     missingKeywords: KeywordMatch[],
   ) {
-    // Detect language from job posting
+    // Detect language from job posting (fallback to German as default)
     const detectedLanguage =
       jobPosting.language ||
       (jobPosting.fullText ? this.detectLanguage(jobPosting.fullText) : null) ||
-      'en';
+      'de';
 
     const profileString = JSON.stringify(resume, null, 2);
 
@@ -755,11 +784,10 @@ Summary: ${resume.summary || 'Not provided'}
     // 3.3. Translate summary if job language differs from profile language (assume profile is in German)
     const profileLanguage = 'de'; // Assume profile is written in German
     if (resumeTemplate.summary && detectedLanguage !== profileLanguage) {
-      this.logger.log(`Translating summary from ${profileLanguage} to ${detectedLanguage}`);
+      this.logger.log(`Translating summary to ${detectedLanguage}`);
       try {
         resumeTemplate.summary = await this.llmService.translateSummary(
           resumeTemplate.summary,
-          profileLanguage,
           detectedLanguage,
         );
       } catch (error) {
@@ -820,10 +848,12 @@ Summary: ${resume.summary || 'Not provided'}
     // 2. Get profile data
     const profile = await this.getProfileWithRelations(userId);
 
-    // 3. Detect language
+    // 3. Detect language (prioritize user selection, then job posting, then auto-detect, default to German)
     const detectedLanguage =
-      jobPosting.language || this.detectLanguage(jobPosting.fullText) || 'en';
-    this.logger.log(`Detected language: ${detectedLanguage}`);
+      dto.language || jobPosting.language || this.detectLanguage(jobPosting.fullText) || 'de';
+    this.logger.log(
+      `Using language: ${detectedLanguage} (source: ${dto.language ? 'user selection' : jobPosting.language ? 'job posting' : 'auto-detected/default'})`,
+    );
 
     // 4. Check if application already exists (prevent duplicates BEFORE generation)
     // Note: Only check non-deleted applications (deletedAt: null)
@@ -878,6 +908,7 @@ Summary: ${resume.summary || 'Not provided'}
           notes: dto.notes,
           coverLetterTemplateId: resolvedCoverLetterTemplateId,
           resumeTemplateId: resolvedResumeTemplateId,
+          language: detectedLanguage,
         },
         include: {
           jobPosting: true,
@@ -918,7 +949,9 @@ Summary: ${resume.summary || 'Not provided'}
       );
 
       // Step 2: Parallel generation - Cover letter + Resume rewrite + ATS keywords
-      this.logger.log('Step 2: Parallel generation (cover letter, resume rewrite, ATS keywords)...');
+      this.logger.log(
+        'Step 2: Parallel generation (cover letter, resume rewrite, ATS keywords)...',
+      );
 
       // Prepare parallel promises
       const coverLetterPromise = shouldGenerateCoverLetter
@@ -983,13 +1016,24 @@ Summary: ${resume.summary || 'Not provided'}
         rewrittenProfile,
       );
 
+      // Debug: Log the first experience achievements to verify German content is saved
+      const firstExp = resumeJson.experiences?.[0];
+      if (firstExp) {
+        this.logger.debug(
+          `Saving resumeJson - First experience "${firstExp.title}": achievements=[${firstExp.achievements?.slice(0, 2).map((a: string) => a.substring(0, 40) + '...').join(' | ')}]`,
+        );
+      }
+
       // Step 4: Update application with generated content
       // Note: resumeText stores JSON for editor, Markdown can be regenerated from tailoredProfile
+      // Convert cover letter Markdown to HTML for proper PDF rendering
+      const coverLetterHtml = this.convertCoverLetterToHtml(coverLetterMarkdown);
+
       const updatedApplication = await this.prisma.application.update({
         where: { id: application.id },
         data: {
           resumeText: JSON.stringify(resumeJson), // Store JSON for editor
-          coverLetterText: coverLetterMarkdown,
+          coverLetterText: coverLetterHtml,
           atsKeywords: atsKeywords as any,
           tailoredProfile: tailoredProfile as any,
           status: ApplicationStatus.READY,
@@ -1162,12 +1206,15 @@ Summary: ${resume.summary || 'Not provided'}
       }
 
       // 7. Persist results
+      // Convert cover letter Markdown to HTML for proper PDF rendering
+      const coverLetterHtml = this.convertCoverLetterToHtml(coverLetterMarkdown);
+
       emitProgress(95, 'Speichere Ergebnisse...');
       const updated = await this.prisma.application.update({
         where: { id: applicationId },
         data: {
           resumeText: resumeMarkdown,
-          coverLetterText: coverLetterMarkdown,
+          coverLetterText: coverLetterHtml,
           atsKeywords: atsKeywords as any,
           tailoredProfile: tailoredProfile as any,
           status: ApplicationStatus.READY,
@@ -1334,12 +1381,25 @@ Summary: ${resume.summary || 'Not provided'}
    * Serialize profile data for LLM consumption
    */
   private serializeProfile(profile: ProfileWithRelations): Record<string, any> {
+    // Build full address from components
+    const addressParts: string[] = [];
+    if (profile.street) addressParts.push(profile.street);
+    if (profile.postalCode || profile.city) {
+      addressParts.push(`${profile.postalCode || ''} ${profile.city || ''}`.trim());
+    }
+    if (profile.country) addressParts.push(profile.country);
+    const fullAddress = addressParts.join(', ');
+
     return {
       fullName:
         `${profile.user.firstName || ''} ${profile.user.lastName || ''}`.trim() || 'Unknown',
       email: profile.user.email,
       phone: profile.phone || '',
-      location: profile.location || '',
+      street: profile.street || '',
+      postalCode: profile.postalCode || '',
+      city: profile.city || '',
+      country: profile.country || '',
+      fullAddress: fullAddress || '',
       linkedinUrl: profile.linkedinUrl || '',
       githubUrl: profile.githubUrl || '',
       portfolioUrl: profile.portfolioUrl || '',
@@ -1460,6 +1520,23 @@ Summary: ${resume.summary || 'Not provided'}
       (rewrittenProfile?.rewritten_projects || []).map((proj) => [proj.profileProjectId, proj]),
     );
 
+    // Debug: Log the IDs to check if they match
+    this.logger.debug(
+      `Profile experience IDs: ${profile.experiences.map((e) => e.id).join(', ')}`,
+    );
+    this.logger.debug(
+      `Rewritten experience IDs: ${Array.from(rewrittenExperienceMap.keys()).join(', ')}`,
+    );
+    // Debug: Log what the LLM returned for each experience
+    rewrittenExperienceMap.forEach((rewritten, id) => {
+      const originalExp = profile.experiences.find((e) => e.id === id);
+      this.logger.debug(
+        `Experience "${originalExp?.title}" (${id}): ` +
+          `desc="${(rewritten.rewritten_description || '').substring(0, 50)}...", ` +
+          `achievements=[${rewritten.rewritten_achievements?.length || 0} items: ${(rewritten.rewritten_achievements || []).map((a) => a.substring(0, 30) + '...').join(' | ')}]`,
+      );
+    });
+
     // Build skill categories from selected hard skills AND tools
     const skillCategories: any[] = [];
 
@@ -1522,6 +1599,11 @@ Summary: ${resume.summary || 'Not provided'}
       .sort((a, b) => b.startDate.getTime() - a.startDate.getTime())
       .map((exp) => {
         const rewritten = rewrittenExperienceMap.get(exp.id);
+        if (!rewritten) {
+          this.logger.warn(
+            `No rewritten content found for experience "${exp.title}" (ID: ${exp.id}) - using original text`,
+          );
+        }
         return {
           id: exp.id,
           title: exp.title,
@@ -1679,11 +1761,24 @@ Summary: ${resume.summary || 'Not provided'}
       level: normalizeProficiencyLevel(lang.level),
     }));
 
+    // Build full address from components
+    const addressParts: string[] = [];
+    if (profile.street) addressParts.push(profile.street);
+    if (profile.postalCode || profile.city) {
+      addressParts.push(`${profile.postalCode || ''} ${profile.city || ''}`.trim());
+    }
+    if (profile.country) addressParts.push(profile.country);
+    const fullAddress = addressParts.join(', ');
+
     return {
       candidateName,
       email: profile.user.email,
       phone: profile.phone || undefined,
-      location: profile.location || undefined,
+      street: profile.street || undefined,
+      postalCode: profile.postalCode || undefined,
+      city: profile.city || undefined,
+      country: profile.country || undefined,
+      fullAddress: fullAddress || undefined,
       linkedin: sanitizeUrl(profile.linkedinUrl),
       github: sanitizeUrl(profile.githubUrl),
       // Priority: rewritten_summary > customized_summary > profile.summary
@@ -1837,8 +1932,6 @@ Summary: ${resume.summary || 'Not provided'}
       where: { id: applicationId },
       data: {
         coverLetterText: sanitizedContent,
-        // Keep existing status (READY), don't reset to PENDING
-        // Keep existing PDFs, they'll be regenerated on next export
       },
       include: {
         jobPosting: true,
@@ -1878,11 +1971,12 @@ Summary: ${resume.summary || 'Not provided'}
 
     // Build context from profile
     const skills = profile?.skills?.map((s) => s.name) || [];
-    const experiences = profile?.experiences?.map((exp) => ({
-      title: exp.title,
-      company: exp.company,
-      description: exp.description || undefined,
-    })) || [];
+    const experiences =
+      profile?.experiences?.map((exp) => ({
+        title: exp.title,
+        company: exp.company,
+        description: exp.description || undefined,
+      })) || [];
 
     // Generate/modify summary with LLM
     const summary = await this.llmService.modifySummaryContent(
@@ -2501,6 +2595,7 @@ Summary: ${resume.summary || 'Not provided'}
       resumeFileKey: application.resumeFileKey,
       coverLetterTemplateId: application.coverLetterTemplateId,
       resumeTemplateId: application.resumeTemplateId,
+      language: application.language,
       errorMessage: application.errorMessage,
       createdAt: application.createdAt,
       updatedAt: application.updatedAt,

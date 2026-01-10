@@ -708,7 +708,7 @@ interface CoverLetterTemplatePreviewProps {
   candidateName?: string;
   email?: string;
   phone?: string;
-  location?: string;
+  fullAddress?: string;
   linkedin?: string;
   github?: string;
   companyName?: string;
@@ -741,7 +741,7 @@ export function ResumeTemplatePreview({ resume, templateId, language = 'en' }: R
     phone: resume.phone,
     linkedin: resume.linkedin,
     github: resume.github,
-    location: resume.location,
+    fullAddress: resume.fullAddress,
     // Wrap summary in SafeString to render HTML formatting
     summary: resume.summary ? new Handlebars.SafeString(resume.summary) : undefined,
     language, // Use selected language from prop
@@ -952,7 +952,7 @@ export function CoverLetterTemplatePreview({
   candidateName = 'Dein Name',
   email,
   phone,
-  location,
+  fullAddress,
   linkedin,
   github,
   companyName,
@@ -994,7 +994,7 @@ export function CoverLetterTemplatePreview({
     candidateName,
     email,
     phone,
-    location,
+    fullAddress,
     linkedin,
     github,
     companyName,
@@ -1008,7 +1008,7 @@ export function CoverLetterTemplatePreview({
       month: 'long',
       day: 'numeric',
     }),
-  }), [html, candidateName, email, phone, location, linkedin, github, companyName, language]);
+  }), [html, candidateName, email, phone, fullAddress, linkedin, github, companyName, language]);
 
   // Render template when data changes
   useEffect(() => {
@@ -1085,6 +1085,18 @@ export function CoverLetterTemplatePreview({
             .body-content ol {
               margin-top: 8pt;
               margin-bottom: 12pt;
+            }
+            
+            /* Date should be right-aligned in cover letters */
+            .date-section,
+            .cover-letter-date {
+              text-align: right !important;
+            }
+            
+            /* Ensure cover letter container doesn't overflow */
+            .cover-letter-container {
+              max-width: 100% !important;
+              box-sizing: border-box !important;
             }
             
             /* Preview container that scales to fit */

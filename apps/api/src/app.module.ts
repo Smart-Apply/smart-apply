@@ -74,6 +74,11 @@ import { TimeoutMiddleware } from './common/middleware';
               ttl: 3600000, // 1 hour
               limit: 10, // 10 resume parses per hour per user - LLM calls are expensive
             },
+            {
+              name: 'translation',
+              ttl: 900000, // 15 minutes
+              limit: 10, // 10 translation requests per 15 minutes - LLM calls are expensive
+            },
           ],
         };
       },

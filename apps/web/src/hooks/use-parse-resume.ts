@@ -62,7 +62,10 @@ export function sectionHasData(
         profile.firstName ||
         profile.lastName ||
         profile.phone ||
-        profile.location ||
+        profile.street ||
+        profile.postalCode ||
+        profile.city ||
+        profile.country ||
         profile.linkedinUrl ||
         profile.githubUrl ||
         profile.portfolioUrl

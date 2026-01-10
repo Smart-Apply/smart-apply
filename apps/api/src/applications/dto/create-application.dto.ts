@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNotEmpty, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsNotEmpty, IsBoolean, IsIn } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Sanitize } from '../../common/decorators/sanitize.decorator';
 
@@ -35,6 +35,17 @@ export class CreateApplicationDto {
   @IsOptional()
   @IsBoolean()
   generateCoverLetter?: boolean = true;
+
+  @ApiPropertyOptional({
+    description: 'Sprache der Bewerbungsunterlagen (ISO 639-1 Code)',
+    example: 'de',
+    enum: ['de', 'en', 'fr', 'es', 'it'],
+    default: 'de',
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(['de', 'en', 'fr', 'es', 'it'])
+  language?: string = 'de';
 
   @ApiPropertyOptional({
     description: 'Optionale Notizen zur Bewerbung',

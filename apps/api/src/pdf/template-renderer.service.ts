@@ -13,7 +13,12 @@ export interface CoverLetterTemplateData {
   phone?: string;
   linkedin?: string;
   github?: string;
-  location?: string;
+  // Address fields (replaces old 'location' field)
+  street?: string;      // Street + house number (e.g., "Musterstraße 123")
+  postalCode?: string;  // Postal code / PLZ (e.g., "47057")
+  city?: string;        // City name (e.g., "Duisburg")
+  country?: string;     // Country name (e.g., "Deutschland")
+  fullAddress?: string; // Pre-formatted full address for templates
   date?: string;
   recipientName?: string;
   companyName?: string;
@@ -31,7 +36,12 @@ export interface ResumeTemplateData {
   phone?: string;
   linkedin?: string;
   github?: string;
-  location?: string;
+  // Address fields (replaces old 'location' field)
+  street?: string;      // Street + house number (e.g., "Musterstraße 123")
+  postalCode?: string;  // Postal code / PLZ (e.g., "47057")
+  city?: string;        // City name (e.g., "Duisburg")
+  country?: string;     // Country name (e.g., "Deutschland")
+  fullAddress?: string; // Pre-formatted full address for templates
   summary?: string;
   skillCategories?: SkillCategory[];
   experiences?: Experience[];

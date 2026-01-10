@@ -12,7 +12,11 @@ describe('TemplateRendererService - Multilingual Support', () => {
     candidateName: 'Max Mustermann',
     email: 'max@example.com',
     phone: '+49 123 456789',
-    location: 'Berlin, Germany',
+    street: 'Musterstraße 123',
+    postalCode: '10115',
+    city: 'Berlin',
+    country: 'Deutschland',
+    fullAddress: 'Musterstraße 123, 10115 Berlin, Deutschland',
     summary: 'Erfahrener Full-Stack Developer mit 5+ Jahren Erfahrung in React und Node.js.',
     skillCategories: [
       {

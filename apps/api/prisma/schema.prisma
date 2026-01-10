@@ -67,7 +67,13 @@ model Profile {
   // Core info
   summary       String? @db.Text // Rich text (HTML)
   phone         String?
-  location      String?
+  
+  // Address fields (replaces old 'location' field)
+  street        String? // Street + house number (e.g., "Musterstraße 123")
+  postalCode    String? // Postal code (e.g., "47057" for German PLZ)
+  city          String? // City name (e.g., "Duisburg")
+  country       String? // Country (e.g., "Deutschland")
+  
   linkedinUrl   String?
   githubUrl     String?
   portfolioUrl  String?
@@ -261,6 +267,9 @@ model Application {
   resumeTemplateId      String?
   resumeTemplate        Template? @relation("ResumeTemplate", fields: [resumeTemplateId], references: [id], onDelete: SetNull)
   
+  // Language preference for generated content (ISO 639-1 code)
+  language              String?   @default("de") // de, en, fr, es, it
+  
   // Metadata
   notes         String?
   errorMessage  String?
@@ -275,6 +284,9 @@ model Application {
   // New single-LLM pipeline fields
   atsKeywords       Json?  // AtsKeywordsOutputDto (focused 20-keyword set)
   tailoredProfile   Json?  // TailoredProfileDto (selected profile data for debugging)
+  
+  // Source language tracking (for initial generation)
+  sourceLanguage        String?   // Original content language when app was created (ISO 639-1)
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

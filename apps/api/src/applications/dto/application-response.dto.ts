@@ -92,6 +92,13 @@ export class ApplicationResponseDto {
   })
   resumeTemplateId?: string;
 
+  @ApiPropertyOptional({
+    example: 'de',
+    description: 'Language for generated content (ISO 639-1 code)',
+    enum: ['de', 'en', 'fr', 'es', 'it'],
+  })
+  language?: string;
+
   @ApiProperty({ example: '2024-01-15T10:30:00Z' })
   createdAt: Date;
 

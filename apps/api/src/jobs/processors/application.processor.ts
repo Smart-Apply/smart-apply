@@ -89,7 +89,12 @@ export class ApplicationProcessor {
           phone: resumeData.phone,
           linkedin: resumeData.linkedin,
           github: resumeData.github,
-          location: resumeData.location,
+          // Address fields
+          street: resumeData.street,
+          postalCode: resumeData.postalCode,
+          city: resumeData.city,
+          country: resumeData.country,
+          fullAddress: resumeData.fullAddress,
           companyName: application.jobPosting.company,
           content: application.coverLetterText!, // Non-null assertion: hasCoverLetter ensures this is defined
           language: language || 'en', // Use selected language from export request

@@ -240,4 +240,13 @@ export class UpdateResumeDto {
   @ValidateNested()
   @Type(() => ResumeTemplateDto)
   resume: ResumeTemplateDto;
+
+  @ApiPropertyOptional({
+    example: 'en',
+    description:
+      'The language the content is currently in (ISO 639-1). Used to track content language when user edits in a translated view.',
+  })
+  @IsOptional()
+  @IsString()
+  contentLanguage?: string;
 }

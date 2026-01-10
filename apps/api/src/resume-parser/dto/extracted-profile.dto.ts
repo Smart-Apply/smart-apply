@@ -176,10 +176,25 @@ export class ExtractedProfileDto {
   @IsString()
   phone?: string;
 
-  @ApiProperty({ example: 'Berlin, Germany', required: false })
+  @ApiProperty({ example: 'Musterstraße 123', required: false, description: 'Street address' })
   @IsOptional()
   @IsString()
-  location?: string;
+  street?: string;
+
+  @ApiProperty({ example: '47057', required: false, description: 'Postal code / ZIP' })
+  @IsOptional()
+  @IsString()
+  postalCode?: string;
+
+  @ApiProperty({ example: 'Duisburg', required: false, description: 'City name' })
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @ApiProperty({ example: 'Deutschland', required: false, description: 'Country' })
+  @IsOptional()
+  @IsString()
+  country?: string;
 
   @ApiProperty({ example: 'https://linkedin.com/in/johndoe', required: false })
   @IsOptional()

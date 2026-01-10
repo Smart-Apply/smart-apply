@@ -57,6 +57,8 @@ body {
 }
 
 body {
+  max-width: 8.5in;
+  margin: 0 auto;
   font-family: 'Poppins', sans-serif;
   font-size: var(--font-size-xs);
   line-height: 1.6;
@@ -347,6 +349,7 @@ body {
   min-height: 100%;
   padding: 40px 50px;
   background: var(--bg-primary);
+  box-sizing: border-box;
 }
 
 .cover-letter-header {
@@ -398,6 +401,7 @@ body {
   font-size: var(--font-size-sm);
   color: var(--text-muted);
   margin-bottom: 18px;
+  text-align: right;
 }
 
 .cover-letter-body {
@@ -438,11 +442,6 @@ body {
   margin: 0;
   padding: 0;
   size: A4;
-}
-
-html, body {
-  width: 210mm;
-  min-height: 297mm;
 }
 
 /* Two-column layout that extends through all pages */

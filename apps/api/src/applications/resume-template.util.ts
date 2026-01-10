@@ -232,13 +232,25 @@ export function buildResumeTemplateData(
     [profile.user.firstName, profile.user.lastName].filter(Boolean).join(' ').trim() ||
     profile.user.email;
 
+  // Build full address string from address components
+  const fullAddress = [
+    profile.street,
+    [profile.postalCode, profile.city].filter(Boolean).join(' '),
+    profile.country,
+  ].filter(Boolean).join(', ') || undefined;
+
   return {
     candidateName,
     email: profile.user.email,
     phone: profile.phone ?? undefined,
     linkedin: sanitizeUrl(profile.linkedinUrl),
     github: sanitizeUrl(profile.githubUrl),
-    location: profile.location ?? undefined,
+    // Individual address fields
+    street: profile.street ?? undefined,
+    postalCode: profile.postalCode ?? undefined,
+    city: profile.city ?? undefined,
+    country: profile.country ?? undefined,
+    fullAddress,
     summary: profile.summary ?? undefined,
     skillCategories: buildSkillCategoriesWithCustom(profile.skills, customSkillCategories),
     experiences: profile.experiences

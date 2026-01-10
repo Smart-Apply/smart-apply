@@ -31,13 +31,22 @@ async function main() {
   // Create profile for demo user
   await prisma.profile.upsert({
     where: { userId: demoUser.id },
-    update: {},
+    update: {
+      // Update address fields for existing profiles
+      street: 'Musterstraße 123',
+      postalCode: '47057',
+      city: 'Duisburg',
+      country: 'Deutschland',
+    },
     create: {
       userId: demoUser.id,
       summary:
         'Full-stack developer with 5+ years of experience building scalable web applications.',
-      phone: '+1-555-0123',
-      location: 'San Francisco, CA',
+      phone: '+49-201-555-0123',
+      street: 'Musterstraße 123',
+      postalCode: '47057',
+      city: 'Duisburg',
+      country: 'Deutschland',
       linkedinUrl: 'https://linkedin.com/in/demouser',
       portfolioUrl: 'https://demouser.dev',
       skills: {

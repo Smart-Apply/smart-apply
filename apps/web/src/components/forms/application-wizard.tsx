@@ -58,6 +58,8 @@ const steps: StepConfig[] = [
   },
 ];
 
+export type ApplicationLanguage = 'de' | 'en' | 'fr' | 'es' | 'it';
+
 export function ApplicationWizard() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState<WizardStep>('profile');
@@ -65,6 +67,7 @@ export function ApplicationWizard() {
   const [selectedCoverLetterTemplateId, setSelectedCoverLetterTemplateId] = useState<string | null>(null);
   const [selectedResumeTemplateId, setSelectedResumeTemplateId] = useState<string | null>(null);
   const [generateCoverLetter, setGenerateCoverLetter] = useState<boolean>(true);
+  const [selectedLanguage, setSelectedLanguage] = useState<ApplicationLanguage>('de');
   const [isRedirecting, setIsRedirecting] = useState(false);
 
   const { data: profile, isLoading: profileLoading } = useProfile();
@@ -120,6 +123,7 @@ export function ApplicationWizard() {
         coverLetterTemplateId: generateCoverLetter ? (selectedCoverLetterTemplateId || undefined) : undefined,
         resumeTemplateId: selectedResumeTemplateId || undefined,
         generateCoverLetter,
+        language: selectedLanguage,
       });
 
       // Success! Redirect to edit page
@@ -240,6 +244,8 @@ export function ApplicationWizard() {
             onSelectResumeTemplate={setSelectedResumeTemplateId}
             generateCoverLetter={generateCoverLetter}
             onGenerateCoverLetterChange={setGenerateCoverLetter}
+            selectedLanguage={selectedLanguage}
+            onLanguageChange={setSelectedLanguage}
           />
         )}
 
@@ -474,6 +480,8 @@ interface TemplateStepProps {
   onSelectResumeTemplate: (id: string) => void;
   generateCoverLetter: boolean;
   onGenerateCoverLetterChange: (value: boolean) => void;
+  selectedLanguage: ApplicationLanguage;
+  onLanguageChange: (language: ApplicationLanguage) => void;
 }
 
 // Helper to group templates by base template (for color variants)
@@ -528,6 +536,14 @@ function groupTemplatesByBase(templates: Template[]): TemplateGroup[] {
   return Array.from(groups.values());
 }
 
+const LANGUAGE_OPTIONS: { value: ApplicationLanguage; label: string; flag: string }[] = [
+  { value: 'de', label: 'Deutsch', flag: '🇩🇪' },
+  { value: 'en', label: 'English', flag: '🇬🇧' },
+  { value: 'fr', label: 'Français', flag: '🇫🇷' },
+  { value: 'es', label: 'Español', flag: '🇪🇸' },
+  { value: 'it', label: 'Italiano', flag: '🇮🇹' },
+];
+
 function TemplateStep({
   selectedCoverLetterTemplateId,
   selectedResumeTemplateId,
@@ -535,6 +551,8 @@ function TemplateStep({
   onSelectResumeTemplate,
   generateCoverLetter,
   onGenerateCoverLetterChange,
+  selectedLanguage,
+  onLanguageChange,
 }: TemplateStepProps) {
   const { data: coverLetterTemplates, isLoading: coverLetterLoading } = useCoverLetterTemplates();
   const { data: resumeTemplates, isLoading: resumeLoading } = useResumeTemplates();
@@ -624,7 +642,7 @@ function TemplateStep({
             Entscheide, welche Dokumente erstellt werden sollen.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="flex items-start space-x-3 p-4 rounded-lg bg-muted/30 border border-border/50">
             <Checkbox
               id="generateCoverLetter"
@@ -642,6 +660,34 @@ function TemplateStep({
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Erstellt ein auf die Stelle zugeschnittenes Anschreiben. Deaktiviere dies, wenn du nur einen Lebenslauf benötigst.
               </p>
+            </div>
+          </div>
+
+          {/* Language Selection */}
+          <div className="p-4 rounded-lg bg-muted/30 border border-border/50">
+            <div className="grid gap-1.5 leading-none mb-3">
+              <Label className="text-base font-medium">Sprache der Bewerbung</Label>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Wähle die Sprache, in der deine Bewerbungsunterlagen erstellt werden sollen.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {LANGUAGE_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => onLanguageChange(option.value)}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-2 rounded-lg border-2 transition-all duration-200 text-sm font-medium",
+                    selectedLanguage === option.value
+                      ? "border-primary bg-primary/5 text-primary shadow-sm"
+                      : "border-transparent bg-background hover:bg-muted/50 hover:border-border/50 text-muted-foreground"
+                  )}
+                >
+                  <span className="text-base">{option.flag}</span>
+                  <span>{option.label}</span>
+                </button>
+              ))}
             </div>
           </div>
         </CardContent>
