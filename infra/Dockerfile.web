@@ -86,8 +86,8 @@ ENV NODE_ENV=production \
     PORT=3001 \
     HOSTNAME="0.0.0.0"
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init && \
+# Install dumb-init for proper signal handling and wget for healthcheck
+RUN apk add --no-cache dumb-init wget && \
     rm -rf /var/cache/apk/*
 
 # Create non-root user
