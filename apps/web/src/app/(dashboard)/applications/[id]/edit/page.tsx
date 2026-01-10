@@ -39,7 +39,7 @@ import {
   useGenerateExperienceDescription,
   useGenerateProjectDescription,
 } from '@/hooks/use-applications';
-import { parseResumeDraft, normalizeResumeForSave, normalizeTranslatedResume } from '@/lib/resume';
+import { parseResumeDraft, normalizeResumeForSave } from '@/lib/resume';
 import type { ResumeData } from '@/types';
 import { toast } from 'sonner';
 import { stripHtml } from '@/lib/sanitize';
@@ -285,34 +285,7 @@ export default function ApplicationResumeEditorPage() {
     }
   };
 
-  /**
-   * Handle translated content from language selector
-   * Updates both resume and cover letter with translated versions
-   *
-   * Important: We first normalize the translated resume to merge achievements/highlights
-   * into description fields so they're editable in the rich text editor, then normalize
-   * again for save (address, HTML safety, etc.)
-   */
-  const handleContentTranslated = useCallback(
-    (content: { resume: ResumeData; coverLetter: string }) => {
-      // First: Merge achievements/highlights into description for editor display
-      const editorReady = normalizeTranslatedResume(content.resume);
-      // Second: Apply standard save normalization (address, HTML safety, etc.)
-      const normalizedResume = normalizeResumeForSave(editorReady);
 
-      // Update resume state
-      setParsedResume(normalizedResume);
-      setLastSavedResume(normalizedResume);
-
-      // Update cover letter state (convert to Tiptap HTML if needed)
-      const convertedCoverLetter = toTiptapHtml(content.coverLetter);
-      setCoverLetterValue(convertedCoverLetter);
-      setLastSavedCoverLetter(convertedCoverLetter);
-
-      toast.success('Inhalte wurden übersetzt');
-    },
-    [],
-  );
 
   const handleApplyAIChanges = async () => {
     if (!instructions.trim()) {
@@ -749,22 +722,8 @@ export default function ApplicationResumeEditorPage() {
               </Tooltip>
             )}
 
-            {/* Language selector with translation support */}
-            <LanguageSelector
-              applicationId={applicationId}
-              value={selectedLanguage}
-              onChange={(lang) => setSelectedLanguage(lang as 'de' | 'en' | 'fr' | 'es' | 'it')}
-              onContentTranslated={handleContentTranslated}
-              currentContent={
-                parsedResume
-                  ? {
-                      resume: parsedResume,
-                      coverLetter: coverLetterValue,
-                    }
-                  : undefined
-              }
-              disabled={updateResume.isPending || upsertCoverLetter.isPending}
-            />
+            {/* Language indicator (read-only) */}
+            <LanguageSelector value={selectedLanguage} />
 
             <div className="h-5 w-px bg-border/50" />
 

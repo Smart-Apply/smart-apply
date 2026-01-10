@@ -218,6 +218,56 @@ export class LLMService {
   }
 
   /**
+   * Translate a profile summary to the target language
+   * Used during initial application creation when job language differs from profile language
+   *
+   * @param summary - Original summary text (typically in German)
+   * @param targetLanguage - Target language code (e.g., 'en', 'fr', 'es', 'it')
+   * @returns Translated summary
+   */
+  async translateSummary(summary: string, targetLanguage: string): Promise<string> {
+    if (!summary || summary.trim().length === 0) {
+      return summary;
+    }
+
+    const languageNames: Record<string, string> = {
+      de: 'German',
+      en: 'English',
+      fr: 'French',
+      es: 'Spanish',
+      it: 'Italian',
+    };
+
+    const targetLangName = languageNames[targetLanguage] || 'English';
+    const sourceLanguage = this.detectContentLanguage(summary);
+    const sourceLangName = languageNames[sourceLanguage] || 'German';
+
+    // Skip if already in target language
+    if (sourceLanguage === targetLanguage) {
+      return summary;
+    }
+
+    this.logger.log(`Translating summary from ${sourceLangName} to ${targetLangName}`);
+
+    const prompt = `Translate the following professional profile summary from ${sourceLangName} to ${targetLangName}.
+Keep the professional tone and maintain all specific details, achievements, and metrics.
+Do NOT add any introductory text or explanations - only return the translated text.
+
+Original text:
+${summary}
+
+Translated text in ${targetLangName}:`;
+
+    const translated = await this.callProvider(prompt, {
+      temperature: 0.3,
+      maxTokens: 500,
+      systemMessage: `You are a professional translator specializing in career documents. Translate accurately while maintaining the professional tone.`,
+    });
+
+    return translated.trim();
+  }
+
+  /**
    * Call LLM with template and return raw text response
    * Loads template from prompts/ folder, renders variables, and calls LLM
    *
@@ -590,429 +640,6 @@ Return ONLY a JSON array in this exact format (no markdown, no additional text):
         },
       ];
     }
-  }
-
-  /**
-   * Translate professional summary to target language
-   * Preserves professional tone and key information
-   */
-  async translateSummary(
-    summary: string,
-    fromLanguage: string,
-    toLanguage: string,
-  ): Promise<string> {
-    if (!summary || fromLanguage === toLanguage) {
-      return summary;
-    }
-
-    const languageNames: Record<string, string> = {
-      de: 'German',
-      en: 'English',
-      fr: 'French',
-      es: 'Spanish',
-    };
-
-    const fromLang = languageNames[fromLanguage] || fromLanguage;
-    const toLang = languageNames[toLanguage] || toLanguage;
-
-    this.logger.log(`Translating summary from ${fromLang} to ${toLang}`);
-
-    const prompt = `Translate the following professional summary from ${fromLang} to ${toLang}.
-
-**Original Summary (${fromLang}):**
-${summary}
-
-**Instructions:**
-1. Translate accurately while maintaining professional tone
-2. Keep the same length (2-3 sentences)
-3. Preserve key achievements, years of experience, and technical terms
-4. Technical terms (React, Docker, AWS, etc.) should remain in English
-5. Return ONLY the translated text, no explanations
-
-**Translated Summary (${toLang}):**`;
-
-    return this.callProvider(prompt, {
-      temperature: 0.3, // Lower temperature for accurate translation
-      maxTokens: 500,
-      systemMessage: `You are a professional translator specializing in resume and career documents. You translate accurately while maintaining professional tone and preserving technical terminology.`,
-    });
-  }
-
-  /**
-   * Translate a full resume section (experience, project, or education)
-   * Handles job titles, locations, dates, and descriptions
-   *
-   * @param sectionType - Type of section: 'experience', 'project', 'education'
-   * @param content - Section content (title, company/institution, description, dates)
-   * @param fromLanguage - Source language code (de, en, fr, es, it)
-   * @param toLanguage - Target language code
-   * @returns Translated section content
-   */
-  async translateResumeSection(
-    sectionType: 'experience' | 'project' | 'education',
-    content: {
-      title?: string;
-      company?: string;
-      institution?: string;
-      location?: string;
-      description?: string;
-      startDate?: string;
-      endDate?: string;
-      dateRange?: string; // Formatted date range like "Jan 2020 – Heute"
-      fieldOfStudy?: string;
-      name?: string; // For projects
-      year?: string; // For education (formatted year range)
-      achievements?: string[]; // Bullet points for experiences
-      highlights?: string[]; // Bullet points for projects
-    },
-    fromLanguage: string,
-    toLanguage: string,
-  ): Promise<typeof content> {
-    if (fromLanguage === toLanguage) {
-      return content;
-    }
-
-    const languageNames: Record<string, string> = {
-      de: 'German',
-      en: 'English',
-      fr: 'French',
-      es: 'Spanish',
-      it: 'Italian',
-    };
-
-    const fromLang = languageNames[fromLanguage] || fromLanguage;
-    const toLang = languageNames[toLanguage] || toLanguage;
-
-    this.logger.log(`Translating ${sectionType} section from ${fromLang} to ${toLang}`);
-
-    const sectionTypeLabels: Record<string, { de: string; en: string }> = {
-      experience: { de: 'Berufserfahrung', en: 'Work Experience' },
-      project: { de: 'Projekt', en: 'Project' },
-      education: { de: 'Ausbildung', en: 'Education' },
-    };
-
-    // Build content string for translation
-    const contentParts: string[] = [];
-    if (content.title) contentParts.push(`Title: ${content.title}`);
-    if (content.name) contentParts.push(`Name: ${content.name}`);
-    if (content.company) contentParts.push(`Company: ${content.company}`);
-    if (content.institution) contentParts.push(`Institution: ${content.institution}`);
-    if (content.location) contentParts.push(`Location: ${content.location}`);
-    if (content.fieldOfStudy) contentParts.push(`Field of Study: ${content.fieldOfStudy}`);
-    if (content.startDate) contentParts.push(`Start Date: ${content.startDate}`);
-    if (content.endDate) contentParts.push(`End Date: ${content.endDate}`);
-    if (content.dateRange) contentParts.push(`Date Range: ${content.dateRange}`);
-    if (content.year) contentParts.push(`Year: ${content.year}`);
-    if (content.description) contentParts.push(`Description: ${content.description}`);
-    if (content.achievements?.length) {
-      contentParts.push(
-        `Achievements (bullet points):\n${content.achievements.map((a, i) => `  ${i + 1}. ${a}`).join('\n')}`,
-      );
-    }
-    if (content.highlights?.length) {
-      contentParts.push(
-        `Highlights (bullet points):\n${content.highlights.map((h, i) => `  ${i + 1}. ${h}`).join('\n')}`,
-      );
-    }
-
-    const prompt = `Translate the following ${sectionTypeLabels[sectionType]?.en || sectionType} section from ${fromLang} to ${toLang}.
-
-**Original Content (${fromLang}):**
-${contentParts.join('\n')}
-
-**Translation Rules:**
-1. Translate job titles appropriately (e.g., "Software Engineer" → "Software-Ingenieur" for German, or "Softwareentwickler" → "Software Developer" for English)
-2. Translate city/country names (e.g., "Köln, Deutschland" → "Cologne, Germany", "Munich" → "München")
-3. Translate date formats and month names (e.g., "Juli 2025" → "July 2025", "May 2026" → "Mai 2026")
-4. Translate descriptions while maintaining professional tone
-5. Keep technical terms in English (React, Docker, AWS, TypeScript, etc.)
-6. Keep company/institution names unchanged (they are proper nouns)
-7. Return the result as JSON with the same field names
-8. **Important:** Translate dateRange/year fields with proper month names and "Present/Current" terms:
-   - German → English: "Heute", "Aktuell" → "Present"
-   - English → German: "Present", "Current" → "Heute"
-   - Keep the format (e.g., "Jan 2020 – Heute" → "Jan 2020 – Present")
-
-**Example Date Range Translations:**
-- German → English: "Jan 2020 – Heute" → "Jan 2020 – Present", "März 2018 – Dez 2022" → "Mar 2018 – Dec 2022"
-- English → German: "Jan 2020 – Present" → "Jan 2020 – Heute", "Mar 2018 – Dec 2022" → "März 2018 – Dez 2022"
-
-**Example Month Translations:**
-- German → English: "Januar" → "January", "Februar" → "February", "März" → "March", "Mai" → "May", "Juni" → "June", "Juli" → "July", "Oktober" → "October", "Dezember" → "December"
-- English → German: "January" → "Januar", "February" → "Februar", "March" → "März", "May" → "Mai", "June" → "Juni", "July" → "Juli", "October" → "Oktober", "December" → "Dezember"
-
-9. **Translate achievements/highlights arrays:** Each bullet point should be translated while preserving professional tone and action verbs
-
-**Return ONLY valid JSON** in this format (include only non-empty fields):
-{
-  "title": "translated title or null",
-  "name": "translated name or null",
-  "company": "original company name",
-  "institution": "original institution name",
-  "location": "translated location or null",
-  "fieldOfStudy": "translated field or null",
-  "startDate": "translated date or null",
-  "endDate": "translated date or null",
-  "dateRange": "translated date range or null",
-  "year": "translated year or null",
-  "description": "translated description or null",
-  "achievements": ["translated bullet point 1", "translated bullet point 2"],
-  "highlights": ["translated highlight 1", "translated highlight 2"]
-}`;
-
-    try {
-      const response = await this.callProvider(prompt, {
-        temperature: 0.2, // Lower temperature for accurate translation
-        maxTokens: 1500,
-        systemMessage: `You are an expert translator specializing in professional resume and CV content. You accurately translate job titles, locations, dates, date ranges, and descriptions while preserving technical terms in English. Always return valid JSON.`,
-      });
-
-      // Parse JSON response
-      const parsed = this.parseJsonResponse<
-        typeof content & { achievements?: string[]; highlights?: string[] }
-      >(response, 'translate-section');
-
-      // Merge with original content to preserve any fields not translated
-      return {
-        ...content,
-        title: parsed.title || content.title,
-        name: parsed.name || content.name,
-        location: parsed.location || content.location,
-        fieldOfStudy: parsed.fieldOfStudy || content.fieldOfStudy,
-        startDate: parsed.startDate || content.startDate,
-        endDate: parsed.endDate || content.endDate,
-        dateRange: parsed.dateRange || content.dateRange,
-        year: parsed.year || content.year,
-        description: parsed.description || content.description,
-        achievements: parsed.achievements?.length ? parsed.achievements : content.achievements,
-        highlights: parsed.highlights?.length ? parsed.highlights : content.highlights,
-        // Keep company/institution unchanged
-        company: content.company,
-        institution: content.institution,
-      };
-    } catch (error) {
-      this.logger.error(`Failed to translate ${sectionType} section`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Translate cover letter content from one language to another
-   * Preserves HTML formatting and structure
-   *
-   * @param html - Cover letter HTML content
-   * @param fromLanguage - Source language code
-   * @param toLanguage - Target language code
-   * @returns Translated HTML content
-   */
-  async translateCoverLetter(
-    html: string,
-    fromLanguage: string,
-    toLanguage: string,
-  ): Promise<string> {
-    if (!html || fromLanguage === toLanguage) {
-      return html;
-    }
-
-    const languageNames: Record<string, string> = {
-      de: 'German',
-      en: 'English',
-      fr: 'French',
-      es: 'Spanish',
-      it: 'Italian',
-    };
-
-    const fromLang = languageNames[fromLanguage] || fromLanguage;
-    const toLang = languageNames[toLanguage] || toLanguage;
-
-    this.logger.log(`Translating cover letter from ${fromLang} to ${toLang}`);
-
-    const prompt = `Translate the following cover letter from ${fromLang} to ${toLang}.
-
-**Original Cover Letter (${fromLang}):**
-${html}
-
-**Translation Rules:**
-1. Translate all text content accurately while maintaining professional, formal tone
-2. Preserve HTML tags exactly as they are (<p>, <strong>, <ul>, <li>, etc.)
-3. Translate salutations appropriately:
-   - German → English: "Sehr geehrte Damen und Herren" → "Dear Hiring Manager" / "Dear Sir or Madam"
-   - English → German: "Dear Hiring Manager" → "Sehr geehrte Damen und Herren"
-   - German → English: "Mit freundlichen Grüßen" → "Sincerely" / "Best regards"
-   - English → German: "Sincerely" / "Best regards" → "Mit freundlichen Grüßen"
-4. Keep technical terms in English (React, Docker, AWS, TypeScript, etc.)
-5. Keep company names and product names unchanged
-6. Translate date references (e.g., "seit Juli 2023" → "since July 2023")
-7. Return ONLY the translated HTML, no explanations or markdown
-
-**Translated Cover Letter (${toLang}):**`;
-
-    return this.callProvider(prompt, {
-      temperature: 0.3,
-      maxTokens: 2500,
-      systemMessage: `You are an expert translator specializing in professional business correspondence and cover letters. You translate accurately while maintaining formal professional tone and preserving HTML structure exactly.`,
-    });
-  }
-
-  /**
-   * Translate full resume content (all sections)
-   * Used for batch translation and prewarming
-   *
-   * @param resume - Full resume data object
-   * @param coverLetter - Cover letter HTML
-   * @param fromLanguage - Source language
-   * @param toLanguage - Target language
-   * @param sectionsToTranslate - Optional: specific sections to translate (for partial translation)
-   * @returns Translated resume and cover letter
-   */
-  async translateFullContent(
-    resume: any,
-    coverLetter: string | null,
-    fromLanguage: string,
-    toLanguage: string,
-    sectionsToTranslate?: string[],
-  ): Promise<{ resume: any; coverLetter: string }> {
-    if (fromLanguage === toLanguage) {
-      return { resume, coverLetter: coverLetter || '' };
-    }
-
-    this.logger.log(
-      `Translating full content from ${fromLanguage} to ${toLanguage}${
-        sectionsToTranslate ? ` (sections: ${sectionsToTranslate.join(', ')})` : ''
-      }`,
-    );
-
-    const translateAll = !sectionsToTranslate || sectionsToTranslate.length === 0;
-    const translatedResume = { ...resume };
-
-    // Translate summary
-    if (translateAll || sectionsToTranslate?.includes('summary')) {
-      if (resume.summary) {
-        translatedResume.summary = await this.translateSummary(
-          resume.summary,
-          fromLanguage,
-          toLanguage,
-        );
-      }
-    }
-
-    // Translate experiences
-    if (resume.experiences?.length > 0) {
-      translatedResume.experiences = await Promise.all(
-        resume.experiences.map(async (exp: any, index: number) => {
-          if (translateAll || sectionsToTranslate?.includes(`experience.${index}`)) {
-            const translated = await this.translateResumeSection(
-              'experience',
-              {
-                title: exp.title,
-                company: exp.company,
-                location: exp.location,
-                description: exp.description,
-                startDate: exp.startDate,
-                endDate: exp.endDate,
-                dateRange: exp.dateRange, // Include formatted date range for translation
-                achievements: exp.achievements, // Include achievements for translation
-              },
-              fromLanguage,
-              toLanguage,
-            );
-            return {
-              ...exp,
-              title: translated.title,
-              location: translated.location,
-              description: translated.description,
-              startDate: translated.startDate,
-              endDate: translated.endDate,
-              dateRange: translated.dateRange, // Return translated date range
-              achievements: translated.achievements, // Return translated achievements
-            };
-          }
-          return exp;
-        }),
-      );
-    }
-
-    // Translate projects
-    if (resume.projects?.length > 0) {
-      translatedResume.projects = await Promise.all(
-        resume.projects.map(async (proj: any, index: number) => {
-          if (translateAll || sectionsToTranslate?.includes(`project.${index}`)) {
-            const translated = await this.translateResumeSection(
-              'project',
-              {
-                name: proj.name,
-                description: proj.description,
-                startDate: proj.startDate,
-                endDate: proj.endDate,
-                dateRange: proj.date, // Projects use 'date' field which contains the formatted date
-                highlights: proj.highlights, // Include highlights for translation
-              },
-              fromLanguage,
-              toLanguage,
-            );
-            return {
-              ...proj,
-              name: translated.name,
-              description: translated.description,
-              startDate: translated.startDate,
-              endDate: translated.endDate,
-              date: translated.dateRange || proj.date, // Update the formatted date field
-              highlights: translated.highlights, // Return translated highlights
-            };
-          }
-          return proj;
-        }),
-      );
-    }
-
-    // Translate education
-    if (resume.education?.length > 0) {
-      translatedResume.education = await Promise.all(
-        resume.education.map(async (edu: any, index: number) => {
-          if (translateAll || sectionsToTranslate?.includes(`education.${index}`)) {
-            const translated = await this.translateResumeSection(
-              'education',
-              {
-                title: edu.degree,
-                institution: edu.institution,
-                fieldOfStudy: edu.fieldOfStudy,
-                description: edu.description,
-                startDate: edu.startYear,
-                endDate: edu.endYear,
-                year: edu.year, // Include the formatted year field for translation
-              },
-              fromLanguage,
-              toLanguage,
-            );
-            return {
-              ...edu,
-              degree: translated.title,
-              fieldOfStudy: translated.fieldOfStudy,
-              description: translated.description,
-              startYear: translated.startDate,
-              endYear: translated.endDate,
-              year: translated.year || edu.year, // Update the formatted year field
-            };
-          }
-          return edu;
-        }),
-      );
-    }
-
-    // Translate cover letter
-    let translatedCoverLetter = coverLetter || '';
-    if (coverLetter && (translateAll || sectionsToTranslate?.includes('coverLetter'))) {
-      translatedCoverLetter = await this.translateCoverLetter(
-        coverLetter,
-        fromLanguage,
-        toLanguage,
-      );
-    }
-
-    return {
-      resume: translatedResume,
-      coverLetter: translatedCoverLetter,
-    };
   }
 
   /**

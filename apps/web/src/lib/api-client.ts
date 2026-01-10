@@ -21,8 +21,6 @@ import type {
   UpdateUserPreferencesDto,
   PaginatedResponse,
   ExtractedProfile,
-  TranslationResponse,
-  TranslationCacheStatusResponse,
 } from '@/types';
 import {
   ApiError,
@@ -707,19 +705,6 @@ export const api = {
 
     getKeywordsAnalysis: (id: string) =>
       apiRequest<ApplicationKeywordsResponse>(`/applications/${id}/keywords`),
-
-    // Translation endpoints
-    translate: (
-      id: string,
-      data: { targetLanguage: string; force?: boolean; sections?: string[] },
-    ) =>
-      apiRequest<TranslationResponse>(`/applications/${id}/translate`, {
-        method: 'POST',
-        body: JSON.stringify(data),
-      }),
-
-    getTranslationCacheStatus: (id: string) =>
-      apiRequest<TranslationCacheStatusResponse>(`/applications/${id}/cache-status`),
   },
 
   // Sessions

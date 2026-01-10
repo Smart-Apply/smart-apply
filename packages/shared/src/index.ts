@@ -563,29 +563,3 @@ export interface ExtractedProfile {
   }>;
 }
 
-// ============================================
-// Translation Types
-// ============================================
-
-/**
- * Response from translation endpoint
- */
-export interface TranslationResponse {
-  resumeText: ResumeData;
-  coverLetterText: string;
-  cached: boolean;
-  translatedSections: string[];
-  fromCache: string[];
-  sourceLanguage: string;
-  targetLanguage: string;
-}
-
-/**
- * Translation cache status response
- */
-export interface TranslationCacheStatusResponse {
-  cachedLanguages: string[];
-  contentHash: string;
-  sourceLanguage: string;
-  contentLanguage: string;
-}

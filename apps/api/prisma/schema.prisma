@@ -285,12 +285,8 @@ model Application {
   atsKeywords       Json?  // AtsKeywordsOutputDto (focused 20-keyword set)
   tailoredProfile   Json?  // TailoredProfileDto (selected profile data for debugging)
   
-  // Translation cache (Smart Language Switching)
-  // Structure: { languages: { "de": { resume, coverLetter, hash, cachedAt }, "en": {...} }, lastUsed: ["en", "de"], prewarmFailures: {} }
-  cachedTranslations    Json?
+  // Source language tracking (for initial generation)
   sourceLanguage        String?   // Original content language when app was created (ISO 639-1)
-  contentLanguage       String?   // Current language of resumeText/coverLetterText (tracks edits in different languages)
-  contentHash           String?   // xxHash-64 of current resume+coverLetter for cache invalidation
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

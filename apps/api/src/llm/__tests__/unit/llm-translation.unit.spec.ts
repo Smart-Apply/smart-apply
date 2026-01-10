@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { LLMService } from '../../llm.service';
 import { LLMProvider } from '../../llm.interface';
+import { ConfigService } from '../../../config/config.service';
 
 describe('LLMService - Summary Translation', () => {
   let service: LLMService;
@@ -18,6 +19,16 @@ describe('LLMService - Summary Translation', () => {
           provide: 'LLM_PROVIDER',
           useValue: mockProvider,
         },
+        {
+          provide: ConfigService,
+          useValue: {
+            llmCircuitBreakerTimeout: 60000,
+            llmCircuitBreakerErrorThreshold: 50,
+            llmCircuitBreakerResetTimeout: 30000,
+            llmCircuitBreakerRollingCountTimeout: 10000,
+            llmCircuitBreakerRollingCountBuckets: 10,
+          },
+        },
       ],
     }).compile();
 
@@ -33,13 +44,11 @@ describe('LLMService - Summary Translation', () => {
 
       mockProvider.generateText.mockResolvedValue(englishTranslation);
 
-      const result = await service.translateSummary(germanSummary, 'de', 'en');
+      const result = await service.translateSummary(germanSummary, 'en');
 
       expect(result).toBe(englishTranslation);
       expect(mockProvider.generateText).toHaveBeenCalledWith(
-        expect.stringContaining(
-          'Translate the following professional summary from German to English',
-        ),
+        expect.stringContaining('Translate the following professional profile summary'),
         expect.objectContaining({
           temperature: 0.3,
           maxTokens: 500,
@@ -55,13 +64,11 @@ describe('LLMService - Summary Translation', () => {
 
       mockProvider.generateText.mockResolvedValue(germanTranslation);
 
-      const result = await service.translateSummary(englishSummary, 'en', 'de');
+      const result = await service.translateSummary(englishSummary, 'de');
 
       expect(result).toBe(germanTranslation);
       expect(mockProvider.generateText).toHaveBeenCalledWith(
-        expect.stringContaining(
-          'Translate the following professional summary from English to German',
-        ),
+        expect.stringContaining('German'),
         expect.any(Object),
       );
     });
@@ -73,7 +80,7 @@ describe('LLMService - Summary Translation', () => {
 
       mockProvider.generateText.mockResolvedValue(englishTranslation);
 
-      const result = await service.translateSummary(germanSummary, 'de', 'en');
+      const result = await service.translateSummary(germanSummary, 'en');
 
       // Technical terms should remain in English
       expect(result).toContain('React');
@@ -82,28 +89,27 @@ describe('LLMService - Summary Translation', () => {
       expect(result).toContain('AWS');
     });
 
-    it('should return original summary if languages are the same', async () => {
-      const summary = 'Experienced developer with 5 years of experience.';
+    it('should skip translation if content is already in target language', async () => {
+      // English text detected as English, target is English -> skip
+      const englishSummary = 'Experienced developer with the best skills for this job.';
 
-      const result = await service.translateSummary(summary, 'en', 'en');
+      const result = await service.translateSummary(englishSummary, 'en');
 
-      expect(result).toBe(summary);
+      expect(result).toBe(englishSummary);
       expect(mockProvider.generateText).not.toHaveBeenCalled();
     });
 
     it('should return original summary if summary is empty', async () => {
-      const result = await service.translateSummary('', 'de', 'en');
+      const result = await service.translateSummary('', 'en');
 
       expect(result).toBe('');
       expect(mockProvider.generateText).not.toHaveBeenCalled();
     });
 
-    it('should handle null or undefined summary', async () => {
-      const result1 = await service.translateSummary(null as any, 'de', 'en');
-      const result2 = await service.translateSummary(undefined as any, 'de', 'en');
+    it('should handle whitespace-only summary', async () => {
+      const result = await service.translateSummary('   ', 'en');
 
-      expect(result1).toBeNull();
-      expect(result2).toBeUndefined();
+      expect(result).toBe('   ');
       expect(mockProvider.generateText).not.toHaveBeenCalled();
     });
   });
