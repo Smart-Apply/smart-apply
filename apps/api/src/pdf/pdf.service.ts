@@ -180,7 +180,7 @@ export class PdfService implements OnModuleInit, OnModuleDestroy {
 
   private async launchBrowserWithRetry(): Promise<puppeteer.Browser> {
     const configs = [
-      // Primary config with user-specified executable
+      // Primary config with user-specified executable (production)
       {
         headless: 'new' as const,
         executablePath: this.configService.puppeteerExecutablePath || undefined,
@@ -191,9 +191,17 @@ export class PdfService implements OnModuleInit, OnModuleDestroy {
           '--disable-web-security',
           '--disable-features=VizDisplayCompositor',
           '--disable-gpu',
-          '--single-process', // Better for development
+          '--disable-software-rasterizer',
+          '--no-zygote', // Required for newer Chromium in Docker
+          '--disable-extensions',
+          '--disable-background-networking',
+          '--disable-sync',
+          '--metrics-recording-only',
+          '--disable-default-apps',
+          '--mute-audio',
+          '--no-first-run',
         ],
-        timeout: 10000,
+        timeout: 30000,
       },
       // Fallback config without custom executable (use bundled Chromium)
       {
@@ -205,9 +213,10 @@ export class PdfService implements OnModuleInit, OnModuleDestroy {
           '--disable-web-security',
           '--disable-features=VizDisplayCompositor',
           '--disable-gpu',
-          '--single-process',
+          '--disable-software-rasterizer',
+          '--no-zygote',
         ],
-        timeout: 10000,
+        timeout: 30000,
       },
       // Legacy fallback for older systems
       {
@@ -217,9 +226,10 @@ export class PdfService implements OnModuleInit, OnModuleDestroy {
           '--disable-setuid-sandbox',
           '--disable-dev-shm-usage',
           '--disable-web-security',
-          '--single-process',
+          '--disable-gpu',
+          '--no-zygote',
         ],
-        timeout: 15000,
+        timeout: 30000,
       },
     ];
 
