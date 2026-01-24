@@ -31,12 +31,20 @@ export class SessionService {
     // Calculate session expiration
     const expiresAt = new Date(Date.now() + SESSION_EXPIRATION_DAYS * 24 * 60 * 60 * 1000);
 
+    // Map device type string to DeviceType enum
+    const deviceTypeMap: Record<string, 'MOBILE' | 'TABLET' | 'DESKTOP' | 'UNKNOWN'> = {
+      'mobile': 'MOBILE',
+      'tablet': 'TABLET',
+      'desktop': 'DESKTOP',
+    };
+    const deviceType = deviceTypeMap[device.device.type?.toLowerCase() || ''] || 'UNKNOWN';
+
     return this.prisma.session.create({
       data: {
         userId,
         refreshTokenId,
         deviceName: this.getDeviceName(device),
-        deviceType: device.device.type || 'desktop',
+        deviceType,
         browser: `${device.browser.name || 'Unknown'} ${device.browser.version || ''}`.trim(),
         os: `${device.os.name || 'Unknown'} ${device.os.version || ''}`.trim(),
         ipAddress: this.getClientIp(req),

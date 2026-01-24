@@ -8,9 +8,74 @@ import {
   IsDateString,
   IsBoolean,
   IsPhoneNumber,
+  IsEnum,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { Sanitize, SanitizeArray, SanitizeUrl } from '../../common/decorators/sanitize.decorator';
+import { SkillLevel, LanguageProficiency } from '../../generated/prisma/client';
+
+/**
+ * Maps legacy string skill levels to SkillLevel enum values
+ * Supports both English and German input values for backward compatibility
+ */
+export function mapToSkillLevel(value: string | null | undefined): SkillLevel | null {
+  if (!value) return null;
+  const normalized = value.toUpperCase().trim();
+  
+  // Direct enum match
+  if (Object.values(SkillLevel).includes(normalized as SkillLevel)) {
+    return normalized as SkillLevel;
+  }
+  
+  // Legacy string mappings
+  const mappings: Record<string, SkillLevel> = {
+    'EXPERT': SkillLevel.EXPERT,
+    'EXPERTE': SkillLevel.EXPERT,
+    'ADVANCED': SkillLevel.ADVANCED,
+    'FORTGESCHRITTEN': SkillLevel.ADVANCED,
+    'INTERMEDIATE': SkillLevel.INTERMEDIATE,
+    'MITTEL': SkillLevel.INTERMEDIATE,
+    'GUT': SkillLevel.INTERMEDIATE,
+    'BEGINNER': SkillLevel.BEGINNER,
+    'ANFÄNGER': SkillLevel.BEGINNER,
+    'BASIC': SkillLevel.BEGINNER,
+  };
+  
+  return mappings[normalized] || null;
+}
+
+/**
+ * Maps legacy string language proficiency levels to LanguageProficiency enum values
+ * Supports both English and German input values for backward compatibility
+ */
+export function mapToLanguageProficiency(value: string | null | undefined): LanguageProficiency | null {
+  if (!value) return null;
+  const normalized = value.toUpperCase().trim();
+  
+  // Direct enum match
+  if (Object.values(LanguageProficiency).includes(normalized as LanguageProficiency)) {
+    return normalized as LanguageProficiency;
+  }
+  
+  // Legacy string mappings
+  const mappings: Record<string, LanguageProficiency> = {
+    'NATIVE': LanguageProficiency.NATIVE,
+    'MUTTERSPRACHE': LanguageProficiency.NATIVE,
+    'FLUENT': LanguageProficiency.FLUENT,
+    'FLIESSEND': LanguageProficiency.FLUENT,
+    'FLIEßEND': LanguageProficiency.FLUENT,
+    'ADVANCED': LanguageProficiency.ADVANCED,
+    'FORTGESCHRITTEN': LanguageProficiency.ADVANCED,
+    'INTERMEDIATE': LanguageProficiency.INTERMEDIATE,
+    'GUT': LanguageProficiency.INTERMEDIATE,
+    'MITTEL': LanguageProficiency.INTERMEDIATE,
+    'BASIC': LanguageProficiency.BASIC,
+    'GRUNDKENNTNISSE': LanguageProficiency.BASIC,
+    'ANFÄNGER': LanguageProficiency.BASIC,
+  };
+  
+  return mappings[normalized] || LanguageProficiency.INTERMEDIATE; // Default fallback
+}
 
 export class SkillDto {
   @ApiProperty({
@@ -27,11 +92,15 @@ export class SkillDto {
   @IsString()
   name: string;
 
-  @ApiProperty({ example: 'Expert', required: false })
+  @ApiProperty({ 
+    example: 'EXPERT', 
+    required: false,
+    enum: SkillLevel,
+    description: 'Skill proficiency level (BEGINNER, INTERMEDIATE, ADVANCED, EXPERT)',
+  })
   @IsOptional()
-  @Sanitize()
-  @IsString()
-  level?: string;
+  @Transform(({ value }) => mapToSkillLevel(value))
+  level?: SkillLevel | null;
 }
 
 export class CertificateDto {
@@ -228,13 +297,13 @@ export class LanguageDto {
   name: string;
 
   @ApiProperty({
-    example: 'Muttersprache',
+    example: 'NATIVE',
+    enum: LanguageProficiency,
     description:
-      'Proficiency level (e.g., Muttersprache, Fließend, Gut, Grundkenntnisse / Native, Fluent, Advanced, Basic)',
+      'Proficiency level (NATIVE, FLUENT, ADVANCED, INTERMEDIATE, BASIC). Also accepts legacy values like Muttersprache, Fließend, etc.',
   })
-  @Sanitize()
-  @IsString()
-  level: string;
+  @Transform(({ value }) => mapToLanguageProficiency(value))
+  level: LanguageProficiency | null;
 }
 
 export class UpdateProfileDto {

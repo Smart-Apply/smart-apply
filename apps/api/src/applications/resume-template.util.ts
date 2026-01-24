@@ -7,6 +7,7 @@ import type {
   Project,
   Skill,
   User,
+  LanguageProficiency,
 } from '../generated/prisma/client';
 import type {
   ResumeTemplateData,
@@ -29,19 +30,19 @@ const DEFAULT_CATEGORY = '';
 
 /**
  * Normalize proficiency level to translation key
- * Maps various user input formats to standardized translation keys (e.g., "level.native")
- * @param level - User input level string (e.g., "Muttersprache", "Native", "fließend")
+ * Maps various user input formats (enum values or legacy strings) to standardized translation keys
+ * @param level - LanguageProficiency enum value or legacy string
  * @returns Normalized translation key (e.g., "level.native") or original value if no match
  */
-export function normalizeProficiencyLevel(level: string | undefined): string | undefined {
+export function normalizeProficiencyLevel(level: LanguageProficiency | string | null | undefined): string | undefined {
   if (!level) return undefined;
 
   const normalized = level.toLowerCase().trim();
 
-  // Native language variants
+  // Native language variants (including enum value)
   if (
-    normalized === 'muttersprache' ||
     normalized === 'native' ||
+    normalized === 'muttersprache' ||
     normalized === 'native speaker' ||
     normalized === 'muttersprachlich' ||
     normalized === 'langue maternelle' ||

@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { SkillLevel, LanguageProficiency } from '../../generated/prisma/client';
 
 export class SkillResponseDto {
   @ApiProperty()
@@ -7,8 +8,8 @@ export class SkillResponseDto {
   @ApiProperty()
   name: string;
 
-  @ApiProperty({ required: false })
-  level?: string;
+  @ApiProperty({ required: false, enum: SkillLevel })
+  level?: SkillLevel | null;
 }
 
 export class CertificateResponseDto {
@@ -98,8 +99,8 @@ export class LanguageResponseDto {
   @ApiProperty({ example: 'Deutsch' })
   name: string;
 
-  @ApiProperty({ example: 'Muttersprache' })
-  level: string;
+  @ApiProperty({ example: 'NATIVE', enum: LanguageProficiency })
+  level: LanguageProficiency | null;
 }
 
 export class ProfileResponseDto {

@@ -28,8 +28,8 @@ describe('ApplicationsService - Summary Translation Integration', () => {
       email: 'max@example.com',
     },
     skills: [
-      { id: '1', name: 'TypeScript', level: 'Expert' },
-      { id: '2', name: 'React', level: 'Expert' },
+      { id: '1', name: 'TypeScript', level: 'EXPERT' },
+      { id: '2', name: 'React', level: 'EXPERT' },
     ],
     experiences: [],
     projects: [],

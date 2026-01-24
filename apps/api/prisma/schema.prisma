@@ -31,12 +31,20 @@ model User {
   refreshTokens RefreshToken[]
   sessions Session[]
   auditLogs AuditLog[]
+  subscription Subscription?
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([email])
+  // Note: @unique on email already creates an implicit index
   @@map("users")
+}
+
+// Theme preference for UI
+enum Theme {
+  LIGHT
+  DARK
+  SYSTEM
 }
 
 // User preferences for settings (notifications, language, theme, privacy)
@@ -52,7 +60,7 @@ model UserPreferences {
   
   // Preferences
   language            String   @default("de")
-  theme               String   @default("system")
+  theme               Theme    @default(SYSTEM)
   profilePublic       Boolean  @default(false)
   analyticsEnabled    Boolean  @default(true)
   
@@ -109,6 +117,14 @@ model Profile {
   @@map("profiles")
 }
 
+// Skill proficiency level
+enum SkillLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
 model Skill {
   id        String  @id @default(cuid())
   profileId String
@@ -116,8 +132,9 @@ model Skill {
   
   name      String
   category  String? // e.g., "Programming Language", "Framework", "Tool"
-  level     String? // e.g., "Beginner", "Intermediate", "Advanced", "Expert"
+  level     SkillLevel? // Proficiency level
   
+  @@unique([profileId, name]) // Prevent duplicate skill names per profile
   @@index([profileId])
   @@map("skills")
 }
@@ -191,14 +208,25 @@ model Project {
   @@map("projects")
 }
 
+// Language proficiency level
+enum LanguageProficiency {
+  NATIVE        // Muttersprache
+  FLUENT        // Fließend
+  ADVANCED      // Fortgeschritten
+  INTERMEDIATE  // Gut
+  BASIC         // Grundkenntnisse
+}
+
 model Language {
   id        String  @id @default(cuid())
   profileId String
   profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
   
-  name      String  // e.g., "Deutsch", "English", "Français"
-  level     String  // e.g., "Muttersprache", "Fließend", "Gut", "Grundkenntnisse" / "Native", "Fluent", "Advanced", "Basic"
+  name      String               // e.g., "Deutsch", "English", "Français"
+  level     LanguageProficiency? // Proficiency level (nullable for migration)
+  levelLegacy String?            // Legacy string level (to be deprecated)
   
+  @@unique([profileId, name]) // Prevent duplicate languages per profile
   @@index([profileId])
   @@map("languages")
 }
@@ -297,6 +325,7 @@ model Application {
 
   @@index([userId])
   @@index([status])
+  @@index([jobPostingId]) // For efficient joins when querying by job posting
   @@index([userId, applicationStatus])
   @@index([userId, createdAt(sort: Desc)])
   @@index([userId, deletedAt]) // For efficient soft delete filtering
@@ -353,6 +382,7 @@ model Template {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   
+  @@unique([name, type, language]) // Prevent duplicate template names
   @@index([type, isActive])
   @@index([isDefault])
   @@index([category, language, isActive])
@@ -381,8 +411,16 @@ model RefreshToken {
   
   @@index([userId])
   @@index([userId, expiresAt])
-  @@index([token])
+  // Note: @unique on token already creates an implicit index
   @@map("refresh_tokens")
+}
+
+// Device type for session tracking
+enum DeviceType {
+  MOBILE
+  TABLET
+  DESKTOP
+  UNKNOWN
 }
 
 // Session tracking for multi-device management
@@ -392,14 +430,14 @@ model Session {
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   // Token Info
-  refreshTokenId  String?  // Reference to RefreshToken
+  refreshTokenId  String?  // Reference to RefreshToken (not a relation to allow orphaned sessions)
   accessTokenJti  String?  // JWT ID for access token (optional)
   
   // Device Info
-  deviceName      String?   // e.g., "iPhone 14 Pro", "Chrome on Windows"
-  deviceType      String?   // mobile, tablet, desktop
-  browser         String?   // Chrome, Safari, Firefox
-  os              String?   // iOS, Android, Windows, macOS
+  deviceName      String?     // e.g., "iPhone 14 Pro", "Chrome on Windows"
+  deviceType      DeviceType? // Device category
+  browser         String?     // Chrome, Safari, Firefox
+  os              String?     // iOS, Android, Windows, macOS
   
   // Location Info
   ipAddress       String
@@ -422,18 +460,53 @@ model Session {
   @@map("sessions")
 }
 
+// Audit event types for security logging
+enum AuditEventType {
+  // Authentication
+  LOGIN_SUCCESS
+  LOGIN_FAILURE
+  LOGOUT
+  REGISTER
+  PASSWORD_CHANGE
+  PASSWORD_RESET_REQUEST
+  PASSWORD_RESET_COMPLETE
+  
+  // Session
+  SESSION_CREATE
+  SESSION_REVOKE
+  TOKEN_REFRESH
+  
+  // Account
+  ACCOUNT_LOCKED
+  ACCOUNT_UNLOCKED
+  EMAIL_CHANGE
+  PROFILE_UPDATE
+  
+  // Security
+  RATE_LIMIT_EXCEEDED
+  SUSPICIOUS_ACTIVITY
+  CSRF_VIOLATION
+}
+
+// Severity levels for audit events
+enum AuditSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
 // Audit log for security events (optional persistence layer)
 model AuditLog {
-  id        String   @id @default(cuid())
-  eventType String   // AuditEventType enum value
+  id        String         @id @default(cuid())
+  eventType AuditEventType // Type of security event
   userId    String?
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user      User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
   email     String?
   ip        String
   userAgent String
-  severity  String   // "info" | "warning" | "critical"
-  metadata  Json?    // Additional context as JSON
-  createdAt DateTime @default(now())
+  severity  AuditSeverity  // Event severity level
+  metadata  Json?          // Additional context as JSON
+  createdAt DateTime       @default(now())
   
   @@index([userId])
   @@index([userId, createdAt(sort: Desc)])
@@ -441,4 +514,84 @@ model AuditLog {
   @@index([createdAt])
   @@index([severity])
   @@map("audit_logs")
+}
+
+// =====================================
+// SUBSCRIPTION & TIER SYSTEM
+// =====================================
+
+// Subscription tier levels
+enum SubscriptionTier {
+  FREE
+  PREMIUM
+  PREMIUM_PLUS
+}
+
+// Subscription status (aligned with Stripe)
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  TRIALING
+  INCOMPLETE
+}
+
+// User subscription for tier-based features
+model Subscription {
+  id                    String             @id @default(cuid())
+  userId                String             @unique
+  user                  User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Plan
+  tier                  SubscriptionTier   @default(FREE)
+  status                SubscriptionStatus @default(ACTIVE)
+  
+  // Stripe Integration (for future payment processing)
+  stripeCustomerId      String?            @unique
+  stripeSubscriptionId  String?            @unique
+  stripePriceId         String?
+  
+  // Billing Period
+  currentPeriodStart    DateTime?
+  currentPeriodEnd      DateTime?
+  cancelAtPeriodEnd     Boolean            @default(false)
+  
+  // Trial
+  trialStart            DateTime?
+  trialEnd              DateTime?
+  
+  // Timestamps
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  
+  // Relations
+  usage                 SubscriptionUsage?
+  
+  @@index([tier])
+  @@index([status])
+  // Note: @unique on stripeCustomerId/stripeSubscriptionId already creates implicit indexes
+  @@map("subscriptions")
+}
+
+// Usage tracking for subscription limits
+model SubscriptionUsage {
+  id                      String       @id @default(cuid())
+  subscriptionId          String       @unique
+  subscription            Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  
+  // Current Period Usage
+  applicationsUsed        Int          @default(0)
+  interviewSessionsUsed   Int          @default(0)
+  
+  // Period
+  periodStart             DateTime
+  periodEnd               DateTime
+  
+  // Timestamps
+  createdAt               DateTime     @default(now())
+  updatedAt               DateTime     @updatedAt
+  
+  @@index([subscriptionId])
+  @@index([periodEnd])
+  @@map("subscription_usage")
 }

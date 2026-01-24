@@ -39,7 +39,7 @@ describe('Resume Template Util - Experience Description', () => {
           profileId: 'profile-1',
           name: 'TypeScript',
           category: 'Programming Languages',
-          level: 'Expert',
+          level: 'EXPERT',
         },
       ],
       experiences: [

@@ -1,5 +1,25 @@
-import { IsBoolean, IsOptional, IsString, IsIn } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, IsIn, IsEnum } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import { Theme } from '../../generated/prisma/client';
+
+/**
+ * Maps legacy string theme values to Theme enum
+ */
+function mapToTheme(value: string | undefined): Theme | undefined {
+  if (!value) return undefined;
+  const normalized = value.toUpperCase().trim();
+  if (Object.values(Theme).includes(normalized as Theme)) {
+    return normalized as Theme;
+  }
+  // Legacy mappings
+  const mappings: Record<string, Theme> = {
+    'LIGHT': Theme.LIGHT,
+    'DARK': Theme.DARK,
+    'SYSTEM': Theme.SYSTEM,
+  };
+  return mappings[normalized] || Theme.SYSTEM;
+}
 
 export class UpdateUserPreferencesDto {
   // Notifications
@@ -38,14 +58,14 @@ export class UpdateUserPreferencesDto {
   language?: string;
 
   @ApiProperty({
-    example: 'system',
+    example: 'SYSTEM',
     required: false,
-    description: 'Theme preference (light, dark, system)',
+    enum: Theme,
+    description: 'Theme preference (LIGHT, DARK, SYSTEM). Also accepts lowercase values.',
   })
   @IsOptional()
-  @IsString()
-  @IsIn(['light', 'dark', 'system'], { message: 'Theme must be one of: light, dark, system' })
-  theme?: string;
+  @Transform(({ value }) => mapToTheme(value))
+  theme?: Theme;
 
   @ApiProperty({ example: false, required: false, description: 'Make profile visible to others' })
   @IsOptional()
@@ -77,8 +97,8 @@ export class UserPreferencesResponseDto {
   @ApiProperty({ example: 'de' })
   language: string;
 
-  @ApiProperty({ example: 'system' })
-  theme: string;
+  @ApiProperty({ example: 'SYSTEM', enum: Theme })
+  theme: Theme;
 
   @ApiProperty({ example: false })
   profilePublic: boolean;

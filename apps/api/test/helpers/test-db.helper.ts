@@ -49,9 +49,9 @@ export class TestDbHelper {
         summary: 'Experienced software developer',
         skills: {
           create: [
-            { name: 'TypeScript', level: 'Expert' },
-            { name: 'React', level: 'Advanced' },
-            { name: 'Node.js', level: 'Expert' },
+            { name: 'TypeScript', level: 'EXPERT' },
+            { name: 'React', level: 'ADVANCED' },
+            { name: 'Node.js', level: 'EXPERT' },
           ],
         },
         experiences: {

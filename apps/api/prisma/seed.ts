@@ -1,4 +1,6 @@
 import { PrismaClient } from '../src/generated/prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from 'pg';
 import * as argon2 from 'argon2';
 import { config } from 'dotenv';
 import { join } from 'path';
@@ -6,9 +8,15 @@ import { join } from 'path';
 // Load .env from apps/api directory (one level up from prisma/seed.ts)
 config({ path: join(__dirname, '../.env') });
 
-// Prisma 7: PrismaClient can be initialized with empty config when DATABASE_URL is set
-// The adapter is only needed when programmatically creating the client
-const prisma = new PrismaClient({} as any);
+// Create PostgreSQL connection pool
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/smartapply',
+  max: 5,
+});
+
+// Create Prisma adapter and client
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   console.log('🌱 Starting database seed...');
@@ -29,6 +37,33 @@ async function main() {
   });
 
   console.log('✅ Created demo user:', demoUser.email);
+
+  // Create FREE subscription for demo user
+  const now = new Date();
+  const periodEnd = new Date(now);
+  periodEnd.setMonth(periodEnd.getMonth() + 1); // 1 month period
+
+  await prisma.subscription.upsert({
+    where: { userId: demoUser.id },
+    update: {},
+    create: {
+      userId: demoUser.id,
+      tier: 'FREE',
+      status: 'ACTIVE',
+      currentPeriodStart: now,
+      currentPeriodEnd: periodEnd,
+      usage: {
+        create: {
+          applicationsUsed: 0,
+          interviewSessionsUsed: 0,
+          periodStart: now,
+          periodEnd: periodEnd,
+        },
+      },
+    },
+  });
+
+  console.log('✅ Created FREE subscription for demo user');
 
   // Create profile for demo user
   await prisma.profile.upsert({
@@ -53,14 +88,14 @@ async function main() {
       portfolioUrl: 'https://demouser.dev',
       skills: {
         create: [
-          { name: 'TypeScript', category: 'Programming Language', level: 'Expert' },
-          { name: 'JavaScript', category: 'Programming Language', level: 'Expert' },
-          { name: 'React', category: 'Framework', level: 'Advanced' },
-          { name: 'Node.js', category: 'Runtime', level: 'Advanced' },
-          { name: 'NestJS', category: 'Framework', level: 'Advanced' },
-          { name: 'PostgreSQL', category: 'Database', level: 'Intermediate' },
-          { name: 'Docker', category: 'Tool', level: 'Intermediate' },
-          { name: 'Azure', category: 'Cloud Platform', level: 'Intermediate' },
+          { name: 'TypeScript', category: 'Programming Language', level: 'EXPERT' },
+          { name: 'JavaScript', category: 'Programming Language', level: 'EXPERT' },
+          { name: 'React', category: 'Framework', level: 'ADVANCED' },
+          { name: 'Node.js', category: 'Runtime', level: 'ADVANCED' },
+          { name: 'NestJS', category: 'Framework', level: 'ADVANCED' },
+          { name: 'PostgreSQL', category: 'Database', level: 'INTERMEDIATE' },
+          { name: 'Docker', category: 'Tool', level: 'INTERMEDIATE' },
+          { name: 'Azure', category: 'Cloud Platform', level: 'INTERMEDIATE' },
         ],
       },
       certificates: {
@@ -167,8 +202,8 @@ async function main() {
       },
       languages: {
         create: [
-          { name: 'Deutsch', level: 'Muttersprache' },
-          { name: 'Englisch', level: 'Fließend' },
+          { name: 'Deutsch', level: 'NATIVE' },
+          { name: 'Englisch', level: 'FLUENT' },
         ],
       },
     },
@@ -228,6 +263,43 @@ async function main() {
 
   console.log('✅ Created sample job posting:', jobPosting.title);
 
+  // Create FREE subscriptions for all existing users who don't have one
+  const usersWithoutSubscription = await prisma.user.findMany({
+    where: {
+      subscription: null,
+    },
+    select: { id: true, email: true },
+  });
+
+  if (usersWithoutSubscription.length > 0) {
+    const subPeriodStart = new Date();
+    const subPeriodEnd = new Date();
+    subPeriodEnd.setMonth(subPeriodEnd.getMonth() + 1);
+
+    for (const user of usersWithoutSubscription) {
+      await prisma.subscription.create({
+        data: {
+          userId: user.id,
+          tier: 'FREE',
+          status: 'ACTIVE',
+          currentPeriodStart: subPeriodStart,
+          currentPeriodEnd: subPeriodEnd,
+          usage: {
+            create: {
+              applicationsUsed: 0,
+              interviewSessionsUsed: 0,
+              periodStart: subPeriodStart,
+              periodEnd: subPeriodEnd,
+            },
+          },
+        },
+      });
+    }
+    console.log(
+      `✅ Created FREE subscriptions for ${usersWithoutSubscription.length} existing user(s)`,
+    );
+  }
+
   // Import template seeding (run separately if needed)
   console.log('💡 To seed templates, run: npm run seed:templates');
 
@@ -241,4 +313,5 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
+    await pool.end();
   });

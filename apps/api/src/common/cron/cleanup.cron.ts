@@ -93,4 +93,28 @@ export class CleanupCron {
       this.logger.error('Job postings cleanup failed', error);
     }
   }
+
+  /**
+   * Refresh materialized views for dashboard statistics
+   * Runs every 5 minutes to keep stats relatively fresh
+   */
+  @Cron('*/5 * * * *') // Every 5 minutes
+  async refreshMaterializedViews() {
+    // Skip if cron jobs are disabled (e.g., in local development)
+    if (!this.configService.enableCronJobs) {
+      this.logger.debug('Materialized views refresh skipped (ENABLE_CRON_JOBS=false)');
+      return;
+    }
+
+    this.logger.debug('Refreshing materialized views...');
+    const startTime = Date.now();
+
+    try {
+      await this.prisma.refreshMaterializedViews();
+      const duration = Date.now() - startTime;
+      this.logger.debug(`Materialized views refreshed in ${duration}ms`);
+    } catch (error) {
+      this.logger.error('Materialized views refresh failed', error);
+    }
+  }
 }
