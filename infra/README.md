@@ -9,6 +9,7 @@ This directory contains infrastructure-as-code (IaC) for deploying Smart Apply t
 **Cost:** €78-163/mo (€66-151/mo with reserved instance)
 
 **Pros:**
+
 - ✅ Predictable costs
 - ✅ Full SSH access for debugging
 - ✅ Simpler architecture (no ACR, no Container Apps)
@@ -16,11 +17,13 @@ This directory contains infrastructure-as-code (IaC) for deploying Smart Apply t
 - ✅ Same cost as Container Apps
 
 **Cons:**
+
 - ⚠️ Manual scaling (resize VM or add load balancer)
 - ⚠️ Higher operational maintenance
 - ⚠️ No built-in auto-scale
 
 **Files:**
+
 - `azure/main-vm.bicep` - VM infrastructure orchestration
 - `azure/main.vm.bicepparam` - VM deployment parameters
 - `azure/modules/virtual-machine.bicep` - VM module
@@ -35,6 +38,7 @@ This directory contains infrastructure-as-code (IaC) for deploying Smart Apply t
 **Documentation:** [VM_DEPLOYMENT.md](./azure/VM_DEPLOYMENT.md)
 
 **Quick Start:**
+
 ```bash
 # Set environment variables
 export SSH_PUBLIC_KEY="$(cat ~/.ssh/id_rsa.pub)"
@@ -54,18 +58,21 @@ export AZURE_OPENAI_API_KEY="your-api-key"
 **Cost:** €85-135/mo
 
 **Pros:**
+
 - ✅ Auto-scale (0-N replicas)
 - ✅ Multi-region ready
 - ✅ Zero-ops infrastructure (fully managed)
 - ✅ Built-in health probes and traffic splitting
 
 **Cons:**
+
 - ⚠️ Higher minimum cost
 - ⚠️ Requires Azure Container Registry (€4.25/mo)
 - ⚠️ Less control over infrastructure
 - ⚠️ No SSH access for debugging
 
 **Files:**
+
 - `azure/main.bicep` - Container Apps orchestration
 - `azure/main.bicepparam` - Container Apps parameters
 - `azure/modules/container-app.bicep` - Backend API container app
@@ -76,6 +83,7 @@ export AZURE_OPENAI_API_KEY="your-api-key"
 **Documentation:** [AZURE_DEPLOYMENT.md](../docs/guides/AZURE_DEPLOYMENT.md)
 
 **Quick Start:**
+
 ```bash
 # Build and push images
 docker build -f infra/Dockerfile -t smartapplyacr.azurecr.io/smart-apply-api:latest .
@@ -94,15 +102,16 @@ az deployment sub create \
 
 Both deployment options use these services:
 
-| Service | Purpose | Monthly Cost |
-|---------|---------|--------------|
-| **PostgreSQL Flexible Server** | Application database | €18 |
-| **Storage Account (Blob)** | PDF document storage | €2 |
-| **Service Bus** | Background job queue | €0.05 |
-| **Key Vault** | Secrets management | €0.50 |
-| **Azure OpenAI** | LLM for CV/cover letter | €20-100 (variable) |
+| Service                        | Purpose                 | Monthly Cost       |
+| ------------------------------ | ----------------------- | ------------------ |
+| **PostgreSQL Flexible Server** | Application database    | €18                |
+| **Storage Account (Blob)**     | PDF document storage    | €2                 |
+| **Service Bus**                | Background job queue    | €0.05              |
+| **Key Vault**                  | Secrets management      | €0.50              |
+| **Azure OpenAI**               | LLM for CV/cover letter | €20-100 (variable) |
 
 **Shared modules:**
+
 - `azure/modules/postgresql.bicep`
 - `azure/modules/storage.bicep`
 - `azure/modules/service-bus.bicep`
@@ -114,17 +123,17 @@ Both deployment options use these services:
 
 ## Comparison Table
 
-| Feature | VM Deployment | Container Apps |
-|---------|---------------|----------------|
-| **Cost (Dev)** | €78-163/mo | €85-135/mo |
-| **Cost (Prod)** | €78-163/mo | €85-135/mo |
-| **Auto-scale** | ❌ Manual | ✅ Automatic |
-| **SSH Access** | ✅ Full access | ❌ No direct access |
-| **Deployment** | docker-compose | Container image push |
-| **Scaling** | Resize VM (~5min) | Instant (0-N replicas) |
-| **Maintenance** | OS patching, Docker | Fully managed |
-| **Complexity** | Low-Medium | Medium-High |
-| **Best for** | MVP, cost control | Production, auto-scale |
+| Feature         | VM Deployment       | Container Apps         |
+| --------------- | ------------------- | ---------------------- |
+| **Cost (Dev)**  | €78-163/mo          | €85-135/mo             |
+| **Cost (Prod)** | €78-163/mo          | €85-135/mo             |
+| **Auto-scale**  | ❌ Manual           | ✅ Automatic           |
+| **SSH Access**  | ✅ Full access      | ❌ No direct access    |
+| **Deployment**  | docker-compose      | Container image push   |
+| **Scaling**     | Resize VM (~5min)   | Instant (0-N replicas) |
+| **Maintenance** | OS patching, Docker | Fully managed          |
+| **Complexity**  | Low-Medium          | Medium-High            |
+| **Best for**    | MVP, cost control   | Production, auto-scale |
 
 ---
 
@@ -150,11 +159,13 @@ Both deployment options use these services:
 ## Cost Optimization Tips
 
 ### VM Deployment
+
 - ✅ Reserved instance (1-year): **€12/mo savings** (40% off VM)
 - ✅ Auto-shutdown dev environment: **€15-20/mo savings** (50% uptime)
 - ✅ Use Standard_B1s for low-traffic dev: **€7/mo** (1 vCPU, 1GB RAM)
 
 ### Container Apps
+
 - ✅ Scale to zero: **Free when idle** (dev environment)
 - ✅ Use Basic tier for dev: **€10-20/mo** (0.25 vCPU minimum)
 
@@ -164,4 +175,4 @@ Both deployment options use these services:
 
 - **VM Deployment Issues:** See [VM_DEPLOYMENT.md](./azure/VM_DEPLOYMENT.md) troubleshooting
 - **Container Apps Issues:** See [AZURE_DEPLOYMENT.md](../docs/guides/AZURE_DEPLOYMENT.md)
-- **GitHub Issues:** https://github.com/Ar1anit/smart-apply/issues
+- **GitHub Issues:** <https://github.com/Ar1anit/smart-apply/issues>
