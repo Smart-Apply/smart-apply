@@ -1,13 +1,16 @@
 // Prisma schema for Smart Apply MVP
 // Database: PostgreSQL (Docker locally, Azure Database for PostgreSQL in prod)
+// 
+// IMPORTANT: In Prisma 7, the datasource URL is configured in prisma.config.ts
+// The PrismaClient requires an adapter (PrismaPg) passed during initialization
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model User {

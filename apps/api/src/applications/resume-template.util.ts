@@ -7,7 +7,7 @@ import type {
   Project,
   Skill,
   User,
-} from '@prisma/client';
+} from '../generated/prisma/client';
 import type {
   ResumeTemplateData,
   SkillCategory as ResumeSkillCategory,

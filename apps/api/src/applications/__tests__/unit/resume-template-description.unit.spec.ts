@@ -1,6 +1,6 @@
 import { buildResumeTemplateData } from '../../resume-template.util';
 import type { ProfileWithRelations } from '../../resume-template.util';
-import type { User } from '@prisma/client';
+import type { User } from '../../../generated/prisma/client';
 
 describe('Resume Template Util - Experience Description', () => {
   const mockUser: User = {

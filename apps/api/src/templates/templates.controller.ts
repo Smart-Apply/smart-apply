@@ -5,7 +5,7 @@ import { SkipThrottle } from '@nestjs/throttler';
 import { TemplatesService } from './templates.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { Public } from '../common/decorators/public.decorator';
-import { TemplateType } from '@prisma/client';
+import { TemplateType } from '../generated/prisma/client';
 import { TemplateResponseDto, TemplateWithContentResponseDto } from './dto/template-response.dto';
 
 @ApiTags('templates')

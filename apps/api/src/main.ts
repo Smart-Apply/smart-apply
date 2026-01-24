@@ -6,14 +6,21 @@ import helmet from 'helmet';
 import * as compression from 'compression';
 import * as cookieParser from 'cookie-parser';
 import { doubleCsrf } from 'csrf-csrf';
-import { config } from 'dotenv';
 import { join } from 'path';
 import { AppModule } from './app.module';
 import { ConfigService } from './config/config.service';
 import { TransformInterceptor } from './common/interceptors';
 
-// Load .env file from workspace root
-config({ path: join(__dirname, '../../../.env') });
+// Load .env file only in development (not needed in production/Docker)
+if (process.env.NODE_ENV !== 'production') {
+  // Note: dotenv is a devDependency, not available in production
+  try {
+    const { config } = require('dotenv');
+    config({ path: join(__dirname, '../../../.env') });
+  } catch (error) {
+    // Silently ignore in production where dotenv is not installed
+  }
+}
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');

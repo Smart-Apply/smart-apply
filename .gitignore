@@ -31,6 +31,9 @@ Thumbs.db
 *.db
 *.db-journal
 
+# Prisma 7 - Generated Client
+apps/api/src/generated/
+
 # Storage (data directories at root, not source code)
 /storage/
 !/storage/.gitkeep

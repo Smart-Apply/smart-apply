@@ -1,4 +1,4 @@
-import { PrismaClient, TemplateType } from '@prisma/client';
+import { PrismaClient, TemplateType } from '../src/generated/prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
 import { config } from 'dotenv';

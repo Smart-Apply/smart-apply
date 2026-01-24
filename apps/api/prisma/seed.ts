@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../src/generated/prisma/client';
 import * as argon2 from 'argon2';
 import { config } from 'dotenv';
 import { join } from 'path';
@@ -6,7 +6,9 @@ import { join } from 'path';
 // Load .env from apps/api directory (one level up from prisma/seed.ts)
 config({ path: join(__dirname, '../.env') });
 
-const prisma = new PrismaClient();
+// Prisma 7: PrismaClient can be initialized with empty config when DATABASE_URL is set
+// The adapter is only needed when programmatically creating the client
+const prisma = new PrismaClient({} as any);
 
 async function main() {
   console.log('🌱 Starting database seed...');

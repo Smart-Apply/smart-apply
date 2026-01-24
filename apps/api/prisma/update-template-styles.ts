@@ -4,7 +4,7 @@
  * Updates the cssStyles in the database with the new CSS files from apps/api/src/pdf/styles/
  */
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../src/generated/prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
 

@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
-import { TemplateType } from '@prisma/client';
+import { TemplateType } from '../../generated/prisma/client';
 import { TemplatesService } from '../templates.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { StorageService } from '../../storage/storage.service';

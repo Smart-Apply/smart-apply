@@ -6,9 +6,9 @@ import {
   Logger,
   MessageEvent,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import type { Application } from '@prisma/client';
-import { ApplicationTrackingStatus } from '@prisma/client';
+import { Prisma } from '../generated/prisma/client';
+import type { Application } from '../generated/prisma/client';
+import { ApplicationTrackingStatus } from '../generated/prisma/client';
 import { Observable, timer } from 'rxjs';
 import { map, switchMap, takeWhile } from 'rxjs/operators';
 import { PrismaService } from '../prisma/prisma.service';
