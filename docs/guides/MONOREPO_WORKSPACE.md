@@ -4,7 +4,7 @@ npm Workspaces-basiertes Monorepo für Smart Apply (Frontend + Backend).
 
 ## 📁 Struktur
 
-```
+```text
 smart-apply/
 ├── package.json              # Workspace Root (Orchestrator)
 ├── apps/
@@ -204,7 +204,7 @@ App-spezifische Dependencies bleiben in ihrem Workspace:
 
 ### Vorher (Problematisch)
 
-```
+```text
 smart-apply/
 ├── package.json              # ALLE Dependencies gemischt
 ├── node_modules/             # Riesiges node_modules
@@ -216,7 +216,7 @@ smart-apply/
 
 ### Nachher (Clean)
 
-```
+```text
 smart-apply/
 ├── package.json              # Workspace Manager
 ├── node_modules/             # Nur Shared Dependencies

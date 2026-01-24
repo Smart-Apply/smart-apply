@@ -4,7 +4,7 @@ import * as fs from 'fs/promises';
 import * as fsSync from 'fs';
 import * as path from 'path';
 import { TemplatesService } from '../templates/templates.service';
-import { TemplateType } from '@prisma/client';
+import { TemplateType } from '../generated/prisma/client';
 
 export interface CoverLetterTemplateData {
   candidateName: string;

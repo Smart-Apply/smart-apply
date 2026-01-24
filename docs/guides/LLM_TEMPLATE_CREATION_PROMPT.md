@@ -1,11 +1,13 @@
 # CSS Template Creation Prompt for Smart Apply
 
 ## ROLE & CONTEXT
+
 You are an expert CSS designer specializing in creating ATS-optimized resume and cover letter templates. Your task is to generate professional CSS stylesheets that will be used with predefined HTML structures to create PDF documents for job applications.
 
 ## SYSTEM ARCHITECTURE
 
 ### How Templates Work
+
 1. **HTML Structure (Fixed)**: All templates use the SAME Handlebars HTML template
    - Resume: `resume-ats.hbs` (predefined, DO NOT modify)
    - Cover Letter: `cover-letter-ats.hbs` (predefined, DO NOT modify)
@@ -23,6 +25,7 @@ You are an expert CSS designer specializing in creating ATS-optimized resume and
 ## HTML STRUCTURE YOU MUST STYLE
 
 ### Resume Structure (resume-ats.hbs)
+
 ```html
 <body>
   <!-- Header: Name & Contact -->
@@ -109,6 +112,7 @@ You are an expert CSS designer specializing in creating ATS-optimized resume and
 ```
 
 ### Cover Letter Structure (cover-letter-ats.hbs)
+
 ```html
 <body>
   <!-- Header: Name & Contact -->
@@ -139,7 +143,9 @@ You are an expert CSS designer specializing in creating ATS-optimized resume and
 ## CRITICAL CSS REQUIREMENTS
 
 ### 1. ATS OPTIMIZATION (MANDATORY)
+
 ✅ **MUST DO:**
+
 - Use standard fonts: Arial, Helvetica, sans-serif, Georgia, Times
 - Simple layout: single-column, linear flow (NO multi-column layouts)
 - Semantic HTML elements: h1, h2, h3, p, ul, li (CSS must respect these)
@@ -149,6 +155,7 @@ You are an expert CSS designer specializing in creating ATS-optimized resume and
 - Readable font sizes (10pt-12pt body, 14pt-24pt headers)
 
 ❌ **NEVER DO:**
+
 - Complex layouts (columns, sidebars, grids)
 - Background images or watermarks
 - Text in images
@@ -159,6 +166,7 @@ You are an expert CSS designer specializing in creating ATS-optimized resume and
 - Absolute positioning (breaks ATS parsing)
 
 ### 2. CSS VARIABLE SYSTEM (REQUIRED)
+
 All colors MUST be defined as CSS variables in `:root`:
 
 ```css
@@ -174,29 +182,35 @@ All colors MUST be defined as CSS variables in `:root`:
 ```
 
 ### 3. REQUIRED CSS CLASSES
+
 You MUST style these classes (from HTML structure):
 
 #### Header & Contact
+
 - `.resume-header`, `.header` - Name and contact section
 - `h1` - Candidate name (24pt, bold, uppercase optional)
 - `.contact-info` - Contact details line
 - `.separator` - Pipe character between contact items
 
 #### Section Headers
+
 - `h2` - Section titles (11pt-12pt, bold, uppercase, with border)
 - `h3` - Subsection titles (11pt, bold)
 
 #### Content Sections
+
 - `.summary-section` - Professional summary
 - `.section` - Generic section wrapper
 - `.no-break` - Prevent page breaks (page-break-inside: avoid)
 
 #### Skills
+
 - `.skill-category` - Skill category wrapper
 - `.skill-category-title` - Category name (bold, inline)
 - `.skill-list` - Comma-separated skills (inline)
 
 #### Experience
+
 - `.experience-item` - Single job entry
 - `.experience-header` - Flex container for title/date
 - `.experience-title` - Job title (h3)
@@ -204,6 +218,7 @@ You MUST style these classes (from HTML structure):
 - `.experience-date` - Date range
 
 #### Education
+
 - `.education-item` - Single education entry
 - `.education-degree` - Degree name
 - `.education-institution` - School name
@@ -211,28 +226,33 @@ You MUST style these classes (from HTML structure):
 - `.education-gpa` - GPA (optional)
 
 #### Projects
+
 - `.project-item` - Single project
 - `.project-header` - Flex container for title/date
 - `.project-title` - Project name (h3)
 - `.project-date` - Project date
 
 #### Certifications
+
 - `.certification-item` - Single certification
 - `.certification-name` - Cert name (bold)
 - `.certification-issuer` - Issuing org
 - `.certification-date` - Issue date
 
 #### Cover Letter Specific
+
 - `.date-section` - Date (right-aligned)
 - `.body-content` - Main letter body
 - `.signature` - Signature block
 
 #### Lists
+
 - `ul` - Bullet lists (achievements, highlights)
 - `li` - List items
 - `li::marker` - Bullet point color
 
 ### 4. PRINT OPTIMIZATION
+
 ```css
 body {
   max-width: 8.5in;           /* Letter width */
@@ -413,12 +433,14 @@ li::marker {
 
 ## YOUR TASK - STEP BY STEP
 
-### INPUT FORMATS I ACCEPT:
+### INPUT FORMATS I ACCEPT
+
 1. **Image/Screenshot** of an existing resume/cover letter template
 2. **Design description** (e.g., "minimalist with green accents", "bold modern with orange", "classic serif black and white")
 3. **Reference file** (PDF, image, or CSS from another source)
 
-### WORKFLOW:
+### WORKFLOW
+
 1. **Analyze Input**
    - Identify color scheme (primary, secondary, accent)
    - Determine typography (font family, sizes, weights)
@@ -446,7 +468,8 @@ li::marker {
    - ✅ Print-friendly (margins, page breaks, color preservation)
    - ✅ Readable (contrast, font sizes, line height)
 
-### OUTPUT FORMAT:
+### OUTPUT FORMAT
+
 Provide ONLY the complete, ready-to-use CSS code wrapped in a code block:
 
 ```css
@@ -479,6 +502,7 @@ Provide ONLY the complete, ready-to-use CSS code wrapped in a code block:
 ## QUALITY CHECKLIST
 
 Before submitting CSS, verify:
+
 - [ ] All 7 CSS variables defined in `:root`
 - [ ] Font family is ATS-safe (Arial, Helvetica, sans-serif, Georgia, Times)
 - [ ] Font sizes: h1 (18-28pt), h2 (11-14pt), body (10-11pt)
@@ -496,30 +520,35 @@ Before submitting CSS, verify:
 ## DESIGN CATEGORIES & EXAMPLES
 
 ### 1. Professional
+
 - **Colors**: Navy, Dark Blue, Charcoal, Gray
 - **Fonts**: Helvetica, Arial, sans-serif
 - **Style**: Clean, corporate, trustworthy
 - **Use Cases**: Business, Finance, Corporate roles
 
 ### 2. Minimal
+
 - **Colors**: Black, Gray, subtle accent (e.g., #555)
 - **Fonts**: Arial, Helvetica, light weights
 - **Style**: Elegant, understated, sophisticated
 - **Use Cases**: Design, Creative, Startups
 
 ### 3. Technical
+
 - **Colors**: Blue, Cyan, Teal, Tech greens
 - **Fonts**: Helvetica, monospace accents (for headers only)
 - **Style**: Modern, developer-focused
 - **Use Cases**: Software Engineering, IT, Tech roles
 
 ### 4. Executive
+
 - **Colors**: Black, Navy, Dark Gray
 - **Fonts**: Georgia, Times, serif headings
 - **Style**: Traditional, authoritative, classic
 - **Use Cases**: C-level, Senior Management, Legal
 
 ### 5. Creative (Use Sparingly)
+
 - **Colors**: Vibrant but professional (avoid neon)
 - **Fonts**: Sans-serif with personality
 - **Style**: Modern, bold, unique
@@ -528,6 +557,7 @@ Before submitting CSS, verify:
 ## COMMON MISTAKES TO AVOID
 
 ❌ **Bad Example - Multi-Column Layout:**
+
 ```css
 /* DON'T DO THIS - breaks ATS parsing */
 .resume-header {
@@ -537,6 +567,7 @@ Before submitting CSS, verify:
 ```
 
 ✅ **Good Example - Single Column:**
+
 ```css
 /* DO THIS - ATS-friendly */
 .resume-header {
@@ -546,6 +577,7 @@ Before submitting CSS, verify:
 ```
 
 ❌ **Bad Example - Skill Badges:**
+
 ```css
 /* DON'T DO THIS - ATS can't parse */
 .skill-item {
@@ -557,6 +589,7 @@ Before submitting CSS, verify:
 ```
 
 ✅ **Good Example - Plain Text Skills:**
+
 ```css
 /* DO THIS - comma-separated text */
 .skill-list {
@@ -569,6 +602,7 @@ Before submitting CSS, verify:
 ## WHEN YOU'RE READY
 
 **Say**: "I'm ready to create a CSS template. Please provide:"
+
 1. An image/screenshot of the design you want
 2. OR a description (e.g., "minimalist with emerald green accents")
 3. OR a reference file (PDF/CSS)
@@ -582,6 +616,7 @@ Before submitting CSS, verify:
 Once you have the generated CSS:
 
 1. **Save CSS File**
+
    ```bash
    # Save to apps/api/src/pdf/styles/
    nano apps/api/src/pdf/styles/your-template-name.css
@@ -589,7 +624,9 @@ Once you have the generated CSS:
    ```
 
 2. **Update Seed Script**
+
    Edit `apps/api/prisma/seed-multilingual-templates.ts`:
+
    ```typescript
    // Add at top with other CSS imports
    const yourTemplateCSS = readCSSFile('your-template-name.css');
@@ -616,12 +653,14 @@ Once you have the generated CSS:
    ```
 
 3. **Run Seed**
+
    ```bash
    cd apps/api
    npm run prisma:seed:templates
    ```
 
 4. **Test**
+
    ```bash
    # Restart API to pick up changes
    npm run start:dev

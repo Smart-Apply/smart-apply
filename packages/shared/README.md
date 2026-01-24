@@ -36,6 +36,7 @@ const applications: Application[] = await fetchApplications();
 ## Available Types
 
 ### Core Entities
+
 - `User` - User account information
 - `Profile` - User profile with skills, experiences, education, etc.
 - `JobPosting` - Job posting details
@@ -43,22 +44,27 @@ const applications: Application[] = await fetchApplications();
 - `Template` - Document templates for PDFs
 
 ### Nested Types
+
 - `Skill`, `Experience`, `Education`, `Certificate`, `Project`, `Language`
 - `ResumeData`, `ResumeExperience`, `ResumeProject`, etc.
 
 ### DTOs
+
 - `UpdateProfileDto` - Profile update payload
 - `EducationDto` - Education with string dates for API transport
 
 ### ATS & Keywords
+
 - `ATSKeywords`, `KeywordMatch`, `MatchAnalysis`
 - `ApplicationKeywordsResponse`
 
 ### Sessions & Auth
+
 - `Session`, `SessionsResponse`
 - `AuthResponse`, `ErrorResponse`
 
 ### Enums
+
 - `ApplicationGenerationStatus`: `'PENDING' | 'GENERATING' | 'READY' | 'FAILED'`
 - `ApplicationTrackingStatus`: `'CREATED' | 'APPLIED' | 'INTERVIEW' | 'OFFER' | 'ACCEPTED' | 'REJECTED' | 'WITHDRAWN'`
 - `TemplateType`: `'COVER_LETTER' | 'RESUME' | 'BOTH'`
@@ -93,6 +99,7 @@ npm run shared:watch
 ## Migration Guide
 
 ### Before (Duplicated Types)
+
 ```typescript
 // apps/api/src/types.ts
 export interface User { ... }
@@ -102,6 +109,7 @@ export interface User { ... } // ❌ Duplicate!
 ```
 
 ### After (Shared Types)
+
 ```typescript
 // packages/shared/src/index.ts
 export interface User { ... }

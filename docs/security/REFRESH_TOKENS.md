@@ -15,7 +15,7 @@ Both tokens are stored in HttpOnly cookies for XSS protection.
 
 ### Token Flow
 
-```
+```mermaid
 ┌─────────────┐                ┌─────────────┐                ┌──────────────┐
 │   Client    │                │   Backend   │                │  Database    │
 └──────┬──────┘                └──────┬──────┘                └──────┬───────┘
@@ -72,11 +72,11 @@ model RefreshToken {
   expiresAt DateTime
   createdAt DateTime @default(now())
   isRevoked Boolean  @default(false)
-  
+
   // Security tracking
   userAgent String?
   ipAddress String?
-  
+
   @@index([userId])
   @@index([token])
 }
@@ -87,22 +87,25 @@ model RefreshToken {
 When a user logs in or registers:
 
 1. **Generate Access Token** (15 minutes expiration)
+
    ```typescript
    const accessToken = jwtService.sign(
      { sub: userId, email, type: 'access' },
-     { expiresIn: '15m' }
+     { expiresIn: '15m' },
    );
    ```
 
 2. **Generate Refresh Token** (30 days expiration)
+
    ```typescript
    const refreshToken = jwtService.sign(
      { sub: userId, email, type: 'refresh' },
-     { expiresIn: '30d' }
+     { expiresIn: '30d' },
    );
    ```
 
 3. **Hash and Store Refresh Token**
+
    ```typescript
    const hashedToken = await argon2.hash(refreshToken);
    await prisma.refreshToken.create({
@@ -117,6 +120,7 @@ When a user logs in or registers:
    ```
 
 4. **Set HttpOnly Cookies**
+
    ```typescript
    res.cookie('access_token', accessToken, {
      httpOnly: true,
@@ -135,7 +139,7 @@ When a user logs in or registers:
 
 ### Token Refresh Endpoint
 
-**POST /api/v1/auth/refresh**
+### POST /api/v1/auth/refresh
 
 1. Extract refresh token from cookie
 2. Verify JWT signature and expiration
@@ -150,6 +154,7 @@ When a user logs in or registers:
 ### Token Rotation
 
 For enhanced security, each refresh operation:
+
 - Invalidates the old refresh token
 - Generates a new access token AND new refresh token
 - Limits the damage if a refresh token is compromised
@@ -179,7 +184,7 @@ async function apiRequest<T>(endpoint: string, options: RequestOptions = {}): Pr
     if (response.status === 401 && !isAuthEndpoint) {
       // Access token expired, try to refresh
       const refreshed = await refreshAccessToken();
-      
+
       if (refreshed) {
         // Retry original request with new access token
         return fetch(`${API_BASE_URL}${endpoint}`, {
@@ -232,10 +237,12 @@ JWT_REFRESH_EXPIRES_IN=30d
 ### Cookie Configuration
 
 **Development:**
+
 - `secure: false` (HTTP allowed)
 - `sameSite: 'strict'`
 
 **Production:**
+
 - `secure: true` (HTTPS only)
 - `sameSite: 'strict'`
 
@@ -250,6 +257,7 @@ JWT_REFRESH_EXPIRES_IN=30d
 ### Why Token Rotation?
 
 If a refresh token is compromised:
+
 - The old token becomes invalid after first use
 - The attacker gets a window of only one refresh cycle
 - Legitimate user will fail to refresh, detecting the compromise
@@ -263,6 +271,7 @@ If a refresh token is compromised:
 ### Logout
 
 On logout:
+
 1. All refresh tokens for the user are revoked in database
 2. Both cookies are cleared
 3. User must re-authenticate to get new tokens
@@ -289,6 +298,7 @@ Comprehensive E2E tests cover:
 - ✅ Access token cannot be used as refresh token
 
 Run tests:
+
 ```bash
 cd apps/api
 npm run test:e2e -- auth-refresh.e2e-spec.ts
@@ -314,6 +324,7 @@ The access token expires after 15 minutes by design. The frontend should automat
 ### Too Many Devices Error
 
 Users can have max 5 active refresh tokens. If exceeded:
+
 - Oldest tokens are automatically revoked
 - User must re-login on old devices
 - Increase `MAX_TOKENS_PER_USER` in auth.service.ts if needed
@@ -332,12 +343,14 @@ The system is backward compatible:
 ### Production Deployment
 
 1. Set environment variables:
+
    ```bash
    JWT_ACCESS_EXPIRES_IN=15m
    JWT_REFRESH_EXPIRES_IN=30d
    ```
 
 2. Run database migration:
+
    ```bash
    npm run prisma:migrate deploy
    ```

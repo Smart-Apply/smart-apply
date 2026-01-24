@@ -626,7 +626,7 @@ Beim nächsten Laden werden alle Previews neu generiert.
 
 Für ein konsistentes Design solltest du immer beide Templates erstellen:
 
-```
+```text
 📁 templates/
   ├── elegant-cover-letter.hbs
   └── elegant-resume.hbs

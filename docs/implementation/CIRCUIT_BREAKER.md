@@ -7,6 +7,7 @@ This document describes the circuit breaker and global timeout implementation fo
 ## Problem Statement
 
 **Without circuit breaker protection:**
+
 - Hanging LLM requests tie up worker threads indefinitely
 - Exhausts container thread pool (cascading failure)
 - All requests timeout waiting for LLM provider
@@ -14,6 +15,7 @@ This document describes the circuit breaker and global timeout implementation fo
 - Poor user experience (silent failures, long waits)
 
 **At scale (20k+ users/month):**
+
 - 1 hanging LLM request = 1 blocked worker thread
 - 10 concurrent hanging requests = entire container blocked
 - Recovery time: Manual restart required
@@ -26,11 +28,13 @@ This document describes the circuit breaker and global timeout implementation fo
 **Library:** `opossum` v9.0.0 (industry-standard Node.js circuit breaker)
 
 **Pattern:** Circuit breaker wraps all LLM provider calls with three states:
+
 - **CLOSED:** Normal operation, requests pass through
 - **OPEN:** Too many failures, all requests fast-fail
 - **HALF-OPEN:** Testing recovery, single request allowed
 
 **Configuration:**
+
 ```typescript
 {
   timeout: 60000,                    // 60s timeout per request
@@ -42,7 +46,8 @@ This document describes the circuit breaker and global timeout implementation fo
 ```
 
 **State Transitions:**
-```
+
+```text
 CLOSED → OPEN:    50% of requests fail within 10s window
 OPEN → HALF-OPEN: After 30s reset timeout
 HALF-OPEN → CLOSED: Single request succeeds
@@ -56,11 +61,13 @@ HALF-OPEN → OPEN: Single request fails
 **Purpose:** Prevents ANY request from exceeding 30 seconds, regardless of endpoint or operation.
 
 **Configuration:**
+
 ```typescript
 REQUEST_TIMEOUT_MS=30000  // 30s global timeout
 ```
 
 **Behavior:**
+
 - Applied globally to all routes
 - Clears timeout on response finish (prevents memory leaks)
 - Throws `RequestTimeoutException` (408) if exceeded
@@ -73,17 +80,20 @@ REQUEST_TIMEOUT_MS=30000  // 30s global timeout
 **File:** `apps/api/src/llm/llm.service.ts`
 
 **Key Changes:**
+
 1. Circuit breaker initialized in constructor
 2. All `provider.generateText()` calls wrapped in `callProvider()`
 3. Circuit breaker events logged (open, half-open, close)
 4. User-friendly German error messages
 
 **Before:**
+
 ```typescript
 return this.provider.generateText(prompt, options);
 ```
 
 **After:**
+
 ```typescript
 private async callProvider(prompt: string, options?: any): Promise<string> {
   try {
@@ -102,15 +112,17 @@ private async callProvider(prompt: string, options?: any): Promise<string> {
 ### Circuit Breaker Events
 
 **Logged Events:**
+
 - 🔴 **OPEN:** LLM provider is failing, fast-failing all requests
 - 🟡 **HALF-OPEN:** Testing LLM provider health
 - 🟢 **CLOSED:** LLM provider recovered, accepting requests
-- ⏱️  **TIMEOUT:** Individual request timeout
+- ⏱️ **TIMEOUT:** Individual request timeout
 - 🔄 **FALLBACK:** Fallback triggered (not implemented yet)
 - ⛔ **REJECT:** Request rejected (circuit is open)
 
 **Example Log Output:**
-```
+
+```text
 [LLMService] 🛡️  LLM Circuit Breaker initialized (timeout: 60000ms, error threshold: 50%, reset: 30000ms)
 [LLMService] 🔴 Circuit breaker OPEN - LLM provider is failing. All requests will fast-fail until recovery.
 [LLMService] ⏱️  LLM request timeout after 60000ms
@@ -133,6 +145,7 @@ export class AppModule implements NestModule {
 ```
 
 **Middleware Flow:**
+
 1. Request enters middleware
 2. Timeout timer started (30s)
 3. Request processed by controller/service
@@ -158,6 +171,7 @@ REQUEST_TIMEOUT_MS=30000  # 30s global timeout
 ### Production Recommendations
 
 **For High-Traffic Production (20k+ users/month):**
+
 ```bash
 # Stricter circuit breaker (fail faster)
 LLM_CIRCUIT_BREAKER_TIMEOUT=45000              # 45s (faster timeout)
@@ -169,6 +183,7 @@ REQUEST_TIMEOUT_MS=30000
 ```
 
 **For Low-Traffic Development/Staging:**
+
 ```bash
 # Lenient circuit breaker (allow more failures)
 LLM_CIRCUIT_BREAKER_TIMEOUT=90000              # 90s (generous timeout)
@@ -184,6 +199,7 @@ REQUEST_TIMEOUT_MS=60000  # 60s for debugging
 ### When Circuit is CLOSED (Normal Operation)
 
 **User submits application:**
+
 1. Request → LLM Service → Circuit Breaker → Azure OpenAI
 2. Response received within 5-15 seconds
 3. PDF generated and displayed
@@ -192,6 +208,7 @@ REQUEST_TIMEOUT_MS=60000  # 60s for debugging
 ### When Circuit is OPEN (LLM Provider Down)
 
 **User submits application:**
+
 1. Request → LLM Service → Circuit Breaker (OPEN)
 2. Fast-fail within milliseconds (no waiting!)
 3. User sees German error message:
@@ -199,6 +216,7 @@ REQUEST_TIMEOUT_MS=60000  # 60s for debugging
 4. ❌ User can retry after a few minutes
 
 **Benefits:**
+
 - No 60-second timeout wait (instant feedback)
 - Clear, actionable error message (not generic 500 error)
 - System remains responsive for other operations
@@ -209,6 +227,7 @@ REQUEST_TIMEOUT_MS=60000  # 60s for debugging
 ### Unit Tests
 
 **Circuit Breaker Tests:** `apps/api/src/llm/__tests__/unit/circuit-breaker.unit.spec.ts`
+
 - ✅ Successful requests when circuit is closed
 - ✅ Circuit opens after error threshold exceeded
 - ✅ User-friendly error messages when circuit is open
@@ -218,6 +237,7 @@ REQUEST_TIMEOUT_MS=60000  # 60s for debugging
 - **9 tests, all passing**
 
 **Timeout Middleware Tests:** `apps/api/src/common/middleware/__tests__/timeout.middleware.spec.ts`
+
 - ✅ Middleware sets timeout for all requests
 - ✅ Timeout cleared on successful response
 - ✅ Timeout cleared on response error
@@ -231,12 +251,14 @@ REQUEST_TIMEOUT_MS=60000  # 60s for debugging
 **Test Circuit Breaker Manually:**
 
 1. Start API with mock LLM provider:
+
    ```bash
    cd apps/api
    LLM_PROVIDER=mock npm run start:dev
    ```
 
 2. Trigger circuit breaker by creating multiple applications quickly:
+
    ```bash
    # Create 10 applications rapidly (will trigger errors)
    for i in {1..10}; do
@@ -248,12 +270,14 @@ REQUEST_TIMEOUT_MS=60000  # 60s for debugging
    ```
 
 3. Check logs for circuit breaker state changes:
-   ```
+
+   ```text
    [LLMService] 🔴 Circuit breaker OPEN - LLM provider is failing
    ```
 
 4. Wait 30 seconds, then try again (should see HALF-OPEN → CLOSED):
-   ```
+
+   ```text
    [LLMService] 🟡 Circuit breaker HALF-OPEN
    [LLMService] 🟢 Circuit breaker CLOSED
    ```
@@ -263,6 +287,7 @@ REQUEST_TIMEOUT_MS=60000  # 60s for debugging
 ### Recommended Metrics to Track
 
 **Circuit Breaker Health:**
+
 - Circuit state (CLOSED/OPEN/HALF_OPEN)
 - Error rate (%) over rolling window
 - Total requests rejected (circuit open)
@@ -270,6 +295,7 @@ REQUEST_TIMEOUT_MS=60000  # 60s for debugging
 - Circuit open/close events per hour
 
 **Global Timeout Health:**
+
 - Timeout exceptions per hour
 - Average request duration
 - P95/P99 request duration
@@ -278,12 +304,14 @@ REQUEST_TIMEOUT_MS=60000  # 60s for debugging
 ### Future Enhancements
 
 **Metrics Export (Post-MVP):**
+
 - Prometheus metrics endpoint
 - Grafana dashboard
 - Azure Application Insights integration
 - Real-time alerts on circuit open
 
 **Example Prometheus Metrics:**
+
 ```typescript
 llm_circuit_breaker_state{state="open|closed|half_open"} 1
 llm_circuit_breaker_errors_total{provider="azure-openai"} 42
@@ -296,15 +324,18 @@ llm_request_duration_seconds{quantile="0.95"} 8.5
 ### Circuit Keeps Opening
 
 **Symptoms:**
+
 - Circuit breaker OPEN logs every few minutes
 - Users see "AI-Service ist derzeit überlastet" repeatedly
 
 **Possible Causes:**
+
 1. **LLM Provider Degraded:** Azure OpenAI rate limits exceeded
 2. **Timeout Too Strict:** 60s timeout too short for complex prompts
 3. **Error Threshold Too Low:** 50% threshold too aggressive
 
 **Solutions:**
+
 1. Check Azure OpenAI metrics (rate limits, quota)
 2. Increase `LLM_CIRCUIT_BREAKER_TIMEOUT` to 90s
 3. Increase `LLM_CIRCUIT_BREAKER_ERROR_THRESHOLD` to 70%
@@ -313,15 +344,18 @@ llm_request_duration_seconds{quantile="0.95"} 8.5
 ### Global Timeout Exceptions
 
 **Symptoms:**
+
 - `RequestTimeoutException` in logs
 - Users see "Request timeout after 30s"
 
 **Possible Causes:**
+
 1. **PDF Generation Slow:** Puppeteer takes >30s
 2. **Database Query Slow:** Complex Prisma queries
 3. **LLM Request Slow:** Even with circuit breaker, first request may timeout
 
 **Solutions:**
+
 1. Increase `REQUEST_TIMEOUT_MS` to 45s or 60s
 2. Optimize slow database queries (add indexes)
 3. Optimize PDF generation (smaller templates, fewer images)
@@ -330,13 +364,16 @@ llm_request_duration_seconds{quantile="0.95"} 8.5
 ### Memory Leaks from Timeouts
 
 **Symptoms:**
+
 - Memory usage increases over time
 - Container restarts due to OOM
 
 **Possible Causes:**
+
 - Timers not cleared when response finishes
 
 **Solution:**
+
 - Verify `res.on('finish')` and `res.on('error')` handlers are clearing timeouts
 - Check logs for uncaught timeout exceptions
 - Monitor memory usage after deployment
@@ -346,17 +383,20 @@ llm_request_duration_seconds{quantile="0.95"} 8.5
 ### Denial of Service (DoS) Protection
 
 **Circuit Breaker as DoS Mitigation:**
+
 - Prevents attackers from exhausting worker threads
 - Fast-fails malicious requests (no resource consumption)
 - Automatic recovery when attack stops
 
 **Example Attack Scenario:**
+
 1. Attacker sends 1000 LLM requests simultaneously
 2. Circuit breaker opens after 50% failure (500 requests)
 3. Remaining 500 requests fast-fail (milliseconds, not 60s)
 4. System remains responsive for legitimate users
 
 **Additional Rate Limiting:**
+
 - Circuit breaker complements rate limiting (not a replacement)
 - Rate limiting prevents requests from reaching circuit breaker
 - Circuit breaker protects against LLM provider failures
@@ -366,11 +406,13 @@ llm_request_duration_seconds{quantile="0.95"} 8.5
 ### Latency
 
 **Circuit Breaker Overhead:**
+
 - CLOSED state: ~1ms per request (negligible)
 - OPEN state: <1ms per request (fast-fail)
 - HALF-OPEN state: Same as CLOSED
 
 **Global Timeout Overhead:**
+
 - Timer creation: ~0.5ms per request
 - Timer cleanup: ~0.1ms per request
 - **Total:** <1ms overhead
@@ -378,11 +420,13 @@ llm_request_duration_seconds{quantile="0.95"} 8.5
 ### Memory
 
 **Circuit Breaker Memory:**
+
 - Opossum instance: ~10KB
 - Rolling count buckets (10): ~5KB
 - **Total:** ~15KB per LLM service instance
 
 **Timeout Middleware Memory:**
+
 - Timer per request: ~0.5KB
 - Cleared on response finish (no leak)
 - **Peak:** ~50KB for 100 concurrent requests
@@ -390,6 +434,7 @@ llm_request_duration_seconds{quantile="0.95"} 8.5
 ### CPU
 
 **Circuit Breaker CPU:**
+
 - State transition: <0.1ms CPU
 - Error rate calculation: <0.5ms CPU per request
 - **Negligible impact** (<1% CPU usage)

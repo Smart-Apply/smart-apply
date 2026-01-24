@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { TemplateType } from '@prisma/client';
+import { TemplateType } from '../../generated/prisma/client';
 
 export class TemplateResponseDto {
   @ApiProperty({ example: 'clx1y2z3a4b5c6d7e8f9g0h1' })

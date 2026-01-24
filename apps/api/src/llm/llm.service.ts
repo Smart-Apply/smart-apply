@@ -66,6 +66,39 @@ export class LLMService {
   }
 
   /**
+   * Health check for the LLM service
+   * Checks circuit breaker state and provider health
+   * @returns true if the service is healthy, false otherwise
+   */
+  async healthCheck(): Promise<boolean> {
+    try {
+      // Check circuit breaker state
+      const circuitState = this.circuitBreaker.status.stats;
+      const isCircuitOpen = this.circuitBreaker.opened;
+
+      if (isCircuitOpen) {
+        this.logger.warn('LLM health check: Circuit breaker is OPEN');
+        return false;
+      }
+
+      // Check provider health if the method exists
+      if (typeof this.provider.healthCheck === 'function') {
+        const providerHealth = await this.provider.healthCheck();
+        if (!providerHealth) {
+          this.logger.warn('LLM health check: Provider health check failed');
+          return false;
+        }
+      }
+
+      this.logger.debug('LLM health check: OK');
+      return true;
+    } catch (error: any) {
+      this.logger.error(`LLM health check failed: ${error.message}`);
+      return false;
+    }
+  }
+
+  /**
    * Call LLM provider with circuit breaker protection
    * Wraps provider.generateText() with timeout and automatic failover
    */

@@ -1,14 +1,17 @@
 # Soft Delete Implementation
 
 ## Overview
+
 This implementation adds soft delete functionality to Applications and Job Postings, preventing accidental permanent data loss.
 
 ## Changes Made
 
 ### 1. Database Schema (Prisma)
+
 **File:** `apps/api/prisma/schema.prisma`
 
 Added `deletedAt` field to both `Application` and `JobPosting` models:
+
 ```prisma
 deletedAt DateTime? // Soft delete timestamp
 
@@ -16,54 +19,67 @@ deletedAt DateTime? // Soft delete timestamp
 ```
 
 ### 2. Migration
+
 **File:** `apps/api/prisma/migrations/20251212215500_add_soft_delete_to_applications_and_job_postings/migration.sql`
 
 Creates:
+
 - `deletedAt` column on both tables
 - Indexes for efficient querying
 
 ### 3. Applications Service
+
 **File:** `apps/api/src/applications/applications.service.ts`
 
 **Updated Methods:**
+
 - `findAll()` - Added `includeDeleted` parameter (default: false) to filter soft-deleted items
 - `delete()` - Changed to soft delete (sets `deletedAt` instead of removing record)
 
 **New Methods:**
+
 - `restore(userId, applicationId)` - Clears `deletedAt` to restore item
 - `hardDelete(userId, applicationId)` - Permanently deletes item and files
 
 ### 4. Job Postings Service
+
 **File:** `apps/api/src/job-postings/job-postings.service.ts`
 
 **Updated Methods:**
+
 - `listJobPostings()` - Added `includeDeleted` parameter
 - `deleteJobPosting()` - Changed to soft delete
 
 **New Methods:**
+
 - `restoreJobPosting(userId, id)` - Restores soft-deleted posting
 - `hardDeleteJobPosting(userId, id)` - Permanently deletes posting
 
 ### 5. Controllers
 
 **Applications Controller:** `apps/api/src/applications/applications.controller.ts`
+
 - `DELETE /applications/:id` - Soft delete (204 No Content)
 - `PATCH /applications/:id/restore` - Restore deleted item (200 OK)
 - `DELETE /applications/:id/permanent` - Hard delete (204 No Content)
 - `GET /applications?includeDeleted=true` - List with deleted items
 
 **Job Postings Controller:** `apps/api/src/job-postings/job-postings.controller.ts`
+
 - `DELETE /job-postings/:id` - Soft delete
 - `PATCH /job-postings/:id/restore` - Restore
 - `DELETE /job-postings/:id/permanent` - Hard delete
 - `GET /job-postings?includeDeleted=true` - List with deleted items
 
 ### 6. Cleanup Cron Job
+
 **Files:**
+
 - `apps/api/src/common/cron/cleanup.cron.ts`
 - `apps/api/src/common/cron/cleanup-cron.module.ts`
 
 **Features:**
+
 - Applications cleanup: Runs daily at midnight (12:00 AM)
 - Job postings cleanup: Runs daily at 12:05 AM (5 minutes after applications to avoid DB contention)
 - Hard deletes items soft-deleted more than 30 days ago
@@ -77,25 +93,26 @@ Creates:
 
 ### Applications
 
-| Method | Endpoint | Description | Response |
-|--------|----------|-------------|----------|
-| DELETE | `/api/v1/applications/:id` | Soft delete | 204 No Content |
-| PATCH | `/api/v1/applications/:id/restore` | Restore | 200 OK (ApplicationResponseDto) |
-| DELETE | `/api/v1/applications/:id/permanent` | Hard delete | 204 No Content |
-| GET | `/api/v1/applications?includeDeleted=true` | List with deleted | 200 OK (paginated) |
+| Method | Endpoint                                   | Description       | Response                        |
+| ------ | ------------------------------------------ | ----------------- | ------------------------------- |
+| DELETE | `/api/v1/applications/:id`                 | Soft delete       | 204 No Content                  |
+| PATCH  | `/api/v1/applications/:id/restore`         | Restore           | 200 OK (ApplicationResponseDto) |
+| DELETE | `/api/v1/applications/:id/permanent`       | Hard delete       | 204 No Content                  |
+| GET    | `/api/v1/applications?includeDeleted=true` | List with deleted | 200 OK (paginated)              |
 
 ### Job Postings
 
-| Method | Endpoint | Description | Response |
-|--------|----------|-------------|----------|
-| DELETE | `/api/v1/job-postings/:id` | Soft delete | 204 No Content |
-| PATCH | `/api/v1/job-postings/:id/restore` | Restore | 200 OK (JobPostingResponseDto) |
-| DELETE | `/api/v1/job-postings/:id/permanent` | Hard delete | 204 No Content |
-| GET | `/api/v1/job-postings?includeDeleted=true` | List with deleted | 200 OK (paginated) |
+| Method | Endpoint                                   | Description       | Response                       |
+| ------ | ------------------------------------------ | ----------------- | ------------------------------ |
+| DELETE | `/api/v1/job-postings/:id`                 | Soft delete       | 204 No Content                 |
+| PATCH  | `/api/v1/job-postings/:id/restore`         | Restore           | 200 OK (JobPostingResponseDto) |
+| DELETE | `/api/v1/job-postings/:id/permanent`       | Hard delete       | 204 No Content                 |
+| GET    | `/api/v1/job-postings?includeDeleted=true` | List with deleted | 200 OK (paginated)             |
 
 ## Behavior
 
 ### Soft Delete
+
 - Sets `deletedAt` timestamp to current date/time
 - Item remains in database
 - Excluded from normal queries (`findAll`, `listJobPostings`)
@@ -103,17 +120,20 @@ Creates:
 - Can only soft delete items that aren't already deleted
 
 ### Restore
+
 - Clears `deletedAt` field (sets to `null`)
 - Item appears in normal queries again
 - Can only restore items that are currently deleted
 
 ### Hard Delete
+
 - Permanently removes from database
 - For applications: Also deletes PDF files from storage
 - Cannot be undone
 - Used by cleanup cron or manual admin action
 
 ### Automatic Cleanup
+
 - Applications: Runs daily at midnight (12:00 AM)
 - Job postings: Runs daily at 12:05 AM (staggered to avoid DB contention)
 - Only processes items where `deletedAt < 30 days ago`
@@ -123,6 +143,7 @@ Creates:
 ## Database Queries
 
 **Filter out deleted items (default):**
+
 ```typescript
 where: {
   userId,
@@ -131,6 +152,7 @@ where: {
 ```
 
 **Include deleted items:**
+
 ```typescript
 where: {
   userId,
@@ -139,6 +161,7 @@ where: {
 ```
 
 **Find only deleted items:**
+
 ```typescript
 where: {
   userId,
@@ -147,6 +170,7 @@ where: {
 ```
 
 **Find items for cleanup:**
+
 ```typescript
 where: {
   deletedAt: {
@@ -161,6 +185,7 @@ where: {
 See `apps/api/test-soft-delete.md` for manual testing guide.
 
 **Key Test Scenarios:**
+
 1. Soft delete application → verify `deletedAt` is set
 2. List applications → deleted items excluded
 3. List with `includeDeleted=true` → deleted items included
@@ -171,9 +196,11 @@ See `apps/api/test-soft-delete.md` for manual testing guide.
 ## Configuration
 
 **Environment Variables:**
+
 - `ENABLE_CRON_JOBS` - Set to `true` to enable automatic cleanup (default: `false` in dev)
 
 **Cleanup Schedule:**
+
 - Frequency: Daily at midnight
 - Retention: 30 days after soft delete
 - Can be customized via cron expression in `cleanup.cron.ts`
@@ -189,15 +216,18 @@ See `apps/api/test-soft-delete.md` for manual testing guide.
 ## Performance
 
 **Indexes Added:**
+
 - `applications_userId_deletedAt_idx` on `(userId, deletedAt)`
 - `job_postings_userId_deletedAt_idx` on `(userId, deletedAt)`
 
 **Benefits:**
+
 - Efficient filtering of deleted items
 - Fast queries for both active and deleted items
 - Optimized cleanup queries for cron job
 
 **Query Patterns:**
+
 - List active items: Uses index for `deletedAt IS NULL` filter
 - List deleted items: Uses index for `deletedAt IS NOT NULL` filter
 - Cleanup query: Uses index for `deletedAt < cutoff` range scan
@@ -228,6 +258,7 @@ See `apps/api/test-soft-delete.md` for manual testing guide.
 ## Migration Instructions
 
 **For existing databases:**
+
 1. Run the migration: `npx prisma migrate deploy`
 2. Verify indexes created: Check `applications_userId_deletedAt_idx` exists
 3. Test soft delete on non-production data first
@@ -235,6 +266,7 @@ See `apps/api/test-soft-delete.md` for manual testing guide.
 
 **Rollback Plan:**
 If issues occur:
+
 1. Keep `deletedAt` column (data integrity)
 2. Restore previous service methods
 3. Disable cron job

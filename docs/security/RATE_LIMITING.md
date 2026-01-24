@@ -20,11 +20,11 @@ RATE_LIMIT_AUTH_MAX=5       # Max 5 requests per window
 
 ### Rate Limit Strategy
 
-| Endpoint | Limit | Window | Tracking |
-|----------|-------|--------|----------|
-| `/api/v1/auth/login` | 5 | 15 min | Per IP |
-| `/api/v1/auth/register` | 5 | 15 min | Per IP |
-| Other protected routes | 100 | 15 min | Per User ID |
+| Endpoint                | Limit | Window | Tracking    |
+| ----------------------- | ----- | ------ | ----------- |
+| `/api/v1/auth/login`    | 5     | 15 min | Per IP      |
+| `/api/v1/auth/register` | 5     | 15 min | Per IP      |
+| Other protected routes  | 100   | 15 min | Per User ID |
 
 ## Implementation Details
 
@@ -119,6 +119,7 @@ npm test -- custom-throttler.guard.spec.ts
 ```
 
 Tests cover:
+
 - Throttler selection based on decorator
 - Tracker identification (IP vs User ID)
 - Key generation for rate limit storage
@@ -130,6 +131,7 @@ npm run test:e2e -- rate-limit.e2e-spec.ts
 ```
 
 Tests cover:
+
 - Auth endpoints enforce 5 req/15min limit
 - Protected endpoints use 100 req/15min limit
 - Rate limit headers are present

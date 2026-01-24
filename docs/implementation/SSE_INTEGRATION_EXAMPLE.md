@@ -146,7 +146,7 @@ export default function ApplicationsPage() {
 function ApplicationCardWithLiveStatus({ application }) {
   // Only stream status for applications that are in progress
   const shouldStream = application.status === 'PENDING' || application.status === 'GENERATING';
-  
+
   const { status: liveStatus, isConnected } = useApplicationStream(
     shouldStream ? application.id : undefined
   );
@@ -238,7 +238,7 @@ function ApplicationsList() {
       {applications?.map((app) => {
         // Only enable streaming for in-progress applications
         const shouldStream = app.status === 'PENDING' || app.status === 'GENERATING';
-        
+
         return (
           <ApplicationItem
             key={app.id}
@@ -305,6 +305,7 @@ function RobustApplicationStatus({ applicationId }) {
 ## Best Practices
 
 ### 1. **Conditional Streaming**
+
 Only stream status for applications that need real-time updates (PENDING or GENERATING). Avoid streaming for completed applications.
 
 ```typescript
@@ -313,6 +314,7 @@ const { status: liveStatus } = useApplicationStream(shouldStream ? id : undefine
 ```
 
 ### 2. **Fallback to Cached Data**
+
 Always provide a fallback to React Query cached data in case SSE is unavailable:
 
 ```typescript
@@ -320,6 +322,7 @@ const currentStatus = liveStatus || application?.status || 'PENDING';
 ```
 
 ### 3. **Visual Feedback**
+
 Show users when they're receiving live updates with a visual indicator:
 
 ```typescript
@@ -327,6 +330,7 @@ Show users when they're receiving live updates with a visual indicator:
 ```
 
 ### 4. **Error Handling**
+
 Handle connection errors gracefully and provide recovery options:
 
 ```typescript
@@ -339,7 +343,9 @@ Handle connection errors gracefully and provide recovery options:
 ```
 
 ### 5. **Performance**
+
 The hook automatically cleans up connections when the component unmounts, but be mindful of:
+
 - Don't create multiple streams for the same application
 - Use conditional streaming to reduce server load
 - Consider debouncing status changes in UI updates
@@ -349,11 +355,13 @@ The hook automatically cleans up connections when the component unmounts, but be
 ### Manual Testing
 
 1. **Start backend:**
+
    ```bash
    cd apps/api && npm run start:dev
    ```
 
 2. **Start frontend:**
+
    ```bash
    cd apps/web && npm run dev
    ```
@@ -375,18 +383,23 @@ The hook automatically cleans up connections when the component unmounts, but be
 ## Troubleshooting
 
 ### Issue: No live updates
+
 **Solution:** Check browser console for errors. Verify:
+
 - Backend is running on correct port
 - CORS is configured properly
 - JWT token is present in cookies
 
 ### Issue: Connection keeps reconnecting
+
 **Solution:** This is normal behavior when status reaches final state (READY/FAILED). The connection should close automatically.
 
 ### Issue: Multiple connections
+
 **Solution:** Ensure component isn't remounting unnecessarily. Use React DevTools to check component lifecycle.
 
 ### Issue: 401 Unauthorized
+
 **Solution:** User needs to be logged in. JWT token must be present in HttpOnly cookies.
 
 ## Related Documentation

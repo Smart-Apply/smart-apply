@@ -13,6 +13,7 @@ The agent-based URL parser uses a two-tier fallback strategy:
 ## How It Works
 
 ### Step 1: Cheerio (Static HTML Parsing)
+
 - Fetches HTML content with axios
 - Parses with Cheerio for fast extraction
 - Checks content sufficiency:
@@ -20,13 +21,14 @@ The agent-based URL parser uses a two-tier fallback strategy:
   - At least 2 job posting indicators (requirements, responsibilities, skills, etc.)
 
 ### Step 2: Agent (Browser Automation + LLM)
+
 If Cheerio fails or returns insufficient content:
+
 1. **Browser Automation (Playwright)**
    - Launches headless Chromium
    - Navigates to URL with proper user agent
    - Waits for dynamic content to load
    - Handles cookie banners and popups automatically
-   
 2. **Content Extraction**
    - Tries common job posting selectors (`main`, `.job-description`, etc.)
    - Falls back to body content if needed
@@ -69,11 +71,11 @@ OPENAI_API_KEY=sk-your-openai-api-key
 
 ### Configuration Options
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `ENABLE_AGENT_PARSER` | `true` | Enable agent-based fallback |
-| `AGENT_MAX_STEPS` | `10` | Maximum agent workflow steps |
-| `AGENT_TIMEOUT` | `30000` | Browser navigation timeout (ms) |
+| Variable              | Default | Description                     |
+| --------------------- | ------- | ------------------------------- |
+| `ENABLE_AGENT_PARSER` | `true`  | Enable agent-based fallback     |
+| `AGENT_MAX_STEPS`     | `10`    | Maximum agent workflow steps    |
+| `AGENT_TIMEOUT`       | `30000` | Browser navigation timeout (ms) |
 
 ## Usage
 
@@ -125,6 +127,7 @@ Authorization: Bearer <your_jwt_token>
 The agent-based parser works particularly well with:
 
 ✅ **JavaScript-Heavy Sites**
+
 - Indeed
 - LinkedIn Jobs
 - Glassdoor
@@ -135,16 +138,17 @@ The agent-based parser works particularly well with:
 - We Work Remotely
 
 ✅ **Static Sites** (also work via Cheerio fast path)
+
 - Company career pages
 - Simple job boards
 - Static HTML listings
 
 ## Performance
 
-| Method | Average Time | Success Rate | Cost |
-|--------|--------------|--------------|------|
-| Cheerio (fast path) | < 1s | ~60% | Free |
-| Agent (fallback) | 10-30s | ~95% | ~$0.01 per job |
+| Method              | Average Time | Success Rate | Cost           |
+| ------------------- | ------------ | ------------ | -------------- |
+| Cheerio (fast path) | < 1s         | ~60%         | Free           |
+| Agent (fallback)    | 10-30s       | ~95%         | ~$0.01 per job |
 
 **Recommendation**: Keep `ENABLE_AGENT_PARSER=true` in production for best results.
 
@@ -152,7 +156,8 @@ The agent-based parser works particularly well with:
 
 ### Common Errors
 
-**1. Agent Disabled + Insufficient Content**
+#### 1. Agent Disabled + Insufficient Content
+
 ```json
 {
   "statusCode": 400,
@@ -162,7 +167,8 @@ The agent-based parser works particularly well with:
 
 **Solution**: Enable agent parser or use text input instead.
 
-**2. Both Methods Failed**
+#### 2. Both Methods Failed
+
 ```json
 {
   "statusCode": 400,
@@ -171,14 +177,16 @@ The agent-based parser works particularly well with:
 ```
 
 **Solution**: Use the text input method:
+
 ```json
 {
   "text": "Job Title: Senior Engineer\nCompany: TechCorp\n..."
 }
 ```
 
-**3. API Key Not Configured**
-```
+#### 3. API Key Not Configured
+
+```text
 Agent parsing requires valid API keys. Set AZURE_OPENAI_API_KEY or OPENAI_API_KEY.
 ```
 
@@ -186,7 +194,7 @@ Agent parsing requires valid API keys. Set AZURE_OPENAI_API_KEY or OPENAI_API_KE
 
 ## Architecture
 
-```
+```mermaid
 ┌─────────────────────────────────────────────────────────────┐
 │                     Job Postings Service                     │
 └──────────────────────┬──────────────────────────────────────┘
@@ -232,33 +240,38 @@ AZURE_OPENAI_API_KEY=your_key npm test -- agent-url.parser.spec.ts
 ### Local Testing
 
 1. Start the dev server:
-```bash
-npm run start:dev
-```
 
-2. Get a JWT token:
-```bash
-curl -X POST http://localhost:3000/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"demo@smartapply.com","password":"Demo123!"}'
-```
+   ```bash
+   npm run start:dev
+   ```
 
-3. Test with a real job URL:
-```bash
-curl -X POST http://localhost:3000/api/v1/job-postings:parse \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <your_jwt_token>" \
-  -d '{"url":"https://www.indeed.com/viewjob?jk=abc123"}'
-```
+1. Get a JWT token:
+
+   ```bash
+   curl -X POST http://localhost:3000/api/v1/auth/login \
+     -H "Content-Type: application/json" \
+     -d '{"email":"demo@smartapply.com","password":"Demo123!"}'
+   ```
+
+1. Test with a real job URL:
+
+   ```bash
+   curl -X POST http://localhost:3000/api/v1/job-postings:parse \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer <your_jwt_token>" \
+     -d '{"url":"https://www.indeed.com/viewjob?jk=abc123"}'
+   ```
 
 ### Debugging
 
 Enable debug logging:
+
 ```bash
 LOG_LEVEL=debug npm run start:dev
 ```
 
 Look for log messages:
+
 - `Successfully parsed {url} with Cheerio (fast path)` - Cheerio worked
 - `Insufficient content from Cheerio, trying agent parser...` - Falling back to agent
 - `Successfully parsed URL in {duration}ms` - Agent succeeded
@@ -268,11 +281,13 @@ Look for log messages:
 ### Issue: Agent always fails
 
 **Possible causes:**
+
 1. Invalid API key
 2. Network restrictions blocking Playwright
 3. Website has anti-bot protection
 
 **Solutions:**
+
 1. Verify API key is correct
 2. Check firewall/proxy settings
 3. Try a different job site or use text input
@@ -280,11 +295,13 @@ Look for log messages:
 ### Issue: Slow performance
 
 **Possible causes:**
+
 1. Agent timeout too high
 2. Complex website with many scripts
 3. API rate limits
 
 **Solutions:**
+
 1. Reduce `AGENT_TIMEOUT` (default: 30000ms)
 2. Use Cheerio-compatible sites when possible
 3. Implement caching for frequently accessed URLs
@@ -292,11 +309,13 @@ Look for log messages:
 ### Issue: Missing or incorrect data
 
 **Possible causes:**
+
 1. Website structure changed
 2. LLM temperature too high
 3. Content extraction selectors need updating
 
 **Solutions:**
+
 1. The agent should adapt automatically via LLM
 2. Temperature is set to 0.3 (optimal for extraction)
 3. Update selectors in `agent-url.parser.ts` if needed
@@ -304,10 +323,12 @@ Look for log messages:
 ## Cost Considerations
 
 ### Per Job Posting
+
 - Cheerio (fast path): **Free**
 - Agent (fallback): **~$0.01** (GPT-4o-mini)
 
 ### Monthly Estimates
+
 - 100 jobs/month: **~$1** (if all use agent)
 - 1,000 jobs/month: **~$10** (if all use agent)
 - Real usage: **~$3-5** (60% Cheerio, 40% agent)
@@ -339,6 +360,7 @@ Potential improvements (not in MVP):
 ## Support
 
 For issues or questions:
+
 1. Check logs with `LOG_LEVEL=debug`
 2. Review error messages in API response
 3. Test with text input as workaround

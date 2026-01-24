@@ -19,7 +19,7 @@ import { ConfigModule } from '../config/config.module';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.jwtSecret,
-        signOptions: { expiresIn: config.jwtAccessExpiresIn },
+        signOptions: { expiresIn: config.jwtAccessExpiresIn as any },
       }),
     }),
     ScheduleModule.forRoot(),

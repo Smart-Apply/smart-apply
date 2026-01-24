@@ -1,6 +1,7 @@
 # Pagination Implementation
 
 ## Overview
+
 This document describes the pagination implementation for all list endpoints in the Smart Apply API to prevent performance degradation at scale (20k+ users).
 
 ## Implementation Details
@@ -8,6 +9,7 @@ This document describes the pagination implementation for all list endpoints in 
 ### DTOs Created
 
 #### PaginationQueryDto (`apps/api/src/common/dto/pagination-query.dto.ts`)
+
 ```typescript
 export class PaginationQueryDto {
   @IsOptional()
@@ -26,6 +28,7 @@ export class PaginationQueryDto {
 ```
 
 #### PaginatedResponseDto (`apps/api/src/common/dto/paginated-response.dto.ts`)
+
 ```typescript
 export class PaginatedResponseDto<T> {
   items: T[];
@@ -41,14 +44,17 @@ export class PaginatedResponseDto<T> {
 ### Affected Endpoints
 
 #### 1. Applications
+
 **Endpoint:** `GET /api/v1/applications`
 
 **Query Parameters:**
+
 - `page` (optional, default: 1): Page number (min: 1)
 - `limit` (optional, default: 20): Items per page (min: 1, max: 100)
 - `includeJobPosting` (optional, default: false): Include job posting details
 
 **Response:**
+
 ```json
 {
   "items": [...],
@@ -62,35 +68,42 @@ export class PaginatedResponseDto<T> {
 ```
 
 **Changes:**
+
 - `ApplicationsService.findAll()` now returns paginated results
 - Uses `Promise.all()` to fetch items and count in parallel
 - Applies `take` and `skip` for pagination
 - Returns both `items` and `pagination` metadata
 
 #### 2. Job Postings
+
 **Endpoint:** `GET /api/v1/job-postings`
 
 **Query Parameters:**
+
 - `page` (optional, default: 1): Page number (min: 1)
 - `limit` (optional, default: 20): Items per page (min: 1, max: 100)
 
 **Response:** Same structure as Applications
 
 **Changes:**
+
 - `JobPostingsService.listJobPostings()` now supports pagination
 - Parallel query for items and total count
 - Returns paginated response structure
 
 #### 3. Sessions
+
 **Endpoint:** `GET /api/v1/auth/sessions`
 
 **Query Parameters:**
+
 - `page` (optional, default: 1): Page number (min: 1)
 - `limit` (optional, default: 20): Items per page (min: 1, max: 100)
 
 **Response:** Same structure as Applications
 
 **Changes:**
+
 - `SessionService.getActiveSessions()` now supports pagination
 - Added `getAllActiveSessionsInternal()` private method for session limit checks (no pagination)
 - Returns paginated response structure
@@ -98,12 +111,14 @@ export class PaginatedResponseDto<T> {
 ### Environment Configuration
 
 Added to `env.schema.ts`:
+
 ```typescript
 DEFAULT_PAGE_SIZE: z.string().default('20'),
 MAX_PAGE_SIZE: z.string().default('100'),
 ```
 
 Added to `config.service.ts`:
+
 ```typescript
 get defaultPageSize(): number {
   return parseInt(this.nestConfig.get('DEFAULT_PAGE_SIZE', { infer: true }), 10);
@@ -117,17 +132,20 @@ get maxPageSize(): number {
 ### Database Query Optimization
 
 **Before (No Pagination):**
+
 ```typescript
 await this.prisma.application.findMany({
   where: { userId },
   orderBy: { createdAt: 'desc' },
 });
 ```
+
 - ⚠️ Loads ALL records (could be 200k+ at scale)
 - ⚠️ High memory usage
 - ⚠️ Slow response times
 
 **After (With Pagination):**
+
 ```typescript
 const [items, total] = await Promise.all([
   this.prisma.application.findMany({
@@ -141,6 +159,7 @@ const [items, total] = await Promise.all([
   }),
 ]);
 ```
+
 - ✅ Loads only requested page (20-100 items)
 - ✅ Parallel queries for items and count
 - ✅ Efficient memory usage
@@ -149,6 +168,7 @@ const [items, total] = await Promise.all([
 ### Validation
 
 The following validations are enforced:
+
 - `page` must be >= 1 (returns 400 Bad Request if invalid)
 - `limit` must be between 1 and 100 (returns 400 Bad Request if > 100)
 - Both parameters are optional (defaults: page=1, limit=20)
@@ -157,21 +177,25 @@ The following validations are enforced:
 ### Examples
 
 #### Request first page (default limit 20)
+
 ```bash
 GET /api/v1/applications
 ```
 
 #### Request second page with custom limit
+
 ```bash
 GET /api/v1/applications?page=2&limit=10
 ```
 
 #### Request with maximum limit
+
 ```bash
 GET /api/v1/applications?limit=100
 ```
 
 #### Invalid requests (return 400)
+
 ```bash
 GET /api/v1/applications?page=0      # page must be >= 1
 GET /api/v1/applications?limit=101   # limit max is 100
@@ -197,6 +221,7 @@ GET /api/v1/applications?page=-1     # page must be >= 1
 Comprehensive E2E tests added in `test/e2e/features/pagination.e2e-spec.ts`:
 
 **Test Coverage:**
+
 - ✅ Default pagination (page=1, limit=20)
 - ✅ Custom page and limit
 - ✅ Total pages calculation
@@ -208,12 +233,14 @@ Comprehensive E2E tests added in `test/e2e/features/pagination.e2e-spec.ts`:
 ### Migration Guide for Frontend
 
 **Before:**
+
 ```typescript
 const applications = await fetch('/api/v1/applications');
 // Returns: ApplicationResponseDto[]
 ```
 
 **After:**
+
 ```typescript
 const response = await fetch('/api/v1/applications?page=1&limit=20');
 // Returns: { items: ApplicationResponseDto[], pagination: PaginationMetadata }
@@ -229,6 +256,7 @@ console.log(response.pagination.totalPages);  // Number of pages
 ### Swagger Documentation
 
 All paginated endpoints now include:
+
 - Query parameter documentation for `page` and `limit`
 - Response schema showing `items` and `pagination` structure
 - Example values (page: 1, limit: 20, total: 100, totalPages: 5)

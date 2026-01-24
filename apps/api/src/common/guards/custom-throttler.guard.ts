@@ -1,7 +1,10 @@
 import { Injectable, ExecutionContext, Inject } from '@nestjs/common';
-import { ThrottlerGuard, ThrottlerException } from '@nestjs/throttler';
+import {
+  ThrottlerGuard,
+  ThrottlerException,
+  ThrottlerRequest,
+} from '@nestjs/throttler';
 import { Reflector } from '@nestjs/core';
-import { SkipThrottle } from '@nestjs/throttler';
 import { THROTTLER_NAME_KEY } from '../decorators/throttle.decorator';
 import { AuditLoggerService } from '../audit-logger';
 
@@ -20,27 +23,17 @@ const THROTTLER_SKIP = 'THROTTLER:SKIP';
  * explicitly specifies a different one. This prevents the strict 'auth' throttler
  * from being applied to all endpoints.
  *
- * Note: @nestjs/throttler v5 changed the storage API - it only has increment(),
- * not get(). We override handleRequest to track hits and set headers.
+ * Note: @nestjs/throttler v6 changed the handleRequest signature to use ThrottlerRequest
  */
 @Injectable()
 export class CustomThrottlerGuard extends ThrottlerGuard {
-  constructor(
-    protected readonly options: any,
-    protected readonly storageService: any,
-    protected readonly reflector: Reflector,
-    @Inject(AuditLoggerService) private readonly auditLogger: AuditLoggerService,
-  ) {
-    super(options, storageService, reflector);
-  }
+  @Inject(AuditLoggerService)
+  private readonly auditLogger: AuditLoggerService;
 
   /**
    * Override canActivate to:
    * 1. Skip rate limiting in development
    * 2. Skip for health checks
-   * 3. Apply ONLY the selected throttler (default or named)
-   * 
-   * This is a complete override to avoid the parent's behavior of applying ALL throttlers.
    */
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // Skip rate limiting entirely in development for easier testing
@@ -67,38 +60,27 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
       return true;
     }
 
-    // Get the single throttler to use (default or named via @UseThrottler)
-    const throttlers = await this.getThrottlers(context);
-    if (throttlers.length === 0) {
-      return true;
-    }
-
-    // Apply only the selected throttler
-    const throttler = throttlers[0];
-    const limit = throttler.limit;
-    const ttl = throttler.ttl;
-
-    return this.handleRequest(context, limit, ttl, throttler);
+    // Call parent's canActivate which will call handleRequest
+    return super.canActivate(context);
   }
 
   /**
-   * Override handleRequest to add comprehensive rate limit headers
+   * Override handleRequest with the new v6 signature (ThrottlerRequest)
    * This is called by the parent's canActivate method for each throttler
    */
-  protected async handleRequest(
-    context: ExecutionContext,
-    limit: number,
-    ttl: number,
-    throttler: any,
-  ): Promise<boolean> {
+  protected async handleRequest(requestProps: ThrottlerRequest): Promise<boolean> {
+    const { context, limit, ttl, throttler, blockDuration } = requestProps;
     const request = context.switchToHttp().getRequest();
     const response = context.switchToHttp().getResponse();
     const tracker = await this.getTracker(request);
     const key = this.generateKey(context, tracker, throttler.name || 'default');
 
+    // Convert ttl to milliseconds if it's in seconds
+    const ttlMs = ttl < 1000 ? ttl * 1000 : ttl;
+
     try {
       // Increment counter and get total hits
-      const { totalHits } = await this.storageService.increment(key, ttl);
+      const { totalHits } = await this.storageService.increment(key, ttlMs, limit, blockDuration, throttler.name || 'default');
 
       // Check if limit exceeded
       if (totalHits > limit) {
@@ -110,7 +92,7 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
           method: request.method,
           throttlerName: throttler.name,
           limit,
-          ttl: `${ttl}ms`,
+          ttl: `${ttlMs}ms`,
           tracker,
           userId: user?.userId || 'anonymous',
           totalHits,
@@ -121,8 +103,8 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
         // Set rate limit headers for exceeded limit
         response.setHeader('X-RateLimit-Limit', limit.toString());
         response.setHeader('X-RateLimit-Remaining', '0');
-        response.setHeader('X-RateLimit-Reset', (Date.now() + ttl).toString());
-        response.setHeader('Retry-After', Math.ceil(ttl / 1000).toString());
+        response.setHeader('X-RateLimit-Reset', (Date.now() + ttlMs).toString());
+        response.setHeader('Retry-After', Math.ceil(ttlMs / 1000).toString());
 
         // Throw exception to trigger 429 response
         throw new ThrottlerException();
@@ -134,7 +116,7 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
       // Set comprehensive rate limit headers on success
       response.setHeader('X-RateLimit-Limit', limit.toString());
       response.setHeader('X-RateLimit-Remaining', remaining.toString());
-      response.setHeader('X-RateLimit-Reset', (Date.now() + ttl).toString());
+      response.setHeader('X-RateLimit-Reset', (Date.now() + ttlMs).toString());
 
       return true;
     } catch (error) {
@@ -146,32 +128,6 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
       console.error('[RateLimitGuard] Error in handleRequest:', error);
       throw error;
     }
-  }
-
-  /**
-   * Override to select which throttler configuration to use based on decorator
-   */
-  protected async getThrottlers(context: ExecutionContext) {
-    // Check if a specific throttler is specified via decorator
-    const throttlerName = this.reflector.getAllAndOverride<string>(THROTTLER_NAME_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
-
-    // Get all throttlers from options
-    const throttlers = this.options.throttlers || [];
-
-    // If a specific throttler is specified, return only that one
-    if (throttlerName) {
-      const namedThrottler = throttlers.find((t: any) => t.name === throttlerName);
-      if (namedThrottler) {
-        return [namedThrottler];
-      }
-    }
-
-    // Otherwise return default throttler
-    const defaultThrottler = throttlers.find((t: any) => t.name === 'default');
-    return defaultThrottler ? [defaultThrottler] : [];
   }
 
   /**

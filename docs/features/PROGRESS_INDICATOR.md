@@ -7,12 +7,14 @@ The visual progress indicator provides real-time feedback to users during the PD
 ## User Experience Impact
 
 **Before:**
+
 - Users saw only "Wird erstellt..." with no indication of progress
 - No way to know if generation was stuck or progressing normally
 - Increased support requests: "Is it still working?"
 - Users closing browser thinking process was frozen
 
 **After:**
+
 - Visual progress bar showing 0-100% completion
 - Stage-specific messages in German (e.g., "Generiere Lebenslauf mit KI...")
 - Real-time updates every 2 seconds via Server-Sent Events
@@ -39,16 +41,16 @@ private readonly progressCallbacks = new Map<string, ProgressCallback>();
 
 The `generateWithSinglePipeline` method emits progress at 8 key milestones:
 
-| Progress | Stage | Message (German) | Duration |
-|----------|-------|------------------|----------|
-| 0% | Start | Starte Generierung... | Instant |
-| 10% | Load Data | Lade Profil und Stellenanzeige... | <1s |
-| 20% | Select Profile | Wähle relevante Profildaten aus... | 5-10s (LLM) |
-| 40% | Generate Resume | Generiere Lebenslauf mit KI... | 10-20s (LLM) |
-| 60% | Generate Cover Letter | Generiere Anschreiben mit KI... | 10-20s (LLM) |
-| 80% | Extract Keywords | Extrahiere ATS-Keywords... | 5-10s (LLM) |
-| 95% | Save Results | Speichere Ergebnisse... | <1s |
-| 100% | Complete | Fertig! | Instant |
+| Progress | Stage                 | Message (German)                   | Duration     |
+| -------- | --------------------- | ---------------------------------- | ------------ |
+| 0%       | Start                 | Starte Generierung...              | Instant      |
+| 10%      | Load Data             | Lade Profil und Stellenanzeige...  | <1s          |
+| 20%      | Select Profile        | Wähle relevante Profildaten aus... | 5-10s (LLM)  |
+| 40%      | Generate Resume       | Generiere Lebenslauf mit KI...     | 10-20s (LLM) |
+| 60%      | Generate Cover Letter | Generiere Anschreiben mit KI...    | 10-20s (LLM) |
+| 80%      | Extract Keywords      | Extrahiere ATS-Keywords...         | 5-10s (LLM)  |
+| 95%      | Save Results          | Speichere Ergebnisse...            | <1s          |
+| 100%     | Complete              | Fertig!                            | Instant      |
 
 **Note:** If cover letter generation is disabled, step 60% shows "Überspringe Anschreiben-Generierung..." and completes quickly.
 
@@ -89,6 +91,7 @@ async streamStatus(userId: string, applicationId: string): Promise<Observable<Me
 ```
 
 **Event Format:**
+
 ```json
 {
   "data": {
@@ -131,7 +134,7 @@ useEffect(() => {
 
   eventSource.onmessage = (event) => {
     const data = JSON.parse(event.data);
-    
+
     // Update progress state
     if (data.progress !== undefined) {
       setProgress(data.progress);
@@ -139,7 +142,7 @@ useEffect(() => {
     if (data.message) {
       setProgressMessage(data.message);
     }
-    
+
     // Update application status
     queryClient.setQueryData(['applications', applicationId], (old: any) => ({
       ...old,
@@ -167,18 +170,18 @@ The shadcn/ui Progress component provides the visual indicator:
     <p className="text-sm text-gray-600">
       Die KI erstellt gerade dein Anschreiben und deinen Lebenslauf.
     </p>
-    
+
     {/* Progress bar with smooth animation */}
     <div className="space-y-2">
       <Progress value={progress} className="h-2" />
-      
+
       {/* Current stage message */}
       {progressMessage && (
         <p className="text-sm text-gray-700 font-medium">
           {progressMessage}
         </p>
       )}
-      
+
       {/* Percentage text */}
       {progress > 0 && (
         <p className="text-xs text-gray-500">
@@ -195,12 +198,14 @@ The shadcn/ui Progress component provides the visual indicator:
 ### Why In-Memory Callbacks?
 
 **Pros:**
+
 - ✅ Simple implementation
 - ✅ No database overhead
 - ✅ Real-time updates (no polling lag)
 - ✅ Automatic cleanup via Map
 
 **Cons:**
+
 - ❌ Lost on server restart
 - ❌ Not shared across multiple instances
 - ❌ No persistence for debugging
@@ -210,6 +215,7 @@ The shadcn/ui Progress component provides the visual indicator:
 ### Why 2-Second Polling Interval?
 
 **Rationale:**
+
 - Balance between responsiveness and server load
 - LLM stages take 5-20 seconds, so 2s provides 2-10 updates per stage
 - Lower than 1s could overwhelm database
@@ -220,6 +226,7 @@ The shadcn/ui Progress component provides the visual indicator:
 **Current:** SSE connection closes on error, requires manual page refresh
 
 **Rationale:**
+
 - Prevents rate limit issues from constant reconnections
 - Simple implementation for MVP
 - Users can refresh if needed
@@ -229,12 +236,14 @@ The shadcn/ui Progress component provides the visual indicator:
 ### Why Not WebSockets?
 
 **SSE Advantages:**
+
 - Simpler to implement (HTTP, not separate protocol)
 - Built-in reconnection (browser handles it)
 - Better firewall/proxy compatibility
 - One-way communication sufficient (server → client)
 
 **WebSocket Would Provide:**
+
 - Bi-directional communication (not needed)
 - Lower latency (2s polling is acceptable)
 - More complex infrastructure
@@ -244,11 +253,13 @@ The shadcn/ui Progress component provides the visual indicator:
 ### Backend
 
 **Memory Usage:**
+
 - Each active generation: 1 callback entry in Map
 - Typical size: 8 bytes (string key) + function pointer
 - 100 concurrent generations: <1 KB overhead
 
 **Database Load:**
+
 - SSE polls every 2 seconds per connection
 - Query is lightweight (SELECT id, status, updatedAt)
 - Indexed on primary key (fast lookup)
@@ -257,11 +268,13 @@ The shadcn/ui Progress component provides the visual indicator:
 ### Frontend
 
 **Network:**
+
 - SSE connection: ~100 bytes per event
 - Total data for full generation: ~800 bytes (8 updates × 100 bytes)
 - Minimal impact on bandwidth
 
 **Rendering:**
+
 - Progress bar updates trigger re-render
 - Optimized via React.memo (if needed)
 - CSS transition-all provides smooth animation
@@ -341,7 +354,7 @@ const [isReconnecting, setIsReconnecting] = useState(false);
 
 eventSource.onerror = () => {
   eventSource.close();
-  
+
   if (retryCount < 5) {
     const delay = Math.min(1000 * Math.pow(2, retryCount), 30000);
     setTimeout(() => {
@@ -373,16 +386,19 @@ redis.subscribe(`application:${id}:progress`, (channel, data) => {
 ## Security Considerations
 
 ### Authentication
+
 - SSE endpoint protected by JWT guard
 - Only application owner can stream progress
 - Verified via `ensureApplicationOwnership()`
 
 ### Rate Limiting
+
 - SSE streams excluded from throttling (`@SkipThrottle()`)
 - Long-lived connections are expected behavior
 - Future: Could limit max concurrent streams per user
 
 ### Data Exposure
+
 - Progress messages are generic (no PII)
 - No profile/job data leaked in events
 - Only application ID, status, progress, timestamp

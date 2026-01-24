@@ -9,6 +9,7 @@ This document outlines security best practices and procedures for the Smart Appl
 The JWT secret is **CRITICAL** for authentication security. A compromised secret allows attackers to forge authentication tokens and impersonate any user.
 
 #### Requirements
+
 - **Minimum Length:** 64 characters (base64-encoded)
 - **Entropy:** Cryptographically secure random generation
 - **Storage:** Azure Key Vault (never in code or version control)
@@ -17,6 +18,7 @@ The JWT secret is **CRITICAL** for authentication security. A compromised secret
 ### Generating a Secure JWT Secret
 
 #### For Development/Local Testing
+
 ```bash
 # Generate a strong 64+ character secret
 openssl rand -base64 64
@@ -26,6 +28,7 @@ openssl rand -base64 64
 ```
 
 #### For Production (Azure Key Vault)
+
 ```bash
 # 1. Generate the secret
 JWT_SECRET=$(openssl rand -base64 64)
@@ -54,11 +57,13 @@ az containerapp secret set \
 Regular rotation of the JWT secret is a security best practice. Follow this procedure to rotate without downtime:
 
 #### Step 1: Generate New Secret
+
 ```bash
 NEW_JWT_SECRET=$(openssl rand -base64 64)
 ```
 
 #### Step 2: Update Azure Key Vault
+
 ```bash
 # Store new secret with version
 az keyvault secret set \
@@ -69,7 +74,8 @@ az keyvault secret set \
 
 #### Step 3: Rolling Update Strategy
 
-**Option A: Immediate Rotation (Forces Re-authentication)**
+##### Option A: Immediate Rotation (Forces Re-authentication)
+
 ```bash
 # Update Container Apps environment variable
 az containerapp update \
@@ -85,16 +91,18 @@ az containerapp revision restart \
 
 **Note:** This approach invalidates all existing tokens. Users will need to log in again.
 
-**Option B: Graceful Rotation (Dual-Key Validation - Future Enhancement)**
+##### Option B: Graceful Rotation (Dual-Key Validation - Future Enhancement)
 
 For production systems with many active users, implement dual-key validation:
+
 1. Accept tokens signed with either old or new secret (grace period)
 2. Issue new tokens with new secret only
 3. After grace period (e.g., 24 hours), remove old secret
 
-*This feature is not currently implemented but recommended for post-MVP.*
+_This feature is not currently implemented but recommended for post-MVP._
 
 #### Step 4: Verify Rotation
+
 ```bash
 # Test authentication with new deployment
 curl -X POST https://api.smartapply.com/api/v1/auth/login \
@@ -108,6 +116,7 @@ curl -H "Authorization: Bearer $TOKEN" \
 ```
 
 #### Step 5: Document Rotation
+
 ```bash
 # Add rotation record to Key Vault tags
 az keyvault secret set-attributes \
@@ -118,11 +127,11 @@ az keyvault secret set-attributes \
 
 ### Rotation Schedule
 
-| Environment | Frequency | Method |
-|-------------|-----------|--------|
-| Development | As needed | Manual `.env` update |
-| Staging | Every 90 days | Azure Key Vault rotation |
-| Production | Every 90 days or on compromise | Azure Key Vault rotation with audit trail |
+| Environment | Frequency                      | Method                                    |
+| ----------- | ------------------------------ | ----------------------------------------- |
+| Development | As needed                      | Manual `.env` update                      |
+| Staging     | Every 90 days                  | Azure Key Vault rotation                  |
+| Production  | Every 90 days or on compromise | Azure Key Vault rotation with audit trail |
 
 ### Security Validation
 
@@ -171,7 +180,7 @@ JWT_REFRESH_EXPIRES_IN=30d  # Long-lived refresh tokens
 
 ### Token Lifecycle
 
-```
+```text
 Login/Register → Generate Token Pair → Store Refresh Token (hashed)
                       ↓
               Set HttpOnly Cookies
@@ -194,6 +203,7 @@ Login/Register → Generate Token Pair → Store Refresh Token (hashed)
 ### Logout Behavior
 
 When a user logs out:
+
 1. All refresh tokens for the user are revoked in database
 2. Both access and refresh cookies are cleared
 3. User must re-authenticate to get new tokens
@@ -212,6 +222,7 @@ For detailed implementation, see [REFRESH_TOKENS.md](./REFRESH_TOKENS.md).
 ### If JWT Secret is Compromised
 
 **Immediate Actions:**
+
 1. Rotate secret immediately using procedure above
 2. Invalidate all active sessions/tokens (revoke all refresh tokens)
 3. Monitor authentication logs for suspicious activity
@@ -219,12 +230,14 @@ For detailed implementation, see [REFRESH_TOKENS.md](./REFRESH_TOKENS.md).
 5. Document incident in security log
 
 **Investigation:**
+
 1. Determine how secret was exposed
 2. Review access logs (Key Vault, Container Apps)
 3. Check for unauthorized token usage
 4. Assess data exposure scope
 
 **Prevention:**
+
 1. Review and restrict Key Vault access policies
 2. Enable Azure Key Vault audit logging
 3. Implement secret scanning in CI/CD (GitHub Secret Scanning)
@@ -233,12 +246,14 @@ For detailed implementation, see [REFRESH_TOKENS.md](./REFRESH_TOKENS.md).
 ## 🔒 Additional Security Best Practices
 
 ### Environment Variables
+
 - **Never commit secrets** to version control (`.env` is in `.gitignore`)
 - **Never log secrets** (sanitize logs of sensitive data)
 - **Use Key Vault references** in production (not direct values)
 - **Audit Key Vault access** regularly
 
 ### Authentication
+
 - ✅ **HttpOnly cookies** for JWT token storage (prevents XSS, implemented)
 - ✅ **CSRF protection** available (csrf-csrf package, optional with `ENABLE_CSRF=true`)
   - **Exception:** `/auth/refresh` endpoint is excluded from CSRF validation
@@ -249,6 +264,7 @@ For detailed implementation, see [REFRESH_TOKENS.md](./REFRESH_TOKENS.md).
 - Consider **2FA** for high-value accounts (post-MVP)
 
 ### Input Sanitization (XSS Protection)
+
 - ✅ **Backend sanitization** implemented on all user inputs (see [XSS_PROTECTION.md](./XSS_PROTECTION.md))
 - All string fields in DTOs use `@Sanitize()` decorator
 - HTML special characters escaped: `<`, `>`, `"`, `'`, `/`, `&`
@@ -259,6 +275,7 @@ For detailed implementation, see [REFRESH_TOKENS.md](./REFRESH_TOKENS.md).
 ### CORS & Headers
 
 #### Backend (NestJS API)
+
 - ✅ **CORS origins restricted** to specified domains (see [CORS_SECURITY.md](./CORS_SECURITY.md))
 - Configuration: `CORS_ORIGINS` environment variable with comma-separated list
 - Allowed methods: GET, POST, PUT, DELETE, PATCH
@@ -276,6 +293,7 @@ For detailed implementation, see [REFRESH_TOKENS.md](./REFRESH_TOKENS.md).
 - Use **HTTPS** only in production (enforce via headers)
 
 **Backend CSP Configuration:**
+
 ```typescript
 // apps/api/src/main.ts
 app.use(helmet({
@@ -303,6 +321,7 @@ app.use(helmet({
 ```
 
 **Environment Variables:**
+
 ```bash
 # CSP Report-Only Mode (for testing)
 # true = Log violations without blocking (recommended for initial deployment)
@@ -311,11 +330,13 @@ CSP_REPORT_ONLY=false
 ```
 
 **CSP Violation Reporting:**
+
 - Endpoint: `POST /api/v1/csp-violations` (public, no authentication)
 - Violations are logged with structured data for monitoring
 - Optional database storage for compliance reporting (commented out in MVP)
 
 **Testing CSP:**
+
 ```bash
 # Start server in report-only mode
 CSP_REPORT_ONLY=true npm run start:dev
@@ -334,6 +355,7 @@ tail -f logs/nest-*.log | grep "CSP Violation"
 ```
 
 **Production Checklist:**
+
 - [ ] Set `CORS_ORIGINS` to production frontend URLs (no localhost)
 - [ ] Verify all origins use HTTPS
 - [ ] Test CORS preflight requests
@@ -345,6 +367,7 @@ tail -f logs/nest-*.log | grep "CSP Violation"
 - [ ] Verify Swagger UI works (requires unsafe-inline/eval in development only)
 
 #### Frontend (Next.js)
+
 - ✅ **Content-Security-Policy (CSP)** - Controls which resources can be loaded
   - `default-src 'self'` - Only allow same-origin resources by default
   - `script-src` - Allows inline scripts for Next.js runtime (development includes `unsafe-eval` for HMR)
@@ -360,21 +383,23 @@ tail -f logs/nest-*.log | grep "CSP Violation"
 - ✅ **Strict-Transport-Security (HSTS)** - Force HTTPS (production only, max-age=1 year)
 
 **Configuration:**
+
 ```typescript
 // apps/web/next.config.ts
 async headers() {
   const isDevelopment = process.env.NODE_ENV === 'development';
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-  
+
   // Environment-aware CSP
   // Development: Allows localhost + HMR WebSocket + unsafe-eval
   // Production: Strict CSP with production API URL
-  
+
   return [{ source: '/:path*', headers: [...] }];
 }
 ```
 
 **Testing Security Headers:**
+
 ```bash
 # Local development
 npm run dev
@@ -389,12 +414,14 @@ curl -I http://localhost:3001
 ```
 
 **CSP Challenges with Next.js:**
+
 - Next.js requires `unsafe-eval` in development for Hot Module Replacement (HMR)
 - Inline styles from Tailwind CSS require `unsafe-inline` for `style-src`
 - Production build removes `unsafe-eval` for enhanced security
 - Consider using nonce-based CSP for stricter inline script control (post-MVP)
 
 **Production Checklist:**
+
 - [ ] Verify CSP headers are present in production deployment
 - [ ] Test application functionality with strict CSP (no console errors)
 - [ ] Confirm HSTS header is active (HTTPS only)
@@ -406,11 +433,13 @@ curl -I http://localhost:3001
 ✅ **Audit Logging Implemented** - Comprehensive security event tracking with winston
 
 **Logged Events:**
+
 - Authentication: LOGIN_SUCCESS, LOGIN_FAILED, LOGOUT, REGISTRATION, REFRESH_TOKEN_USED
 - Security: RATE_LIMIT_EXCEEDED, CSRF_VALIDATION_FAILED, UNAUTHORIZED_ACCESS
 - Account Changes: PROFILE_UPDATED, PASSWORD_CHANGED
 
 **Features:**
+
 - Structured JSON logs with daily rotation (90-day retention)
 - Request context (IP, User-Agent) for threat analysis
 - Severity levels (info, warning, critical)
@@ -422,6 +451,7 @@ curl -I http://localhost:3001
 For detailed documentation, see [AUDIT_LOGGING.md](./AUDIT_LOGGING.md)
 
 **Future Enhancements:**
+
 - Set up **alerts** for repeated failed logins (5+ attempts)
 - Monitor **Key Vault access** for unauthorized attempts
 - Enable **Azure Application Insights** for security telemetry

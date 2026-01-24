@@ -8,11 +8,8 @@ import { CenteredLoader } from '@/components/shared/loading';
 import { ChevronLeft, ChevronRight, Download, ZoomIn, ZoomOut } from 'lucide-react';
 import { handleDownload } from '@/lib/pdf-utils';
 
-// Set up PDF.js worker - use react-pdf's bundled worker to ensure version match
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'react-pdf/node_modules/pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url,
-).toString();
+// Set up PDF.js worker - use CDN for reliable cross-version compatibility
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 interface PDFPreviewModalProps {
   isOpen: boolean;

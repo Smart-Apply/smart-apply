@@ -35,81 +35,81 @@ Every error response includes:
 
 ### Authentication Errors (401, 409)
 
-| Code | HTTP Status | Message |
-|------|-------------|---------|
-| `INVALID_CREDENTIALS` | 401 | E-Mail oder Passwort ist falsch. Bitte versuche es erneut. |
-| `UNAUTHORIZED` | 401 | Bitte melde dich an, um fortzufahren. |
-| `USER_EXISTS` | 409 | Ein Konto mit dieser E-Mail existiert bereits. Bitte melde dich an. |
-| `USER_NOT_FOUND` | 401 | Benutzer nicht gefunden. Bitte melde dich erneut an. |
-| `REFRESH_TOKEN_INVALID` | 401 | Deine Sitzung ist abgelaufen. Bitte melde dich erneut an. |
-| `REFRESH_TOKEN_NOT_FOUND` | 401 | Deine Sitzung ist abgelaufen. Bitte melde dich erneut an. |
-| `INVALID_TOKEN_TYPE` | 401 | Ungültiger Token-Typ. Bitte melde dich erneut an. |
-| `SESSION_EXPIRED` | 401 | Deine Sitzung ist abgelaufen. Bitte melde dich erneut an. |
+| Code                       | HTTP Status | Message                                                             |
+| -------------------------- | ----------- | ------------------------------------------------------------------- |
+| `INVALID_CREDENTIALS`      | 401         | E-Mail oder Passwort ist falsch. Bitte versuche es erneut.          |
+| `UNAUTHORIZED`             | 401         | Bitte melde dich an, um fortzufahren.                               |
+| `USER_EXISTS`              | 409         | Ein Konto mit dieser E-Mail existiert bereits. Bitte melde dich an. |
+| `USER_NOT_FOUND`           | 401         | Benutzer nicht gefunden. Bitte melde dich erneut an.                |
+| `REFRESH_TOKEN_INVALID`    | 401         | Deine Sitzung ist abgelaufen. Bitte melde dich erneut an.           |
+| `REFRESH_TOKEN_NOT_FOUND`  | 401         | Deine Sitzung ist abgelaufen. Bitte melde dich erneut an.           |
+| `INVALID_TOKEN_TYPE`       | 401         | Ungültiger Token-Typ. Bitte melde dich erneut an.                   |
+| `SESSION_EXPIRED`          | 401         | Deine Sitzung ist abgelaufen. Bitte melde dich erneut an.           |
 
 ### Profile Errors (404, 400, 500)
 
-| Code | HTTP Status | Message |
-|------|-------------|---------|
-| `PROFILE_NOT_FOUND` | 404 | Bitte erstelle zuerst dein Profil im Profil-Bereich. |
-| `PROFILE_INCOMPLETE` | 400 | Bitte vervollständige dein Profil, bevor du fortfährst. |
-| `PROFILE_UPDATE_FAILED` | 500 | Profil konnte nicht aktualisiert werden. Bitte versuche es erneut. |
+| Code                    | HTTP Status | Message                                                                |
+| ----------------------- | ----------- | ---------------------------------------------------------------------- |
+| `PROFILE_NOT_FOUND`     | 404         | Bitte erstelle zuerst dein Profil im Profil-Bereich.                   |
+| `PROFILE_INCOMPLETE`    | 400         | Bitte vervollständige dein Profil, bevor du fortfährst.                |
+| `PROFILE_UPDATE_FAILED` | 500         | Profil konnte nicht aktualisiert werden. Bitte versuche es erneut.     |
 
 ### Job Posting Errors (404)
 
-| Code | HTTP Status | Message |
-|------|-------------|---------|
-| `JOB_POSTING_NOT_FOUND` | 404 | Stellenanzeige nicht gefunden. Möglicherweise wurde sie gelöscht. |
-| `JOB_POSTING_PARSE_FAILED` | 400 | Die Stellenanzeige konnte nicht verarbeitet werden. Bitte überprüfe das Format. |
+| Code                       | HTTP Status | Message                                                                         |
+| -------------------------- | ----------- | ------------------------------------------------------------------------------- |
+| `JOB_POSTING_NOT_FOUND`    | 404         | Stellenanzeige nicht gefunden. Möglicherweise wurde sie gelöscht.               |
+| `JOB_POSTING_PARSE_FAILED` | 400         | Die Stellenanzeige konnte nicht verarbeitet werden. Bitte überprüfe das Format. |
 
 ### Application Errors (404, 400, 409)
 
-| Code | HTTP Status | Message |
-|------|-------------|---------|
-| `APPLICATION_NOT_FOUND` | 404 | Bewerbung nicht gefunden. Möglicherweise wurde sie gelöscht. |
-| `APPLICATION_DUPLICATE` | 409 | Du hast bereits eine Bewerbung für diese Stelle erstellt. Bitte bearbeite die bestehende Bewerbung oder lösche sie zuerst. |
-| `APPLICATION_GENERATING` | 400 | Dokumente werden aktuell erstellt. Bitte warte einen Moment. |
-| `APPLICATION_GENERATION_FAILED` | 500 | Die Bewerbung konnte nicht erstellt werden. Bitte versuche es erneut. |
-| `APPLICATION_NO_RESUME` | 400 | Bitte speichere zuerst deinen Lebenslauf. |
-| `APPLICATION_NO_JOB` | 400 | Keine Stellenanzeige verknüpft. Bitte wähle eine Stelle aus. |
-| `APPLICATION_RESUME_CORRUPTED` | 400 | Gespeicherter Lebenslauf ist beschädigt. Bitte aktualisiere ihn. |
+| Code                            | HTTP Status | Message                                                                                                              |
+| ------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------- |
+| `APPLICATION_NOT_FOUND`         | 404         | Bewerbung nicht gefunden. Möglicherweise wurde sie gelöscht.                                                         |
+| `APPLICATION_DUPLICATE`         | 409         | Du hast bereits eine Bewerbung für diese Stelle erstellt. Bitte bearbeite die bestehende Bewerbung oder lösche sie.  |
+| `APPLICATION_GENERATING`        | 400         | Dokumente werden aktuell erstellt. Bitte warte einen Moment.                                                         |
+| `APPLICATION_GENERATION_FAILED` | 500         | Die Bewerbung konnte nicht erstellt werden. Bitte versuche es erneut.                                                |
+| `APPLICATION_NO_RESUME`         | 400         | Bitte speichere zuerst deinen Lebenslauf.                                                                            |
+| `APPLICATION_NO_JOB`            | 400         | Keine Stellenanzeige verknüpft. Bitte wähle eine Stelle aus.                                                         |
+| `APPLICATION_RESUME_CORRUPTED`  | 400         | Gespeicherter Lebenslauf ist beschädigt. Bitte aktualisiere ihn.                                                     |
 
 ### LLM Errors (500, 400)
 
-| Code | HTTP Status | Message |
-|------|-------------|---------|
-| `LLM_TIMEOUT` | 500 | Die KI-Generierung dauert länger als erwartet. Deine Bewerbung wird im Hintergrund erstellt. |
-| `LLM_PARSE_ERROR` | 500 | Die KI-Antwort konnte nicht verarbeitet werden. Bitte versuche es erneut. |
-| `LLM_INVALID_RESPONSE` | 500 | Die KI hat eine ungültige Antwort geliefert. Bitte versuche es erneut. |
+| Code                   | HTTP Status | Message                                                                                           |
+| ---------------------- | ----------- | ------------------------------------------------------------------------------------------------- |
+| `LLM_TIMEOUT`          | 500         | Die KI-Generierung dauert länger als erwartet. Deine Bewerbung wird im Hintergrund erstellt.      |
+| `LLM_PARSE_ERROR`      | 500         | Die KI-Antwort konnte nicht verarbeitet werden. Bitte versuche es erneut.                         |
+| `LLM_INVALID_RESPONSE` | 500         | Die KI hat eine ungültige Antwort geliefert. Bitte versuche es erneut.                            |
 
 ### File Upload Errors (400)
 
-| Code | HTTP Status | Message |
-|------|-------------|---------|
-| `FILE_TOO_LARGE` | 400 | Die Datei ist zu groß. Maximal 10 MB sind erlaubt. |
-| `FILE_INVALID_TYPE` | 400 | Ungültiger Dateityp. Nur PDF-, Word- und Textdateien sind erlaubt. |
+| Code                | HTTP Status | Message                                                            |
+| ------------------- | ----------- | ------------------------------------------------------------------ |
+| `FILE_TOO_LARGE`    | 400         | Die Datei ist zu groß. Maximal 10 MB sind erlaubt.                 |
+| `FILE_INVALID_TYPE` | 400         | Ungültiger Dateityp. Nur PDF-, Word- und Textdateien sind erlaubt. |
 
 ### Password Errors (400)
 
-| Code | HTTP Status | Message |
-|------|-------------|---------|
-| `PASSWORD_INCORRECT` | 400 | Das aktuelle Passwort ist falsch. Bitte versuche es erneut. |
-| `PASSWORD_SAME_AS_CURRENT` | 400 | Das neue Passwort muss sich vom aktuellen Passwort unterscheiden. |
-| `PASSWORD_CHANGE_OAUTH` | 400 | Passwort kann für OAuth-Konten nicht geändert werden. |
+| Code                       | HTTP Status | Message                                                                       |
+| -------------------------- | ----------- | ----------------------------------------------------------------------------- |
+| `PASSWORD_INCORRECT`       | 400         | Das aktuelle Passwort ist falsch. Bitte versuche es erneut.                   |
+| `PASSWORD_SAME_AS_CURRENT` | 400         | Das neue Passwort muss sich vom aktuellen Passwort unterscheiden.             |
+| `PASSWORD_CHANGE_OAUTH`    | 400         | Passwort kann für OAuth-Konten nicht geändert werden.                         |
 
 ### Rate Limiting (429)
 
-| Code | HTTP Status | Message |
-|------|-------------|---------|
-| `RATE_LIMIT_EXCEEDED` | 429 | Zu viele Anfragen. Bitte warte einen Moment und versuche es erneut. |
+| Code                  | HTTP Status | Message                                                              |
+| --------------------- | ----------- | -------------------------------------------------------------------- |
+| `RATE_LIMIT_EXCEEDED` | 429         | Zu viele Anfragen. Bitte warte einen Moment und versuche es erneut.  |
 
 ### Generic Errors (400, 403, 404, 500)
 
-| Code | HTTP Status | Message |
-|------|-------------|---------|
-| `VALIDATION_ERROR` | 400 | Ungültige Eingabe. Bitte überprüfe deine Daten. |
-| `FORBIDDEN` | 403 | Zugriff verweigert. Du hast keine Berechtigung für diese Aktion. |
-| `NOT_FOUND` | 404 | Die angeforderte Ressource wurde nicht gefunden. |
-| `INTERNAL_SERVER_ERROR` | 500 | Ein Fehler ist aufgetreten. Bitte versuche es später erneut. |
+| Code                    | HTTP Status | Message                                                          |
+| ----------------------- | ----------- | ---------------------------------------------------------------- |
+| `VALIDATION_ERROR`      | 400         | Ungültige Eingabe. Bitte überprüfe deine Daten.                  |
+| `FORBIDDEN`             | 403         | Zugriff verweigert. Du hast keine Berechtigung für diese Aktion. |
+| `NOT_FOUND`             | 404         | Die angeforderte Ressource wurde nicht gefunden.                 |
+| `INTERNAL_SERVER_ERROR` | 500         | Ein Fehler ist aufgetreten. Bitte versuche es später erneut.     |
 
 ## Backend Implementation
 
@@ -141,6 +141,7 @@ throw new ConflictWithCode(ErrorCode.APPLICATION_DUPLICATE, 'Custom context');
 ### Exception Filter
 
 The `AllExceptionsFilter` automatically:
+
 1. Extracts the error code from the exception
 2. Maps it to a user-friendly German message
 3. Adds default codes for standard HTTP exceptions without explicit codes
@@ -175,6 +176,7 @@ The frontend resolves error messages in this order:
 3. **Default Message** → Falls back to generic error message
 
 Example:
+
 ```typescript
 // Backend returns: { code: 'INVALID_CREDENTIALS', message: '...' }
 // Frontend shows: "E-Mail oder Passwort ist falsch. Bitte versuche es erneut."
@@ -214,6 +216,7 @@ npm run test:e2e -- error-messages
 ```
 
 Tests validate:
+
 - ✅ All errors include `code` field
 - ✅ Messages are in German
 - ✅ Messages are actionable (contain "Bitte" or instructions)
@@ -223,14 +226,17 @@ Tests validate:
 ### Manual Testing
 
 1. **Invalid Login**
+
    ```bash
    curl -X POST http://localhost:3000/api/v1/auth/login \
      -H "Content-Type: application/json" \
      -d '{"email":"test@example.com","password":"wrong"}'
    ```
+
    Expected: `{ "code": "INVALID_CREDENTIALS", ... }`
 
 2. **Duplicate Application**
+
    ```bash
    # Create application twice with same jobPostingId
    curl -X POST http://localhost:3000/api/v1/applications \
@@ -238,14 +244,17 @@ Tests validate:
      -H "Content-Type: application/json" \
      -d '{"jobPostingId":"abc-123"}'
    ```
+
    Expected: `{ "code": "APPLICATION_DUPLICATE", ... }`
 
 3. **Profile Not Found**
+
    ```bash
    # Delete profile then try to fetch it
    curl -X GET http://localhost:3000/api/v1/profile \
      -H "Cookie: access_token=..."
    ```
+
    Expected: `{ "code": "PROFILE_NOT_FOUND", ... }`
 
 ## Future Enhancements
@@ -260,6 +269,7 @@ Accept-Language: en
 ```
 
 Response:
+
 ```json
 {
   "code": "PROFILE_NOT_FOUND",
@@ -280,6 +290,7 @@ Response:
 ### For Backend Developers
 
 1. **Always use coded exceptions** for predictable errors
+
    ```typescript
    // ❌ Bad
    throw new NotFoundException('Profile not found');
@@ -289,6 +300,7 @@ Response:
    ```
 
 2. **Let the filter handle messages** - Don't duplicate messages
+
    ```typescript
    // ❌ Bad
    throw new NotFoundWithCode(ErrorCode.PROFILE_NOT_FOUND, 'Bitte erstelle zuerst dein Profil');
@@ -298,6 +310,7 @@ Response:
    ```
 
 3. **Add new codes to the enum** when adding new error types
+
    ```typescript
    // apps/api/src/common/constants/error-codes.ts
    export enum ErrorCode {
@@ -314,6 +327,7 @@ Response:
 ### For Frontend Developers
 
 1. **Use `getErrorMessage()` for all errors**
+
    ```typescript
    // ✅ Good
    const message = getErrorMessage(error);
@@ -321,6 +335,7 @@ Response:
    ```
 
 2. **Don't hardcode error messages** in components
+
    ```typescript
    // ❌ Bad
    toast.error('Ein Fehler ist aufgetreten');
@@ -331,6 +346,7 @@ Response:
    ```
 
 3. **Add new codes to frontend enum** when backend adds them
+
    ```typescript
    // apps/web/src/lib/error-messages.ts
    export const ERROR_MESSAGES: Record<string, string> = {
@@ -345,7 +361,7 @@ Response:
 
 500 errors are logged with full stack traces:
 
-```
+```text
 [ERROR] POST /api/v1/applications - 500 [INTERNAL_SERVER_ERROR]
 Error: Failed to generate application
     at ApplicationsService.create (/app/src/applications/applications.service.ts:123:11)

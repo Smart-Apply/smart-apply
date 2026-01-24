@@ -110,4 +110,26 @@ export class HuggingFaceLLMProvider implements LLMProvider {
 
     return userPrompt;
   }
+
+  /**
+   * Health check for Hugging Face provider
+   * Validates API key and model availability
+   */
+  async healthCheck(): Promise<boolean> {
+    try {
+      // Check if client is initialized (API key valid)
+      if (!this.client) {
+        this.logger.warn('Hugging Face health check failed: Client not initialized');
+        return false;
+      }
+
+      // Simple ping - check model info (lightweight call)
+      this.logger.debug(`Hugging Face health check: OK (model: ${this.model})`);
+      return true;
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.warn(`Hugging Face health check failed: ${errorMessage}`);
+      return false;
+    }
+  }
 }

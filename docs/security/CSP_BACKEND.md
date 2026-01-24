@@ -60,31 +60,33 @@ app.use(
 
 ### Core Directives
 
-| Directive | Value | Purpose | Security Impact |
-|-----------|-------|---------|-----------------|
-| `default-src` | `'self'` | Default policy for all resource types | High - Blocks all external resources by default |
-| `script-src` | `'self'` (prod)<br/>`'self' 'unsafe-inline' 'unsafe-eval'` (dev) | Controls JavaScript execution | **Critical** - Prevents inline script injection<br/>Dev: Allows Swagger UI |
-| `style-src` | `'self' 'unsafe-inline'` | Controls CSS loading | Medium - Inline styles needed for Swagger UI |
-| `img-src` | `'self' data: https:` | Controls image sources | Low - Allows data URIs and HTTPS images |
-| `connect-src` | `'self'` | Controls AJAX/WebSocket connections | High - Prevents data exfiltration to external domains |
-| `font-src` | `'self' data:` | Controls font loading | Low - Allows data URI fonts |
-| `object-src` | `'none'` | Disallows plugins (Flash, Java) | High - Prevents plugin-based attacks |
-| `media-src` | `'self'` | Controls audio/video sources | Medium - Restricts media to same origin |
-| `frame-src` | `'none'` | Disallows iframes | Medium - Prevents iframe-based attacks |
-| `frame-ancestors` | `'none'` | Prevents embedding in iframes | **High** - Clickjacking protection |
-| `base-uri` | `'self'` | Restricts `<base>` tag | Medium - Prevents base tag injection |
-| `form-action` | `'self'` | Restricts form submission targets | Medium - Prevents form hijacking |
-| `upgrade-insecure-requests` | `[]` (prod)<br/>`null` (dev) | Forces HTTPS upgrades | High - Ensures encrypted connections |
-| `report-uri` | `/api/v1/csp-violations` | Violation reporting endpoint | N/A - Monitoring only |
+| Directive                   | Value                                                   | Purpose                               | Security Impact                                       |
+| --------------------------- | ------------------------------------------------------- | ------------------------------------- | ----------------------------------------------------- |
+| `default-src`               | `'self'`                                                | Default policy for all resource types | High - Blocks all external resources by default       |
+| `script-src`                | `'self'` (prod) / `'self' 'unsafe-inline' ...` (dev)    | Controls JavaScript execution         | **Critical** - Prevents inline script injection       |
+| `style-src`                 | `'self' 'unsafe-inline'`                                | Controls CSS loading                  | Medium - Inline styles needed for Swagger UI          |
+| `img-src`                   | `'self' data: https:`                                   | Controls image sources                | Low - Allows data URIs and HTTPS images               |
+| `connect-src`               | `'self'`                                                | Controls AJAX/WebSocket connections   | High - Prevents data exfiltration to external domains |
+| `font-src`                  | `'self' data:`                                          | Controls font loading                 | Low - Allows data URI fonts                           |
+| `object-src`                | `'none'`                                                | Disallows plugins (Flash, Java)       | High - Prevents plugin-based attacks                  |
+| `media-src`                 | `'self'`                                                | Controls audio/video sources          | Medium - Restricts media to same origin               |
+| `frame-src`                 | `'none'`                                                | Disallows iframes                     | Medium - Prevents iframe-based attacks                |
+| `frame-ancestors`           | `'none'`                                                | Prevents embedding in iframes         | **High** - Clickjacking protection                    |
+| `base-uri`                  | `'self'`                                                | Restricts `<base>` tag                | Medium - Prevents base tag injection                  |
+| `form-action`               | `'self'`                                                | Restricts form submission targets     | Medium - Prevents form hijacking                      |
+| `upgrade-insecure-requests` | `[]` (prod) / `null` (dev)                              | Forces HTTPS upgrades                 | High - Ensures encrypted connections                  |
+| `report-uri`                | `/api/v1/csp-violations`                                | Violation reporting endpoint          | N/A - Monitoring only                                 |
 
 ### Environment-Specific Behavior
 
 #### Development Mode
+
 - **Allows** `unsafe-inline` and `unsafe-eval` in `script-src`
 - **Reason:** Swagger UI requires these for documentation interface
 - **Risk Mitigation:** Development is not exposed to internet
 
 #### Production Mode
+
 - **Strict** CSP without `unsafe-*` directives
 - **Enforces** HTTPS with `upgrade-insecure-requests`
 - **Recommended:** Start with `CSP_REPORT_ONLY=true` for testing
@@ -96,10 +98,12 @@ app.use(
 **Purpose:** Control whether CSP violations are logged or enforced.
 
 **Values:**
+
 - `false` (default) - **Enforcing mode** - Violations are blocked
 - `true` - **Report-only mode** - Violations are logged but not blocked
 
 **Usage:**
+
 ```bash
 # .env file
 CSP_REPORT_ONLY=false  # Enforcing (production)
@@ -107,6 +111,7 @@ CSP_REPORT_ONLY=true   # Report-only (testing)
 ```
 
 **Recommendation:**
+
 1. Start with `CSP_REPORT_ONLY=true` when deploying new CSP configuration
 2. Monitor logs for violations for 1-2 weeks
 3. Fix any legitimate violations in code
@@ -120,7 +125,7 @@ CSP_REPORT_ONLY=true   # Report-only (testing)
 **Authentication:** Public (no auth required)  
 **Rate Limit:** 100 requests/15 minutes (default limit)
 
-### Implementation
+### Controller Implementation
 
 **File:** `apps/api/src/common/csp/csp-violation.controller.ts`
 
@@ -132,7 +137,7 @@ export class CSPViolationController {
   @Public()
   async reportViolation(@Body() violation: CSPViolation) {
     const report = violation['csp-report'];
-    
+
     this.logger.warn('CSP Violation detected', {
       directive: report['violated-directive'],
       blockedUri: report['blocked-uri'],
@@ -140,7 +145,7 @@ export class CSPViolationController {
       sourceFile: report['source-file'],
       // ...
     });
-    
+
     // Optional: Store in database for analysis
     // await this.prisma.cspViolation.create({ ... });
   }
@@ -173,6 +178,7 @@ Browsers send violation reports in this format:
 ### Monitoring Violations
 
 **View Real-Time Logs:**
+
 ```bash
 # Tail application logs
 tail -f logs/nest-*.log | grep "CSP Violation"
@@ -186,10 +192,8 @@ npm run start:dev
 
 1. **Inline Scripts** - `violated-directive: script-src`
    - Fix: Move inline scripts to external files or use nonces
-   
 2. **External Resources** - `violated-directive: img-src` or `connect-src`
    - Fix: Add domain to whitelist or host resources locally
-   
 3. **Frame Embedding** - `violated-directive: frame-ancestors`
    - Fix: Verify this is malicious (expected if preventing clickjacking)
 
@@ -247,11 +251,13 @@ curl -X POST http://localhost:3000/api/v1/csp-violations \
 **E2E Test Suite:** `apps/api/test/csp-headers.e2e-spec.ts`
 
 **Run Tests:**
+
 ```bash
 npm run test:e2e -- csp-headers
 ```
 
 **Coverage:**
+
 - ✅ CSP header presence (enforcing or report-only)
 - ✅ Strict directives (`default-src`, `object-src`, `frame-ancestors`)
 - ✅ Environment-specific `script-src` (dev vs prod)
@@ -261,7 +267,8 @@ npm run test:e2e -- csp-headers
 - ✅ Defense-in-depth validation (multiple XSS protection layers)
 
 **Test Results:**
-```
+
+```text
 Test Suites: 1 passed, 1 total
 Tests:       17 passed, 17 total
 ```
@@ -270,13 +277,13 @@ Tests:       17 passed, 17 total
 
 CSP is supported by all modern browsers:
 
-| Browser | Support | Notes |
-|---------|---------|-------|
-| Chrome | ✅ Full | Level 3 |
-| Firefox | ✅ Full | Level 3 |
-| Safari | ✅ Full | Level 3 |
-| Edge | ✅ Full | Level 3 |
-| IE 11 | ⚠️ Partial | Level 1 only (deprecated) |
+| Browser | Support    | Notes                     |
+| ------- | ---------- | ------------------------- |
+| Chrome  | ✅ Full    | Level 3                   |
+| Firefox | ✅ Full    | Level 3                   |
+| Safari  | ✅ Full    | Level 3                   |
+| Edge    | ✅ Full    | Level 3                   |
+| IE 11   | ⚠️ Partial | Level 1 only (deprecated) |
 
 **Note:** CSP violations are reported only by browsers that support the `report-uri` directive.
 
@@ -297,6 +304,7 @@ scriptSrc: configService.isDevelopment
 ```
 
 **Verification:**
+
 ```bash
 # Ensure NODE_ENV is set to development
 echo $NODE_ENV  # Should output: development
@@ -314,12 +322,14 @@ open http://localhost:3000/docs
 **Solutions:**
 
 1. **Rate Limiting** (already implemented):
+
    ```typescript
    // Default rate limit applies to /csp-violations
    // 100 requests per 15 minutes per IP
    ```
 
 2. **Identify Violation Source:**
+
    ```bash
    # Analyze logs for patterns
    grep "CSP Violation" logs/nest-*.log | \
@@ -375,26 +385,32 @@ az keyvault secret set \
 
 ### Recommended Rollout Strategy
 
-**Phase 1: Report-Only (Week 1-2)**
+#### Phase 1: Report-Only (Week 1-2)
+
 ```bash
 CSP_REPORT_ONLY=true
 ```
+
 - No user impact (violations logged, not blocked)
 - Collect violation data
 - Identify false positives
 
-**Phase 2: Gradual Enforcement (Week 3-4)**
+#### Phase 2: Gradual Enforcement (Week 3-4)
+
 ```bash
 CSP_REPORT_ONLY=false
 ```
+
 - Enable enforcement in staging
 - Test critical user flows
 - Monitor for breakage
 
-**Phase 3: Production Enforcement (Week 5+)**
+#### Phase 3: Production Enforcement (Week 5+)
+
 ```bash
 CSP_REPORT_ONLY=false
 ```
+
 - Roll out to production
 - Monitor closely for first 48 hours
 - Be ready to rollback if issues arise
@@ -419,6 +435,7 @@ az containerapp update \
 ### Defense-in-Depth
 
 CSP is **NOT** a replacement for:
+
 - Input sanitization (`@Sanitize()` decorator)
 - Output encoding (React escaping)
 - Authentication (JWT tokens)
@@ -437,6 +454,7 @@ CSP is a **fallback** layer that prevents exploitation if other layers fail.
 ### Best Practices
 
 ✅ **Do:**
+
 - Start with report-only mode
 - Monitor violations regularly
 - Keep CSP directives as strict as possible
@@ -444,6 +462,7 @@ CSP is a **fallback** layer that prevents exploitation if other layers fail.
 - Document all CSP changes
 
 ❌ **Don't:**
+
 - Use `unsafe-inline` or `unsafe-eval` in production
 - Whitelist entire domains (`*.example.com`)
 - Ignore violation reports
@@ -456,11 +475,13 @@ CSP is a **fallback** layer that prevents exploitation if other layers fail.
 **Goal:** Replace `unsafe-inline` with cryptographic nonces
 
 **Benefits:**
+
 - Strict CSP in production
 - No inline script restrictions
 - Better security posture
 
 **Implementation:**
+
 ```typescript
 // Generate nonce per request
 const nonce = crypto.randomBytes(16).toString('base64');
@@ -478,6 +499,7 @@ scriptSrc: [`'self'`, `'nonce-${nonce}'`]
 **Goal:** Web UI for viewing violation reports
 
 **Features:**
+
 - Real-time violation stream
 - Filtering by directive, blocked URI
 - Trending analysis
@@ -488,10 +510,13 @@ scriptSrc: [`'self'`, `'nonce-${nonce}'`]
 **Goal:** Verify integrity of external resources
 
 **Implementation:**
+
 ```html
-<script src="https://cdn.example.com/lib.js"
+<script
+  src="https://cdn.example.com/lib.js"
   integrity="sha384-oqVuAfXRKap7fdgcCY5uykM6+R9GqQ8K/uxy9rx7HNQlGYl1kPzQho1wx4JwY8wC"
-  crossorigin="anonymous"></script>
+  crossorigin="anonymous"
+></script>
 ```
 
 ## References

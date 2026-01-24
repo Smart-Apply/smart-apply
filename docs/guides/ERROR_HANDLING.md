@@ -5,6 +5,7 @@ This document describes the error handling and toast notification system impleme
 ## Overview
 
 The application uses a centralized error handling system with:
+
 - **Sonner** for toast notifications
 - **Custom error classes** for type-safe error handling
 - **React Query** integration for automatic retry logic
@@ -16,6 +17,7 @@ The application uses a centralized error handling system with:
 ### 1. Error Classes (`src/lib/errors.ts`)
 
 #### `ApiError`
+
 Custom error class for API errors with additional context:
 
 ```typescript
@@ -31,6 +33,7 @@ if (ApiError.isApiError(error)) {
 ```
 
 #### `NetworkError`
+
 Error class for network/connection issues:
 
 ```typescript
@@ -81,6 +84,7 @@ toastPromise(
 ### 3. Enhanced API Client (`src/lib/api-client.ts`)
 
 The API client includes:
+
 - **Automatic retry logic** for network errors and 5xx errors
 - **Exponential backoff** between retries
 - **Network error detection** and conversion to `NetworkError`
@@ -91,15 +95,16 @@ The API client includes:
 const data = await api.profile.get(token);
 
 // Disable retry for specific request
-const data = await apiRequest('/endpoint', { 
-  token, 
-  retry: false 
+const data = await apiRequest('/endpoint', {
+  token,
+  retry: false
 });
 ```
 
 ### 4. Error Handling Hooks (`src/hooks/use-api-error.ts`)
 
 #### `useApiError`
+
 Hook to handle errors with automatic actions:
 
 ```typescript
@@ -116,6 +121,7 @@ useApiError({
 ```
 
 #### `useErrorHandler`
+
 Returns an error handler function for mutations:
 
 ```typescript
@@ -124,18 +130,19 @@ const handleError = useErrorHandler({
   showToast: true,
   onError: (error) => {
     console.log('Custom error handling', error);
-  }
+  },
 });
 
 const mutation = useMutation({
   mutationFn: updateProfile,
-  onError: handleError
+  onError: handleError,
 });
 ```
 
 ### 5. React Query Global Error Handling (`src/lib/providers.tsx`)
 
 React Query is configured with:
+
 - **Automatic retry logic** for network errors and 5xx errors
 - **No retry** for 4xx errors (client errors)
 - **Global error handler** for mutations that handles 401 errors
@@ -158,6 +165,7 @@ queries: {
 ### 6. Error Boundaries
 
 #### Component Error Boundary (`src/components/error-boundary.tsx`)
+
 React Error Boundary class component that catches JavaScript errors:
 
 ```typescript
@@ -167,6 +175,7 @@ React Error Boundary class component that catches JavaScript errors:
 ```
 
 #### Next.js Error Boundary (`src/app/error.tsx`)
+
 Next.js error boundary for app directory errors:
 
 - Automatically wraps all pages
@@ -176,48 +185,56 @@ Next.js error boundary for app directory errors:
 ## Error Scenarios Handled
 
 ### 1. Network Errors (No Connection)
+
 - **Detection**: `TypeError: Failed to fetch`
 - **Handling**: Automatic retry with exponential backoff
 - **User Feedback**: Toast with retry button
 
 ### 2. 401 Unauthorized (Session Expired)
+
 - **Detection**: `ApiError` with status 401
-- **Handling**: 
+- **Handling**:
   - Clear auth state
   - Show "Session expired" toast
   - Redirect to login page
 - **Applies to**: All API calls
 
 ### 3. 403 Forbidden
+
 - **Detection**: `ApiError` with status 403
 - **Handling**: Show "Access denied" message
 - **No automatic action**
 
 ### 4. 404 Not Found
+
 - **Detection**: `ApiError` with status 404
 - **Handling**: Show "Resource not found" message
 - **No retry**
 
 ### 5. 422 Validation Error
+
 - **Detection**: `ApiError` with status 422
 - **Handling**: Show validation error message from backend
 - **No retry**
 
 ### 6. 429 Rate Limit
+
 - **Detection**: `ApiError` with status 429
 - **Handling**: Show "Too many requests" message
 - **No retry** (should implement proper rate limiting)
 
 ### 7. 500 Server Error
+
 - **Detection**: `ApiError` with status 500+
-- **Handling**: 
+- **Handling**:
   - Automatic retry (up to 3 times)
   - Exponential backoff delay
   - Show error message if all retries fail
 
 ### 8. React Component Errors
+
 - **Detection**: Error thrown in React component
-- **Handling**: 
+- **Handling**:
   - Error Boundary catches error
   - Shows fallback UI
   - Prevents app crash
@@ -239,7 +256,7 @@ function MyComponent() {
     },
     onError: (error) => {
       toastError(error, 'Failed to update profile');
-    }
+    },
   });
 }
 ```
@@ -253,7 +270,7 @@ import { toastSuccess } from '@/lib/toast';
 
 function MyComponent() {
   const handleError = useErrorHandler();
-  
+
   const mutation = useMutation({
     mutationFn: deleteItem,
     onSuccess: () => {
@@ -294,16 +311,16 @@ import { toastNetworkError } from '@/lib/toast';
 
 function MyComponent() {
   const [retry, setRetry] = useState(0);
-  
+
   const { data, error, refetch } = useQuery({
     queryKey: ['data', retry],
     queryFn: fetchData,
   });
-  
+
   useEffect(() => {
     if (error && NetworkError.isNetworkError(error)) {
       toastNetworkError(() => {
-        setRetry(prev => prev + 1);
+        setRetry((prev) => prev + 1);
       });
     }
   }, [error]);
@@ -323,13 +340,16 @@ function MyComponent() {
 ## Configuration
 
 ### Toast Duration
+
 Default durations (can be overridden):
+
 - Success: 4 seconds
 - Error: 5 seconds
 - Warning: 4 seconds
 - Info: 4 seconds
 
 ### Retry Configuration
+
 - **Max retries**: 3 attempts
 - **Retry delay**: Exponential backoff (1s, 2s, 4s, 8s, max 10s)
 - **Retry on**: Network errors, 5xx errors
@@ -338,6 +358,7 @@ Default durations (can be overridden):
 ## Accessibility
 
 All toasts include:
+
 - **ARIA live regions** (handled by Sonner)
 - **Close button** for manual dismissal
 - **Auto-dismiss** after timeout
@@ -349,20 +370,16 @@ All toasts include:
 1. **Error Tracking Integration** (Sentry, LogRocket)
    - Log all errors to tracking service
    - Include user context and breadcrumbs
-   
 2. **Offline Detection**
    - Show offline banner when no connection
    - Queue mutations for retry when back online
-   
 3. **Custom Error Pages**
    - 404 page
    - 500 page
    - Maintenance page
-   
 4. **Validation Error Details**
    - Show field-specific validation errors
    - Highlight invalid form fields
-   
 5. **Rate Limiting UI**
    - Show rate limit status
    - Display countdown until retry allowed

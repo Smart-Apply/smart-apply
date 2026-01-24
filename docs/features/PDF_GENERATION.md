@@ -5,6 +5,7 @@ This document describes the enhanced PDF generation system for Smart Apply, whic
 ## Overview
 
 The PDF generation system uses:
+
 - **Puppeteer** for HTML to PDF conversion
 - **Handlebars** for template rendering
 - **Professional CSS** with Azure blue accent colors
@@ -12,7 +13,7 @@ The PDF generation system uses:
 
 ## Architecture
 
-```
+```text
 LLM Service
     ↓
 Structured Data (JSON/HTML)
@@ -44,7 +45,7 @@ const coverLetterData = {
   recipientName: 'Hiring Manager',
   content: `
     <p>Opening paragraph expressing interest...</p>
-    
+
     <div class="key-qualifications">
       <h3>Why I'm an Excellent Fit</h3>
       <ul>
@@ -52,11 +53,11 @@ const coverLetterData = {
         <li class="metric">Improved performance by <span class="metric">40%</span></li>
       </ul>
     </div>
-    
+
     <div class="motivation-section">
       <p>Why I want to work at this company...</p>
     </div>
-    
+
     <p>Closing paragraph...</p>
   `,
   closingPhrase: 'Sincerely,', // Optional, defaults to "Sincerely,"
@@ -75,9 +76,9 @@ const resumeData = {
   linkedin: 'https://linkedin.com/in/johndev',
   github: 'https://github.com/johndev',
   location: 'San Francisco, CA',
-  
+
   summary: 'Senior engineer with 8+ years experience...',
-  
+
   skillCategories: [
     {
       type: 'Languages', // Will show 💻 icon
@@ -100,7 +101,7 @@ const resumeData = {
       skills: ['Git', 'CI/CD', 'Kubernetes'],
     },
   ],
-  
+
   experiences: [
     {
       title: 'Senior Software Engineer',
@@ -114,7 +115,7 @@ const resumeData = {
       ],
     },
   ],
-  
+
   projects: [
     {
       name: 'Cool Project',
@@ -126,7 +127,7 @@ const resumeData = {
       ],
     },
   ],
-  
+
   education: [
     {
       degree: 'Bachelor of Science in Computer Science',
@@ -134,7 +135,7 @@ const resumeData = {
       year: '2017',
     },
   ],
-  
+
   certifications: [
     {
       name: 'Azure Solutions Architect Expert',
@@ -151,32 +152,31 @@ const pdf = await pdfService.generateResumePDF(resumeData);
 
 ### Cover Letter Classes
 
-| Class | Purpose | Visual Effect |
-|-------|---------|---------------|
+| Class                 | Purpose                            | Visual Effect                     |
+| --------------------- | ---------------------------------- | --------------------------------- |
 | `.key-qualifications` | Highlight important qualifications | Gray background, blue left border |
-| `.achievement` | Mark achievement-focused items | 🎯 icon before text |
-| `.metric` | Highlight data-driven points | 📊 icon before text |
-| `.motivation-section` | Emphasize motivation paragraph | Gray left border |
+| `.achievement`        | Mark achievement-focused items     | 🎯 icon before text               |
+| `.metric`             | Highlight data-driven points       | 📊 icon before text               |
+| `.motivation-section` | Emphasize motivation paragraph     | Gray left border                  |
 
 ### Resume Classes
 
-| Class | Purpose | Icon |
-|-------|---------|------|
-| `.skill-category-title.languages` | Programming languages | 💻 |
-| `.skill-category-title.frameworks` | Frameworks/libraries | ⚙️ |
-| `.skill-category-title.cloud` | Cloud technologies | ☁️ |
-| `.skill-category-title.databases` | Database systems | 🗄️ |
-| `.skill-category-title.tools` | Development tools | 🔧 |
-| `.skill-category-title.other` | Other skills | 📦 |
+| Class                              | Purpose               | Icon |
+| ---------------------------------- | --------------------- | ---- |
+| `.skill-category-title.languages`  | Programming languages | 💻   |
+| `.skill-category-title.frameworks` | Frameworks/libraries  | ⚙️   |
+| `.skill-category-title.cloud`      | Cloud technologies    | ☁️   |
+| `.skill-category-title.databases`  | Database systems      | 🗄️   |
+| `.skill-category-title.tools`      | Development tools     | 🔧   |
+| `.skill-category-title.other`      | Other skills          | 📦   |
 
 ### Metric Highlighting
 
 Wrap numbers in `<span class="metric">` tags to highlight them:
 
 ```html
-Improved performance by <span class="metric">40%</span>
-Serving <span class="metric">1M+ users</span>
-Reduced costs by <span class="metric">$50K/year</span>
+Improved performance by <span class="metric">40%</span> Serving
+<span class="metric">1M+ users</span> Reduced costs by <span class="metric">$50K/year</span>
 ```
 
 ## LLM Prompt Integration
@@ -192,7 +192,9 @@ The LLM should generate HTML content with proper semantic structure:
   <h3>Why I'm an Excellent Fit</h3>
   <ul>
     <li class="achievement">Achievement with impact</li>
-    <li class="metric">Data-driven accomplishment with <span class="metric">42%</span> improvement</li>
+    <li class="metric">
+      Data-driven accomplishment with <span class="metric">42%</span> improvement
+    </li>
   </ul>
 </div>
 
@@ -211,8 +213,8 @@ The LLM should generate structured JSON:
 {
   "summary": "2-3 sentence professional summary",
   "skillCategories": [
-    {"type": "Languages", "skills": ["TypeScript", "Python"]},
-    {"type": "Cloud", "skills": ["Azure", "AWS"]}
+    { "type": "Languages", "skills": ["TypeScript", "Python"] },
+    { "type": "Cloud", "skills": ["Azure", "AWS"] }
   ],
   "experiences": [
     {
@@ -231,6 +233,7 @@ The LLM should generate structured JSON:
 ## Design Principles
 
 ### Typography
+
 - **Primary Font**: System fonts (similar to Calibri/Open Sans)
 - **H1**: 26-28pt for names
 - **H2**: 16pt for section titles
@@ -238,20 +241,23 @@ The LLM should generate structured JSON:
 - **Small**: 9-10pt for metadata
 
 ### Colors
+
 - **Primary Accent**: Azure Blue (#0066cc)
 - **Text**: Dark Gray (#2c3e50)
 - **Muted**: Medium Gray (#6c757d)
 - **Background Accents**: Light Gray/Blue (#f7fafc)
 
 ### Spacing
+
 - **Section Margins**: 16-20pt between sections
 - **Line Height**: 1.5-1.6 for body text
 - **List Items**: 4-6pt spacing
-- **Page Margins**: 
+- **Page Margins**:
   - Cover Letter: 20-25mm
   - Resume: 15-20mm
 
 ### Visual Hierarchy
+
 1. **Name** (largest, bold, centered)
 2. **Section Titles** (uppercase, blue, border-bottom)
 3. **Experience Titles** (bold, 12pt)
@@ -261,6 +267,7 @@ The LLM should generate structured JSON:
 ## Best Practices
 
 ### Cover Letters
+
 - ✅ Keep to 1 page (300-400 words)
 - ✅ Use 3-5 bullet points in key qualifications
 - ✅ Highlight 2-3 key metrics
@@ -268,6 +275,7 @@ The LLM should generate structured JSON:
 - ✅ Clear visual hierarchy
 
 ### Resumes
+
 - ✅ Max 2 pages
 - ✅ Most recent experience first
 - ✅ Quantify achievements with metrics
@@ -276,6 +284,7 @@ The LLM should generate structured JSON:
 - ✅ Consistent formatting
 
 ### Metrics
+
 - ✅ Use percentages (40% improvement)
 - ✅ Include scale (1M+ users)
 - ✅ Show time savings (2hrs → 15min)
@@ -296,7 +305,7 @@ const pdf = await pdfService.generatePDF(html, {
 
 ## Files and Structure
 
-```
+```text
 apps/api/src/pdf/
 ├── pdf.service.ts              # Main PDF generation service
 ├── pdf.module.ts               # Module configuration
@@ -323,18 +332,23 @@ npm test -- pdf.integration.spec.ts
 ## Troubleshooting
 
 ### Puppeteer Issues
+
 If Puppeteer fails to initialize:
+
 1. Check `PUPPETEER_EXECUTABLE_PATH` environment variable
 2. Ensure Chromium is installed in production
 3. Use `--no-sandbox` flag in containerized environments
 
 ### Template Not Found
+
 Ensure templates are included in the build:
+
 1. Check `nest-cli.json` for asset compilation
 2. Verify template files are in `dist/` after build
 3. Check file paths are correct for your environment
 
 ### Styling Issues
+
 - Ensure CSS is properly embedded in HTML
 - Check for conflicting styles
 - Verify Puppeteer `printBackground: true` is set

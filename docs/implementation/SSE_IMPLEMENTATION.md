@@ -8,13 +8,14 @@ The Smart Apply application uses Server-Sent Events (SSE) to provide real-time s
 
 ### Endpoint
 
-```
+```text
 GET /api/v1/applications/:id/stream
 ```
 
 **Authentication:** Required (JWT via HttpOnly cookie)
 
 **Response Headers:**
+
 - `Content-Type: text/event-stream`
 - `Cache-Control: no-cache`
 - `Connection: keep-alive`
@@ -29,16 +30,18 @@ GET /api/v1/applications/:id/stream
 ### Technical Details
 
 **Implementation:** RxJS Observable with `interval` operator
+
 - Polls every 2 seconds
 - Uses `switchMap` to fetch latest application data
 - Uses `takeWhile` to close stream on final status
 
 **Stream Format:**
+
 ```typescript
 {
   data: {
     id: string;
-    status: "PENDING" | "GENERATING" | "READY" | "FAILED";
+    status: 'PENDING' | 'GENERATING' | 'READY' | 'FAILED';
     updatedAt: string;
     errorMessage: string | null;
   }
@@ -111,6 +114,7 @@ function ApplicationDetails({ applicationId }) {
 ## Advantages Over Polling
 
 ### SSE Benefits
+
 - ✅ **Push-based:** Server sends updates immediately
 - ✅ **Efficient:** Single long-lived connection instead of repeated requests
 - ✅ **Standard:** Built-in browser API (EventSource)
@@ -118,6 +122,7 @@ function ApplicationDetails({ applicationId }) {
 - ✅ **Lower Latency:** Instant updates without polling delay
 
 ### Polling Drawbacks
+
 - ❌ Wastes bandwidth with repeated requests
 - ❌ Higher latency (depends on polling interval)
 - ❌ More server load (N requests per minute per client)
@@ -125,13 +130,15 @@ function ApplicationDetails({ applicationId }) {
 
 ## When to Use Each
 
-### Use SSE When:
+### Use SSE When
+
 - Real-time updates are important (application status, live dashboards)
 - Multiple status changes expected
 - User is actively watching for updates
 - Mobile/responsive experience needed
 
-### Use Polling When:
+### Use Polling When
+
 - Updates are infrequent
 - User is not actively watching
 - Background sync (e.g., every 5 minutes)
@@ -140,12 +147,15 @@ function ApplicationDetails({ applicationId }) {
 ## Configuration
 
 ### Backend Environment Variables
+
 No additional configuration needed. SSE uses existing:
+
 - `JWT_SECRET` for authentication
 - `CORS_ORIGINS` for allowed origins
 - `DATABASE_URL` for data access
 
 ### Frontend Environment Variables
+
 ```bash
 NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
 ```
@@ -153,9 +163,11 @@ NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
 ## Testing
 
 ### E2E Tests
+
 Located in: `apps/api/test/applications.e2e-spec.ts`
 
 Tests verify:
+
 - ✅ SSE endpoint returns correct headers (`text/event-stream`)
 - ✅ Authentication required (401 without token)
 - ✅ Authorization (404 for non-existent or unauthorized application)
@@ -164,11 +176,13 @@ Tests verify:
 ### Manual Testing
 
 1. **Start backend:**
+
    ```bash
    cd apps/api && npm run start:dev
    ```
 
 2. **Start frontend:**
+
    ```bash
    cd apps/web && npm run dev
    ```
@@ -185,6 +199,7 @@ Tests verify:
 ## Browser Compatibility
 
 EventSource API is supported in all modern browsers:
+
 - ✅ Chrome/Edge 6+
 - ✅ Firefox 6+
 - ✅ Safari 5+
@@ -194,6 +209,7 @@ EventSource API is supported in all modern browsers:
 ## Future Enhancements
 
 ### Event Emitter Integration (Post-MVP)
+
 Instead of polling every 2 seconds, integrate with job queue events:
 
 ```typescript
@@ -215,16 +231,19 @@ streamStatus(@Param('id') id: string) {
 ```
 
 **Benefits:**
+
 - Instant updates (no 2-second delay)
 - No database polling (lower load)
 - More scalable architecture
 
 **Trade-offs:**
+
 - Requires event emitter setup
 - More complex architecture
 - Events must be reliable
 
 ### Additional Features
+
 - Multiple event types (progress updates, logs)
 - Reconnection with exponential backoff
 - Heartbeat to detect stale connections

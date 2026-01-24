@@ -35,11 +35,13 @@ PUPPETEER_EVICTION_INTERVAL_MS=10000
 **Formula**: `max_browsers = (cpu_cores × 2) + 1`
 
 **Examples**:
+
 - **Development** (2 cores): `PUPPETEER_MAX_BROWSERS=3`
 - **Production** (4 cores): `PUPPETEER_MAX_BROWSERS=5`
 - **High-traffic** (8 cores): `PUPPETEER_MAX_BROWSERS=9`
 
 **Memory Considerations**:
+
 - Each browser: ~50-100MB RAM
 - Max pool size (5 browsers): ~500MB RAM
 - Plan for: (max_browsers × 100MB) + 500MB overhead
@@ -52,10 +54,11 @@ PUPPETEER_EVICTION_INTERVAL_MS=10000
    - Configures idle timeout and eviction
 
 2. **PDF Generation**:
+
    ```typescript
    // Acquire browser from pool
    const browser = await this.acquireBrowser();
-   
+
    try {
      const page = await browser.newPage();
      // ... generate PDF ...
@@ -74,12 +77,13 @@ PUPPETEER_EVICTION_INTERVAL_MS=10000
 
 Pool metrics are logged every 30 seconds in development mode:
 
-```
-Pool Metrics: size=3, available=2, borrowed=1, pending=0, 
+```text
+Pool Metrics: size=3, available=2, borrowed=1, pending=0,
 utilization=33.3%, acquires=45, releases=44, errors=0
 ```
 
 **Metrics explained**:
+
 - `size`: Total browsers in pool
 - `available`: Browsers ready for use
 - `borrowed`: Browsers currently in use
@@ -92,16 +96,19 @@ utilization=33.3%, acquires=45, releases=44, errors=0
 ### Error Handling
 
 **Pool Exhaustion**:
+
 - If all browsers are busy, new requests wait up to 30 seconds
 - After 30s timeout, throws: `Browser pool exhausted`
 - Solution: Increase `PUPPETEER_MAX_BROWSERS`
 
 **Browser Crashes**:
+
 - Pool validates browsers before use (`isConnected()`)
 - Invalid browsers are discarded and replaced
 - No manual intervention needed
 
 **Memory Leaks**:
+
 - Idle browsers are closed after `PUPPETEER_IDLE_TIMEOUT_MS`
 - Prevents memory accumulation during low traffic
 - Browsers recreated on-demand when needed
@@ -134,7 +141,7 @@ To verify pool behavior under load (100 concurrent requests):
 
 ```typescript
 // Example load test
-const promises = Array.from({ length: 100 }, () => 
+const promises = Array.from({ length: 100 }, () =>
   pdfService.generatePDF(html)
 );
 
@@ -158,6 +165,7 @@ Monitor these metrics in Azure Application Insights:
 4. **Memory Usage**: Should remain constant
 
 **Alert Thresholds**:
+
 - Utilization > 80% for 5min → Increase max browsers
 - Pending > 0 for 1min → Pool exhausted
 - Errors > 10/hour → Browser stability issue
@@ -170,6 +178,7 @@ Monitor these metrics in Azure Application Insights:
 **Symptoms**: Pool frequently exhausted, requests queued
 
 **Solutions**:
+
 1. Increase `PUPPETEER_MAX_BROWSERS`
 2. Scale horizontally (more containers)
 3. Optimize PDF rendering (reduce complexity)
@@ -179,6 +188,7 @@ Monitor these metrics in Azure Application Insights:
 **Symptoms**: Memory usage grows over time
 
 **Solutions**:
+
 1. Decrease `PUPPETEER_IDLE_TIMEOUT_MS` (close browsers faster)
 2. Decrease `PUPPETEER_MIN_BROWSERS` (fewer idle browsers)
 3. Check for unclosed pages in PDF generation code
@@ -188,6 +198,7 @@ Monitor these metrics in Azure Application Insights:
 **Symptoms**: Errors > 0, PDF generation fails
 
 **Solutions**:
+
 1. Check Chromium logs for segfaults
 2. Increase container memory limits
 3. Reduce `PUPPETEER_MAX_BROWSERS` (less contention)
@@ -196,6 +207,7 @@ Monitor these metrics in Azure Application Insights:
 ## Migration from Singleton
 
 **Before** (Singleton browser):
+
 ```typescript
 private browser: Browser | null = null;
 
@@ -207,6 +219,7 @@ async generatePDF() {
 ```
 
 **After** (Browser pool):
+
 ```typescript
 private browserPool: Pool<Browser>;
 
@@ -222,6 +235,7 @@ async generatePDF() {
 ```
 
 **Key Changes**:
+
 1. Browser is acquired and released per request
 2. Always use try-finally to ensure release
 3. No manual browser creation (pool handles it)
@@ -229,18 +243,21 @@ async generatePDF() {
 ## Performance Impact
 
 **Before** (Singleton):
+
 - Single browser, pages created per request
 - No concurrency limit
 - Memory grows linearly with concurrent requests
 - OOM crash at ~100 concurrent requests
 
 **After** (Browser pool):
+
 - Configurable browser pool (default: 5)
 - Natural concurrency limit (max browsers)
 - Memory usage constant (pool size × 100MB)
 - No OOM crashes (queue + timeout instead)
 
 **Benchmark** (100 concurrent PDF requests):
+
 - Singleton: 10GB RAM → OOM crash
 - Pool (5 browsers): 500MB RAM → All succeed
 

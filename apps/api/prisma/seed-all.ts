@@ -6,11 +6,12 @@
  * This TypeScript file is compiled during Docker build to prisma/dist/seed-all.js
  */
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../src/generated/prisma/client';
 import { execSync } from 'child_process';
 import { join } from 'path';
 
-const prisma = new PrismaClient();
+// Prisma 7: Empty object for CLI-based seeds
+const prisma = new PrismaClient({} as any);
 
 async function main() {
   console.log('🌱 Starting combined database seed...');

@@ -287,4 +287,30 @@ export class AzureAIFoundryProvider implements LLMProvider, OnModuleInit {
 
     return coverLetterKeywords.some((keyword) => lowerPrompt.includes(keyword));
   }
+
+  /**
+   * Health check for Azure AI Foundry provider
+   * Checks agent client availability and fallback configuration
+   */
+  async healthCheck(): Promise<boolean> {
+    try {
+      // Check if agents client is available
+      if (this.agentsClient && this.cvWriterAgentId && this.clWriterAgentId) {
+        this.logger.debug('Azure AI Foundry health check: Agents available');
+        return true;
+      }
+
+      // Check fallback configuration
+      if (this.azureOpenAIEndpoint && this.azureOpenAIApiKey) {
+        this.logger.debug('Azure AI Foundry health check: Fallback to Azure OpenAI available');
+        return true;
+      }
+
+      this.logger.warn('Azure AI Foundry health check failed: No agents or fallback configured');
+      return false;
+    } catch (error: any) {
+      this.logger.warn(`Azure AI Foundry health check failed: ${error.message}`);
+      return false;
+    }
+  }
 }

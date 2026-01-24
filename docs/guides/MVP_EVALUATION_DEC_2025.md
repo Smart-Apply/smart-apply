@@ -37,34 +37,34 @@ Die umfassende Scalability-Analyse identifizierte 8 kritische Blocker - **alle s
 
 #### ✅ Implementiert und Produktionsbereit
 
-| Modul              | Status  | Notes                                                   |
-| ------------------ | ------- | ------------------------------------------------------- |
-| **Auth**           | ✅ 100% | JWT, HttpOnly Cookies, Refresh Tokens, Session Mgmt     |
-| **Profile**        | ✅ 100% | CRUD mit allen Relations (Skills, Exp, Education, etc.) |
-| **Job Postings**   | ✅ 95%  | URL Parsing (Azure AI Agent + Cheerio)                  |
-| **Applications**   | ✅ 100% | Pipeline funktioniert, SSE Real-time Updates            |
-| **Templates**      | ✅ 100% | 50 Templates (5 designs × 5 languages × 2 types)        |
-| **LLM**            | ✅ 100% | Azure OpenAI + Language Detection                       |
-| **PDF**            | ✅ 100% | Puppeteer, ATS-optimiert                                |
-| **Storage**        | ✅ 100% | Azure Blob + SAS URLs                                   |
-| **Jobs/Queue**     | ✅ 100% | In-Memory + Azure Service Bus                           |
-| **Security**       | ✅ 95%  | Alle Critical/High Issues gelöst                        |
-| **ATS Analysis**   | ✅ 100% | Keyword Matching mit Scoring                            |
-| **Health Checks**  | ✅ 100% | /health endpoint mit DB/Storage checks                  |
+| Modul             | Status  | Notes                                                   |
+| ----------------- | ------- | ------------------------------------------------------- |
+| **Auth**          | ✅ 100% | JWT, HttpOnly Cookies, Refresh Tokens, Session Mgmt     |
+| **Profile**       | ✅ 100% | CRUD mit allen Relations (Skills, Exp, Education, etc.) |
+| **Job Postings**  | ✅ 95%  | URL Parsing (Azure AI Agent + Cheerio)                  |
+| **Applications**  | ✅ 100% | Pipeline funktioniert, SSE Real-time Updates            |
+| **Templates**     | ✅ 100% | 50 Templates (5 designs × 5 languages × 2 types)        |
+| **LLM**           | ✅ 100% | Azure OpenAI + Language Detection                       |
+| **PDF**           | ✅ 100% | Puppeteer, ATS-optimiert                                |
+| **Storage**       | ✅ 100% | Azure Blob + SAS URLs                                   |
+| **Jobs/Queue**    | ✅ 100% | In-Memory + Azure Service Bus                           |
+| **Security**      | ✅ 95%  | Alle Critical/High Issues gelöst                        |
+| **ATS Analysis**  | ✅ 100% | Keyword Matching mit Scoring                            |
+| **Health Checks** | ✅ 100% | /health endpoint mit DB/Storage checks                  |
 
-#### ✅ KRITISCHE BLOCKER - ALLE GELÖST!
+#### ✅ KRITISCHE BLOCKER - ALLE GELÖST
 
-| Issue | Titel                           | Status      | Implementiert |
-| ----- | ------------------------------- | ----------- | ------------- |
-| #198  | Database Indexes                | ✅ Done     | Ja            |
-| #210  | File Size Limits (10MB)         | ✅ Done     | Ja            |
-| #200  | Session Cleanup Cron            | ✅ Done     | Ja            |
-| #204  | Telefonnummer Validation        | ✅ Done     | Ja            |
-| #206  | Duplicate Prevention            | ✅ Done     | Ja            |
-| #223  | Compression Middleware          | ✅ Done     | Ja            |
-| #209  | Loading States                  | ✅ Done     | Ja            |
-| #205  | Empty States                    | ✅ Done     | Ja            |
-| ----- | **GESAMT**                      | **✅ 100%** | **11h Zeit** |
+| Issue | Titel                    | Status      | Implementiert |
+| ----- | ------------------------ | ----------- | ------------- |
+| #198  | Database Indexes         | ✅ Done     | Ja            |
+| #210  | File Size Limits (10MB)  | ✅ Done     | Ja            |
+| #200  | Session Cleanup Cron     | ✅ Done     | Ja            |
+| #204  | Telefonnummer Validation | ✅ Done     | Ja            |
+| #206  | Duplicate Prevention     | ✅ Done     | Ja            |
+| #223  | Compression Middleware   | ✅ Done     | Ja            |
+| #209  | Loading States           | ✅ Done     | Ja            |
+| #205  | Empty States             | ✅ Done     | Ja            |
+| ----- | **GESAMT**               | **✅ 100%** | **11h Zeit**  |
 
 **Resultat:**
 
@@ -80,26 +80,26 @@ Die umfassende Scalability-Analyse identifizierte 8 kritische Blocker - **alle s
 
 #### ✅ Implementiert und Funktional
 
-| Feature                | Status  | Notes                                 |
-| ---------------------- | ------- | ------------------------------------- |
-| **Landing Page**       | ✅ 100% | Hero, Features, CTA                   |
-| **Auth**               | ✅ 100% | Login, Register                       |
-| **Dashboard**          | ✅ 100% | Stats, Recent Apps                    |
-| **Profile**            | ✅ 100% | View + Edit mit 5 Managers            |
-| **Job Postings**       | ✅ 90%  | List, URL Parser                      |
-| **Applications**       | ✅ 100% | List, Detail, Wizard, Status          |
-| **PDF Preview**        | ✅ 100% | react-pdf Modal                       |
-| **Real-time Updates**  | ✅ 100% | SSE für Status Changes                |
-| **Settings/Sessions**  | ✅ 100% | Multi-device, Remote Logout           |
-| **ATS Analysis Panel** | ✅ 100% | Score, Keywords, Suggestions          |
-| **Edit Mode**          | ✅ 100% | Tiptap Editor für CL/Resume           |
+| Feature                | Status  | Notes                        |
+| ---------------------- | ------- | ---------------------------- |
+| **Landing Page**       | ✅ 100% | Hero, Features, CTA          |
+| **Auth**               | ✅ 100% | Login, Register              |
+| **Dashboard**          | ✅ 100% | Stats, Recent Apps           |
+| **Profile**            | ✅ 100% | View + Edit mit 5 Managers   |
+| **Job Postings**       | ✅ 90%  | List, URL Parser             |
+| **Applications**       | ✅ 100% | List, Detail, Wizard, Status |
+| **PDF Preview**        | ✅ 100% | react-pdf Modal              |
+| **Real-time Updates**  | ✅ 100% | SSE für Status Changes       |
+| **Settings/Sessions**  | ✅ 100% | Multi-device, Remote Logout  |
+| **ATS Analysis Panel** | ✅ 100% | Score, Keywords, Suggestions |
+| **Edit Mode**          | ✅ 100% | Tiptap Editor für CL/Resume  |
 
-#### ✅ KRITISCHE UX-BLOCKER - GELÖST!
+#### ✅ KRITISCHE UX-BLOCKER - GELÖST
 
-| Issue | Problem                          | Status  | Resultat                        |
-| ----- | -------------------------------- | ------- | ------------------------------- |
-| #209  | Buttons ohne Loading Spinner     | ✅ Done | Keine Mehrfach-Submissions mehr |
-| #205  | Keine Empty States               | ✅ Done | Klare Guidance für neue User    |
+| Issue | Problem                      | Status  | Resultat                        |
+| ----- | ---------------------------- | ------- | ------------------------------- |
+| #209  | Buttons ohne Loading Spinner | ✅ Done | Keine Mehrfach-Submissions mehr |
+| #205  | Keine Empty States           | ✅ Done | Klare Guidance für neue User    |
 
 **Resultat:**
 
@@ -113,19 +113,19 @@ Die umfassende Scalability-Analyse identifizierte 8 kritische Blocker - **alle s
 
 #### ✅ Alle Critical/High Priority Issues gelöst
 
-| Security Feature       | Status  | Issue |
-| ---------------------- | ------- | ----- |
-| Strong JWT Secret      | ✅ Done | #91   |
-| Restrictive CORS       | ✅ Done | #92   |
-| HttpOnly Cookies       | ✅ Done | #93   |
-| Password Strength      | ✅ Done | #94   |
-| Rate Limiting          | ✅ Done | #95   |
-| CSRF Protection        | ✅ Done | #96   |
-| XSS Protection         | ✅ Done | #97   |
-| Refresh Tokens         | ✅ Done | #98   |
-| Audit Logging          | ✅ Done | #129  |
-| Frontend CSP           | ✅ Done | #144  |
-| Session Management     | ✅ Done | #146  |
+| Security Feature   | Status  | Issue |
+| ------------------ | ------- | ----- |
+| Strong JWT Secret  | ✅ Done | #91   |
+| Restrictive CORS   | ✅ Done | #92   |
+| HttpOnly Cookies   | ✅ Done | #93   |
+| Password Strength  | ✅ Done | #94   |
+| Rate Limiting      | ✅ Done | #95   |
+| CSRF Protection    | ✅ Done | #96   |
+| XSS Protection     | ✅ Done | #97   |
+| Refresh Tokens     | ✅ Done | #98   |
+| Audit Logging      | ✅ Done | #129  |
+| Frontend CSP       | ✅ Done | #144  |
+| Session Management | ✅ Done | #146  |
 
 **Security Score:** 9.5/10 - Bereit für Beta-Tester ✅
 
@@ -170,11 +170,11 @@ model Application {
 // apps/api/src/uploads/uploads.service.ts
 async uploadFile(file: Express.Multer.File) {
   const MAX_SIZE = 10 * 1024 * 1024; // 10MB
-  
+
   if (file.size > MAX_SIZE) {
     throw new BadRequestException('Datei zu groß (max. 10MB)');
   }
-  
+
   // Proceed...
 }
 ```
@@ -187,7 +187,7 @@ async uploadFile(file: Express.Multer.File) {
 
 **Problem:** Sessions wachsen unkontrolliert
 
-```
+```text
 10 Tester × 5 Sessions/Tester × 30 Tage = 1500 Sessions
 → Database Bloat, langsame Queries
 ```
@@ -212,8 +212,8 @@ async cleanupExpiredSessions() {
 **Fix:**
 
 ```typescript
-@IsPhoneNumber(null, { 
-  message: 'Telefonnummer muss im Format +49123456789 sein' 
+@IsPhoneNumber(null, {
+  message: 'Telefonnummer muss im Format +49123456789 sein'
 })
 phone?: string;
 ```
@@ -268,7 +268,7 @@ const mutation = useCreateApplication();
 <Button disabled={mutation.isPending}>
   {mutation.isPending && <Loader2 className="animate-spin" />}
   {mutation.isPending ? 'Erstelle...' : 'Bewerbung erstellen'}
-</Button>
+</Button>;
 ```
 
 ---
@@ -280,14 +280,16 @@ const mutation = useCreateApplication();
 **Fix:**
 
 ```tsx
-{applications.length === 0 && (
-  <EmptyState
-    icon={FileText}
-    title="Noch keine Bewerbungen"
-    description="Erstelle deine erste Bewerbung in 3 Schritten"
-    action={<Button>Jetzt starten</Button>}
-  />
-)}
+{
+  applications.length === 0 && (
+    <EmptyState
+      icon={FileText}
+      title="Noch keine Bewerbungen"
+      description="Erstelle deine erste Bewerbung in 3 Schritten"
+      action={<Button>Jetzt starten</Button>}
+    />
+  );
+}
 ```
 
 ---
@@ -439,21 +441,21 @@ const mutation = useCreateApplication();
 
 ## 📊 Feature Completion Matrix (Updated)
 
-| Feature Category       | Implemented | Tested  | Beta-Ready | Notes                      |
-| ---------------------- | ----------- | ------- | ---------- | -------------------------- |
-| Authentication         | 100%        | ✅ Yes  | ✅ Yes     | Production-ready           |
-| Profile Management     | 100%        | ✅ Yes  | ✅ Yes     | Inkl. Phone Validation (#204) ✅ |
-| Job Postings           | 95%         | ✅ Yes  | ✅ Yes     | URL Parsing funktioniert   |
-| Applications           | 100%        | ✅ Yes  | ✅ Yes     | Duplikate verhindert (#206) ✅ |
-| Templates              | 100%        | ✅ Yes  | ✅ Yes     | 50 Templates ready         |
-| LLM Integration        | 100%        | ✅ Yes  | ✅ Yes     | Azure OpenAI + Language Detection |
-| PDF Generation         | 100%        | ✅ Yes  | ✅ Yes     | Puppeteer, ATS-optimiert   |
-| Storage                | 100%        | ✅ Yes  | ✅ Yes     | File Limits aktiv (#210) ✅ |
-| Security               | 95%         | ✅ Yes  | ✅ Yes     | Production-ready           |
-| Frontend UI            | 96%         | ✅ Yes  | ✅ Yes     | Loading + Empty States (#209, #205) ✅ |
-| Backend Scalability    | 98%         | ✅ Yes  | ✅ Yes     | Indexes + Cleanup (#198, #200) ✅ |
-| DevOps/Infra           | 90%         | 🟡 Partial | ✅ Yes     | Health Checks ready        |
-| ATS Analysis           | 100%        | ✅ Yes  | ✅ Yes     | Keyword Matching ready     |
+| Feature Category    | Implemented | Tested     | Beta-Ready | Notes                                  |
+| ------------------- | ----------- | ---------- | ---------- | -------------------------------------- |
+| Authentication      | 100%        | ✅ Yes     | ✅ Yes     | Production-ready                       |
+| Profile Management  | 100%        | ✅ Yes     | ✅ Yes     | Inkl. Phone Validation (#204) ✅       |
+| Job Postings        | 95%         | ✅ Yes     | ✅ Yes     | URL Parsing funktioniert               |
+| Applications        | 100%        | ✅ Yes     | ✅ Yes     | Duplikate verhindert (#206) ✅         |
+| Templates           | 100%        | ✅ Yes     | ✅ Yes     | 50 Templates ready                     |
+| LLM Integration     | 100%        | ✅ Yes     | ✅ Yes     | Azure OpenAI + Language Detection      |
+| PDF Generation      | 100%        | ✅ Yes     | ✅ Yes     | Puppeteer, ATS-optimiert               |
+| Storage             | 100%        | ✅ Yes     | ✅ Yes     | File Limits aktiv (#210) ✅            |
+| Security            | 95%         | ✅ Yes     | ✅ Yes     | Production-ready                       |
+| Frontend UI         | 96%         | ✅ Yes     | ✅ Yes     | Loading + Empty States (#209, #205) ✅ |
+| Backend Scalability | 98%         | ✅ Yes     | ✅ Yes     | Indexes + Cleanup (#198, #200) ✅      |
+| DevOps/Infra        | 90%         | 🟡 Partial | ✅ Yes     | Health Checks ready                    |
+| ATS Analysis        | 100%        | ✅ Yes     | ✅ Yes     | Keyword Matching ready                 |
 
 **Gesamt Beta-Readiness:** **96% - ALLE KRITISCHEN FIXES IMPLEMENTIERT** ✅
 
@@ -461,7 +463,7 @@ const mutation = useCreateApplication();
 
 ## 🔧 Technische Schulden (Tracking)
 
-### ~~Vor Beta-Testern beheben~~ ✅ ALLE ERLEDIGT!
+### ~~Vor Beta-Testern beheben~~ ✅ ALLE ERLEDIGT
 
 - [x] #198 - Database Indexes ✅
 - [x] #200 - Session Cleanup ✅
@@ -493,14 +495,14 @@ const mutation = useCreateApplication();
 
 ### Azure Resources (10-20 Tester)
 
-| Service                       | Tier             | Monatliche Kosten |
-| ----------------------------- | ---------------- | ----------------- |
-| Azure Container Apps          | Consumption      | ~15€              |
-| Azure Database for PostgreSQL | Basic (1 vCore)  | ~25€              |
-| Azure Blob Storage            | Standard         | ~5€               |
-| Azure Service Bus             | Basic            | ~5€               |
-| Azure OpenAI (GPT-4)          | Pay-per-use      | ~30-50€           |
-| **GESAMT**                    |                  | **~80-100€/Monat** |
+| Service                       | Tier            | Monatliche Kosten  |
+| ----------------------------- | --------------- | ------------------ |
+| Azure Container Apps          | Consumption     | ~15€               |
+| Azure Database for PostgreSQL | Basic (1 vCore) | ~25€               |
+| Azure Blob Storage            | Standard        | ~5€                |
+| Azure Service Bus             | Basic           | ~5€                |
+| Azure OpenAI (GPT-4)          | Pay-per-use     | ~30-50€            |
+| **GESAMT**                    |                 | **~80-100€/Monat** |
 
 **Budget-Empfehlung:** 100€/Monat für Beta-Phase einplanen
 
@@ -508,29 +510,29 @@ const mutation = useCreateApplication();
 
 ## 🎯 Finale Empfehlung
 
-### 🚀 JETZT STARTEN - BETA-READY!
+### 🚀 JETZT STARTEN - BETA-READY
 
-**~~Schritt 1: Critical Fixes~~** ✅ **ERLEDIGT!**
+#### ~~Schritt 1: Critical Fixes~~ ✅ ERLEDIGT
 
 - ✅ Backend Fixes (6h) - Abgeschlossen
 - ✅ Frontend Fixes (4h) - Abgeschlossen
 - ✅ Testing (1h) - Abgeschlossen
 
-**Schritt 2: Beta-Tester Onboarding (JETZT)**
+#### Schritt 2: Beta-Tester Onboarding (JETZT)
 
 - ✅ **10-20 Tester einladen** - System ist stabil und bereit
 - 📋 Intensive Betreuung (Onboarding, Support)
 - 📊 Feedback sammeln (Surveys, Interviews)
 - 🎯 Metriken tracken (Conversion, Performance, Errors)
 
-**Schritt 3: Iterieren basierend auf Feedback (Wochen 2-5)**
+#### Schritt 3: Iterieren basierend auf Feedback (Wochen 2-5)
 
 - High Priority Fixes (#202, #201, #207, #208)
 - Feature Requests umsetzen
 - Bugs fixen
 - Performance-Optimierungen basierend auf echten Daten
 
-**Schritt 4: Public Beta vorbereiten (Woche 6-7)**
+#### Schritt 4: Public Beta vorbereiten (Woche 6-7)
 
 - Monitoring aufsetzen (Application Insights)
 - CI/CD Pipeline

@@ -13,7 +13,7 @@ Azure AI Foundry agents provide specialized AI capabilities for document generat
 
 ## Architecture
 
-```
+```text
 Application Request
        ↓
 ┌──────────────────┐
@@ -106,6 +106,7 @@ AZURE_OPENAI_API_VERSION=2024-02-15-preview
 ```
 
 The fallback is triggered when:
+
 - Agent endpoint is unavailable
 - Agent returns an error
 - Agent response timeout (60 seconds)
@@ -118,11 +119,13 @@ The fallback is triggered when:
 The provider automatically detects the document type based on prompt keywords:
 
 **Resume Keywords:**
+
 - `resume`, `cv`, `curriculum vitae`
 - `work experience`, `professional experience`
 - `education`, `skills`, `qualifications`
 
 **Cover Letter Keywords:**
+
 - `cover letter`, `motivation letter`, `application letter`
 - `dear hiring manager`, `i am writing to express`
 
@@ -176,6 +179,7 @@ npm test test/unit/providers/azure-ai-foundry.provider.spec.ts
 ```
 
 Test coverage includes:
+
 - Constructor validation
 - Resume generation with CV Writer
 - Cover letter generation with CL Writer
@@ -216,12 +220,12 @@ npm run start:dev
 
 The provider emits detailed logs for monitoring:
 
-```
+```text
 [AzureAIFoundryProvider] Calling CV Writer Agent for resume generation
 [AzureAIFoundryProvider] Successfully generated resume with CV Writer Agent
 ```
 
-```
+```text
 [AzureAIFoundryProvider] Azure AI Foundry agent failed: timeout. Falling back to Azure OpenAI
 [AzureAIFoundryProvider] Successfully generated text with Azure OpenAI fallback
 ```
@@ -247,12 +251,15 @@ The provider emits detailed logs for monitoring:
 **Cause**: Missing or invalid agent endpoint/API key configuration
 
 **Solution**:
+
 1. Verify all environment variables are set:
+
    ```bash
    echo $AZURE_AI_FOUNDRY_CV_WRITER_ENDPOINT
    echo $AZURE_AI_FOUNDRY_CL_WRITER_ENDPOINT
    echo $AZURE_AI_FOUNDRY_API_KEY
    ```
+
 2. Ensure endpoints use HTTPS and include `/score` path
 3. Verify API key is valid and not expired
 4. Restart the application after updating configuration
@@ -262,14 +269,17 @@ The provider emits detailed logs for monitoring:
 **Cause**: Agent returned unexpected response format
 
 **Solution**:
+
 1. Check agent deployment in Azure AI Foundry portal
 2. Test agent endpoint directly with curl:
+
    ```bash
    curl -X POST "$AZURE_AI_FOUNDRY_CV_WRITER_ENDPOINT" \
      -H "api-key: $AZURE_AI_FOUNDRY_API_KEY" \
      -H "Content-Type: application/json" \
      -d '{"prompt": "Generate resume", "temperature": 0.6}'
    ```
+
 3. Verify response format matches one of the supported formats
 4. Check provider logs for detailed error messages
 
@@ -278,6 +288,7 @@ The provider emits detailed logs for monitoring:
 **Cause**: Agent processing exceeds 60-second timeout
 
 **Solution**:
+
 1. Check agent performance in Azure AI Foundry portal
 2. Verify agent has sufficient compute resources
 3. Consider scaling agent deployment
@@ -289,19 +300,24 @@ The provider emits detailed logs for monitoring:
 **Cause**: Azure OpenAI fallback not configured or credentials invalid
 
 **Solution**:
+
 1. Configure Azure OpenAI fallback:
+
    ```bash
    AZURE_OPENAI_ENDPOINT=https://...
    AZURE_OPENAI_API_KEY=your_key
    AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4o
    ```
+
 2. Test Azure OpenAI connectivity:
+
    ```bash
    curl -X POST "$AZURE_OPENAI_ENDPOINT/openai/deployments/gpt-4o/chat/completions?api-version=2024-02-15-preview" \
      -H "api-key: $AZURE_OPENAI_API_KEY" \
      -H "Content-Type: application/json" \
      -d '{"messages": [{"role": "user", "content": "test"}]}'
    ```
+
 3. Verify deployment name matches Azure OpenAI deployment
 
 ### Issue: "Wrong agent called"
@@ -309,6 +325,7 @@ The provider emits detailed logs for monitoring:
 **Cause**: Prompt keywords not detected correctly
 
 **Solution**:
+
 1. Review prompt content for resume/cover letter keywords
 2. Ensure prompts clearly indicate document type
 3. Check provider logs to see which agent was selected

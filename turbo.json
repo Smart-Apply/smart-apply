@@ -1,28 +1,47 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": [".env", ".env.local"],
+  "globalEnv": ["NODE_ENV", "DATABASE_URL"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**"],
-      "cache": true
+      "outputs": ["dist/**", ".next/**", "src/generated/**"],
+      "cache": true,
+      "env": ["NODE_ENV"]
     },
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "dependsOn": ["^build"]
     },
     "lint": {
-      "dependsOn": ["^build"],
       "outputs": [],
       "cache": true
     },
     "test": {
       "dependsOn": ["^build"],
       "outputs": ["coverage/**"],
+      "cache": true,
+      "env": ["NODE_ENV"]
+    },
+    "test:unit": {
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"],
       "cache": true
     },
     "test:e2e": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "env": ["DATABASE_URL", "JWT_SECRET"]
+    },
+    "prisma:generate": {
+      "outputs": ["src/generated/prisma/**"],
+      "cache": true
+    },
+    "typecheck": {
       "dependsOn": ["^build"],
-      "cache": false
+      "outputs": [],
+      "cache": true
     }
   }
 }

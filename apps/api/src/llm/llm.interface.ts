@@ -6,6 +6,12 @@ export interface LLMProvider {
    * @returns Generated text
    */
   generateText(prompt: string, options?: GenerateOptions): Promise<string>;
+
+  /**
+   * Health check for the LLM provider
+   * @returns true if the provider is healthy, false otherwise
+   */
+  healthCheck?(): Promise<boolean>;
 }
 
 export interface GenerateOptions {

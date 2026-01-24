@@ -35,11 +35,12 @@
  *   npm run prisma:seed:templates
  */
 
-import { PrismaClient, TemplateType } from '@prisma/client';
+import { PrismaClient, TemplateType } from '../src/generated/prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const prisma = new PrismaClient();
+// Prisma 7: Empty object for CLI-based seeds
+const prisma = new PrismaClient({} as any);
 
 // =============================================================================
 // TYPES

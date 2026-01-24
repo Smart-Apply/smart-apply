@@ -2,7 +2,7 @@
 # Expected size reduction: ~3.5GB → ~800MB
 
 # Stage 1: Build dependencies
-FROM node:20-alpine AS deps
+FROM node:24-alpine AS deps
 
 WORKDIR /app
 
@@ -27,17 +27,18 @@ COPY packages/shared/package.json ./packages/shared/
 COPY packages/shared/tsconfig.json ./packages/shared/
 COPY packages/shared/src ./packages/shared/src
 
-# Copy Prisma schema (needed for production dependencies)
+# Copy Prisma config and schema (needed for Prisma 7 generation)
+COPY apps/api/prisma.config.ts ./apps/api/
 COPY apps/api/prisma ./apps/api/prisma
 
 # Install ONLY API production dependencies (no dev deps, no web packages)
-# Prisma client will be generated via postinstall hook
+# Prisma client will be generated via postinstall hook to src/generated/prisma
 ENV NODE_OPTIONS="--max-old-space-size=6144"
 RUN --mount=type=cache,target=/root/.npm \
     npm ci --workspace=apps/api --workspace=packages/shared --omit=dev --legacy-peer-deps
 
 # Stage 2: Build application
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 
@@ -64,7 +65,8 @@ COPY packages/shared/package.json ./packages/shared/
 COPY packages/shared/tsconfig.json ./packages/shared/
 COPY packages/shared/src ./packages/shared/src
 
-# Copy Prisma schema BEFORE npm install (needed for postinstall hooks)
+# Copy Prisma config and schema BEFORE npm install (required for Prisma 7)
+COPY apps/api/prisma.config.ts ./apps/api/
 COPY apps/api/prisma ./apps/api/prisma
 
 # Install only API workspace dependencies to save memory in CI/CD
@@ -89,20 +91,9 @@ RUN npm run shared:build
 RUN npm run api:build
 
 # Compile Prisma seed scripts to JavaScript (production-ready)
-# Using explicit CLI args to avoid tsconfig inheritance issues
-RUN cd apps/api && npx tsc \
-      prisma/seed.ts \
-      prisma/seed-all.ts \
-      prisma/seed-multilingual-templates.ts \
-      prisma/seed-templates-autodiscover.ts \
-      --module commonjs \
-      --target ES2021 \
-      --outDir prisma/dist \
-      --moduleResolution node \
-      --esModuleInterop \
-      --skipLibCheck \
-      --resolveJsonModule \
-      --allowSyntheticDefaultImports
+# Write tsconfig and compile seeds (all relative to /app)
+RUN echo '{"extends":"./tsconfig.json","compilerOptions":{"module":"commonjs","target":"ES2021","outDir":"./prisma/dist","moduleResolution":"node","esModuleInterop":true,"skipLibCheck":true,"resolveJsonModule":true,"allowSyntheticDefaultImports":true,"baseUrl":"."},"include":["prisma/seed.ts","prisma/seed-all.ts","prisma/seed-multilingual-templates.ts","prisma/seed-templates-autodiscover.ts"]}' > apps/api/tsconfig.seed.json && \
+    cd apps/api && npx tsc --project tsconfig.seed.json
 
 # Remove development dependencies and Web packages after build
 RUN npm prune --production && \
@@ -116,7 +107,7 @@ RUN npm prune --production && \
     rm -rf node_modules/.cache
 
 # Stage 3: Production runtime
-FROM node:20-alpine AS production
+FROM node:24-alpine AS production
 
 # Install only runtime dependencies (minimal set)
 RUN apk add --no-cache \
@@ -140,8 +131,8 @@ WORKDIR /app
 # Copy ONLY production dependencies from deps stage (no dev deps)
 COPY --from=deps /app/node_modules ./node_modules
 
-# Copy Prisma client from builder stage (properly generated with all dependencies)
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+# Copy Prisma client from builder stage (Prisma 7 generates to src/generated/prisma)
+COPY --from=builder /app/apps/api/src/generated ./apps/api/src/generated
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 # Playwright will use system Chromium (already installed above)
@@ -161,6 +152,7 @@ COPY --from=builder /app/packages/shared/package.json ./node_modules/@smart-appl
 COPY --from=builder /app/dist ./dist
 
 # Copy necessary runtime files
+COPY --from=builder /app/apps/api/prisma.config.ts ./apps/api/prisma.config.ts
 COPY --from=builder /app/apps/api/prisma/schema.prisma ./apps/api/prisma/schema.prisma
 COPY --from=builder /app/apps/api/prisma/migrations ./apps/api/prisma/migrations
 COPY --from=builder /app/apps/api/prisma/dist ./apps/api/prisma/dist

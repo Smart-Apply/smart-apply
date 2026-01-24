@@ -1,7 +1,7 @@
 # 🧠 Smart Apply Feature-Matrix
 
 | Kategorie | Feature | Free | Pro | Premium | Status | Nutzen für Nutzer | Technische Komplexität | Priorität |
-|------------|----------|------|-----|----------|---------|--------------------|------------------------|------------|
+| --------- | ------- | ---- | --- | ------- | ------ | ----------------- | ---------------------- | --------- |
 | AI-Bewerbungsunterlagen | KI-Anschreiben-Generator | ✅ | ✅ | ✅ | 🟢 live | Spart Zeit, bessere Qualität | Mittel | Hoch |
 | AI-Bewerbungsunterlagen | KI-Lebenslauf-Generator | ✅ (limitiert) | ✅ | ✅ | 🟢 live | Professionelles Layout & Inhalte | Mittel | Hoch |
 | AI-Bewerbungsunterlagen | Template-Auswahl | ✅ | ✅ (mehr) | ✅ (Custom) | 🟡 geplant | Optisch ansprechend | Niedrig | Mittel |

@@ -74,4 +74,45 @@ export class AzureOpenAIProvider implements LLMProvider {
       throw new Error(`LLM generation failed: ${error.message}`);
     }
   }
+
+  /**
+   * Health check for Azure OpenAI
+   * Validates configuration and endpoint availability
+   */
+  async healthCheck(): Promise<boolean> {
+    try {
+      // Validate configuration exists
+      if (!this.endpoint || !this.apiKey || !this.deploymentName) {
+        this.logger.warn('Azure OpenAI health check failed: Missing configuration');
+        return false;
+      }
+
+      // Make a minimal API call to verify connectivity
+      const url = `${this.endpoint}/openai/deployments/${this.deploymentName}/chat/completions?api-version=${this.apiVersion}`;
+      
+      const response = await firstValueFrom(
+        this.httpService.post(
+          url,
+          {
+            messages: [{ role: 'user', content: 'health check' }],
+            max_tokens: 1,
+          },
+          {
+            headers: {
+              'api-key': this.apiKey,
+              'Content-Type': 'application/json',
+            },
+            timeout: 5000, // 5 second timeout for health check
+          },
+        ),
+      );
+
+      const isHealthy = response.status === 200;
+      this.logger.debug(`Azure OpenAI health check: ${isHealthy ? 'OK' : 'FAILED'}`);
+      return isHealthy;
+    } catch (error: any) {
+      this.logger.warn(`Azure OpenAI health check failed: ${error.message}`);
+      return false;
+    }
+  }
 }

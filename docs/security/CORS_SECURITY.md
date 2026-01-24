@@ -7,6 +7,7 @@ The Smart Apply API implements a restrictive CORS (Cross-Origin Resource Sharing
 ## Current Implementation
 
 ### Location
+
 - **Configuration:** `apps/api/src/main.ts` (lines 25-34)
 - **Environment Variable:** `CORS_ORIGINS` in `.env` or `.env.example`
 - **Schema Validation:** `apps/api/src/config/env.schema.ts`
@@ -32,6 +33,7 @@ CORS_ORIGINS=http://localhost:3000,http://localhost:3001
 ```
 
 This allows:
+
 - Backend API (port 3000)
 - Frontend Dev Server (port 3001)
 
@@ -65,7 +67,8 @@ curl -X OPTIONS http://localhost:3000/api/v1/auth/me \
 ```
 
 Expected response headers:
-```
+
+```text
 Access-Control-Allow-Origin: http://localhost:3001
 Access-Control-Allow-Credentials: true
 Access-Control-Allow-Methods: GET,POST,PUT,DELETE,PATCH
@@ -158,8 +161,8 @@ app.enableCors({
   origin: (origin, callback) => {
     const allowedOrigins = configService.corsOrigins;
     const allowedPatterns = [/\.smartapply\.com$/];  // Allow all *.smartapply.com
-    
-    if (!origin || allowedOrigins.includes(origin) || 
+
+    if (!origin || allowedOrigins.includes(origin) ||
         allowedPatterns.some(pattern => pattern.test(origin))) {
       callback(null, true);
     } else {
@@ -180,8 +183,8 @@ app.enableCors({
 
 ## Audit History
 
-| Date       | Change                                    | Author    |
-|------------|-------------------------------------------|-----------|
-| 2025-11-15 | Initial restrictive CORS implementation   | Copilot   |
-| 2025-11-15 | Added explicit methods and headers        | Copilot   |
-| 2025-11-15 | Documented production origin requirements | Copilot   |
+| Date       | Change                                    | Author  |
+| ---------- | ----------------------------------------- | ------- |
+| 2025-11-15 | Initial restrictive CORS implementation   | Copilot |
+| 2025-11-15 | Added explicit methods and headers        | Copilot |
+| 2025-11-15 | Documented production origin requirements | Copilot |

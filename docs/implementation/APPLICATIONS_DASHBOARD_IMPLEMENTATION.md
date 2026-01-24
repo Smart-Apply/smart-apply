@@ -1,11 +1,13 @@
 # Applications Dashboard & List View - Implementation Summary
 
 ## Overview
+
 Enhanced the Applications Dashboard with comprehensive filtering, sorting, and auto-refresh capabilities to provide users with a complete view of their job applications.
 
 ## Features Implemented ✅
 
 ### 1. Status Filter Tabs
+
 - **All** - Shows all applications with total count badge
 - **Ausstehend (Pending)** - Shows pending applications
 - **In Bearbeitung (Generating)** - Shows applications being generated
@@ -15,21 +17,25 @@ Enhanced the Applications Dashboard with comprehensive filtering, sorting, and a
 Each tab displays a count badge showing the number of applications in that status.
 
 ### 2. Sorting
+
 - Applications are automatically sorted by creation date
 - Most recent applications appear first
 - Sorting is maintained across filter changes
 
 ### 3. Auto-Refresh Polling
+
 - Automatically polls the API every 10 seconds when there are PENDING or GENERATING applications
 - Ensures users see real-time status updates without manual refresh
 - Polling stops when all applications are in terminal states (READY or FAILED)
 
 ### 4. Manual Refresh Button
+
 - "Aktualisieren" button with refresh icon
 - Shows spinning animation during refresh
 - Allows users to manually trigger a refresh at any time
 
 ### 5. Enhanced Status Indicators
+
 - **GENERATING status** - Shows spinning AlertCircle icon for visual feedback
 - Color-coded badges for all statuses:
   - PENDING: Gray (Clock icon)
@@ -38,11 +44,13 @@ Each tab displays a count badge showing the number of applications in that statu
   - FAILED: Red (XCircle icon)
 
 ### 6. Empty States
+
 - **No applications at all** - Guides user to create first application
 - **No applications for selected filter** - Informs user about empty filter results
 - Both empty states are user-friendly and provide clear next steps
 
 ### 7. Quick Actions
+
 - **View Details** - Navigate to application detail page
 - **Download PDFs** - Direct links to download Anschreiben (cover letter) and Lebenslauf (resume) for READY applications
 - All actions are context-aware based on application status
@@ -50,6 +58,7 @@ Each tab displays a count badge showing the number of applications in that statu
 ## Technical Implementation
 
 ### Component Structure
+
 ```typescript
 // State Management
 - selectedFilter: FilterStatus - Current active filter tab
@@ -66,6 +75,7 @@ Each tab displays a count badge showing the number of applications in that statu
 ```
 
 ### Key Technologies Used
+
 - **React Hooks**: useState, useEffect
 - **React Query**: useQuery with refetch capability
 - **shadcn/ui Components**: Tabs, TabsList, TabsTrigger, TabsContent, Badge, Button, Card
@@ -106,6 +116,7 @@ All requirements from the issue are fully implemented:
 - `apps/web/src/app/(dashboard)/applications/page.tsx` - Enhanced with all new features
 
 ## Lines of Code
+
 - **Added**: ~140 lines (filtering, sorting, polling, UI enhancements)
 - **Modified**: ~84 lines (restructured to use tabs)
 - **Total**: 282 lines (from 182 lines)
@@ -115,6 +126,7 @@ All requirements from the issue are fully implemented:
 The implementation uses existing data fetching hooks (`useApplications`) which are already tested. The new UI components are from the established shadcn/ui library, ensuring reliability.
 
 ### Manual Testing Checklist
+
 - [ ] Filter tabs switch correctly
 - [ ] Applications are sorted newest first
 - [ ] Auto-refresh works when PENDING/GENERATING applications exist

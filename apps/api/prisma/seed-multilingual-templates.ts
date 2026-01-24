@@ -1,9 +1,10 @@
-import { PrismaClient, TemplateType } from '@prisma/client';
+import { PrismaClient, TemplateType } from '../src/generated/prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
-const prisma = new PrismaClient();
+// Prisma 7: Empty object for CLI-based seeds
+const prisma = new PrismaClient({} as any);
 
 // =============================================================================
 // DYNAMIC TEMPLATE DISCOVERY

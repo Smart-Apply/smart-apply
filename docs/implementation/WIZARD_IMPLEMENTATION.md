@@ -7,9 +7,11 @@ This document summarizes the implementation of the Application Creation Wizard (
 ## What Was Built
 
 ### 1. ApplicationWizard Component
+
 **Location**: `apps/web/src/components/forms/application-wizard.tsx`
 
 A complete 3-step wizard with:
+
 - Visual step indicators with icons and progress bar
 - Profile validation step
 - Job selection step
@@ -21,14 +23,17 @@ A complete 3-step wizard with:
 ### 2. Application Routes
 
 #### `/applications/new` - New Application Page
+
 **Location**: `apps/web/src/app/(dashboard)/applications/new/page.tsx`
 
 Simple page that renders the ApplicationWizard component.
 
 #### `/applications` - Applications List Page
+
 **Location**: `apps/web/src/app/(dashboard)/applications/page.tsx`
 
 Features:
+
 - List all applications with status badges
 - Color-coded status indicators (PENDING, GENERATING, READY, FAILED)
 - Download buttons for completed applications
@@ -36,9 +41,11 @@ Features:
 - Responsive grid layout
 
 #### `/applications/[id]` - Application Detail Page
+
 **Location**: `apps/web/src/app/(dashboard)/applications/[id]/page.tsx`
 
 Features:
+
 - Detailed view of single application
 - Auto-refresh polling (every 5 seconds for PENDING/GENERATING status)
 - Status banner with contextual messages
@@ -50,7 +57,7 @@ Features:
 
 ### Component Architecture
 
-```
+```text
 ApplicationWizard
 ├── State Management
 │   ├── currentStep (internal state)
@@ -89,14 +96,16 @@ ApplicationWizard
 
 ### Validation Logic
 
-**Step 1: Profile**
+#### Step 1: Profile
+
 ```typescript
 const isProfileComplete = () => {
   return !!(profile?.summary && profile?.skills?.length);
 };
 ```
 
-**Step 2: Job Selection**
+#### Step 2: Job Selection
+
 ```typescript
 if (!selectedJobId) {
   toast.error('Bitte wähle eine Stellenanzeige aus');
@@ -104,18 +113,21 @@ if (!selectedJobId) {
 }
 ```
 
-**Step 3: Review**
+#### Step 3: Review
+
 - Final confirmation step (no additional validation)
 
 ### API Integration
 
 Uses existing hooks from `src/hooks/`:
+
 - `useProfile()` - Profile data fetching
 - `useJobPostings()` - Job postings list
 - `useCreateApplication()` - Application creation mutation
 
 API endpoint called on submit:
-```
+
+```http
 POST /api/v1/applications
 Body: { jobPostingId: string }
 ```
@@ -123,6 +135,7 @@ Body: { jobPostingId: string }
 ### Type Safety
 
 All components are fully typed with TypeScript:
+
 ```typescript
 import type { JobPosting, Profile, Skill, Experience } from '@/types';
 
@@ -184,21 +197,25 @@ interface ReviewStepProps {
 
 ### Error Handling
 
-**No Profile Data**
+#### No Profile Data
+
 - Shows loading spinner
 - Gracefully handles empty profile
 
-**Profile Incomplete**
+#### Profile Incomplete
+
 - Shows warning in Step 1
 - Prevents navigation to Step 2
 - Provides link to profile edit page
 
-**No Job Postings**
+#### No Job Postings
+
 - Shows empty state in Step 2
 - Provides link to create job posting
 - Cannot proceed without selection
 
-**API Errors**
+#### API Errors
+
 - Caught by mutation's `onError` handler
 - Displayed as toast notification
 - User can retry by clicking submit again
@@ -206,6 +223,7 @@ interface ReviewStepProps {
 ## UI Components Used
 
 From `shadcn/ui`:
+
 - `Button` - Navigation and actions
 - `Card` - Content containers
 - `Badge` - Status indicators, skill tags
@@ -213,6 +231,7 @@ From `shadcn/ui`:
 - `Dialog` - Not used yet (future: confirmations)
 
 From `lucide-react`:
+
 - `User` - Profile step icon
 - `Briefcase` - Job step icon
 - `FileText` - Review step icon
@@ -246,6 +265,7 @@ From `lucide-react`:
 ### TypeScript Validation
 
 All files pass ESLint with strict rules:
+
 ```bash
 ✓ No TypeScript errors
 ✓ No `any` types
@@ -268,6 +288,7 @@ From Issue #50:
 - ✅ Errors are displayed with retry option
 
 **Additional Features Implemented:**
+
 - ✅ Auto-refresh on application detail page
 - ✅ Status badges with icons and colors
 - ✅ Empty states for list and job selection
@@ -278,7 +299,7 @@ From Issue #50:
 
 ## Files Changed
 
-```
+```text
 apps/web/src/
 ├── components/forms/
 │   ├── application-wizard.tsx          (NEW - 570 lines)
@@ -296,6 +317,7 @@ apps/web/src/
 ## Dependencies
 
 No new dependencies added. Uses existing:
+
 - `@tanstack/react-query` - Data fetching
 - `zustand` - Auth state
 - `sonner` - Toast notifications
@@ -313,6 +335,7 @@ No new dependencies added. Uses existing:
 ## Future Enhancements
 
 See `README-APPLICATION-WIZARD.md` for full list of potential improvements:
+
 - Draft application saving
 - Profile quick-edit inline
 - Job posting preview modal

@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum } from 'class-validator';
-import { ApplicationTrackingStatus } from '@prisma/client';
+import { ApplicationTrackingStatus } from '../../generated/prisma/client';
 
 export class UpdateApplicationStatusDto {
   @ApiProperty({

@@ -20,6 +20,7 @@ We implement XSS protection at multiple layers:
 Location: `apps/api/src/common/decorators/sanitize.decorator.ts`
 
 Two decorators are available:
+
 - `@Sanitize()`: For individual string fields
 - `@SanitizeArray()`: For arrays of strings
 
@@ -36,6 +37,7 @@ export class UpdateProfileDto {
 ```
 
 The decorator:
+
 1. Trims leading/trailing whitespace
 2. Escapes HTML special characters using `validator.escape()`:
    - `<` → `&lt;`
@@ -48,11 +50,13 @@ The decorator:
 ### Applied To
 
 ✅ **Auth Module**
+
 - `RegisterDto.firstName`
 - `RegisterDto.lastName`
 - (Passwords are NOT sanitized to preserve special characters)
 
 ✅ **Profile Module**
+
 - All text fields in `UpdateProfileDto`
 - `SkillDto`: name, level
 - `CertificateDto`: name, issuer
@@ -61,9 +65,11 @@ The decorator:
 - `EducationDto`: degree, institution, fieldOfStudy, gpa, description
 
 ✅ **Job Postings Module**
+
 - `ParseJobPostingDto.text`
 
 ✅ **Applications Module**
+
 - `CreateApplicationDto.notes`
 
 ## Frontend Implementation
@@ -74,34 +80,40 @@ Location: `apps/web/src/lib/sanitize.ts`
 
 #### Functions
 
-**sanitizeHtml(dirty: string): string**
+##### sanitizeHtml(dirty: string): string
+
 - Use for rich text content
 - Allows safe HTML tags: `<b>`, `<i>`, `<em>`, `<strong>`, `<a>`, `<p>`, `<br>`, `<ul>`, `<ol>`, `<li>`, `<h1-6>`
 - Allows safe attributes: `href`, `target`
 - Only permits http(s) and mailto protocols
 - Removes all scripts, event handlers, and dangerous content
 
-**sanitizeText(text: string): string**
+##### sanitizeText(text: string): string
+
 - Use for plain text (no HTML allowed)
 - Escapes all HTML special characters
 - Same escaping as backend
 
-**sanitizeUrl(url: string): string**
+##### sanitizeUrl(url: string): string
+
 - Validates URLs before use in `href` attributes
 - Only allows `http://` and `https://` protocols
 - Rejects `javascript:`, `data:`, `file:`, and other dangerous protocols
 - Returns empty string for invalid URLs
 
-**stripHtml(html: string): string**
+##### stripHtml(html: string): string
+
 - Removes all HTML tags, keeps text content
 - Use when you want plain text from HTML
 
-**sanitizeArray(items: string[]): string[]**
+##### sanitizeArray(items: string[]): string[]
+
 - Applies text sanitization to each array element
 
-### Applied To
+### Frontend Applied To
 
 ✅ **Profile Page**
+
 - LinkedIn URL validation
 - Portfolio URL validation
 - Certificate URL validation
@@ -140,6 +152,7 @@ React automatically escapes values rendered with `{variable}` syntax:
 Location: `apps/api/test/xss-sanitization.e2e-spec.ts`
 
 Tests cover:
+
 - XSS payloads in registration
 - Profile update sanitization
 - Skills, experience, education, certificates, projects
@@ -148,6 +161,7 @@ Tests cover:
 - Edge cases (empty strings, whitespace trimming)
 
 Run tests:
+
 ```bash
 npm run test:e2e -- xss-sanitization.e2e-spec.ts
 ```
@@ -157,6 +171,7 @@ npm run test:e2e -- xss-sanitization.e2e-spec.ts
 Location: `apps/web/src/lib/__tests__/sanitize.test.ts`
 
 Tests cover:
+
 - HTML sanitization with safe/unsafe tags
 - Text escaping
 - URL validation (http/https vs javascript:/data:)
@@ -166,6 +181,7 @@ Tests cover:
 - Real-world scenarios
 
 Run tests:
+
 ```bash
 cd apps/web
 npm test -- sanitize.test.ts
@@ -207,6 +223,7 @@ Our sanitization protects against:
 ## Limitations
 
 ### What This Protects Against
+
 ✅ Stored XSS via user profiles
 ✅ Script injection in job postings
 ✅ Cookie/token theft attempts
@@ -214,6 +231,7 @@ Our sanitization protects against:
 ✅ HTML injection
 
 ### What This Does NOT Protect Against
+
 ❌ SQL Injection (use Prisma's parameterized queries - already protected)
 ❌ CSRF (separate protection implemented)
 ❌ File upload exploits (separate validation needed)
@@ -237,9 +255,9 @@ Our sanitization protects against:
 
 ## Audit Trail
 
-| Date | Change | Author |
-|------|--------|--------|
-| 2025-11-16 | Initial implementation | GitHub Copilot |
+| Date       | Change                          | Author         |
+| ---------- | ------------------------------- | -------------- |
+| 2025-11-16 | Initial implementation          | GitHub Copilot |
 | 2025-11-16 | Backend sanitization decorators | GitHub Copilot |
 | 2025-11-16 | Frontend sanitization utilities | GitHub Copilot |
-| 2025-11-16 | E2E and unit tests | GitHub Copilot |
+| 2025-11-16 | E2E and unit tests              | GitHub Copilot |

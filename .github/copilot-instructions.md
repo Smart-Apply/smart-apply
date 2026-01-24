@@ -27,9 +27,14 @@ For specific tasks, refer to these specialized instruction files:
 ## Azure-first Tech Stack
 
 ### Backend (Port 3000)
-- **NestJS v10 (TypeScript)**, **Prisma v5 + PostgreSQL**
+- **NestJS v10 (TypeScript)**, **Prisma v7.3.0 + PostgreSQL**
   - Dev: Docker Postgres
   - Prod: **Azure Database for PostgreSQL – Flexible Server**
+  - **Prisma 7 Changes:**
+    - Client generated to `apps/api/src/generated/prisma`
+    - Requires `prisma.config.ts` for datasource configuration
+    - Uses PrismaPg adapter with connection pooling
+    - Node.js >= 20.19 required (using 24.13.0 LTS)
 - **Containers/Runtime:** Docker; deploy to **Azure Container Apps (ACA)** (alt: App Service Linux)
 - **Storage:** **Azure Blob Storage** (SAS for downloads)
 - **Queues/Jobs:** **Azure Service Bus** for pipeline orchestration

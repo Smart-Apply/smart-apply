@@ -128,4 +128,13 @@ Full-featured online store with Stripe payment integration, built with React, No
 AI-powered job application assistant using NestJS and Azure OpenAI
     `.trim();
   }
+
+  /**
+   * Health check for the mock provider
+   * Always returns true as it doesn't depend on external services
+   */
+  async healthCheck(): Promise<boolean> {
+    this.logger.debug('Mock LLM provider health check: OK');
+    return true;
+  }
 }

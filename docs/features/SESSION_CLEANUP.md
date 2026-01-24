@@ -16,6 +16,7 @@ Without cleanup, session and refresh token tables grow indefinitely:
 ## Solution
 
 Automated daily cron jobs delete:
+
 1. **Sessions**: Expired, old (90+ days), or revoked (30+ days)
 2. **Refresh Tokens**: Expired or revoked (7+ days)
 
@@ -23,10 +24,10 @@ Automated daily cron jobs delete:
 
 ### Cron Schedule
 
-| Job                          | Time  | Frequency | Target                              |
-|------------------------------|-------|-----------|-------------------------------------|
-| Refresh Token Cleanup        | 2 AM  | Daily     | Expired/revoked tokens (7+ days)    |
-| Session Cleanup              | 3 AM  | Daily     | Expired/revoked/old sessions        |
+| Job                   | Time | Frequency | Target                           |
+| --------------------- | ---- | --------- | -------------------------------- |
+| Refresh Token Cleanup | 2 AM | Daily     | Expired/revoked tokens (7+ days) |
+| Session Cleanup       | 3 AM | Daily     | Expired/revoked/old sessions     |
 
 ### Cleanup Logic
 
@@ -44,10 +45,7 @@ await prisma.session.deleteMany({
     OR: [
       { expiresAt: { lt: now } },
       {
-        AND: [
-          { isActive: false },
-          { revokedAt: { lt: revokedCleanupDate } },
-        ],
+        AND: [{ isActive: false }, { revokedAt: { lt: revokedCleanupDate } }],
       },
       { createdAt: { lt: oldSessionCleanupDate } },
     ],
@@ -68,10 +66,7 @@ await prisma.refreshToken.deleteMany({
     OR: [
       { expiresAt: { lt: now } },
       {
-        AND: [
-          { isRevoked: true },
-          { createdAt: { lt: revokedCleanupDate } },
-        ],
+        AND: [{ isRevoked: true }, { createdAt: { lt: revokedCleanupDate } }],
       },
     ],
   },
@@ -114,17 +109,18 @@ export const REVOKED_REFRESH_TOKEN_CLEANUP_DAYS = 7;
 
 ### Files
 
-| File                                      | Purpose                                    |
-|-------------------------------------------|--------------------------------------------|
-| `session.service.ts`                      | Cleanup methods                            |
-| `session-cleanup.cron.ts`                 | Cron job scheduler                         |
-| `session.constants.ts`                    | Retention periods                          |
-| `config/env.schema.ts`                    | Environment variable schema                |
-| `config/config.service.ts`                | Config service with `enableCronJobs`       |
+| File                       | Purpose                              |
+| -------------------------- | ------------------------------------ |
+| `session.service.ts`       | Cleanup methods                      |
+| `session-cleanup.cron.ts`  | Cron job scheduler                   |
+| `session.constants.ts`     | Retention periods                    |
+| `config/env.schema.ts`     | Environment variable schema          |
+| `config/config.service.ts` | Config service with `enableCronJobs` |
 
 ### Logging
 
 Each cleanup job logs:
+
 - Start time
 - Number of deleted records
 - Duration (milliseconds)
@@ -132,7 +128,7 @@ Each cleanup job logs:
 
 **Example Log Output**:
 
-```
+```text
 [SessionCleanupCron] Starting refresh token cleanup...
 [SessionCleanupCron] Refresh token cleanup completed. Deleted 143 expired/revoked tokens in 87ms
 
@@ -155,6 +151,7 @@ async cleanupExpiredSessions() {
 ```
 
 **Steps**:
+
 1. Set `ENABLE_CRON_JOBS=true`
 2. Change cron schedule to `*/10 * * * * *`
 3. Start API: `npm run start:dev`
@@ -165,17 +162,20 @@ async cleanupExpiredSessions() {
 ### Automated Tests
 
 **Unit Tests** (`src/auth/__tests__/unit/session-cleanup.spec.ts`):
+
 - Mock Prisma calls
 - Verify correct WHERE conditions
 - Test environment flag behavior
 
 **E2E Tests** (`test/e2e/auth/session-cleanup.e2e-spec.ts`):
+
 - Create expired/revoked/old sessions in test DB
 - Run cleanup methods
 - Verify sessions are deleted
 - Verify active sessions are preserved
 
 Run tests:
+
 ```bash
 cd apps/api
 npm run test -- session-cleanup.spec.ts
@@ -201,12 +201,12 @@ These indexes ensure cleanup queries execute in **< 100ms** even with millions o
 
 ### Estimated Cleanup Times (at scale)
 
-| Records   | Sessions | Refresh Tokens |
-|-----------|----------|----------------|
-| 10k       | 15ms     | 10ms           |
-| 100k      | 80ms     | 50ms           |
-| 1M        | 500ms    | 300ms          |
-| 10M       | 5s       | 3s             |
+| Records | Sessions | Refresh Tokens |
+| ------- | -------- | -------------- |
+| 10k     | 15ms     | 10ms           |
+| 100k    | 80ms     | 50ms           |
+| 1M      | 500ms    | 300ms          |
+| 10M     | 5s       | 3s             |
 
 **Note**: Cleanup runs at 2-3 AM when traffic is lowest.
 
@@ -225,6 +225,7 @@ Assuming 20k users with 5 sessions each:
 Cron jobs run automatically in the API container. No additional configuration required.
 
 **Verify**:
+
 ```bash
 # Check logs in Azure Portal
 az containerapp logs show \
@@ -252,6 +253,7 @@ export default timerTrigger;
 ```
 
 **function.json**:
+
 ```json
 {
   "bindings": [
@@ -279,6 +281,7 @@ Track these in production:
 ### Alerts
 
 Set up alerts for:
+
 - Cleanup failures (3+ in a row)
 - Cleanup duration > 5s (indicates missing indexes)
 - Table size > 1GB (indicates cleanup not running)
@@ -299,6 +302,7 @@ traces
 **GDPR Article 5(1)(e)**: Data must not be kept longer than necessary.
 
 Smart Apply's cleanup policy:
+
 - **Sessions**: Max 90 days (exceeds typical 30-day requirement)
 - **Refresh tokens**: 7 days after revocation (audit trail)
 
@@ -307,6 +311,7 @@ Smart Apply's cleanup policy:
 ### Audit Trail
 
 Revoked sessions/tokens are kept for a grace period before deletion:
+
 - **Sessions**: 30 days (security incident investigation)
 - **Tokens**: 7 days (token rotation debugging)
 
@@ -319,11 +324,13 @@ This allows forensic analysis while preventing indefinite storage.
 **Symptoms**: Session count grows indefinitely
 
 **Check**:
+
 1. `ENABLE_CRON_JOBS=true` in production `.env`
 2. No errors in logs: `grep -i "cleanup" /var/log/app.log`
 3. `SessionCleanupCron` is registered in `auth.module.ts`
 
 **Fix**:
+
 ```bash
 # Manually trigger cleanup (temporary workaround)
 curl -X POST http://localhost:3000/api/v1/internal/cleanup \
@@ -335,10 +342,12 @@ curl -X POST http://localhost:3000/api/v1/internal/cleanup \
 **Symptoms**: Cleanup duration > 5s
 
 **Check**:
+
 1. Missing indexes: `EXPLAIN ANALYZE SELECT * FROM sessions WHERE expiresAt < NOW();`
 2. Large delete batches: Add `LIMIT` to `deleteMany`
 
 **Fix**:
+
 ```typescript
 // Batch delete in chunks of 10k
 const batchSize = 10000;
@@ -349,7 +358,7 @@ while (true) {
     where: { /* cleanup conditions */ },
     take: batchSize,
   });
-  
+
   totalDeleted += result.count;
   if (result.count < batchSize) break;
 }
@@ -360,10 +369,12 @@ while (true) {
 **Symptoms**: Users logged out unexpectedly
 
 **Check**:
+
 1. Incorrect `expiresAt` calculation in session creation
 2. Server clock drift (sessions marked expired prematurely)
 
 **Fix**:
+
 ```bash
 # Verify server time is correct
 date
@@ -378,16 +389,18 @@ Instead of hard delete, archive old sessions:
 
 ```typescript
 await prisma.sessionArchive.createMany({
-  data: oldSessions.map(s => ({ ...s, archivedAt: new Date() })),
+  data: oldSessions.map((s) => ({ ...s, archivedAt: new Date() })),
 });
 await prisma.session.deleteMany({ where: { id: { in: oldSessionIds } } });
 ```
 
 **Benefits**:
+
 - Retain data for analytics
 - Faster purge (simple DELETE)
 
 **Drawbacks**:
+
 - Requires archive table + migration script
 
 ### Incremental Cleanup
@@ -406,6 +419,7 @@ async cleanupExpiredSessionsIncremental() {
 ```
 
 **Benefits**:
+
 - Smaller batches (faster queries)
 - More real-time cleanup
 

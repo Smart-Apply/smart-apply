@@ -1,15 +1,15 @@
 # Smart Apply - Dokumentation
 
-Übersicht über die gesamte Projektdokumentation, organisiert nach Kategorien.
+Übersicht über die Projektdokumentation.
 
 ## 📁 Ordnerstruktur
 
 ### 🔒 [security/](./security/)
 
-Sicherheitsbezogene Dokumentation und Best Practices
+Sicherheitsdokumentation
 
-- **SECURITY.md** - Umfassende Sicherheitsdokumentation
-- **CORS_SECURITY.md** - CORS Konfiguration und Sicherheit
+- **SECURITY.md** - Umfassende Sicherheitsübersicht
+- **CORS_SECURITY.md** - CORS Konfiguration
 - **XSS_PROTECTION.md** - XSS-Schutzmaßnahmen
 - **AUDIT_LOGGING.md** - Audit-Logging System
 - **RATE_LIMITING.md** - Rate Limiting Strategie
@@ -18,106 +18,45 @@ Sicherheitsbezogene Dokumentation und Best Practices
 
 ### ✨ [features/](./features/)
 
-Feature-Dokumentation und technische Guides
+Feature-Dokumentation
 
-- **TEMPLATE_GUIDE.md** - Template-System Anleitung (Neue Templates erstellen)
-- **PDF_GENERATION.md** - PDF-Generierung System
-- **PDF_IMPROVEMENTS.md** - PDF-Verbesserungen
-- **PDF_DOWNLOAD_PREVIEW.md** - PDF Download & Preview
-- **SSE_IMPLEMENTATION.md** - Server-Sent Events Implementation
+- **MVP_FEATURES.md** - MVP Feature Übersicht
+- **FEATURES.md** - Komplette Feature Liste
+- **PDF_GENERATION.md** - PDF-Generierung
+- **ATS_SCORE_WEIGHTING.md** - ATS Score Berechnung
+- **AUTOMATIC_LANGUAGE_DETECTION.md** - Spracherkennung
 
 ### 🔧 [implementation/](./implementation/)
 
-Implementierungs-Details und technische Summaries
+Technische Implementierungsdetails
 
-- **WIZARD_IMPLEMENTATION.md** - Application Wizard Implementation
-- **APPLICATIONS_DASHBOARD_IMPLEMENTATION.md** - Dashboard Implementation
-- **IMPLEMENTATION_SUMMARY.md** - Allgemeine Implementation Summary
-- **REFRESH_TOKEN_IMPLEMENTATION_SUMMARY.md** - Refresh Token Details
-- **SSE_INTEGRATION_EXAMPLE.md** - SSE Integration Beispiele
-- **TEMPLATE_CACHING.md** - Template Caching Strategy (In-Memory Cache)
-- **BROWSER_POOLING.md** - Browser Pool Management (Puppeteer)
-- **CIRCUIT_BREAKER.md** - Circuit Breaker Pattern (LLM Protection)
+- **WIZARD_IMPLEMENTATION.md** - Application Wizard
+- **SSE_IMPLEMENTATION.md** - Real-time Updates
+- **TEMPLATE_CACHING.md** - Template Cache Strategy
+- **BROWSER_POOLING.md** - Puppeteer Browser Pool
+- **CIRCUIT_BREAKER.md** - LLM Circuit Breaker
+- **DATABASE_INDEX_STRATEGY.md** - DB Optimierung
+- **PAGINATION.md** - Pagination Implementation
 
 ### 📚 [guides/](./guides/)
 
-Benutzer- und Entwickler-Guides
+Anleitungen
 
-- **README-APPLICATION-WIZARD.md** - Application Wizard Benutzerguide
-- **TESTING_GUIDE.md** - Testing Best Practices
-- **AGENT_URL_PARSER.md** - URL Parser Agent Dokumentation
-- **AZURE_AI_FOUNDRY_AGENTS.md** - Azure AI Foundry Agents Integration 🆕
-- **MONOREPO_WORKSPACE.md** - Workspace Architecture Guide
-- **MVP_EVALUATION.md** - MVP Evaluation Metrics
+- **MVP_EVALUATION_DEC_2025.md** - Aktueller MVP Status
 - **TEMPLATE_GUIDE.md** - Template System Guide
-
-### 🔨 [scripts/](./scripts/)
-
-Utility Scripts und Testing Tools
-
-- **test-cors-manual.sh** - Manueller CORS Test
-
-### 📦 [archive/](./archive/)
-
-Ältere Projektdokumentation und historische Dateien
-
-- **APPLICATIONS_UI_MOCKUP.md** - UI Mockup Designs
-- **DELIVERY.md** - Delivery Notes
-- **PR_SUMMARY.md** - Pull Request Summaries
-- **STATUS.md** - Projekt Status (historisch)
+- **TESTING_GUIDE.md** - Testing Best Practices
+- **AZURE_DEPLOYMENT.md** - Azure Deployment Guide
+- **DOCKER_OPTIMIZATION.md** - Docker Optimierung
+- **MONOREPO_WORKSPACE.md** - Workspace Architektur
 
 ---
 
 ## 🚀 Quick Links
 
-### Für Entwickler
-
-- [Template erstellen](./features/TEMPLATE_GUIDE.md) - Neue Templates hinzufügen
-- [Testing Guide](./guides/TESTING_GUIDE.md) - Tests schreiben und ausführen
-- [Wizard Implementation](./implementation/WIZARD_IMPLEMENTATION.md) - Application Wizard verstehen
-- [Azure AI Foundry Agents](./guides/AZURE_AI_FOUNDRY_AGENTS.md) - AI Agents Integration 🆕
-
-### Für DevOps
-
-- [Security Overview](./security/SECURITY.md) - Sicherheitsmaßnahmen
-- [Rate Limiting](./security/RATE_LIMITING.md) - Rate Limit Konfiguration
-- [Audit Logging](./security/AUDIT_LOGGING.md) - Logging Setup
-
-### Für Product/Design
-
-- [Application Wizard Guide](./guides/README-APPLICATION-WIZARD.md) - Benutzerführung
-- [UI Mockups](./archive/APPLICATIONS_UI_MOCKUP.md) - Design Konzepte
-
----
-
-## 📖 Dokumentations-Guidelines
-
-### Neue Dokumentation hinzufügen
-
-1. **Sicherheit** → `security/` - Alles rund um Auth, CORS, XSS, CSP, etc.
-2. **Features** → `features/` - Feature-Dokumentation, How-To Guides
-3. **Implementation** → `implementation/` - Technische Details, Architektur
-4. **Guides** → `guides/` - Benutzer- und Entwickler-Anleitungen
-5. **Scripts** → `scripts/` - Utility Scripts, Testing Tools
-6. **Archive** → `archive/` - Veraltete oder historische Dokumentation
-
-### Naming Conventions
-
-- **UPPERCASE_WITH_UNDERSCORES.md** für technische Docs
-- **kebab-case.md** für User-Guides
-- **PascalCase.md** für Feature-Spezifikationen
-
-### Markdown Standards
-
-- Verwende klare Überschriften (H1, H2, H3)
-- Code-Beispiele mit Syntax Highlighting
-- Inhaltsverzeichnis bei langen Dokumenten
-- Datum bei zeitkritischen Informationen
-
----
-
-## 🔄 Letzte Aktualisierung
-
-**Datum:** 23. November 2025  
-**Organisiert von:** AI Assistant  
-**Struktur:** 6 Hauptkategorien + Archive
+| Kategorie      | Link                                                              | Beschreibung           |
+| -------------- | ----------------------------------------------------------------- | ---------------------- |
+| **MVP Status** | [MVP_EVALUATION_DEC_2025.md](./guides/MVP_EVALUATION_DEC_2025.md) | Aktueller Projektstand |
+| **Sicherheit** | [SECURITY.md](./security/SECURITY.md)                             | Sicherheitsübersicht   |
+| **Templates**  | [TEMPLATE_GUIDE.md](./guides/TEMPLATE_GUIDE.md)                   | Template System        |
+| **Testing**    | [TESTING_GUIDE.md](./guides/TESTING_GUIDE.md)                     | Test Anleitungen       |
+| **Azure**      | [AZURE_DEPLOYMENT.md](./guides/AZURE_DEPLOYMENT.md)               | Deployment Guide       |

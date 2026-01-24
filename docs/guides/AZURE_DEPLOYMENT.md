@@ -1,25 +1,28 @@
 # 🚀 Azure Deployment Guide - Smart Apply MVP
 
 ## Inhaltsverzeichnis
-1. [Voraussetzungen](#voraussetzungen)
-2. [Azure Resources provisionieren](#azure-resources-provisionieren)
-3. [GitHub Actions Setup](#github-actions-setup)
-4. [Environment Variables konfigurieren](#environment-variables)
-5. [Deployment durchführen](#deployment)
-6. [Troubleshooting](#troubleshooting)
-7. [Rollback-Verfahren](#rollback)
+
+1. [Voraussetzungen](#1-voraussetzungen)
+2. [Azure Resources provisionieren](#2-azure-resources-provisionieren)
+3. [GitHub Actions Setup](#3-github-actions-setup)
+4. [Environment Variables konfigurieren](#4-environment-variables-konfigurieren)
+5. [Deployment durchführen](#5-deployment-durchführen)
+6. [Troubleshooting](#6-troubleshooting)
+7. [Rollback-Verfahren](#7-rollback-verfahren)
 
 ---
 
 ## 1. Voraussetzungen
 
 ### Installierte Tools
+
 - [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli) (v2.50+)
 - [Bicep CLI](https://learn.microsoft.com/azure/azure-resource-manager/bicep/install) (v0.20+)
 - [Docker](https://docs.docker.com/get-docker/) (für lokale Tests)
 - [GitHub CLI](https://cli.github.com/) (optional, für Secrets Management)
 
 ### Azure Subscription
+
 ```bash
 # Login zu Azure
 az login
@@ -32,6 +35,7 @@ az account set --subscription "YOUR_SUBSCRIPTION_ID"
 ```
 
 ### GitHub Repository
+
 - Fork oder Clone von `smart-apply`
 - Admin-Rechte für Secrets/Actions Configuration
 
@@ -186,18 +190,20 @@ az ad app federated-credential create \
 
 ### Schritt 3.3: GitHub Secrets erstellen
 
-**Option A: Via GitHub UI**
+### Option A: Via GitHub UI
+
 1. Gehe zu `Settings > Secrets and variables > Actions > New repository secret`
 2. Erstelle folgende Secrets:
 
-| Secret Name | Value | Quelle |
-|-------------|-------|--------|
-| `AZURE_CLIENT_ID` | `xxx-xxx-xxx` | Service Principal `clientId` |
-| `AZURE_TENANT_ID` | `xxx-xxx-xxx` | Service Principal `tenantId` |
-| `AZURE_SUBSCRIPTION_ID` | `xxx-xxx-xxx` | Service Principal `subscriptionId` |
-| `AZURE_CONTAINER_REGISTRY` | `smartapplyprodacr` | Ohne `.azurecr.io` |
+| Secret Name                | Value               | Quelle                             |
+| -------------------------- | ------------------- | ---------------------------------- |
+| `AZURE_CLIENT_ID`          | `xxx-xxx-xxx`       | Service Principal `clientId`       |
+| `AZURE_TENANT_ID`          | `xxx-xxx-xxx`       | Service Principal `tenantId`       |
+| `AZURE_SUBSCRIPTION_ID`    | `xxx-xxx-xxx`       | Service Principal `subscriptionId` |
+| `AZURE_CONTAINER_REGISTRY` | `smartapplyprodacr` | Ohne `.azurecr.io`                 |
 
-**Option B: Via GitHub CLI**
+### Option B: Via GitHub CLI
+
 ```bash
 gh secret set AZURE_CLIENT_ID --body "xxx-xxx-xxx"
 gh secret set AZURE_TENANT_ID --body "xxx-xxx-xxx"
@@ -326,6 +332,7 @@ git push origin mvp
 ```
 
 **Monitor Deployment:**
+
 - GitHub Actions: `https://github.com/YOUR_USERNAME/smart-apply/actions`
 - Azure Portal: Container Apps > Revisions
 
@@ -338,6 +345,7 @@ git push origin mvp
 **Symptome:** Health Checks schlagen fehl, App ist nicht erreichbar
 
 **Diagnose:**
+
 ```bash
 # Logs abrufen (letzte 100 Zeilen)
 az containerapp logs show \
@@ -354,12 +362,14 @@ az containerapp revision list \
 ```
 
 **Häufige Ursachen:**
+
 - ❌ Falsche `DATABASE_URL` (SSL-Mode fehlt: `?sslmode=require`)
 - ❌ Chromium nicht gefunden (Dockerfile prüfen)
 - ❌ Port 3000 nicht exposed
 - ❌ Secrets nicht richtig gesetzt
 
 **Fix:**
+
 ```bash
 # Environment Variables prüfen
 az containerapp show \
@@ -373,6 +383,7 @@ az containerapp show \
 **Symptome:** Migration Job failed in GitHub Actions
 
 **Diagnose:**
+
 ```bash
 # Test Database Connection
 DATABASE_URL=$(az keyvault secret show \
@@ -386,11 +397,13 @@ DATABASE_URL=$DATABASE_URL npx prisma db pull --force
 ```
 
 **Häufige Ursachen:**
+
 - ❌ PostgreSQL Firewall blockiert GitHub Actions Runner
 - ❌ SSL-Mode nicht konfiguriert
 - ❌ Admin-Credentials falsch
 
 **Fix:**
+
 ```bash
 # Firewall Rule für GitHub Actions hinzufügen (temporär)
 az postgres flexible-server firewall-rule create \
@@ -406,6 +419,7 @@ az postgres flexible-server firewall-rule create \
 **Symptome:** LLM-Provider fails, Applications stuck in GENERATING
 
 **Diagnose:**
+
 ```bash
 # Test Azure OpenAI Endpoint (manuell)
 curl -X POST "https://YOUR_RESOURCE.openai.azure.com/openai/deployments/gpt-4o/chat/completions?api-version=2024-08-01-preview" \
@@ -418,6 +432,7 @@ curl -X POST "https://YOUR_RESOURCE.openai.azure.com/openai/deployments/gpt-4o/c
 ```
 
 **Fix:**
+
 ```bash
 # Fallback to Mock Provider (für Testing)
 az containerapp update \
@@ -431,6 +446,7 @@ az containerapp update \
 **Symptome:** Frontend kann API nicht erreichen, CORS Errors in Browser Console
 
 **Fix:**
+
 ```bash
 # CORS Origins aktualisieren
 az containerapp update \
@@ -586,17 +602,18 @@ ContainerAppSystemLogs_CL
 
 ### Aktuelle Ressourcen-Kosten (ca. Schätzung)
 
-| Resource | SKU | Kosten/Monat (€) |
-|----------|-----|------------------|
-| Container Apps | 0.5 vCPU, 1 GB | ~€15-30 |
-| PostgreSQL Flexible | B1ms (1 vCore) | ~€15-20 |
-| Storage Account | Standard LRS | ~€1-5 |
-| Service Bus | Basic | ~€0.05 |
-| Container Registry | Basic | ~€4.25 |
-| Key Vault | Standard | ~€0.50 |
-| **TOTAL** | | **~€36-60/Monat** |
+| Resource            | SKU            | Kosten/Monat (€)  |
+| ------------------- | -------------- | ----------------- |
+| Container Apps      | 0.5 vCPU, 1 GB | ~€15-30           |
+| PostgreSQL Flexible | B1ms (1 vCore) | ~€15-20           |
+| Storage Account     | Standard LRS   | ~€1-5             |
+| Service Bus         | Basic          | ~€0.05            |
+| Container Registry  | Basic          | ~€4.25            |
+| Key Vault           | Standard       | ~€0.50            |
+| **TOTAL**           |                | **~€36-60/Monat** |
 
 **Tipps zur Kostenreduktion:**
+
 - 🔄 Scale to Zero: Container Apps können auf 0 Replicas runterskalieren
 - 🛑 Dev/Test Umgebungen nachts ausschalten
 - 📦 ACR Image Retention Policy (30 Tage)
@@ -613,17 +630,14 @@ ContainerAppSystemLogs_CL
   - [ ] Private Endpoints für PostgreSQL + Storage
   - [ ] Managed Identity statt Connection Strings
   - [ ] Azure Key Vault References in Container Apps
-  
 - [ ] **Monitoring:**
   - [ ] Application Insights Dashboards
   - [ ] Alerts für kritische Metriken (CPU, Memory, Errors)
   - [ ] Uptime Monitoring (Azure Monitor / Pingdom)
-  
 - [ ] **Performance:**
   - [ ] CDN für Frontend (Azure CDN / Vercel Edge)
   - [ ] Redis Cache (Azure Cache for Redis)
   - [ ] Database Query Optimization
-  
 - [ ] **Backup & DR:**
   - [ ] Automated Database Backups (täglich)
   - [ ] Geo-Replication für Storage
@@ -639,4 +653,4 @@ ContainerAppSystemLogs_CL
 
 ---
 
-**Viel Erfolg beim Deployment! 🚀**
+Viel Erfolg beim Deployment! 🚀

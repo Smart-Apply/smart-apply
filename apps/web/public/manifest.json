@@ -1,0 +1,60 @@
+{
+  "name": "Smart Apply - KI-gestützte Bewerbungen",
+  "short_name": "Smart Apply",
+  "description": "Erstelle personalisierte Bewerbungen mit KI-Unterstützung. Generiere Anschreiben und Lebensläufe, die auf die Stellenanzeige zugeschnitten sind.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "de",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/Logo/favicon-icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/Logo/favicon-icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/Logo/Medium Logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/Images/dashboard-screenshot.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Smart Apply Dashboard"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Neue Bewerbung",
+      "short_name": "Bewerbung",
+      "description": "Erstelle eine neue Bewerbung",
+      "url": "/applications/new",
+      "icons": [{ "src": "/Logo/favicon-icon.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Profil bearbeiten",
+      "short_name": "Profil",
+      "description": "Bearbeite dein Profil",
+      "url": "/profile",
+      "icons": [{ "src": "/Logo/favicon-icon.png", "sizes": "192x192" }]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}

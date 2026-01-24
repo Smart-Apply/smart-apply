@@ -1,6 +1,7 @@
 # File Upload Limits Implementation
 
 ## Overview
+
 Configurable file size limits prevent resource exhaustion (OOM crashes, storage overflow, Azure Blob cost explosion) by validating files **before** processing and upload.
 
 ## Implementation
@@ -16,10 +17,12 @@ MAX_PROFILE_PHOTO_SIZE_MB=5      # Max size for profile photos (reserved for fut
 ```
 
 **Defaults:**
+
 - Job posting files: 10 MB
 - Profile photos: 5 MB (not yet implemented)
 
 **Configuration:**
+
 - Development: Set in `.env` or `.env.local`
 - Testing: Set in `.env.test` (already configured)
 - Production: Set via Azure Key Vault or environment variables
@@ -47,6 +50,7 @@ file: Express.Multer.File
 ```
 
 **Benefits:**
+
 - ✅ **Early rejection** - Files rejected at controller level before entering business logic
 - ✅ **Memory efficiency** - Never loads oversized files into memory
 - ✅ **User-friendly errors** - Clear error messages with actionable guidance
@@ -71,6 +75,7 @@ constructor(
 ```
 
 **Validation checks:**
+
 1. File exists
 2. MIME type whitelist (PDF, DOCX)
 3. File size < MAX_FILE_SIZE
@@ -117,6 +122,7 @@ Updated Swagger docs (`/api/v1/uploads` endpoint):
 ```
 
 **Run:**
+
 ```bash
 cd apps/api
 npx jest src/uploads/uploads.service.spec.ts
@@ -137,6 +143,7 @@ npx jest src/uploads/uploads.service.spec.ts
 ```
 
 **Run:**
+
 ```bash
 cd apps/api
 npm run test:e2e -- --testPathPattern=uploads
@@ -145,6 +152,7 @@ npm run test:e2e -- --testPathPattern=uploads
 ## Error Messages
 
 ### File Too Large (Service-level)
+
 ```json
 {
   "statusCode": 400,
@@ -154,6 +162,7 @@ npm run test:e2e -- --testPathPattern=uploads
 ```
 
 ### File Too Large (Controller-level)
+
 ```json
 {
   "statusCode": 400,
@@ -163,6 +172,7 @@ npm run test:e2e -- --testPathPattern=uploads
 ```
 
 ### Invalid File Type
+
 ```json
 {
   "statusCode": 400,
@@ -174,12 +184,14 @@ npm run test:e2e -- --testPathPattern=uploads
 ## Security Considerations
 
 ### Defense-in-Depth
+
 1. **Controller validation** (ParseFilePipe) - First line of defense, rejects before processing
 2. **Service validation** (UploadsService) - Backup validation with detailed logging
 3. **MIME type whitelist** - Only PDF and DOCX allowed
 4. **Filename sanitization** - Path traversal protection (`../../../etc/passwd` → `etc_passwd`)
 
 ### Resource Protection
+
 - **OOM Prevention** - Files > 10MB rejected before loading into memory
 - **Storage Protection** - Prevents multi-GB uploads to Azure Blob
 - **Cost Control** - Limits Azure Blob Storage costs
@@ -221,6 +233,7 @@ Monitor these metrics post-deployment:
 - **Error Rate**: 400 errors from uploads endpoint
 
 Query logs:
+
 ```bash
 # Count rejections by reason
 grep "File size exceeds" /var/log/api.log | wc -l

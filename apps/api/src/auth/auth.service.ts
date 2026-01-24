@@ -437,7 +437,7 @@ export class AuthService {
     // Generate access token (short-lived)
     const accessToken = this.jwtService.sign(
       { sub: userId, email, type: 'access' },
-      { expiresIn: this.configService.jwtAccessExpiresIn },
+      { expiresIn: this.configService.jwtAccessExpiresIn as any },
     );
 
     // Generate refresh token (long-lived) with unique identifier
@@ -448,7 +448,7 @@ export class AuthService {
         type: 'refresh',
         jti: `${Date.now()}-${Math.random().toString(36).substring(7)}`, // Unique token ID
       },
-      { expiresIn: this.configService.jwtRefreshExpiresIn },
+      { expiresIn: this.configService.jwtRefreshExpiresIn as any },
     );
 
     // Calculate expiration date for refresh token

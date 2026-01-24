@@ -5,20 +5,22 @@
 **N+1 queries** occur when you fetch a list of N items, then execute an additional query for each item to fetch related data, resulting in **1 + N total queries** instead of a single efficient query.
 
 ### Example of N+1 Problem (BAD)
+
 ```typescript
 // Fetch 100 applications
 const applications = await prisma.application.findMany({ where: { userId } });
 
 // For EACH application, fetch the job posting (100 additional queries!)
 for (const app of applications) {
-  const jobPosting = await prisma.jobPosting.findUnique({ 
-    where: { id: app.jobPostingId } 
+  const jobPosting = await prisma.jobPosting.findUnique({
+    where: { id: app.jobPostingId }
   });
 }
 // Total: 1 + 100 = 101 queries ❌
 ```
 
 ### Solution: Eager Loading (GOOD)
+
 ```typescript
 // Fetch applications WITH job postings in a single JOIN query
 const applications = await prisma.application.findMany({
@@ -56,6 +58,7 @@ async findAll(userId: string, includeJobPosting = false, page = 1, limit = 20) {
 ```
 
 **Key Points:**
+
 - ✅ Uses `include: { jobPosting: includeJobPosting }` for eager loading
 - ✅ Only loads job posting when requested (`?includeJobPosting=true`)
 - ✅ Parallel queries with `Promise.all` for count
@@ -63,12 +66,12 @@ async findAll(userId: string, includeJobPosting = false, page = 1, limit = 20) {
 
 ### Query Patterns
 
-| Endpoint | Query Count | Notes |
-|----------|-------------|-------|
-| `GET /applications` | 2 | 1 for applications, 1 for count |
-| `GET /applications?includeJobPosting=true` | 2-3 | 1 for apps+jobs (JOIN), 1 for count |
-| `GET /applications/:id` | 1 | Single application |
-| `GET /applications/:id?includeJobPosting=true` | 1 | Single app with JOIN |
+| Endpoint                                       | Query Count | Notes                               |
+| ---------------------------------------------- | ----------- | ----------------------------------- |
+| `GET /applications`                            | 2           | 1 for applications, 1 for count     |
+| `GET /applications?includeJobPosting=true`     | 2-3         | 1 for apps+jobs (JOIN), 1 for count |
+| `GET /applications/:id`                        | 1           | Single application                  |
+| `GET /applications/:id?includeJobPosting=true` | 1           | Single app with JOIN                |
 
 ### Performance Improvement
 
@@ -117,6 +120,7 @@ curl http://localhost:3000/api/v1/applications?includeJobPosting=true \
 ```
 
 You should see:
+
 1. `SELECT` applications with JOIN to job_postings
 2. `SELECT COUNT(*)` for pagination
 3. **Total: 2-3 queries**
@@ -126,8 +130,9 @@ You should see:
 Prisma uses two strategies for `include`:
 
 ### 1. JOIN Strategy (preferred)
+
 ```sql
-SELECT a.*, jp.* 
+SELECT a.*, jp.*
 FROM applications a
 LEFT JOIN job_postings jp ON a.job_posting_id = jp.id
 WHERE a.user_id = $1
@@ -136,6 +141,7 @@ LIMIT 20;
 ```
 
 ### 2. IN Clause Strategy (fallback)
+
 ```sql
 -- Query 1: Fetch applications
 SELECT * FROM applications WHERE user_id = $1 ORDER BY created_at DESC LIMIT 20;
@@ -163,8 +169,8 @@ const applications = await prisma.application.findMany({
 // Bad: Causes N+1 queries
 const applications = await prisma.application.findMany({});
 for (const app of applications) {
-  app.jobPosting = await prisma.jobPosting.findUnique({ 
-    where: { id: app.jobPostingId } 
+  app.jobPosting = await prisma.jobPosting.findUnique({
+    where: { id: app.jobPostingId }
   });
 }
 ```
@@ -197,7 +203,7 @@ N+1 prevention is more effective with proper indexes:
 ```prisma
 model Application {
   // ... fields
-  
+
   @@index([userId, createdAt(sort: Desc)]) // Fast sorted queries
   @@index([jobPostingId]) // Fast JOIN on job postings
   @@unique([userId, jobPostingId]) // Prevent duplicates
@@ -217,11 +223,11 @@ See `docs/implementation/DATABASE_INDEX_STRATEGY.md` for details.
 
 ### Expected Query Counts (Production)
 
-| Endpoint | Users | Expected Queries | Alert Threshold |
-|----------|-------|------------------|-----------------|
-| GET /applications | 1,000 | 2-3 | > 5 |
-| GET /applications?includeJobPosting=true | 1,000 | 2-3 | > 5 |
-| GET /applications/:id | 1,000 | 1 | > 2 |
+| Endpoint                                 | Users | Expected Queries | Alert Threshold |
+| ---------------------------------------- | ----- | ---------------- | --------------- |
+| GET /applications                        | 1,000 | 2-3              | > 5             |
+| GET /applications?includeJobPosting=true | 1,000 | 2-3              | > 5             |
+| GET /applications/:id                    | 1,000 | 1                | > 2             |
 
 ## Related Documentation
 

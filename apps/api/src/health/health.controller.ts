@@ -76,6 +76,28 @@ class TemplatesHealthIndicator extends HealthIndicator {
   }
 }
 
+/**
+ * Custom health indicator for LLM Service
+ */
+@Injectable()
+class LLMHealthIndicator extends HealthIndicator {
+  constructor(private readonly llmService: LLMService) {
+    super();
+  }
+
+  async isHealthy(): Promise<HealthIndicatorResult> {
+    const isHealthy = await this.llmService.healthCheck();
+    const result = this.getStatus('llm', isHealthy, {
+      message: isHealthy ? 'LLM provider available' : 'LLM provider unavailable',
+    });
+
+    if (isHealthy) {
+      return result;
+    }
+    throw new Error('LLM service is not healthy');
+  }
+}
+
 @ApiTags('health')
 @Controller('health')
 @SkipThrottle() // Health checks should never be rate limited
@@ -83,6 +105,7 @@ export class HealthController {
   private storageIndicator: StorageHealthIndicator;
   private queueIndicator: QueueHealthIndicator;
   private templatesIndicator: TemplatesHealthIndicator;
+  private llmIndicator: LLMHealthIndicator;
 
   constructor(
     private health: HealthCheckService,
@@ -96,6 +119,7 @@ export class HealthController {
     this.storageIndicator = new StorageHealthIndicator(storageService);
     this.queueIndicator = new QueueHealthIndicator(jobsService);
     this.templatesIndicator = new TemplatesHealthIndicator(templatesService);
+    this.llmIndicator = new LLMHealthIndicator(llmService);
   }
 
   @Get()
@@ -118,26 +142,8 @@ export class HealthController {
       // Templates check
       () => this.templatesIndicator.isHealthy(),
 
-      // LLM check (basic availability check)
-      async () => {
-        try {
-          // Simple check - LLM service is available if it's instantiated
-          const isHealthy = this.llmService !== undefined && this.llmService !== null;
-          return {
-            llm: {
-              status: isHealthy ? 'up' : 'down',
-              message: isHealthy ? 'LLM service available' : 'LLM service unavailable',
-            },
-          };
-        } catch (error) {
-          return {
-            llm: {
-              status: 'down',
-              message: error.message,
-            },
-          };
-        }
-      },
+      // LLM check (provider + circuit breaker health)
+      () => this.llmIndicator.isHealthy(),
     ]);
   }
 

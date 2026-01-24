@@ -22,15 +22,30 @@ const nextConfig: NextConfig = {
   // This compresses static assets and API responses, reducing bandwidth usage
   compress: true,
 
-  // Image configuration for external template preview images
+  // Optimized image configuration
   images: {
-    unoptimized: true,
+    // Enable image optimization (disabled for compatibility, now enabled)
+    unoptimized: false,
+    // Modern image formats for better compression
+    formats: ['image/avif', 'image/webp'],
+    // Device widths for responsive images
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    // Image sizes for different breakpoints
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    // Minimize external requests
+    minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days cache
+    // Remote patterns for external images
     remotePatterns: [
       {
         protocol: 'http',
         hostname: 'localhost',
         port: '3000',
         pathname: '/api/v1/templates/*/preview',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.blob.core.windows.net',
+        pathname: '/**',
       },
     ],
   },

@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { ConfigService } from '../config/config.service';
 import { PdfService } from '../pdf/pdf.service';
-import { TemplateType } from '@prisma/client';
+import { TemplateType } from '../generated/prisma/client';
 import { TemplateResponseDto, TemplateWithContentResponseDto } from './dto/template-response.dto';
 import { CreateTemplateDto } from './dto/create-template.dto';
 

@@ -182,7 +182,7 @@ export class PdfService implements OnModuleInit, OnModuleDestroy {
     const configs = [
       // Primary config with user-specified executable (production)
       {
-        headless: 'new' as const,
+        headless: true,
         executablePath: this.configService.puppeteerExecutablePath || undefined,
         args: [
           '--no-sandbox',
@@ -205,7 +205,7 @@ export class PdfService implements OnModuleInit, OnModuleDestroy {
       },
       // Fallback config without custom executable (use bundled Chromium)
       {
-        headless: 'new' as const,
+        headless: true,
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',

@@ -13,6 +13,7 @@ Audit logging tracks all security-relevant events including authentication attem
 Located in `apps/api/src/common/audit-logger/audit-logger.service.ts`, this global service provides structured logging methods for all security events.
 
 **Key Features:**
+
 - Daily log rotation (90-day retention)
 - Structured JSON format
 - Non-blocking async I/O
@@ -23,12 +24,14 @@ Located in `apps/api/src/common/audit-logger/audit-logger.service.ts`, this glob
 ### Log Storage
 
 **File-based (Default):**
+
 - Location: `logs/audit-YYYY-MM-DD.log`
 - Rotation: Daily at midnight
 - Retention: 90 days
 - Max file size: 20MB
 
 **Database (Optional):**
+
 - Table: `audit_logs`
 - Fields: id, eventType, userId, email, ip, userAgent, severity, metadata, createdAt
 - Indexes: userId, eventType, createdAt, severity
@@ -38,36 +41,36 @@ Located in `apps/api/src/common/audit-logger/audit-logger.service.ts`, this glob
 
 ### Authentication Events
 
-| Event Type | Severity | Trigger | Metadata |
-|-----------|----------|---------|----------|
-| `REGISTRATION` | info | New user registration | userId, email |
-| `LOGIN_SUCCESS` | info | Successful login | userId, email |
-| `LOGIN_FAILED` | warning | Failed login attempt | email (no userId if user doesn't exist) |
-| `LOGOUT` | info | User logout | userId |
-| `REFRESH_TOKEN_USED` | info | Token refresh | userId, email |
+| Event Type           | Severity | Trigger               | Metadata                                |
+| -------------------- | -------- | --------------------- | --------------------------------------- |
+| `REGISTRATION`       | info     | New user registration | userId, email                           |
+| `LOGIN_SUCCESS`      | info     | Successful login      | userId, email                           |
+| `LOGIN_FAILED`       | warning  | Failed login attempt  | email (no userId if user doesn't exist) |
+| `LOGOUT`             | info     | User logout           | userId                                  |
+| `REFRESH_TOKEN_USED` | info     | Token refresh         | userId, email                           |
 
 ### Security Events
 
-| Event Type | Severity | Trigger | Metadata |
-|-----------|----------|---------|----------|
-| `RATE_LIMIT_EXCEEDED` | warning | Rate limit violation | endpoint, userId (if authenticated) |
-| `CSRF_VALIDATION_FAILED` | warning | Invalid CSRF token | method, url, userId (if available) |
-| `UNAUTHORIZED_ACCESS` | warning | Access to protected resource without auth | endpoint, userId (if token provided but invalid) |
+| Event Type               | Severity | Trigger                                   | Metadata                                         |
+| ------------------------ | -------- | ----------------------------------------- | ------------------------------------------------ |
+| `RATE_LIMIT_EXCEEDED`    | warning  | Rate limit violation                      | endpoint, userId (if authenticated)              |
+| `CSRF_VALIDATION_FAILED` | warning  | Invalid CSRF token                        | method, url, userId (if available)               |
+| `UNAUTHORIZED_ACCESS`    | warning  | Access to protected resource without auth | endpoint, userId (if token provided but invalid) |
 
 ### Account Modification Events
 
-| Event Type | Severity | Trigger | Metadata |
-|-----------|----------|---------|----------|
-| `PROFILE_UPDATED` | info | Profile data changed | updatedFields, hasSkills, hasExperiences, etc. |
-| `PASSWORD_CHANGED` | info | Password updated | userId |
-| `EMAIL_CHANGED` | info | Email address updated | oldEmail, newEmail |
+| Event Type         | Severity | Trigger               | Metadata                                       |
+| ------------------ | -------- | --------------------- | ---------------------------------------------- |
+| `PROFILE_UPDATED`  | info     | Profile data changed  | updatedFields, hasSkills, hasExperiences, etc. |
+| `PASSWORD_CHANGED` | info     | Password updated      | userId                                         |
+| `EMAIL_CHANGED`    | info     | Email address updated | oldEmail, newEmail                             |
 
 ### Future Events (Not Yet Implemented)
 
-| Event Type | Severity | Use Case |
-|-----------|----------|----------|
+| Event Type               | Severity | Use Case                         |
+| ------------------------ | -------- | -------------------------------- |
 | `MULTIPLE_FAILED_LOGINS` | critical | 5+ failed logins in short period |
-| `IP_CHANGE_DETECTED` | warning | Login from new location |
+| `IP_CHANGE_DETECTED`     | warning  | Login from new location          |
 
 ## Log Entry Structure
 
@@ -91,6 +94,7 @@ Every audit log entry contains:
 ```
 
 **Required Fields:**
+
 - `eventType`: Event identifier (enum value)
 - `ip`: Client IP address
 - `userAgent`: Client user agent string
@@ -98,6 +102,7 @@ Every audit log entry contains:
 - `severity`: Log severity (info, warning, critical)
 
 **Optional Fields:**
+
 - `userId`: User ID (if authenticated)
 - `email`: User email
 - `metadata`: Additional event-specific context
@@ -137,7 +142,7 @@ export class AuthService {
 
   async login(dto: LoginDto, req: Request) {
     const user = await this.findUser(dto.email);
-    
+
     if (!user) {
       // Log failed attempt
       this.auditLogger.logLoginAttempt(dto.email, false, req);
@@ -180,11 +185,13 @@ this.auditLogger.log({
 ### PII Handling
 
 **Logged:**
+
 - Email addresses (necessary for security tracking)
 - IP addresses (necessary for threat detection)
 - User IDs (internal identifiers)
 
 **Never Logged:**
+
 - Passwords (plain or hashed)
 - Authentication tokens (JWT, refresh tokens)
 - Credit card numbers
@@ -194,20 +201,24 @@ this.auditLogger.log({
 ### GDPR Compliance
 
 **Data Retention:**
+
 - File logs: 90 days (configurable)
 - Database logs: Can be set independently
 - Anonymization: On user deletion, userId can be set to 'deleted' in historical logs
 
 **Right to Access:**
+
 - Users can request their audit logs via API (future feature)
 
 **Right to Erasure:**
+
 - Email/IP can be pseudonymized while preserving security value
 - Audit trail integrity must be balanced with user rights
 
 ### ISO 27001 Compliance
 
 Audit logging supports several ISO 27001 controls:
+
 - **A.12.4.1**: Event logging (information security events)
 - **A.12.4.3**: Administrator and operator logs
 - **A.9.4.2**: Secure log-on procedures monitoring
@@ -256,6 +267,7 @@ npm run test:e2e -- audit-logging.e2e-spec.ts
 ```
 
 **Test Coverage:**
+
 - Authentication events (register, login, logout, refresh)
 - Failed login attempts
 - Rate limit violations
@@ -269,22 +281,26 @@ npm run test:e2e -- audit-logging.e2e-spec.ts
 ### Future Enhancements
 
 **Real-time Alerting:**
+
 - Email notifications for critical events
 - Slack/Teams webhooks for suspicious activity
 - PagerDuty integration for security incidents
 
 **SIEM Integration:**
+
 - Forward logs to Splunk, ELK, or Azure Sentinel
 - Correlation with other security events
 - Automated threat detection
 
 **Anomaly Detection:**
+
 - Multiple failed logins from same IP
 - Login from unusual location
 - Rapid succession of requests
 - Account modifications outside business hours
 
 **Admin Dashboard:**
+
 - View recent security events
 - Filter by user, event type, severity
 - Export logs for compliance audits
@@ -293,16 +309,19 @@ npm run test:e2e -- audit-logging.e2e-spec.ts
 ## Performance Considerations
 
 **Async I/O:**
+
 - Winston uses non-blocking file writes
 - Logging doesn't impact API response times
 - Queued writes prevent bottlenecks
 
 **Log Rotation:**
+
 - Daily rotation prevents large files
 - Old logs automatically archived/compressed
 - Configurable retention policy
 
 **Storage:**
+
 - 90 days of logs ~50-200MB (typical workload)
 - Compress old logs for archival
 - Consider Azure Blob Storage for long-term retention
@@ -314,6 +333,7 @@ npm run test:e2e -- audit-logging.e2e-spec.ts
 **Issue:** No log files in `logs/` directory
 
 **Solutions:**
+
 1. Check file permissions: `mkdir -p logs && chmod 755 logs`
 2. Verify winston is installed: `npm list winston`
 3. Check for initialization errors in console
@@ -323,6 +343,7 @@ npm run test:e2e -- audit-logging.e2e-spec.ts
 **Issue:** Expected events not appearing in logs
 
 **Solutions:**
+
 1. Verify AuditLoggerService is injected in module
 2. Check that Request object is passed to service methods
 3. Confirm event is triggered (add debug logging)
@@ -332,6 +353,7 @@ npm run test:e2e -- audit-logging.e2e-spec.ts
 **Issue:** Log files growing too large
 
 **Solutions:**
+
 1. Reduce `maxSize` in DailyRotateFile config
 2. Decrease retention period (`maxFiles`)
 3. Implement sampling for high-frequency events

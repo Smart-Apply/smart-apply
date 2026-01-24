@@ -7,12 +7,14 @@ The `TemplatesService` implements in-memory caching using `node-cache` to reduce
 ## Problem Solved
 
 **Before caching:**
+
 - Every template request queried the database
 - With 100 templates × 1000 requests/hour = **100,000 database queries/hour**
 - Increased latency (50-100ms per query)
 - Unnecessary database load
 
 **After caching:**
+
 - First request: Database query (cache miss)
 - Subsequent requests: In-memory cache (cache hit)
 - Estimated reduction: **99%+ of database queries eliminated** (based on typical read:write ratio of 100:1 or higher)
@@ -38,13 +40,13 @@ constructor() {
 
 All read operations are cached with unique cache keys:
 
-| Method | Cache Key Pattern | Example |
-|--------|------------------|---------|
-| `findAll()` | `templates:all:{type}` | `templates:all:RESUME` |
-| `findOne()` | `templates:id:{id}` | `templates:id:abc-123` |
-| `findDefault()` | `templates:default:{type}` | `templates:default:COVER_LETTER` |
+| Method                        | Cache Key Pattern                                  | Example                                         |
+| ----------------------------- | -------------------------------------------------- | ----------------------------------------------- |
+| `findAll()`                   | `templates:all:{type}`                             | `templates:all:RESUME`                          |
+| `findOne()`                   | `templates:id:{id}`                                | `templates:id:abc-123`                          |
+| `findDefault()`               | `templates:default:{type}`                         | `templates:default:COVER_LETTER`                |
 | `findByCategoryAndLanguage()` | `templates:category:{cat}:lang:{lang}:type:{type}` | `templates:category:modern:lang:en:type:RESUME` |
-| `findLanguageVariants()` | `templates:variants:{baseId}` | `templates:variants:base-123` |
+| `findLanguageVariants()`      | `templates:variants:{baseId}`                      | `templates:variants:base-123`                   |
 
 ### Cache Invalidation
 
@@ -72,6 +74,7 @@ const stats = templatesService.getCacheStats();
 ```
 
 **Logging:**
+
 - Cache hits/misses logged at DEBUG level
 - Cache invalidation logged at LOG level
 - Stats include hit rate calculation
@@ -86,6 +89,7 @@ CACHE_TTL_SECONDS=3600  # 1 hour (default)
 ```
 
 **TTL Guidelines:**
+
 - Development: 3600s (1 hour) - good balance
 - Production: 3600-7200s (1-2 hours) - templates change infrequently
 - Testing: 60s - faster expiry for test isolation
@@ -93,11 +97,13 @@ CACHE_TTL_SECONDS=3600  # 1 hour (default)
 ### Adjusting TTL
 
 **Longer TTL (7200s+):**
+
 - ✅ Higher cache hit rate
 - ✅ Lower database load
 - ❌ Slower propagation of template updates
 
 **Shorter TTL (900s):**
+
 - ✅ Faster propagation of updates
 - ❌ More cache misses
 - ❌ Higher database load
@@ -107,11 +113,13 @@ CACHE_TTL_SECONDS=3600  # 1 hour (default)
 ### Expected Metrics
 
 **Cache Hit Scenario** (99% of requests):
+
 - Database queries: 0
 - Response time: < 1ms
 - Memory usage: ~10KB per cached template
 
 **Cache Miss Scenario** (1% of requests):
+
 - Database queries: 1-2 (with fallback logic)
 - Response time: 50-100ms
 - Memory usage: Same (cache populated)
@@ -119,11 +127,13 @@ CACHE_TTL_SECONDS=3600  # 1 hour (default)
 ### Scalability
 
 **Single Instance:**
+
 - In-memory cache works perfectly
 - No external dependencies (Redis, Memcached)
 - Minimal operational complexity
 
 **Multi-Instance (Future):**
+
 - Consider migrating to Redis for shared cache
 - Current approach: Each instance has its own cache
 - Trade-off: Slightly lower hit rate, but simpler architecture
@@ -133,6 +143,7 @@ CACHE_TTL_SECONDS=3600  # 1 hour (default)
 ### Production Checklist
 
 1. **Log Analysis:**
+
    ```bash
    # Check cache hit rate
    grep "Cache HIT" logs/app.log | wc -l
@@ -152,6 +163,7 @@ CACHE_TTL_SECONDS=3600  # 1 hour (default)
 ### Debugging
 
 **Enable verbose logging:**
+
 ```typescript
 // In templates.service.ts
 this.logger.debug(`Cache HIT for ${cacheKey}`);
@@ -159,6 +171,7 @@ this.logger.debug(`Cache MISS for ${cacheKey}`);
 ```
 
 **Inspect cache state:**
+
 ```typescript
 // Get cache stats via service
 const stats = await templatesService.getCacheStats();
@@ -177,6 +190,7 @@ npm run test:unit -- templates.service.cache.spec.ts
 ```
 
 **Test Coverage:**
+
 - ✅ Cache hits on repeated calls
 - ✅ Cache misses on first call
 - ✅ Separate cache keys per query variant
@@ -232,6 +246,7 @@ import * as redisStore from 'cache-manager-redis-store';
 ```
 
 **Migration Path:**
+
 1. Install Redis dependencies
 2. Update ConfigModule to use CacheModule
 3. Replace `this.cache.get()` with `await this.cacheManager.get()`

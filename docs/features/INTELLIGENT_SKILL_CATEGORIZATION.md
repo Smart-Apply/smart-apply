@@ -7,17 +7,20 @@ Das System verwendet jetzt ein Large Language Model (LLM), um Skills im Lebensla
 ## Features
 
 ### 🎯 Intelligente Kategorisierung
+
 - **Branchenunabhängig**: Funktioniert für IT, Marketing, Healthcare, Finance, Sales und alle anderen Branchen
 - **Kontextbasiert**: Analysiert den Kandidaten-Hintergrund (Jobtitel, Erfahrungen, Zusammenfassung)
 - **Automatische Branchenerkennung**: Erkennt automatisch die Branche aus dem Profil
 - **3-6 Kategorien**: Erstellt eine übersichtliche Anzahl an sinnvollen Kategorien
 
 ### 🚀 Performance
+
 - **In-Memory Caching**: Skills werden nur einmal kategorisiert und dann gecached
 - **Cache-Limit**: Maximal 100 Cache-Einträge zur Speicherschonung
 - **Order-Independent**: Der Cache funktioniert unabhängig von der Skill-Reihenfolge
 
 ### 🔄 Fallback-Strategie
+
 - **LLM-Fehler**: Falls das LLM nicht verfügbar ist, wird die alte Kategorisierung verwendet
 - **Keine Skills**: Wenn keine Skills vorhanden sind, gibt es keine Kategorien
 - **Robustheit**: Das System funktioniert auch bei LLM-Ausfällen weiter
@@ -25,6 +28,7 @@ Das System verwendet jetzt ein Large Language Model (LLM), um Skills im Lebensla
 ## Beispiele
 
 ### IT/Software Developer
+
 ```json
 {
   "skillCategories": [
@@ -49,6 +53,7 @@ Das System verwendet jetzt ein Large Language Model (LLM), um Skills im Lebensla
 ```
 
 ### Marketing Manager
+
 ```json
 {
   "skillCategories": [
@@ -73,6 +78,7 @@ Das System verwendet jetzt ein Large Language Model (LLM), um Skills im Lebensla
 ```
 
 ### Healthcare Professional
+
 ```json
 {
   "skillCategories": [
@@ -100,7 +106,7 @@ Das System verwendet jetzt ein Large Language Model (LLM), um Skills im Lebensla
 
 ### Architektur
 
-```
+```text
 ApplicationsService
   ├─> categorizeSkillsWithLLM()
   │     ├─> Cache Check (in-memory Map)
@@ -117,11 +123,13 @@ ApplicationsService
 ### LLM-Prompt
 
 Das LLM erhält:
+
 1. **Skills-Liste**: Alle Skills als komma-separierte Liste
 2. **Kandidaten-Kontext**: Jobtitel + Firma oder Zusammenfassung
 3. **Branche**: Automatisch erkannt (IT, Marketing, Healthcare, etc.) oder "auto-detect"
 
 Das LLM gibt zurück:
+
 - JSON-Array mit Kategorie-Namen und zugehörigen Skills
 - Temperatur: 0.3 (niedriger für konsistente Kategorisierung)
 - Max Tokens: 1000
@@ -164,7 +172,7 @@ Die Skill-Kategorisierung wird automatisch in folgenden Fällen durchgeführt:
 
 Das System loggt folgende Events:
 
-```
+```text
 [ApplicationsService] Categorizing 12 skills for Senior Software Engineer with experience in TechCorp (Industry: IT/Software Development)
 [ApplicationsService] LLM categorized skills into 4 categories
 [ApplicationsService] Using cached skill categorization for 12 skills (bei Cache-Hit)
@@ -216,21 +224,21 @@ describe('categorizeSkillsWithLLM', () => {
         { title: 'Software Engineer', company: 'TechCorp' }
       ]
     };
-    
+
     const categories = await service['categorizeSkillsWithLLM'](profile);
-    
+
     expect(categories).toHaveLength(3);
     expect(categories[0].type).toBe('Programming Languages');
   });
-  
+
   it('should use cache on subsequent calls', async () => {
     // First call
     await service['categorizeSkillsWithLLM'](profile);
-    
+
     // Second call (should use cache)
     const spy = jest.spyOn(llmService, 'categorizeSkills');
     await service['categorizeSkillsWithLLM'](profile);
-    
+
     expect(spy).not.toHaveBeenCalled();
   });
 });
@@ -247,16 +255,19 @@ npm run test:e2e -- --testNamePattern="Application creation"
 ## Performance-Überlegungen
 
 ### Cache-Strategie
+
 - **Memory Usage**: Ca. 1-2 KB pro Cache-Eintrag
 - **Max Memory**: ~200 KB bei 100 Einträgen (vernachlässigbar)
 - **Cache-Hit-Rate**: Hoch bei wiederholten Bewerbungen desselben Users
 
 ### LLM-Kosten
+
 - **Tokens pro Request**: ~300-500 Tokens (Input) + ~200-300 Tokens (Output)
 - **Kosten (GPT-4)**: ~$0.01 pro Kategorisierung
 - **Einsparung durch Cache**: 90%+ bei typischer Nutzung
 
 ### Latenz
+
 - **Mit Cache**: < 1ms
 - **Ohne Cache (LLM-Call)**: 1-3 Sekunden (abhängig vom Provider)
 - **Fallback**: < 1ms (sofort)
@@ -264,12 +275,14 @@ npm run test:e2e -- --testNamePattern="Application creation"
 ## Zukünftige Verbesserungen
 
 ### Phase 2 (Optional)
+
 - [ ] **Persistent Cache**: Redis oder DB für Cache-Persistenz
 - [ ] **User-Präferenzen**: Benutzer kann Kategorien manuell überschreiben
 - [ ] **Feedback-Loop**: Benutzer-Feedback zur Verbesserung der Kategorisierung
 - [ ] **Multi-Language**: Skill-Namen in verschiedenen Sprachen
 
 ### Phase 3 (Optional)
+
 - [ ] **Job-Kontext**: Skills basierend auf Job Posting kategorisieren
 - [ ] **Skill-Priorisierung**: Wichtigste Skills zuerst
 - [ ] **Skill-Synonyme**: Gruppierung ähnlicher Skills (z.B. "React.js" und "ReactJS")
@@ -277,35 +290,43 @@ npm run test:e2e -- --testNamePattern="Application creation"
 ## Troubleshooting
 
 ### Problem: Skills erscheinen alle unter "Skills"
+
 **Ursache**: LLM-Provider nicht verfügbar oder Fehler beim LLM-Call
 
-**Lösung**: 
+**Lösung**:
+
 1. Prüfe Logs für LLM-Fehler
 2. Verifiziere `LLM_PROVIDER` Environment Variable
 3. Teste LLM-Provider: `curl -X POST http://localhost:3000/api/v1/test-llm`
 
 ### Problem: Cache wächst zu groß
+
 **Ursache**: Viele verschiedene Skill-Kombinationen
 
-**Lösung**: 
+**Lösung**:
+
 - Cache-Limit ist bereits auf 100 gesetzt (automatische Bereinigung)
 - Bei Bedarf Limit anpassen oder Redis implementieren
 
 ### Problem: Kategorisierung ist inkonsistent
+
 **Ursache**: LLM-Temperatur zu hoch oder unterschiedlicher Kontext
 
 **Lösung**:
+
 - Temperatur ist bereits auf 0.3 reduziert (niedriger = konsistenter)
 - Stelle sicher, dass Profil-Daten konsistent sind
 
 ## Migration
 
 ### Bestehende Applications
+
 - Alte Applications behalten ihre bestehenden Kategorien
 - Neue Applications verwenden automatisch die LLM-Kategorisierung
 - Keine Migration erforderlich
 
 ### Skill-Daten
+
 - Das `category` Feld in der Datenbank wird weiterhin als Fallback verwendet
 - Benutzer können weiterhin manuell Kategorien setzen
 - LLM überschreibt nur, wenn keine manuellen Kategorien gesetzt sind
