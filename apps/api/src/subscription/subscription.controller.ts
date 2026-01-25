@@ -5,9 +5,10 @@ import { TierGuard } from '../common/guards/tier.guard';
 import { UsageLimitGuard } from '../common/guards/usage-limit.guard';
 import { UsageInterceptor } from '../common/interceptors/usage.interceptor';
 import {
+  RequiresPro,
   RequiresPremium,
-  RequiresPremiumPlus,
   CheckUsage,
+  ProFeature,
   PremiumFeature,
 } from '../common/decorators/tier.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -102,33 +103,63 @@ export class SubscriptionController {
           id: 'FREE',
           name: 'Free',
           price: 0,
-          features: ['5 Bewerbungen pro Monat', 'Basis-KI', 'E-Mail Support'],
+          priceDisplay: '0 €',
+          features: [
+            '3 KI-Anschreiben pro Monat',
+            '3 KI-Lebensläufe pro Monat',
+            'Bis zu 10 Job-Parses pro Monat',
+            'Standard-Template',
+            'Manuelles Bewerbungstracking',
+          ],
+          limitations: [
+            'Keine PDF-Exports',
+            'Werbung sichtbar',
+            'Kein ATS-Optimierung',
+          ],
           limits: this.subscriptionService.getTierLimits('FREE'),
+        },
+        {
+          id: 'PRO',
+          name: 'Pro',
+          price: 999, // cents
+          priceDisplay: '9,99 €',
+          priceInterval: 'Monat',
+          popular: true,
+          features: [
+            'Unbegrenzte KI-Anschreiben',
+            'Unbegrenzte KI-Lebensläufe',
+            'Unbegrenztes Job-Parsing',
+            'PDF-Export (Cover Letter & Resume)',
+            'Mehrere professionelle Templates',
+            'ATS-Optimierung & Keyword-Matching',
+            'Halbautomatisches Bewerbungstracking',
+            'Basis-Analytics (Keyword Score, ATS Score)',
+            'Erweitertes Profil',
+            'LinkedIn-Import',
+            'Mehrsprachige Anschreiben (DE & EN)',
+            'Keine Werbung',
+          ],
+          limits: this.subscriptionService.getTierLimits('PRO'),
         },
         {
           id: 'PREMIUM',
           name: 'Premium',
-          price: 999, // cents
+          price: 1799, // cents
+          priceDisplay: '17,99 €',
+          priceInterval: 'Monat',
           features: [
-            '50 Bewerbungen pro Monat',
-            'Premium-KI (GPT-4o)',
-            '20 Interview-Sessions',
-            'Prioritäts-Support',
+            'Alles aus Pro',
+            'Premium-Templates & Custom Branding',
+            'Automatisches Bewerbungstracking (E-Mail Parsing)',
+            'Auto-Apply Bewerbungsagent',
+            'Semantische Keyword-Erkennung',
+            'KI Interview-Coach',
+            'Advanced Analytics (Erfolgsquoten, Trends)',
+            'Mehrsprachige Anschreiben (alle Sprachen)',
+            'Queue-Priorisierung (schnellere Verarbeitung)',
+            'Premium Support',
           ],
           limits: this.subscriptionService.getTierLimits('PREMIUM'),
-        },
-        {
-          id: 'PREMIUM_PLUS',
-          name: 'Premium+',
-          price: 2499, // cents
-          features: [
-            'Unbegrenzte Bewerbungen',
-            'Premium-KI (GPT-4o)',
-            'Unbegrenzte Interview-Sessions',
-            'Prioritäts-Verarbeitung',
-            'Premium-Support mit Rückruf',
-          ],
-          limits: this.subscriptionService.getTierLimits('PREMIUM_PLUS'),
         },
       ],
     };
@@ -141,10 +172,10 @@ export class SubscriptionController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Check if user can perform action (legacy)' })
-  @ApiParam({ name: 'action', enum: ['application', 'interview'] })
+  @ApiParam({ name: 'action', enum: ['coverLetter', 'resume', 'jobParsing', 'interview'] })
   async canPerformActionGet(
     @CurrentUser('id') userId: string,
-    @Param('action') action: 'application' | 'interview',
+    @Param('action') action: 'coverLetter' | 'resume' | 'jobParsing' | 'interview',
   ) {
     return this.subscriptionService.canPerformAction(userId, action);
   }
@@ -184,6 +215,22 @@ export class SubscriptionController {
   // ============================================
 
   /**
+   * Test endpoint: Requires Pro tier
+   */
+  @Get('test/pro-only')
+  @UseGuards(JwtAuthGuard, TierGuard)
+  @RequiresPro()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Test: Pro only endpoint' })
+  async testProOnly(@CurrentUser('id') userId: string) {
+    const tier = await this.subscriptionService.getUserTier(userId);
+    return {
+      message: 'Du hast Zugriff auf Pro-Features! 🎉',
+      yourTier: tier,
+    };
+  }
+
+  /**
    * Test endpoint: Requires Premium tier
    */
   @Get('test/premium-only')
@@ -194,42 +241,25 @@ export class SubscriptionController {
   async testPremiumOnly(@CurrentUser('id') userId: string) {
     const tier = await this.subscriptionService.getUserTier(userId);
     return {
-      message: 'Du hast Zugriff auf Premium-Features! 🎉',
+      message: 'Du hast Zugriff auf Premium-Features! 🌟',
       yourTier: tier,
     };
   }
 
   /**
-   * Test endpoint: Requires Premium Plus tier
+   * Test endpoint: Check cover letter usage limit
    */
-  @Get('test/premium-plus-only')
-  @UseGuards(JwtAuthGuard, TierGuard)
-  @RequiresPremiumPlus()
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Test: Premium Plus only endpoint' })
-  async testPremiumPlusOnly(@CurrentUser('id') userId: string) {
-    const tier = await this.subscriptionService.getUserTier(userId);
-    return {
-      message: 'Du hast Zugriff auf Premium Plus-Features! 🌟',
-      yourTier: tier,
-    };
-  }
-
-  /**
-   * Test endpoint: Check application usage limit
-   */
-  @Post('test/check-application-limit')
+  @Post('test/check-cover-letter-limit')
   @UseGuards(JwtAuthGuard, UsageLimitGuard)
   @UseInterceptors(UsageInterceptor)
-  @CheckUsage('application')
+  @CheckUsage('coverLetter')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Test: Check application usage limit' })
-  async testApplicationLimit(@CurrentUser('id') userId: string) {
-    // Note: This doesn't actually record usage, just checks if allowed
+  @ApiOperation({ summary: 'Test: Check cover letter usage limit' })
+  async testCoverLetterLimit(@CurrentUser('id') userId: string) {
     const stats = await this.subscriptionService.getUsageStats(userId);
     return {
-      message: 'Du kannst eine Bewerbung erstellen!',
-      applications: stats.applications,
+      message: 'Du kannst ein Anschreiben erstellen!',
+      coverLetters: stats.coverLetters,
     };
   }
 
@@ -251,20 +281,20 @@ export class SubscriptionController {
   }
 
   /**
-   * Simulate recording application usage
+   * Simulate recording cover letter usage
    */
-  @Post('test/record-application')
+  @Post('test/record-cover-letter')
   @UseGuards(JwtAuthGuard, UsageLimitGuard)
   @UseInterceptors(UsageInterceptor)
-  @CheckUsage('application')
+  @CheckUsage('coverLetter')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Test: Record application usage' })
-  async testRecordApplication(@CurrentUser('id') userId: string) {
-    await this.subscriptionService.recordUsage(userId, 'application');
+  @ApiOperation({ summary: 'Test: Record cover letter usage' })
+  async testRecordCoverLetter(@CurrentUser('id') userId: string) {
+    await this.subscriptionService.recordUsage(userId, 'coverLetter');
     const stats = await this.subscriptionService.getUsageStats(userId);
     return {
-      message: 'Bewerbung wurde gezählt!',
-      applications: stats.applications,
+      message: 'Anschreiben wurde gezählt!',
+      coverLetters: stats.coverLetters,
     };
   }
 }

@@ -5,51 +5,132 @@ import { SubscriptionTier, SubscriptionStatus } from '../generated/prisma/client
 /**
  * Tier limits configuration
  * Defines the resource limits for each subscription tier
+ *
+ * Pricing Model:
+ * - FREE (€0): Basic features with strict limits
+ * - PRO (€9.99/month): Full application features for active job seekers
+ * - PREMIUM (€17.99/month): Maximum automation & advanced features
  */
 export interface TierLimits {
-  applicationsPerMonth: number;
+  // Generation limits
+  coverLettersPerMonth: number; // -1 = unlimited
+  resumesPerMonth: number; // -1 = unlimited
+  jobParsingPerMonth: number; // URL parsing limit
   interviewSessionsPerMonth: number;
+
+  // Queue priority
   priority: 'low' | 'normal' | 'high';
+
+  // Features available
   features: {
-    customTemplates: boolean;
-    prioritySupport: boolean;
-    advancedAnalytics: boolean;
-    interviewCoach: boolean;
+    // Templates
+    pdfExport: boolean; // Can download PDFs
+    multipleTemplates: boolean; // Access to multiple templates
+    premiumTemplates: boolean; // Access to premium/custom templates
+    customBranding: boolean; // Own colors, logo, layout
+
+    // ATS & Keywords
+    atsOptimization: boolean; // ATS score & optimization
+    keywordMatching: 'none' | 'basic' | 'semantic'; // Keyword matching level
+
+    // Tracking & Analytics
+    applicationTracking: 'manual' | 'semi-auto' | 'auto'; // Tracking level
+    basicAnalytics: boolean; // Basic stats
+    advancedAnalytics: boolean; // Trends, company comparison, success rates
+
+    // Profile & Import
+    extendedProfile: boolean; // More projects, experiences, etc.
+    linkedinImport: boolean; // Import from LinkedIn
+
+    // Languages
+    multiLanguage: 'none' | 'de-en' | 'all'; // Cover letter languages
+
+    // Premium features
+    interviewCoach: boolean; // KI Interview Coach
+    autoApplyAgent: boolean; // Auto-apply bot
+    emailParsing: boolean; // Gmail/Outlook tracking
+    prioritySupport: boolean; // Premium support
+    noAds: boolean; // Ad-free experience
   };
 }
 
 export const TIER_LIMITS: Record<SubscriptionTier, TierLimits> = {
   FREE: {
-    applicationsPerMonth: 5,
-    interviewSessionsPerMonth: 0, // No interview sessions for free tier
+    coverLettersPerMonth: 3,
+    resumesPerMonth: 3,
+    jobParsingPerMonth: 10,
+    interviewSessionsPerMonth: 0,
     priority: 'low',
     features: {
-      customTemplates: false,
-      prioritySupport: false,
+      pdfExport: false,
+      multipleTemplates: false,
+      premiumTemplates: false,
+      customBranding: false,
+      atsOptimization: false,
+      keywordMatching: 'none',
+      applicationTracking: 'manual',
+      basicAnalytics: false,
       advancedAnalytics: false,
+      extendedProfile: false,
+      linkedinImport: false,
+      multiLanguage: 'none',
       interviewCoach: false,
+      autoApplyAgent: false,
+      emailParsing: false,
+      prioritySupport: false,
+      noAds: false,
+    },
+  },
+  PRO: {
+    coverLettersPerMonth: -1, // Unlimited
+    resumesPerMonth: -1, // Unlimited
+    jobParsingPerMonth: -1, // Unlimited
+    interviewSessionsPerMonth: 0, // Not included in Pro
+    priority: 'normal',
+    features: {
+      pdfExport: true,
+      multipleTemplates: true,
+      premiumTemplates: false,
+      customBranding: false,
+      atsOptimization: true,
+      keywordMatching: 'basic',
+      applicationTracking: 'semi-auto',
+      basicAnalytics: true,
+      advancedAnalytics: false,
+      extendedProfile: true,
+      linkedinImport: true,
+      multiLanguage: 'de-en',
+      interviewCoach: false,
+      autoApplyAgent: false,
+      emailParsing: false,
+      prioritySupport: false,
+      noAds: true,
     },
   },
   PREMIUM: {
-    applicationsPerMonth: 50,
-    interviewSessionsPerMonth: 20,
-    priority: 'normal',
-    features: {
-      customTemplates: true,
-      prioritySupport: false,
-      advancedAnalytics: true,
-      interviewCoach: true,
-    },
-  },
-  PREMIUM_PLUS: {
-    applicationsPerMonth: -1, // Unlimited
+    coverLettersPerMonth: -1, // Unlimited
+    resumesPerMonth: -1, // Unlimited
+    jobParsingPerMonth: -1, // Unlimited
     interviewSessionsPerMonth: -1, // Unlimited
     priority: 'high',
     features: {
-      customTemplates: true,
-      prioritySupport: true,
+      pdfExport: true,
+      multipleTemplates: true,
+      premiumTemplates: true,
+      customBranding: true,
+      atsOptimization: true,
+      keywordMatching: 'semantic',
+      applicationTracking: 'auto',
+      basicAnalytics: true,
       advancedAnalytics: true,
+      extendedProfile: true,
+      linkedinImport: true,
+      multiLanguage: 'all',
       interviewCoach: true,
+      autoApplyAgent: true,
+      emailParsing: true,
+      prioritySupport: true,
+      noAds: true,
     },
   },
 };
@@ -60,8 +141,8 @@ export const TIER_LIMITS: Record<SubscriptionTier, TierLimits> = {
  */
 const TIER_HIERARCHY: Record<SubscriptionTier, number> = {
   FREE: 0,
-  PREMIUM: 1,
-  PREMIUM_PLUS: 2,
+  PRO: 1,
+  PREMIUM: 2,
 };
 
 export interface CanPerformActionResult {
@@ -152,7 +233,7 @@ export class SubscriptionService {
    */
   async canPerformAction(
     userId: string,
-    action: 'application' | 'interview',
+    action: 'coverLetter' | 'resume' | 'jobParsing' | 'interview',
   ): Promise<CanPerformActionResult> {
     const subscription = await this.getOrCreateSubscription(userId);
     const limits = this.getTierLimits(subscription.tier);
@@ -164,14 +245,27 @@ export class SubscriptionService {
     let limit: number;
     let actionName: string;
 
-    if (action === 'application') {
-      used = usage.applicationsUsed;
-      limit = limits.applicationsPerMonth;
-      actionName = 'Bewerbungen';
-    } else {
-      used = usage.interviewSessionsUsed;
-      limit = limits.interviewSessionsPerMonth;
-      actionName = 'Interview-Sessions';
+    switch (action) {
+      case 'coverLetter':
+        used = usage.coverLettersGenerated;
+        limit = limits.coverLettersPerMonth;
+        actionName = 'KI-Anschreiben';
+        break;
+      case 'resume':
+        used = usage.resumesGenerated;
+        limit = limits.resumesPerMonth;
+        actionName = 'KI-Lebensläufe';
+        break;
+      case 'jobParsing':
+        used = usage.jobParsingUsed;
+        limit = limits.jobParsingPerMonth;
+        actionName = 'Job-Parses';
+        break;
+      case 'interview':
+        used = usage.interviewSessionsUsed;
+        limit = limits.interviewSessionsPerMonth;
+        actionName = 'Interview-Sessions';
+        break;
     }
 
     // -1 means unlimited
@@ -205,21 +299,36 @@ export class SubscriptionService {
    * Record usage for an action
    * Call this after successfully completing the action
    */
-  async recordUsage(userId: string, action: 'application' | 'interview'): Promise<void> {
+  async recordUsage(
+    userId: string,
+    action: 'coverLetter' | 'resume' | 'jobParsing' | 'interview',
+  ): Promise<void> {
     const subscription = await this.getOrCreateSubscription(userId);
     const usage = await this.ensureCurrentUsagePeriod(subscription.id);
 
-    if (action === 'application') {
-      await this.prisma.subscriptionUsage.update({
-        where: { id: usage.id },
-        data: { applicationsUsed: { increment: 1 } },
-      });
-    } else {
-      await this.prisma.subscriptionUsage.update({
-        where: { id: usage.id },
-        data: { interviewSessionsUsed: { increment: 1 } },
-      });
+    const updateData: Record<string, { increment: number }> = {};
+
+    switch (action) {
+      case 'coverLetter':
+        updateData.coverLettersGenerated = { increment: 1 };
+        updateData.applicationsUsed = { increment: 1 }; // Also increment combined counter
+        break;
+      case 'resume':
+        updateData.resumesGenerated = { increment: 1 };
+        updateData.applicationsUsed = { increment: 1 }; // Also increment combined counter
+        break;
+      case 'jobParsing':
+        updateData.jobParsingUsed = { increment: 1 };
+        break;
+      case 'interview':
+        updateData.interviewSessionsUsed = { increment: 1 };
+        break;
     }
+
+    await this.prisma.subscriptionUsage.update({
+      where: { id: usage.id },
+      data: updateData,
+    });
 
     this.logger.debug(`Recorded ${action} usage for user ${userId}`);
   }
@@ -235,13 +344,29 @@ export class SubscriptionService {
     return {
       tier: subscription.tier,
       status: subscription.status,
-      applications: {
-        used: usage.applicationsUsed,
-        limit: limits.applicationsPerMonth,
+      coverLetters: {
+        used: usage.coverLettersGenerated,
+        limit: limits.coverLettersPerMonth,
         remaining:
-          limits.applicationsPerMonth === -1
+          limits.coverLettersPerMonth === -1
             ? -1
-            : Math.max(0, limits.applicationsPerMonth - usage.applicationsUsed),
+            : Math.max(0, limits.coverLettersPerMonth - usage.coverLettersGenerated),
+      },
+      resumes: {
+        used: usage.resumesGenerated,
+        limit: limits.resumesPerMonth,
+        remaining:
+          limits.resumesPerMonth === -1
+            ? -1
+            : Math.max(0, limits.resumesPerMonth - usage.resumesGenerated),
+      },
+      jobParsing: {
+        used: usage.jobParsingUsed,
+        limit: limits.jobParsingPerMonth,
+        remaining:
+          limits.jobParsingPerMonth === -1
+            ? -1
+            : Math.max(0, limits.jobParsingPerMonth - usage.jobParsingUsed),
       },
       interviewSessions: {
         used: usage.interviewSessionsUsed,
@@ -250,6 +375,12 @@ export class SubscriptionService {
           limits.interviewSessionsPerMonth === -1
             ? -1
             : Math.max(0, limits.interviewSessionsPerMonth - usage.interviewSessionsUsed),
+      },
+      // Combined applications (cover letters + resumes for legacy compatibility)
+      applications: {
+        used: usage.applicationsUsed,
+        limit: -1, // Applications are tracked individually now
+        remaining: -1,
       },
       periodStart: usage.periodStart,
       periodEnd: usage.periodEnd,
@@ -263,7 +394,7 @@ export class SubscriptionService {
   async hasFeature(userId: string, feature: keyof TierLimits['features']): Promise<boolean> {
     const tier = await this.getUserTier(userId);
     const limits = this.getTierLimits(tier);
-    return limits.features[feature];
+    return !!limits.features[feature];
   }
 
   /**
@@ -293,6 +424,9 @@ export class SubscriptionService {
           periodStart: now,
           periodEnd: this.getNextPeriodEnd(now),
           applicationsUsed: 0,
+          coverLettersGenerated: 0,
+          resumesGenerated: 0,
+          jobParsingUsed: 0,
           interviewSessionsUsed: 0,
         },
       });
@@ -308,6 +442,9 @@ export class SubscriptionService {
           periodStart: now,
           periodEnd: this.getNextPeriodEnd(now),
           applicationsUsed: 0,
+          coverLettersGenerated: 0,
+          resumesGenerated: 0,
+          jobParsingUsed: 0,
           interviewSessionsUsed: 0,
         },
       });
