@@ -8,6 +8,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { CurrentTierBadge } from '@/components/subscription';
 import {
   FileText,
   Briefcase,
@@ -124,11 +125,14 @@ export default function DashboardLayout({
                   {(user?.firstName || user?.email)?.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="truncate text-sm font-semibold text-foreground">
-                    {user?.firstName && user?.lastName
-                      ? `${user.firstName} ${user.lastName}`
-                      : user?.firstName || user?.email}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="truncate text-sm font-semibold text-foreground">
+                      {user?.firstName && user?.lastName
+                        ? `${user.firstName} ${user.lastName}`
+                        : user?.firstName || user?.email}
+                    </p>
+                    <CurrentTierBadge size="sm" />
+                  </div>
                   <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
                 </div>
                 <Button
@@ -214,11 +218,14 @@ export default function DashboardLayout({
                       {(user?.firstName || user?.email)?.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="truncate text-sm font-semibold text-foreground">
-                        {user?.firstName && user?.lastName
-                          ? `${user.firstName} ${user.lastName}`
-                          : user?.firstName || user?.email}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="truncate text-sm font-semibold text-foreground">
+                          {user?.firstName && user?.lastName
+                            ? `${user.firstName} ${user.lastName}`
+                            : user?.firstName || user?.email}
+                        </p>
+                        <CurrentTierBadge size="sm" />
+                      </div>
                       <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
                     </div>
                     <Button

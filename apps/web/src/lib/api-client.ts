@@ -21,6 +21,11 @@ import type {
   UpdateUserPreferencesDto,
   PaginatedResponse,
   ExtractedProfile,
+  SubscriptionTier,
+  SubscriptionUsageStats,
+  TierLimits,
+  TiersResponse,
+  CanPerformActionResult,
 } from '@/types';
 import {
   ApiError,
@@ -720,5 +725,28 @@ export const api = {
       apiRequest<{ message: string; revokedCount: number }>('/auth/sessions', {
         method: 'DELETE',
       }),
+  },
+
+  // Subscription
+  subscription: {
+    get: () =>
+      apiRequest<SubscriptionUsageStats>('/subscription'),
+
+    getUsage: () =>
+      apiRequest<{
+        applications: { used: number; limit: number; remaining: number };
+        interviewSessions: { used: number; limit: number; remaining: number };
+        periodStart: string;
+        periodEnd: string;
+      }>('/subscription/usage'),
+
+    getLimits: () =>
+      apiRequest<{ tier: SubscriptionTier; limits: TierLimits }>('/subscription/limits'),
+
+    getTiers: () =>
+      apiRequest<TiersResponse>('/subscription/tiers'),
+
+    canPerform: (action: 'application' | 'interview') =>
+      apiRequest<CanPerformActionResult>(`/subscription/can-perform/${action}`),
   },
 };

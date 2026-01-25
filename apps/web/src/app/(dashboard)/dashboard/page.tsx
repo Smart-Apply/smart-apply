@@ -7,6 +7,7 @@ import { useProfile } from '@/hooks/use-profile';
 import { api } from '@/lib/api-client';
 import { Application, ApplicationTrackingStatus } from '@/types';
 import { calculateProfileStrength } from '@/lib/profile-utils';
+import { UsageSummary } from '@/components/subscription';
 import {
   Card,
   CardContent,
@@ -28,6 +29,7 @@ import {
   Calendar,
   MoreHorizontal,
   ChevronRight,
+  Zap,
 } from 'lucide-react';
 import { formatDateSmart } from '@/lib/format-date';
 
@@ -332,6 +334,20 @@ export default function DashboardPage() {
                   </Button>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Usage Summary */}
+          <Card className="border-border/50 shadow-soft">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Zap className="h-5 w-5 text-primary" />
+                Kontingent
+              </CardTitle>
+              <CardDescription>Dein monatliches Kontingent</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <UsageSummary showPeriod />
             </CardContent>
           </Card>
 

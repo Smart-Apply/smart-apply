@@ -12,6 +12,62 @@ export interface User {
 }
 
 // ============================================
+// Subscription Types
+// ============================================
+
+export type SubscriptionTier = 'FREE' | 'PREMIUM' | 'PREMIUM_PLUS';
+export type SubscriptionStatus = 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'TRIALING' | 'INCOMPLETE';
+
+export interface TierFeatures {
+  customTemplates: boolean;
+  prioritySupport: boolean;
+  advancedAnalytics: boolean;
+  interviewCoach: boolean;
+}
+
+export interface TierLimits {
+  applicationsPerMonth: number;
+  interviewSessionsPerMonth: number;
+  priority: 'low' | 'normal' | 'high';
+  features: TierFeatures;
+}
+
+export interface UsageStat {
+  used: number;
+  limit: number;
+  remaining: number;
+}
+
+export interface SubscriptionUsageStats {
+  tier: SubscriptionTier;
+  status: SubscriptionStatus;
+  applications: UsageStat;
+  interviewSessions: UsageStat;
+  periodStart: string;
+  periodEnd: string;
+  features: TierFeatures;
+}
+
+export interface TierInfo {
+  id: SubscriptionTier;
+  name: string;
+  price: number;
+  features: string[];
+  limits: TierLimits;
+}
+
+export interface TiersResponse {
+  tiers: TierInfo[];
+}
+
+export interface CanPerformActionResult {
+  allowed: boolean;
+  reason?: string;
+  remaining: number;
+  limit: number;
+}
+
+// ============================================
 // Profile Types
 // ============================================
 
