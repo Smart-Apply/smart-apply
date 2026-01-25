@@ -81,4 +81,4 @@ uploads/
 *.tar.gz
 *.zip
 *.pem
-cookie-*.txt
+cookies.txt
