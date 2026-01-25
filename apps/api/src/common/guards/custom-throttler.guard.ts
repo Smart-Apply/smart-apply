@@ -40,7 +40,8 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
     const request = context.switchToHttp().getRequest();
 
     // Skip rate limiting for health check endpoints (needed for Container Apps probes)
-    if (request.url?.startsWith('/api/v1/health/')) {
+    // Match both /api/v1/health and /api/v1/health/* paths
+    if (request.url?.startsWith('/api/v1/health')) {
       return true;
     }
 

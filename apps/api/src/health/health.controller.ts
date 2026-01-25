@@ -170,4 +170,103 @@ export class HealthController {
       () => this.storageIndicator.isHealthy(),
     ]);
   }
+
+  @Get('details')
+  @Public()
+  @ApiOperation({ summary: 'Detailed health status with response times for each dependency' })
+  @ApiResponse({ status: 200, description: 'Detailed health information' })
+  @ApiResponse({ status: 503, description: 'One or more services are unhealthy' })
+  async checkDetails() {
+    const startTime = Date.now();
+    const details: Record<string, { status: 'up' | 'down'; responseTime: string; error?: string }> =
+      {};
+
+    // Database health check with timing
+    const dbStart = Date.now();
+    try {
+      await this.prisma.$queryRaw`SELECT 1`;
+      details.database = { status: 'up', responseTime: `${Date.now() - dbStart}ms` };
+    } catch (error) {
+      details.database = {
+        status: 'down',
+        responseTime: `${Date.now() - dbStart}ms`,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+
+    // Storage health check with timing
+    const storageStart = Date.now();
+    try {
+      const isHealthy = await this.storageService.healthCheck();
+      details.storage = {
+        status: isHealthy ? 'up' : 'down',
+        responseTime: `${Date.now() - storageStart}ms`,
+      };
+    } catch (error) {
+      details.storage = {
+        status: 'down',
+        responseTime: `${Date.now() - storageStart}ms`,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+
+    // Queue health check with timing
+    const queueStart = Date.now();
+    try {
+      const isHealthy = await this.jobsService.healthCheck();
+      details.queue = {
+        status: isHealthy ? 'up' : 'down',
+        responseTime: `${Date.now() - queueStart}ms`,
+      };
+    } catch (error) {
+      details.queue = {
+        status: 'down',
+        responseTime: `${Date.now() - queueStart}ms`,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+
+    // Templates health check with timing
+    const templatesStart = Date.now();
+    try {
+      const isHealthy = await this.templatesService.healthCheck();
+      details.templates = {
+        status: isHealthy ? 'up' : 'down',
+        responseTime: `${Date.now() - templatesStart}ms`,
+      };
+    } catch (error) {
+      details.templates = {
+        status: 'down',
+        responseTime: `${Date.now() - templatesStart}ms`,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+
+    // LLM health check with timing
+    const llmStart = Date.now();
+    try {
+      const isHealthy = await this.llmService.healthCheck();
+      details.llm = {
+        status: isHealthy ? 'up' : 'down',
+        responseTime: `${Date.now() - llmStart}ms`,
+      };
+    } catch (error) {
+      details.llm = {
+        status: 'down',
+        responseTime: `${Date.now() - llmStart}ms`,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+
+    // Determine overall status
+    const allHealthy = Object.values(details).every((d) => d.status === 'up');
+    const totalResponseTime = `${Date.now() - startTime}ms`;
+
+    return {
+      status: allHealthy ? 'ok' : 'error',
+      totalResponseTime,
+      timestamp: new Date().toISOString(),
+      details,
+    };
+  }
 }

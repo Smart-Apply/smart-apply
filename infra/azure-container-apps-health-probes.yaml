@@ -1,0 +1,173 @@
+# Azure Container Apps Health Probes Configuration
+# This file documents the recommended health probe settings for deploying
+# Smart Apply to Azure Container Apps.
+#
+# Apply these settings via Azure CLI, Bicep, ARM template, or Azure Portal.
+
+# ==============================================================================
+# Health Probe Configuration
+# ==============================================================================
+
+# Liveness Probe
+# Purpose: Detects if the container has become unresponsive (deadlock, hang)
+# Action: Container Apps will restart the container if this probe fails
+liveness_probe:
+  type: http
+  httpGet:
+    path: /api/v1/health/live
+    port: 3000
+    scheme: HTTP
+  initialDelaySeconds: 10      # Wait before first probe (app startup time)
+  periodSeconds: 30            # Check every 30 seconds
+  timeoutSeconds: 5            # Max wait for response
+  failureThreshold: 3          # Restart after 3 consecutive failures
+  successThreshold: 1          # 1 success means healthy
+
+# Readiness Probe
+# Purpose: Determines if the container is ready to accept traffic
+# Action: Container Apps will remove container from load balancer if failing
+readiness_probe:
+  type: http
+  httpGet:
+    path: /api/v1/health/ready
+    port: 3000
+    scheme: HTTP
+  initialDelaySeconds: 5       # Start checking earlier than liveness
+  periodSeconds: 10            # Check every 10 seconds (more frequent)
+  timeoutSeconds: 10           # Allow more time for dependency checks
+  failureThreshold: 3          # Remove from LB after 3 failures
+  successThreshold: 1          # 1 success means ready
+
+# Startup Probe (Optional)
+# Purpose: Delays liveness/readiness probes until app is fully started
+# Useful for slow-starting applications
+startup_probe:
+  type: http
+  httpGet:
+    path: /api/v1/health/live
+    port: 3000
+    scheme: HTTP
+  initialDelaySeconds: 0       # Start immediately
+  periodSeconds: 10            # Check every 10 seconds
+  timeoutSeconds: 5            # Quick timeout
+  failureThreshold: 30         # Allow up to 5 minutes for startup (30 * 10s)
+  successThreshold: 1          # 1 success means started
+
+# ==============================================================================
+# Azure CLI Example
+# ==============================================================================
+#
+# az containerapp update \
+#   --name smartapply-api \
+#   --resource-group smartapply-rg \
+#   --set-env-vars "NODE_ENV=production" \
+#   --container-name smartapply-api \
+#   --liveness-probe-path /api/v1/health/live \
+#   --liveness-probe-port 3000 \
+#   --liveness-probe-period 30 \
+#   --liveness-probe-timeout 5 \
+#   --liveness-probe-failure-threshold 3 \
+#   --readiness-probe-path /api/v1/health/ready \
+#   --readiness-probe-port 3000 \
+#   --readiness-probe-period 10 \
+#   --readiness-probe-timeout 10 \
+#   --readiness-probe-failure-threshold 3
+
+# ==============================================================================
+# Bicep Configuration Example
+# ==============================================================================
+#
+# resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
+#   name: 'smartapply-api'
+#   location: location
+#   properties: {
+#     configuration: {
+#       ingress: {
+#         external: true
+#         targetPort: 3000
+#       }
+#     }
+#     template: {
+#       containers: [
+#         {
+#           name: 'smartapply-api'
+#           image: '${acrLoginServer}/smartapply-api:latest'
+#           probes: [
+#             {
+#               type: 'Liveness'
+#               httpGet: {
+#                 path: '/api/v1/health/live'
+#                 port: 3000
+#               }
+#               initialDelaySeconds: 10
+#               periodSeconds: 30
+#               timeoutSeconds: 5
+#               failureThreshold: 3
+#             }
+#             {
+#               type: 'Readiness'
+#               httpGet: {
+#                 path: '/api/v1/health/ready'
+#                 port: 3000
+#               }
+#               initialDelaySeconds: 5
+#               periodSeconds: 10
+#               timeoutSeconds: 10
+#               failureThreshold: 3
+#             }
+#             {
+#               type: 'Startup'
+#               httpGet: {
+#                 path: '/api/v1/health/live'
+#                 port: 3000
+#               }
+#               initialDelaySeconds: 0
+#               periodSeconds: 10
+#               timeoutSeconds: 5
+#               failureThreshold: 30
+#             }
+#           ]
+#         }
+#       ]
+#     }
+#   }
+# }
+
+# ==============================================================================
+# Health Endpoints Summary
+# ==============================================================================
+#
+# Endpoint             | Purpose                      | Used For
+# ---------------------|------------------------------|----------------------
+# /api/v1/health       | Full system health check     | Monitoring dashboards
+# /api/v1/health/live  | Basic app alive check        | Liveness probe
+# /api/v1/health/ready | Dependencies ready check     | Readiness probe
+# /api/v1/health/details | Detailed metrics with timing | Debugging/monitoring
+#
+# Response Codes:
+# - 200: Healthy/Ready
+# - 503: Unhealthy/Not Ready
+
+# ==============================================================================
+# Best Practices
+# ==============================================================================
+#
+# 1. Liveness Probe:
+#    - Should be FAST and SIMPLE (just check if app is running)
+#    - Don't check external dependencies (avoid cascading failures)
+#    - Use /health/live endpoint
+#
+# 2. Readiness Probe:
+#    - CAN check critical dependencies (database, storage)
+#    - Use /health/ready endpoint
+#    - More frequent checks than liveness
+#
+# 3. Startup Probe:
+#    - Use for slow-starting applications
+#    - Prevents premature restarts during startup
+#    - Disables liveness/readiness until startup succeeds
+#
+# 4. General:
+#    - Health endpoints should respond in < 500ms
+#    - Set appropriate timeouts based on actual response times
+#    - Test probe behavior with dependency failures
