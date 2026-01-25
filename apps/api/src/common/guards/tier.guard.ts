@@ -18,12 +18,12 @@ import { REQUIRED_TIER_KEY } from '../decorators/tier.decorator';
  * to access a protected resource. Uses the @RequiresTier() decorator
  * to determine the minimum tier required.
  *
- * Tier hierarchy: FREE < PREMIUM < PREMIUM_PLUS
+ * Tier hierarchy: FREE < PRO < PREMIUM
  *
  * Usage:
  * @UseGuards(JwtAuthGuard, TierGuard)
- * @RequiresTier(SubscriptionTier.PREMIUM)
- * async premiumOnlyEndpoint() {}
+ * @RequiresTier(SubscriptionTier.PRO)
+ * async proOnlyEndpoint() {}
  */
 @Injectable()
 export class TierGuard implements CanActivate {

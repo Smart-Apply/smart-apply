@@ -7,11 +7,11 @@ import { ApiProperty } from '@nestjs/swagger';
 export class CheckActionDto {
   @ApiProperty({
     description: 'The action to check',
-    enum: ['application', 'interview'],
-    example: 'application',
+    enum: ['coverLetter', 'resume', 'jobParsing', 'interview'],
+    example: 'coverLetter',
   })
-  @IsIn(['application', 'interview'], {
-    message: 'action must be either "application" or "interview"',
+  @IsIn(['coverLetter', 'resume', 'jobParsing', 'interview'], {
+    message: 'action must be one of: coverLetter, resume, jobParsing, interview',
   })
-  action: 'application' | 'interview';
+  action: 'coverLetter' | 'resume' | 'jobParsing' | 'interview';
 }

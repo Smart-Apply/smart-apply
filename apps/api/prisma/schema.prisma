@@ -562,11 +562,14 @@ model BackgroundJob {
 // SUBSCRIPTION & TIER SYSTEM
 // =====================================
 
-// Subscription tier levels
+// Subscription tier levels (3-tier pricing model)
+// FREE (€0) - Basic features with limits
+// PRO (€9.99/month) - Full application features
+// PREMIUM (€17.99/month) - All features + automation
 enum SubscriptionTier {
   FREE
+  PRO
   PREMIUM
-  PREMIUM_PLUS
 }
 
 // Subscription status (aligned with Stripe)
@@ -621,9 +624,12 @@ model SubscriptionUsage {
   subscriptionId          String       @unique
   subscription            Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
   
-  // Current Period Usage
-  applicationsUsed        Int          @default(0)
-  interviewSessionsUsed   Int          @default(0)
+  // Current Period Usage - Core Limits
+  applicationsUsed        Int          @default(0) // Cover letters + Resumes generated
+  coverLettersGenerated   Int          @default(0) // KI-Anschreiben count
+  resumesGenerated        Int          @default(0) // KI-Lebensläufe count
+  jobParsingUsed          Int          @default(0) // URL/text parsing count
+  interviewSessionsUsed   Int          @default(0) // Interview Coach sessions
   
   // Period
   periodStart             DateTime
