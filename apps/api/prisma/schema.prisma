@@ -517,6 +517,48 @@ model AuditLog {
 }
 
 // =====================================
+// BACKGROUND JOBS (Azure Service Bus)
+// =====================================
+
+// Job status for tracking background processing
+enum BackgroundJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  DEAD_LETTERED
+}
+
+// Background job tracking for Azure Service Bus
+// Provides persistent status storage since Service Bus doesn't support direct job lookup
+model BackgroundJob {
+  id            String              @id // Same as Service Bus messageId
+  type          String              // Job type (e.g., "application:generate")
+  status        BackgroundJobStatus @default(PENDING)
+  data          Json                // Job payload
+  result        Json?               // Processing result (on success)
+  error         String?             // Error message (on failure)
+  retryCount    Int                 @default(0)
+  maxRetries    Int                 @default(5)
+  
+  // Timestamps
+  createdAt     DateTime            @default(now())
+  startedAt     DateTime?
+  completedAt   DateTime?
+  updatedAt     DateTime            @updatedAt
+  
+  // Dead letter info
+  deadLetterReason      String?
+  deadLetteredAt        DateTime?
+  
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+  @@index([type, status])
+  @@map("background_jobs")
+}
+
+// =====================================
 // SUBSCRIPTION & TIER SYSTEM
 // =====================================
 
