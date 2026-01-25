@@ -34,7 +34,9 @@ const DEFAULT_CATEGORY = '';
  * @param level - LanguageProficiency enum value or legacy string
  * @returns Normalized translation key (e.g., "level.native") or original value if no match
  */
-export function normalizeProficiencyLevel(level: LanguageProficiency | string | null | undefined): string | undefined {
+export function normalizeProficiencyLevel(
+  level: LanguageProficiency | string | null | undefined,
+): string | undefined {
   if (!level) return undefined;
 
   const normalized = level.toLowerCase().trim();
@@ -234,11 +236,10 @@ export function buildResumeTemplateData(
     profile.user.email;
 
   // Build full address string from address components
-  const fullAddress = [
-    profile.street,
-    [profile.postalCode, profile.city].filter(Boolean).join(' '),
-    profile.country,
-  ].filter(Boolean).join(', ') || undefined;
+  const fullAddress =
+    [profile.street, [profile.postalCode, profile.city].filter(Boolean).join(' '), profile.country]
+      .filter(Boolean)
+      .join(', ') || undefined;
 
   return {
     candidateName,

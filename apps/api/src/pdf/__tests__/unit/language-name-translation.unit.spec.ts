@@ -66,7 +66,7 @@ describe('TemplateRendererService - Language Name Translation', () => {
       expect(html).toContain('Englisch');
       expect(html).toContain('Deutsch');
       expect(html).toContain('Französisch');
-      
+
       // Should NOT contain original English names
       expect(html).not.toContain('>English<');
       expect(html).not.toContain('>German<');
@@ -91,7 +91,7 @@ describe('TemplateRendererService - Language Name Translation', () => {
       expect(html).toContain('Fließend');
       expect(html).toContain('Muttersprache');
       expect(html).toContain('Mittelstufe');
-      
+
       // Should NOT contain English levels
       expect(html).not.toContain('Fluent');
       expect(html).not.toContain('Native');
@@ -291,9 +291,7 @@ describe('TemplateRendererService - Language Name Translation', () => {
       const resumeData: ResumeTemplateData = {
         candidateName: 'Max Mustermann',
         email: 'max@example.com',
-        languages: [
-          { name: 'English', level: 'level.fluent' },
-        ],
+        languages: [{ name: 'English', level: 'level.fluent' }],
         language: 'de',
       };
 
@@ -329,7 +327,7 @@ describe('TemplateRendererService - Language Name Translation', () => {
       expect(html).toContain('Alemán'); // German in Spanish
       expect(html).toContain('Inglés'); // English in Spanish
       expect(html).toContain('Español'); // Spanish in Spanish
-      
+
       // Proficiency levels should also be in Spanish
       expect(html).toContain('Nativo'); // Native in Spanish
       expect(html).toContain('Fluido'); // Fluent in Spanish

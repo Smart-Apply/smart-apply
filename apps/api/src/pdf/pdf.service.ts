@@ -138,7 +138,7 @@ export class PdfService implements OnModuleInit, OnModuleDestroy {
     } catch (error) {
       this.poolMetrics.totalErrors++;
       this.poolMetrics.currentlyAcquired--;
-      
+
       // Log detailed error info
       const poolStatus = {
         size: this.browserPool.size,
@@ -150,7 +150,7 @@ export class PdfService implements OnModuleInit, OnModuleDestroy {
         `Failed to acquire browser from pool. Status: ${JSON.stringify(poolStatus)}`,
         error,
       );
-      
+
       throw new Error(`Browser pool exhausted: ${error.message}`);
     }
   }

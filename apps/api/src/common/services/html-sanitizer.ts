@@ -84,10 +84,7 @@ export function stripClosingPhrase(content: string): string {
   const phrasesPattern = escapedPhrases.join('|');
 
   // Pattern 1: HTML format - <p>Closing phrase,?</p> at end (with optional trailing whitespace)
-  const htmlPattern = new RegExp(
-    `<p>\\s*(?:${phrasesPattern}),?\\s*<\/p>\\s*$`,
-    'gi',
-  );
+  const htmlPattern = new RegExp(`<p>\\s*(?:${phrasesPattern}),?\\s*<\/p>\\s*$`, 'gi');
 
   // Pattern 2: Plain text format - Closing phrase,? at end of string
   const textPattern = new RegExp(`(?:${phrasesPattern}),?\\s*$`, 'gim');

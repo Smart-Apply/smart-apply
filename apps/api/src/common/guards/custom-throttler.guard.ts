@@ -1,9 +1,5 @@
 import { Injectable, ExecutionContext, Inject } from '@nestjs/common';
-import {
-  ThrottlerGuard,
-  ThrottlerException,
-  ThrottlerRequest,
-} from '@nestjs/throttler';
+import { ThrottlerGuard, ThrottlerException, ThrottlerRequest } from '@nestjs/throttler';
 import { Reflector } from '@nestjs/core';
 import { THROTTLER_NAME_KEY } from '../decorators/throttle.decorator';
 import { AuditLoggerService } from '../audit-logger';
@@ -80,7 +76,13 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
 
     try {
       // Increment counter and get total hits
-      const { totalHits } = await this.storageService.increment(key, ttlMs, limit, blockDuration, throttler.name || 'default');
+      const { totalHits } = await this.storageService.increment(
+        key,
+        ttlMs,
+        limit,
+        blockDuration,
+        throttler.name || 'default',
+      );
 
       // Check if limit exceeded
       if (totalHits > limit) {

@@ -282,17 +282,15 @@ export class ApplicationsService {
     // Split by double newlines (paragraph breaks) and wrap each in <p> tags
     const paragraphs = content
       .split(/\n\n+/)
-      .map(p => p.trim())
-      .filter(p => p.length > 0);
+      .map((p) => p.trim())
+      .filter((p) => p.length > 0);
 
     if (paragraphs.length === 0) {
       return '<p></p>';
     }
 
     // Convert each paragraph, preserving single newlines as <br> within paragraphs
-    return paragraphs
-      .map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`)
-      .join('\n');
+    return paragraphs.map((p) => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('\n');
   }
 
   private parseResume(resumeText?: string | null) {
@@ -1020,7 +1018,10 @@ Summary: ${resume.summary || 'Not provided'}
       const firstExp = resumeJson.experiences?.[0];
       if (firstExp) {
         this.logger.debug(
-          `Saving resumeJson - First experience "${firstExp.title}": achievements=[${firstExp.achievements?.slice(0, 2).map((a: string) => a.substring(0, 40) + '...').join(' | ')}]`,
+          `Saving resumeJson - First experience "${firstExp.title}": achievements=[${firstExp.achievements
+            ?.slice(0, 2)
+            .map((a: string) => a.substring(0, 40) + '...')
+            .join(' | ')}]`,
         );
       }
 
@@ -1521,9 +1522,7 @@ Summary: ${resume.summary || 'Not provided'}
     );
 
     // Debug: Log the IDs to check if they match
-    this.logger.debug(
-      `Profile experience IDs: ${profile.experiences.map((e) => e.id).join(', ')}`,
-    );
+    this.logger.debug(`Profile experience IDs: ${profile.experiences.map((e) => e.id).join(', ')}`);
     this.logger.debug(
       `Rewritten experience IDs: ${Array.from(rewrittenExperienceMap.keys()).join(', ')}`,
     );
