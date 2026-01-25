@@ -1,11 +1,4 @@
-import {
-  Injectable,
-  UnauthorizedException,
-  ConflictException,
-  BadRequestException,
-  Inject,
-  forwardRef,
-} from '@nestjs/common';
+import { Injectable, UnauthorizedException, Inject, forwardRef, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { PrismaService } from '../prisma/prisma.service';
@@ -27,6 +20,7 @@ import {
   UnauthorizedWithCode,
   BadRequestWithCode,
 } from '../common/exceptions/coded-http.exception';
+import { SubscriptionService } from '../subscription/subscription.service';
 
 interface TokenPair {
   accessToken: string;
@@ -35,6 +29,8 @@ interface TokenPair {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
@@ -44,6 +40,7 @@ export class AuthService {
     // This is acceptable as both services are in the same module and need each other
     @Inject(forwardRef(() => SessionService))
     private sessionService: SessionService,
+    private subscriptionService: SubscriptionService,
   ) {}
 
   async register(dto: RegisterDto, userAgent?: string, ipAddress?: string, req?: Request) {
@@ -87,6 +84,17 @@ export class AuthService {
 
       return newUser;
     });
+
+    // Create default FREE subscription for new user
+    // This is done outside the transaction to avoid circular dependency issues
+    try {
+      await this.subscriptionService.getOrCreateSubscription(user.id);
+      this.logger.log(`Created FREE subscription for new user ${user.id}`);
+    } catch (error) {
+      this.logger.error(`Failed to create subscription for user ${user.id}:`, error);
+      // Don't fail registration if subscription creation fails
+      // The subscription will be created lazily on first access
+    }
 
     // Log registration event
     if (req) {

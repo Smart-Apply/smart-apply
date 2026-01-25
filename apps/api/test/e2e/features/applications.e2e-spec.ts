@@ -55,7 +55,8 @@ describe('ApplicationsController (e2e)', () => {
           userId,
           title: 'Software Engineer',
           company: 'Test Company',
-          fullText: 'Test description for E2E tests. Requirements: TypeScript, NestJS. Responsibilities: Backend development.',
+          fullText:
+            'Test description for E2E tests. Requirements: TypeScript, NestJS. Responsibilities: Backend development.',
         },
       });
       jobPostingId = newJobPosting.id;

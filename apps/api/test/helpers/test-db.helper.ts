@@ -86,7 +86,8 @@ export class TestDbHelper {
         title: 'Senior TypeScript Developer',
         company: 'Example Inc',
         location: 'Remote',
-        fullText: 'We are looking for a skilled TypeScript developer. Requirements: TypeScript, React, Node.js',
+        fullText:
+          'We are looking for a skilled TypeScript developer. Requirements: TypeScript, React, Node.js',
       },
     });
 
