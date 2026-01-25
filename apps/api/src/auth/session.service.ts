@@ -33,9 +33,9 @@ export class SessionService {
 
     // Map device type string to DeviceType enum
     const deviceTypeMap: Record<string, 'MOBILE' | 'TABLET' | 'DESKTOP' | 'UNKNOWN'> = {
-      'mobile': 'MOBILE',
-      'tablet': 'TABLET',
-      'desktop': 'DESKTOP',
+      mobile: 'MOBILE',
+      tablet: 'TABLET',
+      desktop: 'DESKTOP',
     };
     const deviceType = deviceTypeMap[device.device.type?.toLowerCase() || ''] || 'UNKNOWN';
 

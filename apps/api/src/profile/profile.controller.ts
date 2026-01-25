@@ -112,8 +112,7 @@ export class ProfileController {
         validators: [
           new MaxFileSizeValidator({
             maxSize: 10 * 1024 * 1024, // 10MB
-            message:
-              'Die Datei ist zu groß. Bitte laden Sie eine Datei mit maximal 10 MB hoch.',
+            message: 'Die Datei ist zu groß. Bitte laden Sie eine Datei mit maximal 10 MB hoch.',
           }),
           new FileTypeValidator({
             fileType: /(pdf|vnd\.openxmlformats-officedocument\.wordprocessingml\.document)$/,

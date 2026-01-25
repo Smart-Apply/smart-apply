@@ -89,7 +89,7 @@ export class AzureOpenAIProvider implements LLMProvider {
 
       // Make a minimal API call to verify connectivity
       const url = `${this.endpoint}/openai/deployments/${this.deploymentName}/chat/completions?api-version=${this.apiVersion}`;
-      
+
       const response = await firstValueFrom(
         this.httpService.post(
           url,

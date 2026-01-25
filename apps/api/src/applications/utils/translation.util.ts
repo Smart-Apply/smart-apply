@@ -372,10 +372,15 @@ export function evictOldLanguages(
   }
 
   // Ensure lastUsed is an array (handle legacy cache without lastUsed)
-  const existingLastUsed = Array.isArray(cache.lastUsed) ? cache.lastUsed : Object.keys(cache.languages || {});
+  const existingLastUsed = Array.isArray(cache.lastUsed)
+    ? cache.lastUsed
+    : Object.keys(cache.languages || {});
 
   // Update LRU list: move current language to front
-  const lastUsed = [currentLanguage, ...existingLastUsed.filter((lang) => lang !== currentLanguage)];
+  const lastUsed = [
+    currentLanguage,
+    ...existingLastUsed.filter((lang) => lang !== currentLanguage),
+  ];
 
   // Keep only maxLanguages in LRU list
   const keepLanguages = new Set(lastUsed.slice(0, maxLanguages));

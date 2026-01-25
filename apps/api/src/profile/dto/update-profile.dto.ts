@@ -21,26 +21,26 @@ import { SkillLevel, LanguageProficiency } from '../../generated/prisma/client';
 export function mapToSkillLevel(value: string | null | undefined): SkillLevel | null {
   if (!value) return null;
   const normalized = value.toUpperCase().trim();
-  
+
   // Direct enum match
   if (Object.values(SkillLevel).includes(normalized as SkillLevel)) {
     return normalized as SkillLevel;
   }
-  
+
   // Legacy string mappings
   const mappings: Record<string, SkillLevel> = {
-    'EXPERT': SkillLevel.EXPERT,
-    'EXPERTE': SkillLevel.EXPERT,
-    'ADVANCED': SkillLevel.ADVANCED,
-    'FORTGESCHRITTEN': SkillLevel.ADVANCED,
-    'INTERMEDIATE': SkillLevel.INTERMEDIATE,
-    'MITTEL': SkillLevel.INTERMEDIATE,
-    'GUT': SkillLevel.INTERMEDIATE,
-    'BEGINNER': SkillLevel.BEGINNER,
-    'ANFÄNGER': SkillLevel.BEGINNER,
-    'BASIC': SkillLevel.BEGINNER,
+    EXPERT: SkillLevel.EXPERT,
+    EXPERTE: SkillLevel.EXPERT,
+    ADVANCED: SkillLevel.ADVANCED,
+    FORTGESCHRITTEN: SkillLevel.ADVANCED,
+    INTERMEDIATE: SkillLevel.INTERMEDIATE,
+    MITTEL: SkillLevel.INTERMEDIATE,
+    GUT: SkillLevel.INTERMEDIATE,
+    BEGINNER: SkillLevel.BEGINNER,
+    ANFÄNGER: SkillLevel.BEGINNER,
+    BASIC: SkillLevel.BEGINNER,
   };
-  
+
   return mappings[normalized] || null;
 }
 
@@ -48,32 +48,34 @@ export function mapToSkillLevel(value: string | null | undefined): SkillLevel | 
  * Maps legacy string language proficiency levels to LanguageProficiency enum values
  * Supports both English and German input values for backward compatibility
  */
-export function mapToLanguageProficiency(value: string | null | undefined): LanguageProficiency | null {
+export function mapToLanguageProficiency(
+  value: string | null | undefined,
+): LanguageProficiency | null {
   if (!value) return null;
   const normalized = value.toUpperCase().trim();
-  
+
   // Direct enum match
   if (Object.values(LanguageProficiency).includes(normalized as LanguageProficiency)) {
     return normalized as LanguageProficiency;
   }
-  
+
   // Legacy string mappings
   const mappings: Record<string, LanguageProficiency> = {
-    'NATIVE': LanguageProficiency.NATIVE,
-    'MUTTERSPRACHE': LanguageProficiency.NATIVE,
-    'FLUENT': LanguageProficiency.FLUENT,
-    'FLIESSEND': LanguageProficiency.FLUENT,
-    'FLIEßEND': LanguageProficiency.FLUENT,
-    'ADVANCED': LanguageProficiency.ADVANCED,
-    'FORTGESCHRITTEN': LanguageProficiency.ADVANCED,
-    'INTERMEDIATE': LanguageProficiency.INTERMEDIATE,
-    'GUT': LanguageProficiency.INTERMEDIATE,
-    'MITTEL': LanguageProficiency.INTERMEDIATE,
-    'BASIC': LanguageProficiency.BASIC,
-    'GRUNDKENNTNISSE': LanguageProficiency.BASIC,
-    'ANFÄNGER': LanguageProficiency.BASIC,
+    NATIVE: LanguageProficiency.NATIVE,
+    MUTTERSPRACHE: LanguageProficiency.NATIVE,
+    FLUENT: LanguageProficiency.FLUENT,
+    FLIESSEND: LanguageProficiency.FLUENT,
+    FLIEßEND: LanguageProficiency.FLUENT,
+    ADVANCED: LanguageProficiency.ADVANCED,
+    FORTGESCHRITTEN: LanguageProficiency.ADVANCED,
+    INTERMEDIATE: LanguageProficiency.INTERMEDIATE,
+    GUT: LanguageProficiency.INTERMEDIATE,
+    MITTEL: LanguageProficiency.INTERMEDIATE,
+    BASIC: LanguageProficiency.BASIC,
+    GRUNDKENNTNISSE: LanguageProficiency.BASIC,
+    ANFÄNGER: LanguageProficiency.BASIC,
   };
-  
+
   return mappings[normalized] || LanguageProficiency.INTERMEDIATE; // Default fallback
 }
 
@@ -92,8 +94,8 @@ export class SkillDto {
   @IsString()
   name: string;
 
-  @ApiProperty({ 
-    example: 'EXPERT', 
+  @ApiProperty({
+    example: 'EXPERT',
     required: false,
     enum: SkillLevel,
     description: 'Skill proficiency level (BEGINNER, INTERMEDIATE, ADVANCED, EXPERT)',
@@ -332,7 +334,11 @@ export class UpdateProfileDto {
   @IsString()
   phone?: string;
 
-  @ApiProperty({ example: 'Musterstraße 123', required: false, description: 'Street and house number' })
+  @ApiProperty({
+    example: 'Musterstraße 123',
+    required: false,
+    description: 'Street and house number',
+  })
   @IsOptional()
   @Sanitize()
   @IsString()

@@ -22,11 +22,13 @@ import { ConfigService } from './config/config.service';
 import { AuditLoggerModule } from './common/audit-logger';
 import { CSPViolationController } from './common/csp/csp-violation.controller';
 import { TimeoutMiddleware } from './common/middleware';
+import { SubscriptionModule } from './subscription/subscription.module';
 
 @Module({
   imports: [
     ConfigModule,
     PrismaModule,
+    SubscriptionModule,
     AuditLoggerModule,
     CleanupCronModule,
     ThrottlerModule.forRootAsync({

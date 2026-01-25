@@ -18,25 +18,25 @@ interface PoolSettings {
 
 const POOL_SETTINGS: Record<string, PoolSettings> = {
   development: {
-    max: 10,                      // Smaller pool for local dev
-    min: 2,                       // Keep some connections warm
-    idleTimeoutMillis: 30000,     // 30 seconds
+    max: 10, // Smaller pool for local dev
+    min: 2, // Keep some connections warm
+    idleTimeoutMillis: 30000, // 30 seconds
     connectionTimeoutMillis: 5000, // 5 seconds
-    statementTimeout: 30000,      // 30 seconds
-    queryTimeout: 30000,          // 30 seconds
+    statementTimeout: 30000, // 30 seconds
+    queryTimeout: 30000, // 30 seconds
   },
   production: {
-    max: 20,                      // Larger pool for production load
-    min: 5,                       // More warm connections
-    idleTimeoutMillis: 60000,     // 60 seconds (longer for connection reuse)
+    max: 20, // Larger pool for production load
+    min: 5, // More warm connections
+    idleTimeoutMillis: 60000, // 60 seconds (longer for connection reuse)
     connectionTimeoutMillis: 3000, // 3 seconds (fail fast)
-    statementTimeout: 60000,      // 60 seconds (allow longer queries)
-    queryTimeout: 60000,          // 60 seconds
+    statementTimeout: 60000, // 60 seconds (allow longer queries)
+    queryTimeout: 60000, // 60 seconds
   },
   test: {
-    max: 5,                       // Minimal pool for tests
+    max: 5, // Minimal pool for tests
     min: 1,
-    idleTimeoutMillis: 10000,     // 10 seconds
+    idleTimeoutMillis: 10000, // 10 seconds
     connectionTimeoutMillis: 2000,
     statementTimeout: 10000,
     queryTimeout: 10000,
@@ -53,14 +53,17 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     // Get environment-specific pool settings
     const nodeEnv = configService.get<string>('NODE_ENV', 'development');
     const settings = POOL_SETTINGS[nodeEnv] || POOL_SETTINGS.development;
-    
+
     // Allow overrides via environment variables
     const poolConfig: PoolConfig = {
       connectionString: configService.get<string>('DATABASE_URL'),
       max: configService.get<number>('DB_POOL_MAX', settings.max),
       min: configService.get<number>('DB_POOL_MIN', settings.min),
       idleTimeoutMillis: configService.get<number>('DB_IDLE_TIMEOUT', settings.idleTimeoutMillis),
-      connectionTimeoutMillis: configService.get<number>('DB_CONNECTION_TIMEOUT', settings.connectionTimeoutMillis),
+      connectionTimeoutMillis: configService.get<number>(
+        'DB_CONNECTION_TIMEOUT',
+        settings.connectionTimeoutMillis,
+      ),
       statement_timeout: settings.statementTimeout,
       query_timeout: settings.queryTimeout,
       // Application name for monitoring
@@ -90,14 +93,16 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     super({ adapter });
     this.pool = pool;
 
-    this.logger.log(`Pool configured: max=${poolConfig.max}, min=${poolConfig.min}, env=${nodeEnv}`);
+    this.logger.log(
+      `Pool configured: max=${poolConfig.max}, min=${poolConfig.min}, env=${nodeEnv}`,
+    );
   }
 
   async onModuleInit() {
     try {
       await this.$connect();
       this.logger.log('✅ Database connected successfully (Prisma 7 with PG Adapter)');
-      
+
       // Start health check interval in production
       if (this.configService.get<string>('NODE_ENV') === 'production') {
         this.startHealthCheck();
@@ -113,7 +118,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     if (this.healthCheckInterval) {
       clearInterval(this.healthCheckInterval);
     }
-    
+
     await this.$disconnect();
     await this.pool.end();
     this.logger.log('Database disconnected and connection pool closed');
@@ -189,4 +194,3 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     `;
   }
 }
-

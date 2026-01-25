@@ -14,9 +14,9 @@ function mapToTheme(value: string | undefined): Theme | undefined {
   }
   // Legacy mappings
   const mappings: Record<string, Theme> = {
-    'LIGHT': Theme.LIGHT,
-    'DARK': Theme.DARK,
-    'SYSTEM': Theme.SYSTEM,
+    LIGHT: Theme.LIGHT,
+    DARK: Theme.DARK,
+    SYSTEM: Theme.SYSTEM,
   };
   return mappings[normalized] || Theme.SYSTEM;
 }
