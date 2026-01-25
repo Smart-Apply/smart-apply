@@ -5,6 +5,9 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.string().default('3000'),
 
+  // Logging
+  LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent']).default('info'),
+
   // Database
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
 
@@ -134,11 +137,15 @@ const envSchema = z.object({
 export type EnvConfig = z.infer<typeof envSchema>;
 
 export function validateEnv(config: Record<string, unknown>): EnvConfig {
-  console.log('🔍 Validating environment config:', {
-    configKeys: config ? Object.keys(config).length : 0,
-    hasDatabase: !!config?.DATABASE_URL,
-    hasJwtSecret: !!config?.JWT_SECRET,
-  });
+  // Debug logging only in development (before Pino is available)
+  if (process.env.NODE_ENV === 'development') {
+    // eslint-disable-next-line no-console
+    console.log('[EnvSchema] Validating environment config:', {
+      configKeys: config ? Object.keys(config).length : 0,
+      hasDatabase: !!config?.DATABASE_URL,
+      hasJwtSecret: !!config?.JWT_SECRET,
+    });
+  }
 
   try {
     return envSchema.parse(config);
@@ -149,7 +156,9 @@ export function validateEnv(config: Record<string, unknown>): EnvConfig {
         : 'Unknown validation error';
       throw new Error(`❌ Environment validation failed:\n${missingVars}`);
     }
-    console.error('❌ Environment validation error (not ZodError):', error);
+    // Errors should always be logged regardless of environment
+    // eslint-disable-next-line no-console
+    console.error('[EnvSchema] Environment validation error (not ZodError):', error);
     throw error;
   }
 }

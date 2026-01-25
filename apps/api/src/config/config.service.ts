@@ -26,6 +26,11 @@ export class ConfigService {
     return this.nodeEnv === 'test';
   }
 
+  // Logging
+  get logLevel(): 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal' | 'silent' {
+    return this.nestConfig.get('LOG_LEVEL', { infer: true });
+  }
+
   // Database
   get databaseUrl(): string {
     return this.nestConfig.get('DATABASE_URL', { infer: true });

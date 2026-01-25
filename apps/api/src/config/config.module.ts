@@ -8,8 +8,12 @@ import { ConfigService } from './config.service';
 // .env location: /Users/arian/VS-Projects/smart-apply/apps/api/.env
 // Need to go up 4 levels from dist to root, then down to apps/api/.env
 const envPath = join(__dirname, '../../../../apps/api/.env');
-console.log('🔍 Looking for .env file at:', envPath);
-console.log('🔍 __dirname is:', __dirname);
+
+// Debug logging only in development (before Pino is available)
+if (process.env.NODE_ENV === 'development') {
+  // eslint-disable-next-line no-console
+  console.log('[ConfigModule] Looking for .env file at:', envPath);
+}
 
 @Global()
 @Module({

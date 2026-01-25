@@ -2,6 +2,7 @@ import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ConfigModule } from './config/config.module';
+import { LoggerModule } from './logger/logger.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { StorageModule } from './storage/storage.module';
@@ -21,12 +22,14 @@ import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
 import { ConfigService } from './config/config.service';
 import { AuditLoggerModule } from './common/audit-logger';
 import { CSPViolationController } from './common/csp/csp-violation.controller';
-import { TimeoutMiddleware } from './common/middleware';
+import { TimeoutMiddleware, RequestIdMiddleware } from './common/middleware';
 import { SubscriptionModule } from './subscription/subscription.module';
 
 @Module({
   imports: [
+    // Core infrastructure modules (must be first)
     ConfigModule,
+    LoggerModule, // Structured logging with Pino - must be early for proper log capture
     PrismaModule,
     SubscriptionModule,
     AuditLoggerModule,
@@ -37,21 +40,6 @@ import { SubscriptionModule } from './subscription/subscription.module';
         const isDevelopment = config.nodeEnv === 'development';
         const developmentLimit = 10000000; // 10 million requests per minute in development
         const defaultLimit = isDevelopment ? developmentLimit : config.rateLimitMax;
-
-        // Log rate limit configuration for debugging
-        console.log('[ThrottlerModule] Configuration:', {
-          environment: config.nodeEnv,
-          isDevelopment,
-          default: {
-            ttl: config.rateLimitTtl,
-            limit: defaultLimit,
-            configLimit: config.rateLimitMax,
-          },
-          auth: {
-            ttl: config.rateLimitAuthTtl,
-            limit: config.rateLimitAuthMax,
-          },
-        });
 
         return {
           throttlers: [
@@ -112,6 +100,8 @@ import { SubscriptionModule } from './subscription/subscription.module';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
+    // Apply request ID middleware first for request tracing
+    consumer.apply(RequestIdMiddleware).forRoutes('*');
     // Apply global request timeout middleware to all routes
     consumer.apply(TimeoutMiddleware).forRoutes('*');
   }

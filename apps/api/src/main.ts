@@ -1,7 +1,8 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, Logger } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { Logger } from 'nestjs-pino';
 import helmet from 'helmet';
 import * as compression from 'compression';
 import * as cookieParser from 'cookie-parser';
@@ -23,13 +24,19 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 async function bootstrap() {
-  const logger = new Logger('Bootstrap');
-
+  // Create NestJS application with buffered logs
+  // This ensures logs are captured even during early bootstrap phase
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+    bufferLogs: true,
   });
 
+  // Use Pino logger as the global logger
+  const logger = app.get(Logger);
+  app.useLogger(logger);
+
   const configService = app.get(ConfigService);
+
+  logger.log(`🚀 Starting Smart Apply API in ${configService.nodeEnv} mode`, 'Bootstrap');
 
   // Enhanced Helmet configuration with strict Content Security Policy (CSP)
   // CSP provides defense-in-depth protection against XSS attacks by controlling
@@ -78,6 +85,7 @@ async function bootstrap() {
 
   logger.log(
     `🛡️  CSP configured in ${configService.cspReportOnly ? 'report-only' : 'enforcing'} mode`,
+    'Bootstrap',
   );
 
   // Compression middleware - reduces bandwidth usage for large JSON responses
@@ -106,9 +114,13 @@ async function bootstrap() {
     );
     logger.log(
       '🗜️  Response compression enabled (gzip, level 6, threshold: 1KB, excludes /download/)',
+      'Bootstrap',
     );
   } else {
-    logger.warn('⚠️  Response compression disabled (set ENABLE_COMPRESSION=true to enable)');
+    logger.warn(
+      '⚠️  Response compression disabled (set ENABLE_COMPRESSION=true to enable)',
+      'Bootstrap',
+    );
   }
 
   // Cookie parser - must be before routes
@@ -152,9 +164,9 @@ async function bootstrap() {
     app.set('csrfGenerateToken', generateCsrfToken);
     app.set('csrfProtection', doubleCsrfProtection);
 
-    logger.log('🛡️  CSRF protection enabled');
+    logger.log('🛡️  CSRF protection enabled', 'Bootstrap');
   } else {
-    logger.warn('⚠️  CSRF protection disabled (set ENABLE_CSRF=true to enable)');
+    logger.warn('⚠️  CSRF protection disabled (set ENABLE_CSRF=true to enable)', 'Bootstrap');
   }
 
   // CORS configuration with restrictive policy
@@ -162,7 +174,7 @@ async function bootstrap() {
   // For production, set CORS_ORIGINS to your deployed frontend URLs
   // Example: CORS_ORIGINS=https://smartapply.azurewebsites.net,https://www.smartapply.com
   const corsOrigins = configService.corsOrigins;
-  logger.log(`🌐 CORS enabled for origins: ${JSON.stringify(corsOrigins)}`);
+  logger.log(`🌐 CORS enabled for origins: ${JSON.stringify(corsOrigins)}`, 'Bootstrap');
 
   app.enableCors({
     origin: corsOrigins,
@@ -306,15 +318,19 @@ async function bootstrap() {
     `,
   });
 
-  logger.log(`📚 Swagger documentation available at: http://localhost:${configService.port}/docs`);
+  logger.log(
+    `📚 Swagger documentation available at: http://localhost:${configService.port}/docs`,
+    'Bootstrap',
+  );
 
   const port = configService.port;
   await app.listen(port);
 
-  logger.log(`🚀 Application running on: http://localhost:${port}/api/v1`);
-  logger.log(`📝 Environment: ${configService.nodeEnv}`);
-  logger.log(`💾 Storage driver: ${configService.storageDriver}`);
-  logger.log(`🤖 LLM provider: ${configService.llmProvider}`);
+  logger.log(`🚀 Application running on: http://localhost:${port}/api/v1`, 'Bootstrap');
+  logger.log(`📝 Environment: ${configService.nodeEnv}`, 'Bootstrap');
+  logger.log(`💾 Storage driver: ${configService.storageDriver}`, 'Bootstrap');
+  logger.log(`🤖 LLM provider: ${configService.llmProvider}`, 'Bootstrap');
+  logger.log(`📊 Log level: ${configService.logLevel}`, 'Bootstrap');
 }
 
 bootstrap();

@@ -28,7 +28,9 @@ describe('CustomThrottlerGuard', () => {
     };
 
     reflector = new Reflector();
-    guard = new CustomThrottlerGuard(mockOptions, mockStorageService, reflector, mockAuditLogger);
+    guard = new CustomThrottlerGuard(mockOptions, mockStorageService, reflector);
+    // Inject dependencies that use @Inject decorators
+    (guard as any).auditLogger = mockAuditLogger;
   });
 
   describe('getThrottlers', () => {

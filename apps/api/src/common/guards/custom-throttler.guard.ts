@@ -1,4 +1,4 @@
-import { Injectable, ExecutionContext, Inject } from '@nestjs/common';
+import { Injectable, ExecutionContext, Inject, Logger } from '@nestjs/common';
 import { ThrottlerGuard, ThrottlerException, ThrottlerRequest } from '@nestjs/throttler';
 import { Reflector } from '@nestjs/core';
 import { THROTTLER_NAME_KEY } from '../decorators/throttle.decorator';
@@ -23,6 +23,8 @@ const THROTTLER_SKIP = 'THROTTLER:SKIP';
  */
 @Injectable()
 export class CustomThrottlerGuard extends ThrottlerGuard {
+  private readonly logger = new Logger(CustomThrottlerGuard.name);
+
   @Inject(AuditLoggerService)
   private readonly auditLogger: AuditLoggerService;
 
@@ -90,16 +92,11 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
         const user = request.user;
 
         // Log rate limit violation
-        console.warn('[RateLimitGuard] Rate limit exceeded:', {
-          endpoint: request.url,
-          method: request.method,
-          throttlerName: throttler.name,
-          limit,
-          ttl: `${ttlMs}ms`,
-          tracker,
-          userId: user?.userId || 'anonymous',
-          totalHits,
-        });
+        this.logger.warn(
+          `Rate limit exceeded - endpoint: ${request.url}, method: ${request.method}, ` +
+            `throttler: ${throttler.name}, limit: ${limit}, ttl: ${ttlMs}ms, ` +
+            `tracker: ${tracker}, userId: ${user?.userId || 'anonymous'}, totalHits: ${totalHits}`,
+        );
 
         this.auditLogger.logRateLimitViolation(user?.id, request.url, request);
 
@@ -128,7 +125,7 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
         throw error;
       }
       // For other errors, log and re-throw
-      console.error('[RateLimitGuard] Error in handleRequest:', error);
+      this.logger.error(`Error in handleRequest: ${error}`);
       throw error;
     }
   }

@@ -102,11 +102,7 @@ export class SubscriptionController {
           id: 'FREE',
           name: 'Free',
           price: 0,
-          features: [
-            '5 Bewerbungen pro Monat',
-            'Basis-KI',
-            'E-Mail Support',
-          ],
+          features: ['5 Bewerbungen pro Monat', 'Basis-KI', 'E-Mail Support'],
           limits: this.subscriptionService.getTierLimits('FREE'),
         },
         {
@@ -164,10 +160,7 @@ export class SubscriptionController {
     status: 200,
     description: 'Returns whether the action is allowed and remaining quota',
   })
-  async checkAction(
-    @CurrentUser('id') userId: string,
-    @Body() dto: CheckActionDto,
-  ) {
+  async checkAction(@CurrentUser('id') userId: string, @Body() dto: CheckActionDto) {
     return this.subscriptionService.canPerformAction(userId, dto.action);
   }
 
