@@ -36,11 +36,17 @@
  */
 
 import { PrismaClient, TemplateType } from '../src/generated/prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from 'pg';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// Prisma 7: Empty object for CLI-based seeds
-const prisma = new PrismaClient({} as any);
+// Prisma 7: Create PrismaClient with PrismaPg adapter for CLI seeds
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/smartapply',
+});
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 // =============================================================================
 // TYPES
@@ -319,9 +325,9 @@ async function seedTemplates() {
       const isTemplateDefault = template.config.isDefault ?? false;
       const isDefault = isTemplateDefault && isVariantDefault;
 
-      // Display name (base name for default, with color for variants)
-      const displayName = variant.name && variant.id
-        ? template.config.name  // Keep base name, color shown via swatch
+      // Display name: Include variant name for non-default variants to ensure uniqueness
+      const displayName = variant.id
+        ? `${template.config.name} (${variant.name})`  // e.g., "Elegant Sidebar (Ocean Blue)"
         : template.config.name;
 
       console.log(`   🎨 ${variant.name || 'Default'} (${variant.accent || 'no color'})`);
@@ -492,4 +498,5 @@ seedTemplates()
   })
   .finally(async () => {
     await prisma.$disconnect();
+    await pool.end();
   });

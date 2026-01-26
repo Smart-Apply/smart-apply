@@ -26,6 +26,15 @@ import type {
   TierLimits,
   TiersResponse,
   CanPerformActionResult,
+  InterviewSession,
+  InterviewSessionDetail,
+  InterviewSessionsResponse,
+  InterviewStats,
+  StartInterviewDto,
+  SubmitAnswerDto,
+  NextQuestionResponse,
+  AnswerResponse,
+  InterviewSessionStatus,
 } from '@/types';
 import {
   ApiError,
@@ -748,5 +757,50 @@ export const api = {
 
     canPerform: (action: 'application' | 'interview') =>
       apiRequest<CanPerformActionResult>(`/subscription/can-perform/${action}`),
+  },
+
+  // Interview Coach (Premium Feature)
+  interviews: {
+    list: (options?: { status?: InterviewSessionStatus; limit?: number; offset?: number }) => {
+      const params = new URLSearchParams();
+      if (options?.status) params.append('status', options.status);
+      if (options?.limit) params.append('limit', options.limit.toString());
+      if (options?.offset) params.append('offset', options.offset.toString());
+      const query = params.toString();
+      return apiRequest<InterviewSessionsResponse>(`/interviews${query ? `?${query}` : ''}`);
+    },
+
+    get: (id: string) =>
+      apiRequest<InterviewSessionDetail>(`/interviews/${id}`),
+
+    getStats: () =>
+      apiRequest<InterviewStats>('/interviews/stats'),
+
+    start: (data: StartInterviewDto) =>
+      apiRequest<InterviewSessionDetail>('/interviews/start', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    submitAnswer: (sessionId: string, questionId: string, data: SubmitAnswerDto) =>
+      apiRequest<AnswerResponse>(`/interviews/${sessionId}/questions/${questionId}/answer`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    getNextQuestion: (sessionId: string) =>
+      apiRequest<NextQuestionResponse>(`/interviews/${sessionId}/next`, {
+        method: 'POST',
+      }),
+
+    complete: (sessionId: string) =>
+      apiRequest<InterviewSessionDetail>(`/interviews/${sessionId}/complete`, {
+        method: 'POST',
+      }),
+
+    abandon: (sessionId: string) =>
+      apiRequest<InterviewSession>(`/interviews/${sessionId}/abandon`, {
+        method: 'POST',
+      }),
   },
 };

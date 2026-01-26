@@ -619,3 +619,122 @@ export interface ExtractedProfile {
   }>;
 }
 
+// ============================================
+// Interview Coach Types (Premium Feature)
+// ============================================
+
+export type InterviewType = 'BEHAVIORAL' | 'TECHNICAL' | 'CASE_STUDY' | 'MIXED';
+export type InterviewDifficulty = 'EASY' | 'MEDIUM' | 'HARD';
+export type InterviewSessionStatus = 'IN_PROGRESS' | 'COMPLETED' | 'ABANDONED';
+export type InterviewQuestionType = 'OPEN' | 'SITUATIONAL' | 'TECHNICAL' | 'BEHAVIORAL' | 'FOLLOW_UP';
+
+export interface InterviewQuestion {
+  id: string;
+  questionText: string;
+  questionType: InterviewQuestionType;
+  order: number;
+  userAnswer?: string;
+  answerDuration?: number;
+  score?: number;
+  feedback?: string;
+  improvementTips?: string[];
+  askedAt: string;
+  answeredAt?: string;
+}
+
+export interface InterviewFeedback {
+  id: string;
+  overallScore: number;
+  technicalScore?: number;
+  communicationScore: number;
+  presentationScore: number;
+  problemSolvingScore?: number;
+  cultureFitScore?: number;
+  strengths: string[];
+  improvements: string[];
+  recommendations: string[];
+  idealAnswers?: Record<string, string>;
+  createdAt: string;
+}
+
+export interface InterviewSession {
+  id: string;
+  type: InterviewType;
+  industry?: string;
+  difficulty: InterviewDifficulty;
+  language: string;
+  jobTitle?: string;
+  company?: string;
+  applicationId?: string;
+  maxQuestions: number;
+  timeLimitMinutes?: number;
+  status: InterviewSessionStatus;
+  startedAt: string;
+  completedAt?: string;
+  overallScore?: number;
+  questionsCount: number;
+  answeredCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InterviewSessionDetail extends InterviewSession {
+  questions: InterviewQuestion[];
+  feedback?: InterviewFeedback;
+}
+
+export interface StartInterviewDto {
+  applicationId?: string;
+  type?: InterviewType;
+  industry?: string;
+  difficulty?: InterviewDifficulty;
+  language?: string;
+  jobTitle?: string;
+  company?: string;
+  jobDescription?: string;
+  maxQuestions?: number;
+  timeLimitMinutes?: number;
+}
+
+export interface SubmitAnswerDto {
+  answer: string;
+  answerDuration?: number;
+}
+
+export interface NextQuestionResponse {
+  question: InterviewQuestion;
+  currentQuestion: number;
+  totalQuestions: number;
+  isLastQuestion: boolean;
+}
+
+export interface AnswerResponse {
+  success: boolean;
+  question: InterviewQuestion;
+  hasMoreQuestions: boolean;
+  message?: string;
+}
+
+export interface InterviewStats {
+  totalSessions: number;
+  completedSessions: number;
+  averageScore: number;
+  bestScore: number;
+  totalQuestionsAnswered: number;
+  scoreImprovement: number;
+  mostPracticedType: InterviewType;
+  sessionsByType: Record<InterviewType, number>;
+  averageCategoryScores: {
+    technical?: number;
+    communication: number;
+    presentation: number;
+    problemSolving?: number;
+    cultureFit?: number;
+  };
+}
+
+export interface InterviewSessionsResponse {
+  sessions: InterviewSession[];
+  total: number;
+}
+
