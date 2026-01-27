@@ -53,6 +53,7 @@
 | **Security**        | Content Security Policy (CSP)                    | Prevent XSS with strict CSP headers                               | ✅ Done (#144) | 🟢 Medium Priority                | MVP      |
 | **Security**        | Two-Factor Authentication (2FA)                  | TOTP-based 2FA (Google Authenticator)                             | ❌ Not yet     | 🟢 Low Priority                   | Post-MVP |
 | **Post-MVP**        | ATS Keyword Matching                             | Evaluate profile/job overlap semantically                         | ✅ Done        | ✅ Done (with scoring)            | MVP      |
+| **Premium**         | Interview Coach                                  | AI-powered interview simulation with feedback                     | ✅ Done (#305) | ✅ Done (Premium feature)         | MVP      |
 | **Post-MVP**        | Additional Resume Templates                      | New designs (Creative, Academic, Executive)                       | ❌ Not yet     | 🟢 Optional (Issue #192)          | Phase 2  |
 | **Post-MVP**        | Gmail/Outlook Integration                        | Track application responses                                       | ❌ Not yet     | —                                 | Phase 2  |
 | **Post-MVP**        | Analytics Dashboard                              | Show metrics (applications, success rates)                        | ❌ Not yet     | —                                 | Phase 2  |

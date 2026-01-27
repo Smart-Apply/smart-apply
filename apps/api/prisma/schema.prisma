@@ -32,6 +32,7 @@ model User {
   sessions Session[]
   auditLogs AuditLog[]
   subscription Subscription?
+  interviewSessions InterviewSession[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -318,6 +319,9 @@ model Application {
   
   // Source language tracking (for initial generation)
   sourceLanguage        String?   // Original content language when app was created (ISO 639-1)
+  
+  // Interview sessions for this application
+  interviewSessions InterviewSession[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -642,4 +646,145 @@ model SubscriptionUsage {
   @@index([subscriptionId])
   @@index([periodEnd])
   @@map("subscription_usage")
+}
+
+// =====================================
+// KI INTERVIEW COACH (Premium Feature)
+// =====================================
+
+// Interview session type
+enum InterviewType {
+  BEHAVIORAL   // Verhaltensbasierte Fragen
+  TECHNICAL    // Technische/Fachliche Fragen
+  CASE_STUDY   // Case Studies / Problemlösung
+  MIXED        // Gemischtes Interview
+}
+
+// Interview difficulty level
+enum InterviewDifficulty {
+  EASY        // Einsteiger-Level
+  MEDIUM      // Standard-Level
+  HARD        // Experten-Level
+}
+
+// Interview session status
+enum InterviewSessionStatus {
+  IN_PROGRESS  // Laufend
+  COMPLETED    // Abgeschlossen
+  ABANDONED    // Abgebrochen
+}
+
+// Question type
+enum InterviewQuestionType {
+  OPEN          // Offene Frage
+  SITUATIONAL   // Situationsbezogen (STAR-Methode)
+  TECHNICAL     // Technisch/Fachlich
+  BEHAVIORAL    // Verhaltensbezogen
+  FOLLOW_UP     // Nachfrage
+}
+
+// Interview session with KI coach
+model InterviewSession {
+  id              String                 @id @default(cuid())
+  userId          String
+  user            User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Optional link to application (for context-aware interviews)
+  applicationId   String?
+  application     Application?           @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  
+  // Interview configuration
+  type            InterviewType          @default(MIXED)
+  industry        String?                // e.g., "IT", "Healthcare", "Finance"
+  difficulty      InterviewDifficulty    @default(MEDIUM)
+  language        String                 @default("de") // ISO 639-1: "de", "en"
+  
+  // Target position (from application or user input)
+  jobTitle        String?
+  company         String?
+  jobDescription  String?                @db.Text
+  
+  // Interview settings
+  maxQuestions    Int                    @default(10)
+  timeLimitMinutes Int?                  // Optional time limit per question
+  
+  // Session status
+  status          InterviewSessionStatus @default(IN_PROGRESS)
+  startedAt       DateTime               @default(now())
+  completedAt     DateTime?
+  
+  // Results
+  overallScore    Int?                   // 1-100 overall score
+  
+  // Relations
+  questions       InterviewQuestion[]
+  feedback        InterviewFeedback?
+  
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  
+  @@index([userId])
+  @@index([userId, status])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([applicationId])
+  @@map("interview_sessions")
+}
+
+// Individual interview question with answer and feedback
+model InterviewQuestion {
+  id              String                 @id @default(cuid())
+  sessionId       String
+  session         InterviewSession       @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  // Question details
+  questionText    String                 @db.Text
+  questionType    InterviewQuestionType  @default(OPEN)
+  expectedTopics  String[]               // Topics expected in a good answer
+  
+  // User's answer
+  userAnswer      String?                @db.Text
+  answerDuration  Int?                   // Answer duration in seconds
+  
+  // AI evaluation
+  score           Int?                   // 1-100 score
+  feedback        String?                @db.Text
+  improvementTips String[]               // Specific improvement suggestions
+  
+  // Question order and timing
+  order           Int
+  askedAt         DateTime               @default(now())
+  answeredAt      DateTime?
+  
+  @@index([sessionId])
+  @@index([sessionId, order])
+  @@map("interview_questions")
+}
+
+// Overall session feedback
+model InterviewFeedback {
+  id              String                 @id @default(cuid())
+  sessionId       String                 @unique
+  session         InterviewSession       @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  // Overall score
+  overallScore    Int                    // 1-100
+  
+  // Category scores (1-100 each)
+  technicalScore      Int?               // Fachkompetenz
+  communicationScore  Int                // Kommunikation
+  presentationScore   Int                // Selbstpräsentation
+  problemSolvingScore Int?               // Problemlösung
+  cultureFitScore     Int?               // Kulturfit
+  
+  // Feedback content
+  strengths       String[]               // Stärken
+  improvements    String[]               // Verbesserungspotential
+  recommendations String[]               // Konkrete Empfehlungen
+  
+  // Optional: Example ideal answers
+  idealAnswers    Json?                  // Map<questionId, idealAnswer>
+  
+  createdAt       DateTime               @default(now())
+  
+  @@map("interview_feedback")
 }

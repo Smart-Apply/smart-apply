@@ -16,7 +16,8 @@ import {
   LogOut,
   Menu,
   Home,
-  Settings
+  Settings,
+  MessagesSquare,
 } from 'lucide-react';
 
 const navigation = [
@@ -24,6 +25,7 @@ const navigation = [
   { name: 'Profil', href: '/profile', icon: User },
   { name: 'Bewerbungen', href: '/applications', icon: FileText },
   { name: 'Stellenanzeigen', href: '/jobs', icon: Briefcase },
+  { name: 'Interview-Coach', href: '/interviews', icon: MessagesSquare },
   { name: 'Einstellungen', href: '/settings', icon: Settings },
 ];
 

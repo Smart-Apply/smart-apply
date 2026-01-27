@@ -24,6 +24,7 @@ import { AuditLoggerModule } from './common/audit-logger';
 import { CSPViolationController } from './common/csp/csp-violation.controller';
 import { TimeoutMiddleware, RequestIdMiddleware } from './common/middleware';
 import { SubscriptionModule } from './subscription/subscription.module';
+import { InterviewsModule } from './interviews/interviews.module';
 
 @Module({
   imports: [
@@ -84,6 +85,7 @@ import { SubscriptionModule } from './subscription/subscription.module';
     ApplicationsModule,
     TemplatesModule,
     UserPreferencesModule,
+    InterviewsModule,
     HealthModule,
   ],
   controllers: [CSPViolationController],
