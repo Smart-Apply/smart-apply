@@ -738,3 +738,64 @@ export interface InterviewSessionsResponse {
   total: number;
 }
 
+// ============================================
+// Two-Factor Authentication Types
+// ============================================
+
+export interface TwoFactorStatus {
+  isEnabled: boolean;
+  enabledAt: string | null;
+  backupCodesRemaining: number;
+  trustedDevicesCount: number;
+}
+
+export interface Setup2FAResponse {
+  tempSecret: string;
+  qrCodeDataUrl: string;
+  otpAuthUrl: string;
+}
+
+export interface Verify2FASetupDto {
+  code: string;
+  tempSecret: string;
+}
+
+export interface Verify2FASetupResponse {
+  backupCodes: string[];
+}
+
+export interface Verify2FALoginDto {
+  challengeToken: string;
+  code: string;
+  trustDevice?: boolean;
+}
+
+export interface Disable2FADto {
+  password: string;
+}
+
+export interface RegenerateBackupCodesDto {
+  password: string;
+}
+
+export interface TwoFactorChallengeResponse {
+  requiresTwoFactor: boolean;
+  challengeToken: string;
+  methods: string[];
+}
+
+export interface TrustedDevice {
+  id: string;
+  deviceName: string | null;
+  browser: string | null;
+  os: string | null;
+  ipAddress: string | null;
+  lastUsedAt: string;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export interface TrustedDevicesResponse {
+  devices: TrustedDevice[];
+}
+

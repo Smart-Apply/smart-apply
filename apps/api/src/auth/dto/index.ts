@@ -2,6 +2,9 @@ import { IsEmail, IsString, MinLength, IsOptional, Matches, IsNotEmpty } from 'c
 import { ApiProperty } from '@nestjs/swagger';
 import { Sanitize } from '../../common/decorators/sanitize.decorator';
 
+// Re-export 2FA DTOs
+export * from './two-factor.dto';
+
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[\w@$!%*?&#]{8,}$/;
 
 export class RegisterDto {

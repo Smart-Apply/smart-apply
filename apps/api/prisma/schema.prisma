@@ -19,11 +19,11 @@ model User {
   password String?
   firstName String? // User's first name
   lastName  String? // User's last name
-  
+
   // OAuth fields (for future Microsoft Entra integration)
   provider   String? // e.g., "microsoft", "google"
   providerId String? // External OAuth ID
-  
+
   profile   Profile?
   preferences UserPreferences?
   jobPostings JobPosting[]
@@ -33,7 +33,11 @@ model User {
   auditLogs AuditLog[]
   subscription Subscription?
   interviewSessions InterviewSession[]
-  
+
+  // Two-Factor Authentication
+  twoFactorAuth  TwoFactorAuth?
+  trustedDevices TrustedDevice[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -474,22 +478,31 @@ enum AuditEventType {
   PASSWORD_CHANGE
   PASSWORD_RESET_REQUEST
   PASSWORD_RESET_COMPLETE
-  
+
   // Session
   SESSION_CREATE
   SESSION_REVOKE
   TOKEN_REFRESH
-  
+
   // Account
   ACCOUNT_LOCKED
   ACCOUNT_UNLOCKED
   EMAIL_CHANGE
   PROFILE_UPDATE
-  
+
   // Security
   RATE_LIMIT_EXCEEDED
   SUSPICIOUS_ACTIVITY
   CSRF_VIOLATION
+
+  // Two-Factor Authentication
+  TWO_FACTOR_ENABLED
+  TWO_FACTOR_DISABLED
+  TWO_FACTOR_CHALLENGE_SUCCESS
+  TWO_FACTOR_CHALLENGE_FAILED
+  TWO_FACTOR_BACKUP_CODE_USED
+  TWO_FACTOR_DEVICE_TRUSTED
+  TWO_FACTOR_DEVICE_REVOKED
 }
 
 // Severity levels for audit events
@@ -785,6 +798,76 @@ model InterviewFeedback {
   idealAnswers    Json?                  // Map<questionId, idealAnswer>
   
   createdAt       DateTime               @default(now())
-  
+
   @@map("interview_feedback")
+}
+
+// =====================================
+// TWO-FACTOR AUTHENTICATION (2FA)
+// =====================================
+
+// Two-Factor Authentication settings for a user
+model TwoFactorAuth {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // TOTP Configuration
+  isEnabled       Boolean   @default(false)
+  encryptedSecret String?   // AES-256-GCM encrypted TOTP secret
+  secretIv        String?   // Initialization vector for decryption
+  secretAuthTag   String?   // Authentication tag for GCM
+
+  // Setup tracking
+  verifiedAt      DateTime? // When 2FA was successfully verified/enabled
+
+  // Backup codes (one-time use, hashed with Argon2)
+  backupCodes     TwoFactorBackupCode[]
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("two_factor_auth")
+}
+
+// Individual backup codes (one-time use)
+model TwoFactorBackupCode {
+  id              String        @id @default(cuid())
+  twoFactorAuthId String
+  twoFactorAuth   TwoFactorAuth @relation(fields: [twoFactorAuthId], references: [id], onDelete: Cascade)
+
+  // Hashed code (Argon2)
+  codeHash        String
+  usedAt          DateTime?     // Null if not yet used
+
+  createdAt       DateTime      @default(now())
+
+  @@index([twoFactorAuthId])
+  @@map("two_factor_backup_codes")
+}
+
+// Trusted devices for "Remember this device" feature (30 days)
+model TrustedDevice {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Device fingerprint (hashed token for cookie matching)
+  deviceTokenHash String   @unique
+
+  // Device info for display in settings
+  deviceName      String?
+  browser         String?
+  os              String?
+  ipAddress       String?
+
+  // Trust period
+  expiresAt       DateTime // 30 days from creation
+  lastUsedAt      DateTime @default(now())
+
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("trusted_devices")
 }

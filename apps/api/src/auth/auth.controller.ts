@@ -22,6 +22,7 @@ import {
   UpdateUserProfileDto,
   ChangePasswordDto,
   DeleteAccountDto,
+  Verify2FALoginDto,
 } from './dto';
 import { Public } from '../common/decorators/public.decorator';
 import { UseThrottler } from '../common/decorators/throttle.decorator';
@@ -71,8 +72,47 @@ export class AuthController {
 
     const result = await this.authService.login(dto, userAgent, ipAddress, req);
 
+    // Check if 2FA is required
+    if (result.requiresTwoFactor) {
+      return {
+        requiresTwoFactor: true,
+        challengeToken: result.challengeToken,
+        methods: result.methods,
+      };
+    }
+
     // Set HttpOnly cookies for both tokens
-    this.setAuthCookies(res, result.accessToken, result.refreshToken);
+    this.setAuthCookies(res, result.accessToken!, result.refreshToken!);
+
+    // Return user info only (not the tokens)
+    return { user: result.user };
+  }
+
+  @Public()
+  @UseThrottler('auth')
+  @Post('login/2fa')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Complete login with 2FA verification' })
+  async verify2FA(
+    @Body() dto: Verify2FALoginDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.verify2FAAndLogin(dto, req);
+
+    // Set HttpOnly cookies for both tokens
+    this.setAuthCookies(res, result.accessToken!, result.refreshToken!);
+
+    // Set trusted device cookie if requested
+    if (result.deviceToken) {
+      res.cookie('trusted_device', result.deviceToken, {
+        httpOnly: true,
+        secure: this.configService.isProduction,
+        sameSite: this.configService.isProduction ? 'strict' : 'lax',
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+        path: '/',
+      });
+    }
 
     // Return user info only (not the tokens)
     return { user: result.user };
@@ -163,6 +203,14 @@ export class AuthController {
     });
 
     res.clearCookie('refresh_token', {
+      httpOnly: true,
+      secure: this.configService.isProduction,
+      sameSite: 'strict',
+      path: '/',
+    });
+
+    // Clear trusted device cookie
+    res.clearCookie('trusted_device', {
       httpOnly: true,
       secure: this.configService.isProduction,
       sameSite: 'strict',

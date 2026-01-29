@@ -8,12 +8,14 @@ import {
   UpdateUserProfileDto,
   ChangePasswordDto,
   DeleteAccountDto,
+  Verify2FALoginDto,
 } from './dto';
 import { ConfigService } from '../config/config.service';
 import { AuditLoggerService } from '../common/audit-logger';
 import { SessionService } from './session.service';
+import { TwoFactorService } from './two-factor.service';
 import { MAX_TOKENS_PER_USER } from './session.constants';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { ErrorCode } from '../common/constants/error-codes';
 import {
   ConflictWithCode,
@@ -25,6 +27,20 @@ import { SubscriptionService } from '../subscription/subscription.service';
 interface TokenPair {
   accessToken: string;
   refreshToken: string;
+}
+
+interface LoginResult {
+  user?: {
+    id: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+  };
+  accessToken?: string;
+  refreshToken?: string;
+  requiresTwoFactor?: boolean;
+  challengeToken?: string;
+  methods?: string[];
 }
 
 @Injectable()
@@ -41,6 +57,8 @@ export class AuthService {
     @Inject(forwardRef(() => SessionService))
     private sessionService: SessionService,
     private subscriptionService: SubscriptionService,
+    @Inject(forwardRef(() => TwoFactorService))
+    private twoFactorService: TwoFactorService,
   ) {}
 
   async register(dto: RegisterDto, userAgent?: string, ipAddress?: string, req?: Request) {
@@ -110,10 +128,20 @@ export class AuthService {
     };
   }
 
-  async login(dto: LoginDto, userAgent?: string, ipAddress?: string, req?: Request) {
-    // Find user
+  async login(
+    dto: LoginDto,
+    userAgent?: string,
+    ipAddress?: string,
+    req?: Request,
+  ): Promise<LoginResult> {
+    // Find user with 2FA relation
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
+      include: {
+        twoFactorAuth: {
+          select: { isEnabled: true },
+        },
+      },
     });
 
     if (!user || !user.password) {
@@ -135,6 +163,25 @@ export class AuthService {
       throw new UnauthorizedWithCode(ErrorCode.INVALID_CREDENTIALS);
     }
 
+    // Check if 2FA is enabled
+    if (user.twoFactorAuth?.isEnabled) {
+      // Check for trusted device
+      const trustedDeviceToken = req?.cookies?.trusted_device;
+      if (trustedDeviceToken) {
+        const isTrusted = await this.twoFactorService.isTrustedDevice(user.id, trustedDeviceToken);
+        if (isTrusted) {
+          // Skip 2FA for trusted device
+          this.logger.log(`Trusted device detected for user ${user.id}, skipping 2FA`);
+        } else {
+          // Require 2FA
+          return this.generateTwoFactorChallenge(user.id, user.email);
+        }
+      } else {
+        // Require 2FA
+        return this.generateTwoFactorChallenge(user.id, user.email);
+      }
+    }
+
     // Log successful login
     if (req) {
       this.auditLogger.logLoginAttempt(dto.email, true, req, user.id);
@@ -151,6 +198,90 @@ export class AuthService {
         lastName: user.lastName,
       },
       ...tokens,
+    };
+  }
+
+  /**
+   * Verify 2FA code and complete login
+   */
+  async verify2FAAndLogin(
+    dto: Verify2FALoginDto,
+    req: Request,
+  ): Promise<LoginResult & { deviceToken?: string }> {
+    // Validate challenge token
+    let payload: { sub: string; email: string; type: string };
+    try {
+      payload = this.jwtService.verify(dto.challengeToken, {
+        secret: this.configService.jwtSecret,
+      });
+    } catch {
+      throw new UnauthorizedWithCode(ErrorCode.INVALID_CREDENTIALS);
+    }
+
+    // Verify token type
+    if (payload.type !== '2fa_challenge') {
+      throw new UnauthorizedWithCode(ErrorCode.INVALID_TOKEN_TYPE);
+    }
+
+    const userId = payload.sub;
+    const email = payload.email;
+
+    // Verify 2FA code
+    const isValid = await this.twoFactorService.verifyCode(userId, dto.code, req);
+
+    if (!isValid) {
+      throw new UnauthorizedWithCode(ErrorCode.INVALID_CREDENTIALS);
+    }
+
+    // Log successful login
+    this.auditLogger.logLoginAttempt(email, true, req, userId);
+
+    // Generate tokens
+    const userAgent = req.headers['user-agent'];
+    const ipAddress = req.ip || req.socket.remoteAddress;
+    const tokens = await this.generateTokens(userId, email, userAgent, ipAddress, req);
+
+    // Add trusted device if requested
+    let deviceToken: string | undefined;
+    if (dto.trustDevice) {
+      deviceToken = await this.twoFactorService.addTrustedDevice(userId, req);
+    }
+
+    // Get user info
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+      },
+    });
+
+    return {
+      user: user!,
+      ...tokens,
+      deviceToken,
+    };
+  }
+
+  /**
+   * Generate a 2FA challenge token (5 minute expiry)
+   */
+  private generateTwoFactorChallenge(userId: string, email: string): LoginResult {
+    const challengeToken = this.jwtService.sign(
+      {
+        sub: userId,
+        email,
+        type: '2fa_challenge',
+      },
+      { expiresIn: '5m' },
+    );
+
+    return {
+      requiresTwoFactor: true,
+      challengeToken,
+      methods: ['totp', 'backup_code'],
     };
   }
 
