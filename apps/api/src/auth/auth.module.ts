@@ -5,7 +5,9 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { SessionsController } from './sessions.controller';
+import { TwoFactorController } from './two-factor.controller';
 import { SessionService } from './session.service';
+import { TwoFactorService } from './two-factor.service';
 import { SessionCleanupCron } from './session-cleanup.cron';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { PrismaService } from '../prisma/prisma.service';
@@ -25,15 +27,16 @@ import { ConfigModule } from '../config/config.module';
     ScheduleModule.forRoot(),
     ConfigModule,
   ],
-  controllers: [AuthController, SessionsController],
+  controllers: [AuthController, SessionsController, TwoFactorController],
   providers: [
     AuthService,
     SessionService,
+    TwoFactorService,
     SessionCleanupCron,
     JwtStrategy,
     PrismaService,
     ConfigService,
   ],
-  exports: [AuthService, SessionService, JwtModule],
+  exports: [AuthService, SessionService, TwoFactorService, JwtModule],
 })
 export class AuthModule {}

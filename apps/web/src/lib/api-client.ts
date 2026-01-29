@@ -35,6 +35,14 @@ import type {
   NextQuestionResponse,
   AnswerResponse,
   InterviewSessionStatus,
+  TwoFactorStatus,
+  Setup2FAResponse,
+  Verify2FASetupDto,
+  Verify2FASetupResponse,
+  Verify2FALoginDto,
+  Disable2FADto,
+  RegenerateBackupCodesDto,
+  TrustedDevice,
 } from '@/types';
 import {
   ApiError,
@@ -479,7 +487,7 @@ export const api = {
       }),
 
     login: (data: { email: string; password: string }) =>
-      apiRequest<{ user: User }>('/auth/login', {
+      apiRequest<{ user?: User; requiresTwoFactor?: boolean; challengeToken?: string; methods?: string[] }>('/auth/login', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
@@ -801,6 +809,53 @@ export const api = {
     abandon: (sessionId: string) =>
       apiRequest<InterviewSession>(`/interviews/${sessionId}/abandon`, {
         method: 'POST',
+      }),
+  },
+
+  // Two-Factor Authentication
+  twoFactor: {
+    getStatus: () => apiRequest<TwoFactorStatus>('/auth/2fa/status'),
+
+    startSetup: () =>
+      apiRequest<Setup2FAResponse>('/auth/2fa/setup', {
+        method: 'POST',
+      }),
+
+    verifySetup: (data: Verify2FASetupDto) =>
+      apiRequest<Verify2FASetupResponse>('/auth/2fa/setup/verify', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    disable: (data: Disable2FADto) =>
+      apiRequest<{ message: string }>('/auth/2fa/disable', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    regenerateBackupCodes: (data: RegenerateBackupCodesDto) =>
+      apiRequest<{ backupCodes: string[] }>('/auth/2fa/backup-codes/regenerate', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    getTrustedDevices: () =>
+      apiRequest<TrustedDevice[]>('/auth/2fa/trusted-devices'),
+
+    revokeTrustedDevice: (deviceId: string) =>
+      apiRequest<{ message: string }>(`/auth/2fa/trusted-devices/${deviceId}`, {
+        method: 'DELETE',
+      }),
+
+    revokeAllTrustedDevices: () =>
+      apiRequest<{ message: string }>('/auth/2fa/trusted-devices', {
+        method: 'DELETE',
+      }),
+
+    verify2FALogin: (data: Verify2FALoginDto) =>
+      apiRequest<{ user: User }>('/auth/login/2fa', {
+        method: 'POST',
+        body: JSON.stringify(data),
       }),
   },
 };

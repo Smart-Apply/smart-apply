@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { api, resetAuthRedirectFlag } from '@/lib/api-client';
 import { useAuthStore } from '@/stores/auth-store';
 import { toast } from 'sonner';
+import { TwoFactorChallengeForm } from '@/components/two-factor';
 import { Button } from '@/components/ui/button';
 import { SubmitButton } from '@/components/ui/submit-button';
 import {
@@ -37,6 +38,8 @@ interface AuthContainerProps {
 export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
   const [isLogin, setIsLogin] = useState(initialMode === 'login');
   const [isAnimating, setIsAnimating] = useState(false);
+  const [show2FAChallenge, setShow2FAChallenge] = useState(false);
+  const [challengeToken, setChallengeToken] = useState<string | null>(null);
   const router = useRouter();
   const pathname = usePathname();
   const { setAuth, isAuthenticated, hasHydrated } = useAuthStore();
@@ -96,10 +99,21 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
   const onLoginSubmit = async (data: LoginFormData) => {
     try {
       const response = await api.auth.login(data);
-      resetAuthRedirectFlag();
-      setAuth(response.user);
-      toast.success('Erfolgreich angemeldet!');
-      router.push('/dashboard');
+
+      // Check if 2FA is required
+      if (response.requiresTwoFactor && response.challengeToken) {
+        setChallengeToken(response.challengeToken);
+        setShow2FAChallenge(true);
+        return;
+      }
+
+      // Standard login success (no 2FA required)
+      if (response.user) {
+        resetAuthRedirectFlag();
+        setAuth(response.user);
+        toast.success('Erfolgreich angemeldet!');
+        router.push('/dashboard');
+      }
     } catch (error: unknown) {
       const { ApiError, getErrorMessage } = await import('@/lib/errors');
       if (ApiError.isApiError(error)) {
@@ -116,6 +130,18 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
         toast.error(getErrorMessage(error));
       }
     }
+  };
+
+  const handle2FASuccess = () => {
+    resetAuthRedirectFlag();
+    toast.success('Erfolgreich angemeldet!');
+    router.push('/dashboard');
+  };
+
+  const handle2FACancel = () => {
+    setShow2FAChallenge(false);
+    setChallengeToken(null);
+    loginForm.reset();
   };
 
   const onRegisterSubmit = async (data: RegisterFormData) => {
@@ -149,6 +175,21 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
       }
     }
   };
+
+  // Show 2FA challenge form if required
+  if (show2FAChallenge && challengeToken) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-muted px-4 py-8">
+        <div className="w-full max-w-md">
+          <TwoFactorChallengeForm
+            challengeToken={challengeToken}
+            onSuccess={handle2FASuccess}
+            onCancel={handle2FACancel}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted px-4 py-8">

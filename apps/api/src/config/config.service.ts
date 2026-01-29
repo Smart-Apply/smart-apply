@@ -276,4 +276,11 @@ export class ConfigService {
   get requestTimeoutMs(): number {
     return parseInt(this.nestConfig.get('REQUEST_TIMEOUT_MS', { infer: true }), 10);
   }
+
+  // Two-Factor Authentication
+  get twoFactorEncryptionKey(): Buffer | undefined {
+    const keyHex = this.nestConfig.get('TWO_FACTOR_ENCRYPTION_KEY', { infer: true });
+    if (!keyHex) return undefined;
+    return Buffer.from(keyHex, 'hex');
+  }
 }

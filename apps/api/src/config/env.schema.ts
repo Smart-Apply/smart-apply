@@ -132,6 +132,13 @@ const envSchema = z.object({
 
   // Global Request Timeout
   REQUEST_TIMEOUT_MS: z.string().default('30000'), // 30s global timeout for all requests
+
+  // Two-Factor Authentication
+  TWO_FACTOR_ENCRYPTION_KEY: z
+    .string()
+    .length(64, 'TWO_FACTOR_ENCRYPTION_KEY must be 64 hex characters (32 bytes) for AES-256')
+    .regex(/^[a-fA-F0-9]+$/, 'TWO_FACTOR_ENCRYPTION_KEY must be a valid hex string')
+    .optional(),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;
