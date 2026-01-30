@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
+import { TransactionClient } from '../prisma/prisma.types';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ProfileResponseDto } from './dto/profile-response.dto';
 import { AuditLoggerService } from '../common/audit-logger';
@@ -63,7 +64,7 @@ export class ProfileService {
   ): Promise<ProfileResponseDto> {
     try {
       // Start transaction to update profile and nested relations
-      const updatedProfile = await this.prisma.$transaction(async (tx) => {
+      const updatedProfile = await this.prisma.$transaction(async (tx: TransactionClient) => {
         // Update user firstName/lastName if provided
         if (dto.firstName !== undefined || dto.lastName !== undefined) {
           await tx.user.update({

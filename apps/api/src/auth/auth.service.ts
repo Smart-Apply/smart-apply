@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { TransactionClient } from '../prisma/prisma.types';
 import {
   RegisterDto,
   LoginDto,
@@ -81,7 +82,7 @@ export class AuthService {
     const hashedPassword = await argon2.hash(dto.password);
 
     // Create user and profile in a transaction
-    const user = await this.prisma.$transaction(async (tx) => {
+    const user = await this.prisma.$transaction(async (tx: TransactionClient) => {
       const newUser = await tx.user.create({
         data: {
           email: dto.email,
