@@ -516,6 +516,28 @@ export const api = {
         method: 'DELETE',
         body: JSON.stringify(data),
       }),
+
+    // Email verification
+    sendVerificationEmail: () =>
+      apiRequest<{ message: string }>('/auth/send-verification-email', {
+        method: 'POST',
+      }),
+
+    verifyEmail: (token: string) =>
+      apiRequest<{ message: string; email: string }>(`/auth/verify-email/${token}`),
+
+    // Password reset
+    forgotPassword: (data: { email: string }) =>
+      apiRequest<{ message: string }>('/auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    resetPassword: (data: { token: string; password: string }) =>
+      apiRequest<{ message: string }>('/auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
   },
 
   // User Preferences

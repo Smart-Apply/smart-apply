@@ -94,3 +94,30 @@ export class DeleteAccountDto {
   @IsNotEmpty({ message: 'Password is required to delete account' })
   password: string;
 }
+
+export class ForgotPasswordDto {
+  @ApiProperty({ example: 'user@example.com' })
+  @IsEmail()
+  email: string;
+}
+
+export class ResetPasswordDto {
+  @ApiProperty({ example: 'abc123token', description: 'Password reset token from email' })
+  @IsString()
+  @IsNotEmpty({ message: 'Token is required' })
+  token: string;
+
+  @ApiProperty({
+    example: 'NewSecurePass123!',
+    minLength: 8,
+    description:
+      'New password must contain at least 8 characters, one uppercase, one lowercase, one number and one special character (@$!%*?&#)',
+  })
+  @IsString()
+  @MinLength(8, { message: 'Password must be at least 8 characters long' })
+  @Matches(PASSWORD_REGEX, {
+    message:
+      'Password must contain at least one uppercase letter, one lowercase letter, one number and one special character (@$!%*?&#)',
+  })
+  password: string;
+}

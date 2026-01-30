@@ -139,6 +139,11 @@ const envSchema = z.object({
     .length(64, 'TWO_FACTOR_ENCRYPTION_KEY must be 64 hex characters (32 bytes) for AES-256')
     .regex(/^[a-fA-F0-9]+$/, 'TWO_FACTOR_ENCRYPTION_KEY must be a valid hex string')
     .optional(),
+
+  // Email (Resend)
+  RESEND_API_KEY: z.string().optional(),
+  EMAIL_FROM: z.string().default('noreply@example.com'),
+  APP_URL: z.string().default('http://localhost:3001'), // Frontend URL for email links
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

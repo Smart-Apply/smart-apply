@@ -283,4 +283,17 @@ export class ConfigService {
     if (!keyHex) return undefined;
     return Buffer.from(keyHex, 'hex');
   }
+
+  // Email (Resend)
+  get resendApiKey(): string | undefined {
+    return this.nestConfig.get('RESEND_API_KEY', { infer: true });
+  }
+
+  get emailFrom(): string {
+    return this.nestConfig.get('EMAIL_FROM', { infer: true });
+  }
+
+  get appUrl(): string {
+    return this.nestConfig.get('APP_URL', { infer: true });
+  }
 }

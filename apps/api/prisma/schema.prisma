@@ -11,6 +11,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -19,6 +20,15 @@ model User {
   password String?
   firstName String? // User's first name
   lastName  String? // User's last name
+
+  // Email Verification
+  emailVerified             Boolean   @default(false)
+  emailVerificationToken    String?   // Hashed token
+  emailVerificationExpires  DateTime?
+
+  // Password Reset
+  passwordResetToken        String?   // Hashed token
+  passwordResetExpires      DateTime?
 
   // OAuth fields (for future Microsoft Entra integration)
   provider   String? // e.g., "microsoft", "google"
@@ -478,6 +488,10 @@ enum AuditEventType {
   PASSWORD_CHANGE
   PASSWORD_RESET_REQUEST
   PASSWORD_RESET_COMPLETE
+
+  // Email Verification
+  EMAIL_VERIFICATION_SENT
+  EMAIL_VERIFIED
 
   // Session
   SESSION_CREATE

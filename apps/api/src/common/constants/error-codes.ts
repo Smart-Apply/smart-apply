@@ -49,6 +49,10 @@ export enum ErrorCode {
   PASSWORD_SAME_AS_CURRENT = 'PASSWORD_SAME_AS_CURRENT',
   PASSWORD_CHANGE_OAUTH = 'PASSWORD_CHANGE_OAUTH',
 
+  // Email verification errors
+  EMAIL_ALREADY_VERIFIED = 'EMAIL_ALREADY_VERIFIED',
+  INVALID_OR_EXPIRED_TOKEN = 'INVALID_OR_EXPIRED_TOKEN',
+
   // Rate limiting
   RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
 
@@ -119,6 +123,10 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
   [ErrorCode.PASSWORD_SAME_AS_CURRENT]:
     'Das neue Passwort muss sich vom aktuellen Passwort unterscheiden.',
   [ErrorCode.PASSWORD_CHANGE_OAUTH]: 'Passwort kann für OAuth-Konten nicht geändert werden.',
+
+  // Email verification errors
+  [ErrorCode.EMAIL_ALREADY_VERIFIED]: 'Deine E-Mail-Adresse wurde bereits verifiziert.',
+  [ErrorCode.INVALID_OR_EXPIRED_TOKEN]: 'Der Link ist ungültig oder abgelaufen. Bitte fordere einen neuen an.',
 
   // Rate limiting
   [ErrorCode.RATE_LIMIT_EXCEEDED]:

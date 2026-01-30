@@ -5,6 +5,7 @@ import * as crypto from 'crypto';
 import * as argon2 from 'argon2';
 import { Request } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
+import { TransactionClient } from '../prisma/prisma.types';
 import { ConfigService } from '../config/config.service';
 import { AuditLoggerService } from '../common/audit-logger';
 
@@ -130,7 +131,7 @@ export class TwoFactorService {
     const encryptedSecret = this.encryptSecret(tempSecret);
 
     // Save to database in a transaction
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: TransactionClient) => {
       // Upsert TwoFactorAuth record
       const twoFactorAuth = await tx.twoFactorAuth.upsert({
         where: { userId },
@@ -200,7 +201,7 @@ export class TwoFactorService {
     }
 
     // Delete 2FA data
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: TransactionClient) => {
       // Delete backup codes first (due to foreign key)
       const twoFactorAuth = await tx.twoFactorAuth.findUnique({
         where: { userId },
@@ -389,7 +390,7 @@ export class TwoFactorService {
     const hashedBackupCodes = await Promise.all(backupCodes.map((code) => argon2.hash(code)));
 
     // Replace backup codes in transaction
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: TransactionClient) => {
       // Delete old backup codes
       await tx.twoFactorBackupCode.deleteMany({
         where: { twoFactorAuthId: twoFactorAuth.id },

@@ -353,6 +353,15 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
                     Anmelden
                   </SubmitButton>
                 </div>
+
+                <div className="text-center pt-2">
+                  <a
+                    href="/forgot-password"
+                    className="text-sm text-muted-foreground hover:text-primary hover:underline"
+                  >
+                    Passwort vergessen?
+                  </a>
+                </div>
               </form>
             </Form>
 

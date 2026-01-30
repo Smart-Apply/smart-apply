@@ -56,6 +56,24 @@ export const changePasswordSchema = z.object({
   path: ['confirmNewPassword'],
 });
 
+export const forgotPasswordSchema = z.object({
+  email: z.string().email('Ungültige E-Mail-Adresse'),
+});
+
+export const resetPasswordSchema = z.object({
+  password: z
+    .string()
+    .min(8, 'Passwort muss mindestens 8 Zeichen lang sein')
+    .regex(
+      PASSWORD_REGEX,
+      'Passwort muss einen Großbuchstaben, einen Kleinbuchstaben, eine Zahl und ein Sonderzeichen (@$!%*?&#) enthalten'
+    ),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: 'Passwörter stimmen nicht überein',
+  path: ['confirmPassword'],
+});
+
 // ============================================================================
 // PROFILE SCHEMAS
 // ============================================================================
@@ -232,6 +250,8 @@ export const updateApplicationTitleSchema = z.object({
 export type LoginFormValues = z.infer<typeof loginSchema>;
 export type RegisterFormValues = z.infer<typeof registerSchema>;
 export type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;
+export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
 
 export type ProfileFormValues = z.infer<typeof profileSchema>;
 export type SkillFormValues = z.infer<typeof skillSchema>;

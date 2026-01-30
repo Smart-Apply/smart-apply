@@ -25,6 +25,7 @@ import { CSPViolationController } from './common/csp/csp-violation.controller';
 import { TimeoutMiddleware, RequestIdMiddleware } from './common/middleware';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { InterviewsModule } from './interviews/interviews.module';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
@@ -70,6 +71,11 @@ import { InterviewsModule } from './interviews/interviews.module';
               ttl: 900000, // 15 minutes
               limit: 10, // 10 translation requests per 15 minutes - LLM calls are expensive
             },
+            {
+              name: 'email',
+              ttl: 3600000, // 1 hour
+              limit: 3, // 3 email requests per hour per user - prevent spam
+            },
           ],
         };
       },
@@ -86,6 +92,7 @@ import { InterviewsModule } from './interviews/interviews.module';
     TemplatesModule,
     UserPreferencesModule,
     InterviewsModule,
+    EmailModule,
     HealthModule,
   ],
   controllers: [CSPViolationController],

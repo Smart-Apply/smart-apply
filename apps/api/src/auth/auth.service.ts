@@ -1,7 +1,9 @@
 import { Injectable, UnauthorizedException, Inject, forwardRef, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
+import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { TransactionClient } from '../prisma/prisma.types';
 import {
   RegisterDto,
   LoginDto,
@@ -9,11 +11,14 @@ import {
   ChangePasswordDto,
   DeleteAccountDto,
   Verify2FALoginDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
 } from './dto';
 import { ConfigService } from '../config/config.service';
 import { AuditLoggerService } from '../common/audit-logger';
 import { SessionService } from './session.service';
 import { TwoFactorService } from './two-factor.service';
+import { EmailService } from '../email/email.service';
 import { MAX_TOKENS_PER_USER } from './session.constants';
 import { Request, Response } from 'express';
 import { ErrorCode } from '../common/constants/error-codes';
@@ -21,6 +26,7 @@ import {
   ConflictWithCode,
   UnauthorizedWithCode,
   BadRequestWithCode,
+  NotFoundWithCode,
 } from '../common/exceptions/coded-http.exception';
 import { SubscriptionService } from '../subscription/subscription.service';
 
@@ -59,6 +65,7 @@ export class AuthService {
     private subscriptionService: SubscriptionService,
     @Inject(forwardRef(() => TwoFactorService))
     private twoFactorService: TwoFactorService,
+    private emailService: EmailService,
   ) {}
 
   async register(dto: RegisterDto, userAgent?: string, ipAddress?: string, req?: Request) {
@@ -75,7 +82,7 @@ export class AuthService {
     const hashedPassword = await argon2.hash(dto.password);
 
     // Create user and profile in a transaction
-    const user = await this.prisma.$transaction(async (tx) => {
+    const user = await this.prisma.$transaction(async (tx: TransactionClient) => {
       const newUser = await tx.user.create({
         data: {
           email: dto.email,
@@ -564,6 +571,198 @@ export class AuthService {
 
     // Note: Storage cleanup would need StorageService injection to delete actual files
     // For now, we rely on database cascade delete. File cleanup can be done via a cleanup job.
+  }
+
+  // ==========================================
+  // Email Verification Methods
+  // ==========================================
+
+  /**
+   * Generate a secure random token
+   */
+  private generateSecureToken(): string {
+    return crypto.randomBytes(32).toString('hex');
+  }
+
+  /**
+   * Hash a token using SHA-256 for secure storage
+   */
+  private hashToken(token: string): string {
+    return crypto.createHash('sha256').update(token).digest('hex');
+  }
+
+  /**
+   * Send verification email to a user
+   */
+  async sendVerificationEmail(userId: string, req?: Request): Promise<void> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, firstName: true, emailVerified: true },
+    });
+
+    if (!user) {
+      throw new NotFoundWithCode(ErrorCode.USER_NOT_FOUND);
+    }
+
+    if (user.emailVerified) {
+      throw new BadRequestWithCode(ErrorCode.EMAIL_ALREADY_VERIFIED);
+    }
+
+    // Generate and store verification token
+    const token = this.generateSecureToken();
+    const hashedToken = this.hashToken(token);
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        emailVerificationToken: hashedToken,
+        emailVerificationExpires: expires,
+      },
+    });
+
+    // Send verification email
+    await this.emailService.sendVerificationEmail(user.email, token, user.firstName || undefined);
+
+    // Log email sent event
+    if (req) {
+      this.auditLogger.logSecurityEvent('EMAIL_VERIFICATION_SENT', user.email, req, user.id);
+    }
+
+    this.logger.log(`Verification email sent to ${user.email}`);
+  }
+
+  /**
+   * Verify email with token
+   */
+  async verifyEmail(token: string, req?: Request): Promise<{ email: string }> {
+    const hashedToken = this.hashToken(token);
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        emailVerificationToken: hashedToken,
+        emailVerificationExpires: { gt: new Date() },
+      },
+      select: { id: true, email: true },
+    });
+
+    if (!user) {
+      throw new BadRequestWithCode(ErrorCode.INVALID_OR_EXPIRED_TOKEN);
+    }
+
+    // Mark email as verified and clear token
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerified: true,
+        emailVerificationToken: null,
+        emailVerificationExpires: null,
+      },
+    });
+
+    // Log email verified event
+    if (req) {
+      this.auditLogger.logSecurityEvent('EMAIL_VERIFIED', user.email, req, user.id);
+    }
+
+    this.logger.log(`Email verified for user ${user.email}`);
+
+    return { email: user.email };
+  }
+
+  // ==========================================
+  // Password Reset Methods
+  // ==========================================
+
+  /**
+   * Request password reset (sends email if user exists)
+   * Always returns success to prevent email enumeration
+   */
+  async requestPasswordReset(dto: ForgotPasswordDto, req?: Request): Promise<void> {
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+      select: { id: true, email: true, firstName: true, password: true },
+    });
+
+    // Always log the attempt for security monitoring
+    if (req) {
+      this.auditLogger.logSecurityEvent(
+        'PASSWORD_RESET_REQUEST',
+        dto.email,
+        req,
+        user?.id,
+        { userExists: !!user },
+      );
+    }
+
+    // If user doesn't exist or is OAuth-only, silently return (prevent enumeration)
+    if (!user || !user.password) {
+      this.logger.log(`Password reset requested for non-existent or OAuth user: ${dto.email}`);
+      return;
+    }
+
+    // Generate and store reset token
+    const token = this.generateSecureToken();
+    const hashedToken = this.hashToken(token);
+    const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordResetToken: hashedToken,
+        passwordResetExpires: expires,
+      },
+    });
+
+    // Send password reset email
+    await this.emailService.sendPasswordResetEmail(user.email, token, user.firstName || undefined);
+
+    this.logger.log(`Password reset email sent to ${user.email}`);
+  }
+
+  /**
+   * Reset password with token
+   */
+  async resetPassword(dto: ResetPasswordDto, req?: Request): Promise<void> {
+    const hashedToken = this.hashToken(dto.token);
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        passwordResetToken: hashedToken,
+        passwordResetExpires: { gt: new Date() },
+      },
+      select: { id: true, email: true },
+    });
+
+    if (!user) {
+      throw new BadRequestWithCode(ErrorCode.INVALID_OR_EXPIRED_TOKEN);
+    }
+
+    // Hash new password
+    const hashedPassword = await argon2.hash(dto.password);
+
+    // Update password and clear reset token
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        passwordResetToken: null,
+        passwordResetExpires: null,
+      },
+    });
+
+    // Revoke all refresh tokens (force re-login on all devices)
+    await this.revokeRefreshToken(user.id);
+
+    // Revoke all sessions
+    await this.sessionService.revokeAllSessions(user.id);
+
+    // Log password reset complete
+    if (req) {
+      this.auditLogger.logSecurityEvent('PASSWORD_RESET_COMPLETE', user.email, req, user.id);
+    }
+
+    this.logger.log(`Password reset completed for user ${user.email}`);
   }
 
   private async generateTokens(

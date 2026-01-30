@@ -19,6 +19,7 @@ import {
   Settings,
   MessagesSquare,
 } from 'lucide-react';
+import { EmailVerificationBanner } from '@/components/auth/email-verification-banner';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
@@ -78,6 +79,11 @@ export default function DashboardLayout({
 
   return (
     <div className="flex min-h-screen bg-muted/30">
+      {/* Email Verification Banner - shows above everything */}
+      <div className="fixed top-0 left-0 right-0 z-50">
+        <EmailVerificationBanner />
+      </div>
+
       {/* Desktop Sidebar - Hidden in edit mode */}
       {!isEditMode && (
         <aside className="hidden w-80 border-r border-border/50 bg-card/50 backdrop-blur-xl md:block text-foreground shadow-soft z-20">

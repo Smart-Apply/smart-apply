@@ -5,6 +5,7 @@ import {
   Get,
   Put,
   Delete,
+  Param,
   UseGuards,
   Res,
   Req,
@@ -23,6 +24,8 @@ import {
   ChangePasswordDto,
   DeleteAccountDto,
   Verify2FALoginDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
 } from './dto';
 import { Public } from '../common/decorators/public.decorator';
 import { UseThrottler } from '../common/decorators/throttle.decorator';
@@ -292,6 +295,59 @@ export class AuthController {
     });
 
     return { message: 'Account deleted successfully' };
+  }
+
+  // ==========================================
+  // Email Verification Endpoints
+  // ==========================================
+
+  @Post('send-verification-email')
+  @UseGuards(AuthGuard('jwt'))
+  @UseThrottler('email')
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Send email verification link to current user' })
+  async sendVerificationEmail(@CurrentUser() user: any, @Req() req: Request) {
+    await this.authService.sendVerificationEmail(user.id, req);
+    return { message: 'Verification email sent successfully' };
+  }
+
+  @Public()
+  @Get('verify-email/:token')
+  @ApiOperation({ summary: 'Verify email with token from email link' })
+  async verifyEmail(@Param('token') token: string, @Req() req: Request) {
+    const result = await this.authService.verifyEmail(token, req);
+    return {
+      message: 'Email verified successfully',
+      email: result.email,
+    };
+  }
+
+  // ==========================================
+  // Password Reset Endpoints
+  // ==========================================
+
+  @Public()
+  @UseThrottler('email')
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Request password reset email' })
+  async forgotPassword(@Body() dto: ForgotPasswordDto, @Req() req: Request) {
+    await this.authService.requestPasswordReset(dto, req);
+    // Always return success to prevent email enumeration
+    return {
+      message: 'If an account exists with this email, you will receive a password reset link',
+    };
+  }
+
+  @Public()
+  @UseThrottler('auth')
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reset password with token from email link' })
+  async resetPassword(@Body() dto: ResetPasswordDto, @Req() req: Request) {
+    await this.authService.resetPassword(dto, req);
+    return { message: 'Password reset successfully. Please log in with your new password.' };
   }
 
   /**
