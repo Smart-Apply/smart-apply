@@ -16,7 +16,8 @@ The application follows Azure-first architecture patterns with multi-provider ab
 ### Backend (apps/api)
 - **Framework:** NestJS v10 (TypeScript)
 - **Database:** PostgreSQL (Prisma ORM)
-- **Authentication:** JWT + argon2
+- **Authentication:** JWT + argon2 + OAuth 2.0 (Google, Microsoft)
+- **OAuth:** passport-google-oauth20, passport-microsoft
 - **Cloud:** Azure (Container Apps, PostgreSQL Flexible Server, Blob Storage, Service Bus, OpenAI)
 - **PDF Generation:** Puppeteer/Chromium
 - **Testing:** Jest + supertest (E2E)
@@ -131,7 +132,7 @@ npm run prisma:seed
 ## Backend Status
 
 **All Core Modules Implemented ✅**
-- Auth (JWT + argon2, HttpOnly cookies, refresh tokens)
+- Auth (JWT + argon2, HttpOnly cookies, refresh tokens, **OAuth 2.0: Google + Microsoft**)
 - Profile (differential updates for nested collections including Languages)
 - Job Postings (parse text/URL/file, Azure AI Agent for URL parsing, soft delete)
 - Applications (ATS Agent → CV/CL Writer Agents → PDF → Storage pipeline, soft delete)
@@ -240,6 +241,13 @@ AZURE_AI_FOUNDRY_ENDPOINT=https://your-project.api.azureml.ms
 ATS_AGENT_ID=asst_Jn2tlDlX3ZhzVIQhhw5Qa57W
 CV_WRITER_AGENT_ID=asst_xxxxx  # Optional
 CL_WRITER_AGENT_ID=asst_xxxxx  # Optional
+
+# OAuth Providers (all optional - fallback to email/password auth)
+GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+AZURE_AD_CLIENT_ID=your-azure-ad-client-id
+AZURE_AD_CLIENT_SECRET=your-azure-ad-client-secret
+AZURE_AD_TENANT_ID=common  # Use 'common' for multi-tenant, or specific tenant ID
 ```
 
 ### Database Fields
@@ -266,6 +274,24 @@ CL_WRITER_AGENT_ID=asst_xxxxx  # Optional
 - `baseTemplateId` (String?) - Groups language/color variants
 - `accentColor` (String?) - Primary accent color hex
 - `colorVariantName` (String?) - Display name for color variant
+
+**OAuthProvider model:**
+- `id` (String) - UUID primary key
+- `provider` (OAuthProviderType) - Enum: GOOGLE, MICROSOFT, LINKEDIN, APPLE, FACEBOOK
+- `providerId` (String) - External OAuth provider user ID
+- `email` (String?) - Email from OAuth provider
+- `displayName` (String?) - Display name from OAuth provider
+- `avatarUrl` (String?) - Profile picture URL from OAuth provider
+- `accessToken` (String?) - Encrypted OAuth access token
+- `refreshToken` (String?) - Encrypted OAuth refresh token
+- `tokenExpiry` (DateTime?) - Token expiration timestamp
+- `userId` (String) - Foreign key to User
+- `createdAt`, `updatedAt` - Timestamps
+- **Constraints:** `@@unique([provider, providerId])`, `@@unique([provider, userId])`
+
+**User model (OAuth additions):**
+- `avatarUrl` (String?) - Profile picture from OAuth providers
+- `oauthProviders` (OAuthProvider[]) - Linked OAuth accounts
 
 ## Security (8.0/10)
 
@@ -319,10 +345,11 @@ CL_WRITER_AGENT_ID=asst_xxxxx  # Optional
 - Use env vars (STORAGE_DRIVER, LLM_PROVIDER)
 - Local fallback providers for dev
 
-## Frontend Status (~75% Complete)
+## Frontend Status (~80% Complete)
 
 **Done ✅**
-- Auth (Login, Register, Logout)
+- Auth (Login, Register, Logout, **OAuth: Google + Microsoft buttons**)
+- OAuth Integration (Social login buttons, provider linking in Settings)
 - Layout (Dashboard with responsive navigation)
 - Dashboard (Stats, Recent Applications)
 - Profile Management (All forms: Skills, Experience, Education, Certificates, Projects, Languages)
@@ -338,6 +365,7 @@ CL_WRITER_AGENT_ID=asst_xxxxx  # Optional
 - Full address fields (Issue #282)
 - Intelligent PDF filenames (Issue #284)
 - Various UX improvements (Issues #278-281)
+- OAuth: LinkedIn, Apple, Facebook (buttons show "coming soon" toast)
 
 **Details:** See GitHub Issues
 
@@ -438,6 +466,63 @@ All endpoints are prefixed with `/api/v1` and documented at `http://localhost:30
 - **Response:** `{ message: "Logged out successfully" }`
 - **Cookie Cleared:** `access_token`
 - **Notes:** Changed from POST to GET to avoid CSRF validation requirement
+
+### OAuth Endpoints (Public - Redirects)
+
+**GET /api/v1/auth/google**
+- **Purpose:** Initiate Google OAuth 2.0 flow
+- **Authentication:** None (Public)
+- **Behavior:** Redirects to Google consent screen
+- **Callback:** `/api/v1/auth/google/callback`
+- **Notes:** Requires `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` env vars
+
+**GET /api/v1/auth/google/callback**
+- **Purpose:** Handle Google OAuth callback after user consent
+- **Authentication:** None (Public, OAuth callback)
+- **Behavior:** Creates/links user account, sets HttpOnly cookies, redirects to frontend
+- **Cookie Set:** `access_token`, `refresh_token` (HttpOnly, Secure in prod)
+- **Redirect:** Frontend dashboard on success, login page with error on failure
+
+**GET /api/v1/auth/microsoft**
+- **Purpose:** Initiate Microsoft/Azure AD OAuth flow
+- **Authentication:** None (Public)
+- **Behavior:** Redirects to Microsoft login page
+- **Callback:** `/api/v1/auth/microsoft/callback`
+- **Notes:** Requires `AZURE_AD_CLIENT_ID`, `AZURE_AD_CLIENT_SECRET`, `AZURE_AD_TENANT_ID` env vars
+
+**GET /api/v1/auth/microsoft/callback**
+- **Purpose:** Handle Microsoft OAuth callback
+- **Authentication:** None (Public, OAuth callback)
+- **Behavior:** Creates/links user account, sets HttpOnly cookies, redirects to frontend
+- **Cookie Set:** `access_token`, `refresh_token` (HttpOnly, Secure in prod)
+- **Redirect:** Frontend dashboard on success, login page with error on failure
+
+### OAuth Management Endpoints (Protected)
+
+**GET /api/v1/auth/oauth/providers**
+- **Purpose:** List OAuth providers linked to current user's account
+- **Authentication:** Required (JWT from HttpOnly cookie)
+- **Response:**
+  ```typescript
+  [
+    {
+      provider: "GOOGLE" | "MICROSOFT" | "LINKEDIN" | "APPLE" | "FACEBOOK",
+      email: string,
+      displayName: string,
+      avatarUrl: string | null,
+      linkedAt: Date
+    }
+  ]
+  ```
+- **Notes:** Used in Settings page to show linked accounts
+
+**DELETE /api/v1/auth/oauth/providers/:provider**
+- **Purpose:** Unlink OAuth provider from user's account
+- **Authentication:** Required (JWT from HttpOnly cookie)
+- **Path Param:** `provider` - One of: google, microsoft, linkedin, apple, facebook
+- **Response:** `{ message: "Provider unlinked successfully" }`
+- **Error:** 400 if provider not linked, 400 if it's the only auth method (no password set)
+- **Notes:** Cannot unlink if user has no password and this is their only OAuth provider
 
 ### Profile Endpoints (Protected)
 
@@ -674,14 +759,21 @@ Common status codes:
 
 ### Frontend
 - **README:** `apps/web/README.md` (setup & features)
-- **API Client:** `apps/web/src/lib/api-client.ts` (typed endpoints)
+- **API Client:** `apps/web/src/lib/api-client.ts` (typed endpoints, OAuth URLs)
 - **Types:** `apps/web/src/types/index.ts` (shared types)
 - **Auth Store:** `apps/web/src/stores/auth-store.ts` (Zustand)
 - **Providers:** `apps/web/src/lib/providers.tsx` (React Query)
 - **Hooks:** `apps/web/src/hooks/` (useProfile, useApplications)
 - **UI Components:** `apps/web/src/components/ui/` (shadcn/ui)
-- **Auth Pages:** `apps/web/src/app/(auth)/` (login, register)
+- **Auth Pages:** `apps/web/src/app/(auth)/` (login, register, OAuth callbacks)
+- **Auth Components:** `apps/web/src/components/auth/auth-container.tsx` (social login buttons)
 - **Dashboard:** `apps/web/src/app/(dashboard)/` (layout, pages)
+
+### OAuth Setup
+- **Setup Guide:** `docs/OAUTH_SETUP.md` (Google Cloud Console + Azure AD configuration)
+- **Google Strategy:** `apps/api/src/auth/strategies/google.strategy.ts`
+- **Microsoft Strategy:** `apps/api/src/auth/strategies/microsoft.strategy.ts`
+- **OAuth DTOs:** `apps/api/src/auth/dto/oauth.dto.ts`
 
 
 
@@ -697,3 +789,7 @@ Common status codes:
 8. **ATS Score History** - Track score changes over time
 9. **Intelligent PDF Filenames** - Professional naming with edge case handling (Issue #284)
 10. **Full Address Fields** - Street, postal code, city, country (Issue #282)
+11. ~~**OAuth Integration** - Google + Microsoft login~~ ✅ **Implemented**
+12. **OAuth: LinkedIn** - LinkedIn OAuth provider
+13. **OAuth: Apple** - Apple Sign-In provider
+14. **OAuth: Account Linking** - Link/unlink OAuth from existing accounts in Settings
