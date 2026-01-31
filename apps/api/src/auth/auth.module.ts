@@ -10,6 +10,8 @@ import { SessionService } from './session.service';
 import { TwoFactorService } from './two-factor.service';
 import { SessionCleanupCron } from './session-cleanup.cron';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { GoogleStrategy } from './strategies/google.strategy';
+import { MicrosoftStrategy } from './strategies/microsoft.strategy';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '../config/config.service';
 import { ConfigModule } from '../config/config.module';
@@ -34,6 +36,8 @@ import { ConfigModule } from '../config/config.module';
     TwoFactorService,
     SessionCleanupCron,
     JwtStrategy,
+    GoogleStrategy,
+    MicrosoftStrategy,
     PrismaService,
     ConfigService,
   ],

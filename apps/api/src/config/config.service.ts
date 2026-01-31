@@ -175,7 +175,7 @@ export class ConfigService {
   }
 
   get azureAdTenantId(): string | undefined {
-    return this.nestConfig.get('AZURE_AD_TENANT_ID', { infer: true });
+    return this.nestConfig.get('AZURE_AD_TENANT_ID', { infer: true }) || 'common';
   }
 
   get googleClientId(): string | undefined {
@@ -184,6 +184,21 @@ export class ConfigService {
 
   get googleClientSecret(): string | undefined {
     return this.nestConfig.get('GOOGLE_CLIENT_SECRET', { infer: true });
+  }
+
+  // OAuth Callback URLs (dynamically generated based on environment)
+  get googleCallbackUrl(): string {
+    const baseUrl = this.isProduction 
+      ? 'https://smartapply.app' // TODO: Replace with actual production URL
+      : `http://localhost:${this.port}`;
+    return `${baseUrl}/api/v1/auth/google/callback`;
+  }
+
+  get microsoftCallbackUrl(): string {
+    const baseUrl = this.isProduction
+      ? 'https://smartapply.app' // TODO: Replace with actual production URL
+      : `http://localhost:${this.port}`;
+    return `${baseUrl}/api/v1/auth/microsoft/callback`;
   }
 
   // Security

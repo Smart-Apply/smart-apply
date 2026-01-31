@@ -538,6 +538,19 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(data),
       }),
+
+    // OAuth
+    getLinkedProviders: () =>
+      apiRequest<{ provider: string; email: string; displayName?: string; avatarUrl?: string; lastUsedAt: string; createdAt: string }[]>('/auth/oauth/providers'),
+
+    unlinkProvider: (provider: string) =>
+      apiRequest<{ message: string }>(`/auth/oauth/providers/${provider}`, {
+        method: 'DELETE',
+      }),
+
+    // OAuth login URLs (for window.location.href or window.open)
+    googleLoginUrl: () => `${getApiBaseUrl()}/auth/google`,
+    microsoftLoginUrl: () => `${getApiBaseUrl()}/auth/microsoft`,
   },
 
   // User Preferences

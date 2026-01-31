@@ -56,6 +56,10 @@ export enum ErrorCode {
   // Rate limiting
   RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
 
+  // OAuth
+  OAUTH_ALREADY_LINKED = 'OAUTH_ALREADY_LINKED',
+  CANNOT_UNLINK_ONLY_AUTH_METHOD = 'CANNOT_UNLINK_ONLY_AUTH_METHOD',
+
   // Generic errors
   INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR',
   VALIDATION_ERROR = 'VALIDATION_ERROR',
@@ -131,6 +135,12 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
   // Rate limiting
   [ErrorCode.RATE_LIMIT_EXCEEDED]:
     'Zu viele Anfragen. Bitte warte einen Moment und versuche es erneut.',
+
+  // OAuth
+  [ErrorCode.OAUTH_ALREADY_LINKED]:
+    'Dieser OAuth-Account ist bereits mit einem anderen Benutzer verknüpft.',
+  [ErrorCode.CANNOT_UNLINK_ONLY_AUTH_METHOD]:
+    'Du kannst die einzige Anmeldemethode nicht entfernen. Bitte lege zuerst ein Passwort fest.',
 
   // Generic errors
   [ErrorCode.INTERNAL_SERVER_ERROR]: 'Ein Fehler ist aufgetreten. Bitte versuche es später erneut.',

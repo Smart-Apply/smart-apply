@@ -20,6 +20,7 @@ model User {
   password String?
   firstName String? // User's first name
   lastName  String? // User's last name
+  avatarUrl String? // Profile picture URL (from OAuth or uploaded)
 
   // Email Verification
   emailVerified             Boolean   @default(false)
@@ -43,6 +44,7 @@ model User {
   auditLogs AuditLog[]
   subscription Subscription?
   interviewSessions InterviewSession[]
+  oauthProviders OAuthProvider[] // OAuth providers linked to this user
 
   // Two-Factor Authentication
   twoFactorAuth  TwoFactorAuth?
@@ -884,4 +886,49 @@ model TrustedDevice {
   @@index([userId])
   @@index([expiresAt])
   @@map("trusted_devices")
+}
+
+// =====================================
+// OAUTH PROVIDERS
+// =====================================
+
+// OAuth provider types (Google, Microsoft, etc.)
+enum OAuthProviderType {
+  GOOGLE
+  MICROSOFT
+  LINKEDIN
+  APPLE
+  FACEBOOK
+}
+
+// OAuth provider linked to user account
+model OAuthProvider {
+  id           String            @id @default(cuid())
+  provider     OAuthProviderType // Provider type
+  providerId   String            // External OAuth ID (sub claim)
+  email        String?           // Email from OAuth provider
+  
+  // Tokens (encrypted)
+  accessToken  String?           @db.Text // OAuth access token (optional)
+  refreshToken String?           @db.Text // OAuth refresh token (optional)
+  tokenExpiry  DateTime?         // When the access token expires
+  
+  // Profile data from OAuth
+  displayName  String?
+  avatarUrl    String?
+  
+  // User relation
+  userId       String
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  lastUsedAt   DateTime          @default(now())
+  
+  @@unique([provider, providerId]) // Each OAuth account is unique
+  @@unique([provider, userId])     // One OAuth provider per user (e.g., only one Google account)
+  @@index([userId])
+  @@index([provider])
+  @@map("oauth_providers")
 }

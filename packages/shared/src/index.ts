@@ -8,8 +8,24 @@ export interface User {
   firstName?: string;
   lastName?: string;
   emailVerified?: boolean;
+  avatarUrl?: string;
   createdAt: string;
   updatedAt?: string;
+}
+
+// ============================================
+// OAuth Types
+// ============================================
+
+export type OAuthProviderType = 'GOOGLE' | 'MICROSOFT' | 'LINKEDIN' | 'APPLE' | 'FACEBOOK';
+
+export interface OAuthProvider {
+  provider: OAuthProviderType;
+  email: string | null;
+  displayName: string | null;
+  avatarUrl: string | null;
+  lastUsedAt: string;
+  createdAt: string;
 }
 
 // ============================================

@@ -350,6 +350,108 @@ export class AuthController {
     return { message: 'Password reset successfully. Please log in with your new password.' };
   }
 
+  // ==========================================
+  // OAuth Endpoints
+  // ==========================================
+
+  /**
+   * Google OAuth - Initiate login
+   * Redirects to Google OAuth consent screen
+   */
+  @Public()
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  @ApiOperation({ summary: 'Initiate Google OAuth login' })
+  async googleLogin() {
+    // Passport handles the redirect to Google
+    // This method is just a route handler
+  }
+
+  /**
+   * Google OAuth - Callback handler
+   * Handles the redirect from Google after authentication
+   */
+  @Public()
+  @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
+  @ApiOperation({ summary: 'Google OAuth callback' })
+  async googleCallback(@CurrentUser() user: any, @Res({ passthrough: true }) res: Response, @Req() req: Request) {
+    // User is already validated by GoogleStrategy
+    const userAgent = req.headers['user-agent'];
+    const ipAddress = req.ip || req.socket.remoteAddress;
+
+    // Generate JWT tokens
+    const tokens = await this.authService.generateTokens(user.id, user.email, userAgent, ipAddress, req);
+
+    // Set HttpOnly cookies for both tokens
+    this.setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
+
+    // Redirect to frontend dashboard
+    const frontendUrl = this.configService.corsOrigins[0] || 'http://localhost:3001';
+    res.redirect(`${frontendUrl}/dashboard?oauth=success`);
+  }
+
+  /**
+   * Microsoft OAuth - Initiate login
+   * Redirects to Microsoft OAuth consent screen
+   */
+  @Public()
+  @Get('microsoft')
+  @UseGuards(AuthGuard('microsoft'))
+  @ApiOperation({ summary: 'Initiate Microsoft OAuth login' })
+  async microsoftLogin() {
+    // Passport handles the redirect to Microsoft
+    // This method is just a route handler
+  }
+
+  /**
+   * Microsoft OAuth - Callback handler
+   * Handles the redirect from Microsoft after authentication
+   */
+  @Public()
+  @Get('microsoft/callback')
+  @UseGuards(AuthGuard('microsoft'))
+  @ApiOperation({ summary: 'Microsoft OAuth callback' })
+  async microsoftCallback(@CurrentUser() user: any, @Res({ passthrough: true }) res: Response, @Req() req: Request) {
+    // User is already validated by MicrosoftStrategy
+    const userAgent = req.headers['user-agent'];
+    const ipAddress = req.ip || req.socket.remoteAddress;
+
+    // Generate JWT tokens
+    const tokens = await this.authService.generateTokens(user.id, user.email, userAgent, ipAddress, req);
+
+    // Set HttpOnly cookies for both tokens
+    this.setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
+
+    // Redirect to frontend dashboard
+    const frontendUrl = this.configService.corsOrigins[0] || 'http://localhost:3001';
+    res.redirect(`${frontendUrl}/dashboard?oauth=success`);
+  }
+
+  /**
+   * Get linked OAuth providers for current user
+   */
+  @Get('oauth/providers')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all linked OAuth providers for current user' })
+  async getLinkedProviders(@CurrentUser() user: any) {
+    return this.authService.getLinkedOAuthProviders(user.id);
+  }
+
+  /**
+   * Unlink OAuth provider from account
+   */
+  @Delete('oauth/providers/:provider')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Unlink OAuth provider from account' })
+  async unlinkProvider(@CurrentUser() user: any, @Param('provider') provider: string) {
+    await this.authService.unlinkOAuthProvider(user.id, provider.toUpperCase());
+    return { message: `OAuth provider ${provider} unlinked successfully` };
+  }
+
   /**
    * Helper method to set authentication cookies with secure attributes
    */

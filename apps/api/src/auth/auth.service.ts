@@ -765,7 +765,7 @@ export class AuthService {
     this.logger.log(`Password reset completed for user ${user.email}`);
   }
 
-  private async generateTokens(
+  async generateTokens(
     userId: string,
     email: string,
     userAgent?: string,
@@ -866,5 +866,280 @@ export class AuthService {
       default:
         throw new Error(`Unknown time unit: ${unit}`);
     }
+  }
+
+  // ==========================================
+  // OAuth Methods
+  // ==========================================
+
+  /**
+   * Validate OAuth user from Google/Microsoft/LinkedIn
+   * Creates new user if first login, links to existing account if email matches
+   */
+  async validateOAuthUser(oauthData: {
+    provider: string;
+    providerId: string;
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    avatarUrl?: string;
+    accessToken?: string;
+    refreshToken?: string;
+  }): Promise<any> {
+    const { provider, providerId, email, firstName, lastName, avatarUrl, accessToken, refreshToken } =
+      oauthData;
+
+    // Check if OAuth provider already linked
+    const existingOAuth = await this.prisma.oAuthProvider.findUnique({
+      where: {
+        provider_providerId: {
+          provider: provider as any,
+          providerId,
+        },
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            emailVerified: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+
+    // If OAuth provider exists, update last used and return user
+    if (existingOAuth) {
+      await this.prisma.oAuthProvider.update({
+        where: { id: existingOAuth.id },
+        data: {
+          lastUsedAt: new Date(),
+          accessToken,
+          refreshToken,
+          tokenExpiry: refreshToken ? new Date(Date.now() + 3600 * 1000) : null, // 1 hour expiry
+        },
+      });
+
+      return existingOAuth.user;
+    }
+
+    // Check if user with this email already exists
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        emailVerified: true,
+        createdAt: true,
+        password: true,
+        avatarUrl: true,
+      },
+    });
+
+    // If user exists, link OAuth provider to existing account
+    if (existingUser) {
+      const linkedUser = await this.prisma.$transaction(async (tx: TransactionClient) => {
+        // Create OAuth provider link
+        await tx.oAuthProvider.create({
+          data: {
+            provider: provider as any,
+            providerId,
+            email,
+            displayName: firstName && lastName ? `${firstName} ${lastName}` : undefined,
+            avatarUrl,
+            accessToken,
+            refreshToken,
+            tokenExpiry: refreshToken ? new Date(Date.now() + 3600 * 1000) : null,
+            userId: existingUser.id,
+          },
+        });
+
+        // Update user with OAuth provider info if not set
+        const updatedUser = await tx.user.update({
+          where: { id: existingUser.id },
+          data: {
+            emailVerified: true, // OAuth emails are pre-verified
+            avatarUrl: avatarUrl || existingUser.avatarUrl,
+          },
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            emailVerified: true,
+            createdAt: true,
+          },
+        });
+
+        return updatedUser;
+      });
+
+      this.logger.log(`Linked OAuth provider ${provider} to existing user ${email}`);
+      return linkedUser;
+    }
+
+    // Create new user with OAuth provider
+    const newUser = await this.prisma.$transaction(async (tx: TransactionClient) => {
+      // Create user (password is null for OAuth users)
+      const user = await tx.user.create({
+        data: {
+          email,
+          firstName: firstName || null,
+          lastName: lastName || null,
+          provider,
+          providerId,
+          emailVerified: true, // OAuth emails are pre-verified
+          avatarUrl,
+        },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          emailVerified: true,
+          createdAt: true,
+        },
+      });
+
+      // Create OAuth provider link
+      await tx.oAuthProvider.create({
+        data: {
+          provider: provider as any,
+          providerId,
+          email,
+          displayName: firstName && lastName ? `${firstName} ${lastName}` : undefined,
+          avatarUrl,
+          accessToken,
+          refreshToken,
+          tokenExpiry: refreshToken ? new Date(Date.now() + 3600 * 1000) : null,
+          userId: user.id,
+        },
+      });
+
+      // Create empty profile
+      await tx.profile.create({
+        data: {
+          userId: user.id,
+        },
+      });
+
+      // Create user preferences with defaults
+      await tx.userPreferences.create({
+        data: {
+          userId: user.id,
+        },
+      });
+
+      // Create FREE subscription for new user
+      // Note: Subscription is auto-created by getOrCreateSubscription on first access
+      // No need to manually create here
+
+      return user;
+    });
+
+    this.logger.log(`Created new user via OAuth provider ${provider}: ${email}`);
+    return newUser;
+  }
+
+  /**
+   * Link OAuth provider to existing user
+   */
+  async linkOAuthProvider(
+    userId: string,
+    provider: string,
+    providerId: string,
+    accessToken?: string,
+    refreshToken?: string,
+  ): Promise<void> {
+    // Check if OAuth provider already linked to another user
+    const existingOAuth = await this.prisma.oAuthProvider.findUnique({
+      where: {
+        provider_providerId: {
+          provider: provider as any,
+          providerId,
+        },
+      },
+    });
+
+    if (existingOAuth && existingOAuth.userId !== userId) {
+      throw new ConflictWithCode(ErrorCode.OAUTH_ALREADY_LINKED);
+    }
+
+    if (existingOAuth) {
+      // Update existing OAuth provider
+      await this.prisma.oAuthProvider.update({
+        where: { id: existingOAuth.id },
+        data: {
+          lastUsedAt: new Date(),
+          accessToken,
+          refreshToken,
+          tokenExpiry: refreshToken ? new Date(Date.now() + 3600 * 1000) : null,
+        },
+      });
+    } else {
+      // Create new OAuth provider link
+      await this.prisma.oAuthProvider.create({
+        data: {
+          provider: provider as any,
+          providerId,
+          userId,
+          accessToken,
+          refreshToken,
+          tokenExpiry: refreshToken ? new Date(Date.now() + 3600 * 1000) : null,
+        },
+      });
+    }
+
+    this.logger.log(`Linked OAuth provider ${provider} to user ${userId}`);
+  }
+
+  /**
+   * Unlink OAuth provider from user
+   */
+  async unlinkOAuthProvider(userId: string, provider: string): Promise<void> {
+    // Check if user has password set (can't unlink if OAuth is only auth method)
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { password: true },
+    });
+
+    if (!user?.password) {
+      throw new BadRequestWithCode(ErrorCode.CANNOT_UNLINK_ONLY_AUTH_METHOD);
+    }
+
+    // Delete OAuth provider
+    await this.prisma.oAuthProvider.delete({
+      where: {
+        provider_userId: {
+          provider: provider as any,
+          userId,
+        },
+      },
+    });
+
+    this.logger.log(`Unlinked OAuth provider ${provider} from user ${userId}`);
+  }
+
+  /**
+   * Get all linked OAuth providers for user
+   */
+  async getLinkedOAuthProviders(userId: string) {
+    return this.prisma.oAuthProvider.findMany({
+      where: { userId },
+      select: {
+        provider: true,
+        email: true,
+        displayName: true,
+        avatarUrl: true,
+        lastUsedAt: true,
+        createdAt: true,
+      },
+      orderBy: { lastUsedAt: 'desc' },
+    });
   }
 }

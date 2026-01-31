@@ -4,6 +4,7 @@ import { Sanitize } from '../../common/decorators/sanitize.decorator';
 
 // Re-export 2FA DTOs
 export * from './two-factor.dto';
+export * from './oauth.dto';
 
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[\w@$!%*?&#]{8,}$/;
 
