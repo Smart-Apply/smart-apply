@@ -52,7 +52,7 @@ import {
   isPermanentAuthFailure,
 } from './errors';
 import { getCsrfToken, refreshCsrfToken } from './csrf';
-import { getApiBaseUrl } from './config';
+import { getApiBaseUrl, getApiBaseUrlSync } from './config';
 
 interface RequestOptions extends RequestInit {
   retry?: boolean;
@@ -549,8 +549,9 @@ export const api = {
       }),
 
     // OAuth login URLs (for window.location.href or window.open)
-    googleLoginUrl: () => `${getApiBaseUrl()}/auth/google`,
-    microsoftLoginUrl: () => `${getApiBaseUrl()}/auth/microsoft`,
+    // Uses sync version to avoid Promise in URL string
+    googleLoginUrl: () => `${getApiBaseUrlSync()}/auth/google`,
+    microsoftLoginUrl: () => `${getApiBaseUrlSync()}/auth/microsoft`,
   },
 
   // User Preferences

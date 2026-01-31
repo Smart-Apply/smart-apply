@@ -92,3 +92,19 @@ export async function getApiBaseUrl(): Promise<string> {
   
   return configPromise;
 }
+
+/**
+ * Get API base URL synchronously (for OAuth redirects and other sync contexts)
+ * Returns cached value or default URL - never waits for async fetch
+ */
+export function getApiBaseUrlSync(): string {
+  if (API_BASE_URL) return API_BASE_URL;
+  
+  const cached = loadCachedUrl();
+  if (cached) {
+    API_BASE_URL = cached;
+    return cached;
+  }
+  
+  return defaultUrl;
+}
