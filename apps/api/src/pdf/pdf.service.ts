@@ -259,15 +259,21 @@ export class PdfService implements OnModuleInit, OnModuleDestroy {
     try {
       const page = await browser.newPage();
 
-      // Increase navigation timeout
-      page.setDefaultNavigationTimeout(120000); // 2 minutes
-      page.setDefaultTimeout(120000); // 2 minutes
+      // Set reasonable timeouts (external resources should not block rendering)
+      page.setDefaultNavigationTimeout(30000); // 30 seconds
+      page.setDefaultTimeout(30000); // 30 seconds
 
       try {
-        // Set HTML content
+        // Set HTML content - use domcontentloaded to avoid blocking on external resources
         await page.setContent(html, {
-          waitUntil: 'networkidle0',
+          waitUntil: 'domcontentloaded',
         });
+
+        // Give fonts up to 5s to load, but don't block indefinitely
+        await Promise.race([
+          page.evaluate(() => document.fonts.ready),
+          new Promise((resolve) => setTimeout(resolve, 5000)),
+        ]);
 
         // Add CSS based on template (legacy behavior)
         if (options.template) {
@@ -401,11 +407,21 @@ export class PdfService implements OnModuleInit, OnModuleDestroy {
     try {
       const page = await browser.newPage();
 
+      // Set reasonable timeouts (external resources should not block rendering)
+      page.setDefaultNavigationTimeout(30000); // 30 seconds
+      page.setDefaultTimeout(30000); // 30 seconds
+
       try {
-        // Set HTML content (already includes styles)
+        // Set HTML content - use domcontentloaded to avoid blocking on external resources
         await page.setContent(html, {
-          waitUntil: 'networkidle0',
+          waitUntil: 'domcontentloaded',
         });
+
+        // Give fonts up to 5s to load, but don't block indefinitely
+        await Promise.race([
+          page.evaluate(() => document.fonts.ready),
+          new Promise((resolve) => setTimeout(resolve, 5000)),
+        ]);
 
         // Generate PDF with ATS-friendly options
         const pdfOptions: any = {
@@ -679,8 +695,8 @@ export class PdfService implements OnModuleInit, OnModuleDestroy {
 
     try {
       const page = await browser.newPage();
-      page.setDefaultNavigationTimeout(60000); // 1 minute
-      page.setDefaultTimeout(60000); // 1 minute
+      page.setDefaultNavigationTimeout(30000); // 30 seconds
+      page.setDefaultTimeout(30000); // 30 seconds
 
       try {
         // Set viewport to A4 dimensions at 72 DPI by default
@@ -690,9 +706,14 @@ export class PdfService implements OnModuleInit, OnModuleDestroy {
         });
 
         await page.setContent(html, {
-          waitUntil: 'networkidle0',
-          timeout: 60000,
+          waitUntil: 'domcontentloaded',
         });
+
+        // Give fonts up to 5s to load, but don't block indefinitely
+        await Promise.race([
+          page.evaluate(() => document.fonts.ready),
+          new Promise((resolve) => setTimeout(resolve, 5000)),
+        ]);
 
         const screenshot = await page.screenshot({
           type: 'png',

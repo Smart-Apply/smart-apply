@@ -222,7 +222,7 @@ export default function DashboardPage() {
                 <EmptyState
                   icon={FileText}
                   title="Keine Bewerbungen"
-                  description="Du hast noch keine Bewerbungen angelegt. Starte jetzt deine Karriere!"
+                  description="Du hast noch keine Bewerbungen angelegt. Erstelle deine erste Bewerbung in nur 2 Schritten!"
                   action={{
                     label: 'Erste Bewerbung erstellen',
                     onClick: () => router.push('/applications/new'),

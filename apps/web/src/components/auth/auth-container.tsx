@@ -157,7 +157,7 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
       resetAuthRedirectFlag();
       setAuth(response.user);
       toast.success('Account erfolgreich erstellt!');
-      router.push('/dashboard');
+      router.push('/onboarding');
     } catch (error: unknown) {
       const { ApiError, getErrorMessage } = await import('@/lib/errors');
       if (ApiError.isApiError(error)) {

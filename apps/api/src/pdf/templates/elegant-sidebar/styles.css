@@ -1,7 +1,6 @@
 /* Elegant Sidebar Template */
 /* Warm, professional two-column design with full color theming */
-
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700;800&display=swap');
+/* Fonts: Poppins and Montserrat (install locally or use system fallbacks) */
 
 :root {
   /* Primary Accent Color - This is the main color that defines the theme */

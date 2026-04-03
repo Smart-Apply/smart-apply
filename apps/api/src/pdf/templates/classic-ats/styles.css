@@ -1,8 +1,7 @@
 /* Jake Ryan Classic Template */
 /* Clean, ATS-optimized single-column design inspired by Jake's Resume LaTeX template */
 /* Features: Centered header, horizontal rule dividers, monochrome palette */
-
-@import url('https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&family=Source+Sans+3:wght@400;600;700&display=swap');
+/* Fonts: Lato and Source Sans 3 (install locally or use system fallbacks) */
 
 :root {
   /* Primary Accent Color - Overridden per color variant */
