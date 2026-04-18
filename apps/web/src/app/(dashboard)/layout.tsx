@@ -11,7 +11,6 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { CurrentTierBadge } from '@/components/subscription';
 import {
   FileText,
-  Briefcase,
   User,
   LogOut,
   Menu,
@@ -25,7 +24,6 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Profil', href: '/profile', icon: User },
   { name: 'Bewerbungen', href: '/applications', icon: FileText },
-  { name: 'Stellenanzeigen', href: '/jobs', icon: Briefcase },
   { name: 'Interview-Coach', href: '/interviews', icon: MessagesSquare },
   { name: 'Einstellungen', href: '/settings', icon: Settings },
 ];
