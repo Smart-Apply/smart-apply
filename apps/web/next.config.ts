@@ -95,4 +95,30 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withBundleAnalyzer(nextConfig);
+// Wrap with Sentry's Next.js plugin. It auto-uploads source maps on production
+// builds (when SENTRY_AUTH_TOKEN is set) and registers the Sentry runtime
+// configs from sentry.{client,server,edge}.config.ts.
+//
+// All Sentry-related code becomes a no-op when DSNs are unset, so dev builds
+// without Sentry credentials still work normally.
+import { withSentryConfig } from '@sentry/nextjs';
+
+export default withSentryConfig(withBundleAnalyzer(nextConfig), {
+  // Sentry org + project (override via env in CI)
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  // Source-map upload only happens when SENTRY_AUTH_TOKEN is present
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: !process.env.CI, // suppress build-time noise locally
+  // Don't bundle source maps into the public client output (still uploaded
+  // to Sentry server-side for stack-trace symbolication when AUTH_TOKEN set).
+  sourcemaps: {
+    deleteSourcemapsAfterUpload: true,
+  },
+  // Use a tunnel route to bypass ad-blockers that block requests to *.sentry.io
+  tunnelRoute: '/monitoring',
+  // Disable Sentry's instrumentation hook injection — we register it ourselves
+  // in instrumentation.ts above
+  disableLogger: true,
+});
+

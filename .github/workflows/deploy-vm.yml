@@ -85,6 +85,8 @@ jobs:
             ${{ env.WEB_IMAGE }}:${{ steps.meta.outputs.sha_tag }}
           build-args: |
             NEXT_PUBLIC_API_URL=${{ env.PUBLIC_API_URL }}
+            NEXT_PUBLIC_SENTRY_DSN=${{ vars.SENTRY_DSN_WEB }}
+            NEXT_PUBLIC_SENTRY_RELEASE=${{ steps.meta.outputs.sha_tag }}
           cache-from: type=registry,ref=${{ env.WEB_IMAGE }}:buildcache
           cache-to: type=registry,ref=${{ env.WEB_IMAGE }}:buildcache,mode=max
 

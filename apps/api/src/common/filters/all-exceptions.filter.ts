@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { Sentry } from '../../sentry';
 import { ErrorCode, getErrorMessage } from '../constants/error-codes';
 
 @Catch()
@@ -125,6 +126,30 @@ export class AllExceptionsFilter implements ExceptionFilter {
     } else if (status >= 500) {
       // Log full error details for 500 errors
       this.logger.error(`${logMessage}\n${logDetails}`);
+      // Forward to Sentry (no-op if SENTRY_DSN not configured).
+      // We only capture 5xx — 4xx are user-caused and would drown signal in noise.
+      try {
+        Sentry.withScope((scope) => {
+          scope.setTag('http.method', request.method);
+          scope.setTag('http.status', String(status));
+          if (errorCode) scope.setTag('error.code', errorCode);
+          scope.setContext('request', {
+            method: request.method,
+            url: request.url,
+          });
+          if (exception instanceof Error) {
+            Sentry.captureException(exception);
+          } else {
+            Sentry.captureMessage(
+              typeof exception === 'string' ? exception : JSON.stringify(exception),
+              'error',
+            );
+          }
+        });
+      } catch (sentryError) {
+        // Never let Sentry break the response. Log + swallow.
+        this.logger.warn(`Failed to forward error to Sentry: ${(sentryError as Error).message}`);
+      }
     } else {
       this.logger.warn(logMessage, logDetails);
     }

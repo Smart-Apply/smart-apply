@@ -64,10 +64,17 @@ COPY apps/web/components.json ./apps/web/
 # Accept build argument for API URL
 ARG NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
 
+# Sentry build-time vars (NEXT_PUBLIC_* get baked into the client bundle).
+# Empty default → Sentry stays a no-op when not configured.
+ARG NEXT_PUBLIC_SENTRY_DSN=
+ARG NEXT_PUBLIC_SENTRY_RELEASE=
+
 # Set environment variables for optimal build
 ENV NEXT_TELEMETRY_DISABLED=1 \
     NODE_ENV=production \
-    NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+    NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL} \
+    NEXT_PUBLIC_SENTRY_DSN=${NEXT_PUBLIC_SENTRY_DSN} \
+    NEXT_PUBLIC_SENTRY_RELEASE=${NEXT_PUBLIC_SENTRY_RELEASE}
 
 # Build shared package first (required by web)
 WORKDIR /app

@@ -8,6 +8,7 @@ import * as compression from 'compression';
 import * as cookieParser from 'cookie-parser';
 import { doubleCsrf } from 'csrf-csrf';
 import { join } from 'path';
+import { initSentry } from './sentry';
 import { AppModule } from './app.module';
 import { ConfigService } from './config/config.service';
 import { TransformInterceptor } from './common/interceptors';
@@ -23,6 +24,10 @@ if (process.env.NODE_ENV !== 'production') {
   }
 }
 
+// Initialize Sentry as early as possible so module-instantiation errors are captured.
+// No-op when SENTRY_DSN is not set.
+const sentryEnabled = initSentry();
+
 async function bootstrap() {
   // Create NestJS application with buffered logs
   // This ensures logs are captured even during early bootstrap phase
@@ -37,6 +42,11 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
 
   logger.log(`🚀 Starting Smart Apply API in ${configService.nodeEnv} mode`, 'Bootstrap');
+  if (sentryEnabled) {
+    logger.log('📊 Sentry error tracking enabled', 'Bootstrap');
+  } else {
+    logger.warn('⚠️  Sentry disabled (set SENTRY_DSN to enable error tracking)', 'Bootstrap');
+  }
 
   // Enhanced Helmet configuration with strict Content Security Policy (CSP)
   // CSP provides defense-in-depth protection against XSS attacks by controlling

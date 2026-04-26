@@ -151,6 +151,10 @@ const envSchema = z.object({
   // Public base URL of the API (used for OAuth callback URLs in production)
   // In dev, defaults to http://localhost:${PORT}; in prod, set to https://api.<your-domain>
   API_BASE_URL: z.string().optional(),
+
+  // Sentry error tracking (optional — if unset, Sentry stays disabled)
+  SENTRY_DSN: z.string().optional(),
+  SENTRY_RELEASE: z.string().optional(), // commit SHA from CI for source-map matching
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;
