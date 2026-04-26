@@ -60,16 +60,36 @@ export class EmailService {
   async sendEmail(options: SendEmailOptions): Promise<boolean> {
     const { to, subject, template, context } = options;
 
+    // Guard: missing template at runtime (e.g. .hbs file not copied to the
+    // production image). Don't throw — log loudly so monitoring catches it.
+    if (!this.templates.has(template)) {
+      this.logger.error(
+        `Cannot send email to ${to}: template '${template}' was not loaded at startup. ` +
+          `Check that .hbs files are present in the production image.`,
+      );
+      return false;
+    }
+
+    let html: string;
     try {
-      const html = this.compileTemplate(template, context);
+      html = this.compileTemplate(template, context);
+    } catch (error) {
+      this.logger.error(`Template compilation failed for '${template}'`, error as Error);
+      return false;
+    }
 
-      if (!this.resend) {
-        // In development without API key, log the email
-        this.logger.log(`[DEV EMAIL] To: ${to}, Subject: ${subject}`);
-        this.logger.debug(`[DEV EMAIL] Context: ${JSON.stringify(context)}`);
-        return true;
-      }
+    if (!this.resend) {
+      // No Resend client configured (RESEND_API_KEY missing) — log only.
+      // This keeps dev / preview environments quiet while making it visible
+      // in production logs that a user-triggered email was dropped.
+      this.logger.warn(
+        `[email-not-sent] No RESEND_API_KEY configured. Would have sent to ${to}: "${subject}"`,
+      );
+      this.logger.debug(`[email-not-sent] context=${JSON.stringify(context)}`);
+      return true; // Don't fail the user-facing flow — they were never promised an email
+    }
 
+    try {
       const result = await this.resend.emails.send({
         from: this.configService.emailFrom,
         to,
@@ -78,14 +98,21 @@ export class EmailService {
       });
 
       if (result.error) {
-        this.logger.error(`Failed to send email to ${to}:`, result.error);
+        // Common Resend errors:
+        //   "The from address is not verified" → verify domain in Resend dashboard
+        //   "Domain not found" → EMAIL_FROM uses an unconfigured sender domain
+        //   "Invalid `to` email address" → user-entered email is malformed
+        this.logger.error(
+          `Resend rejected email to ${to}: ${result.error.message ?? JSON.stringify(result.error)}`,
+        );
         return false;
       }
 
-      this.logger.log(`Email sent successfully to ${to} (ID: ${result.data?.id})`);
+      this.logger.log(`Email sent successfully to ${to} (id=${result.data?.id ?? 'unknown'})`);
       return true;
     } catch (error) {
-      this.logger.error(`Error sending email to ${to}:`, error);
+      // Network / transport errors (Resend API unreachable, timeout, etc.)
+      this.logger.error(`Network error sending email to ${to}`, error as Error);
       return false;
     }
   }
