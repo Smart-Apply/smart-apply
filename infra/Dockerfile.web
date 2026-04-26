@@ -69,7 +69,11 @@ ARG NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
 ARG NEXT_PUBLIC_SENTRY_DSN=
 ARG NEXT_PUBLIC_SENTRY_RELEASE=
 
-# Set environment variables for optimal build
+# Set environment variables for optimal build.
+# NEXT_PUBLIC_* must be on ENV at the moment `next build` runs so Next.js
+# inlines them into the client bundle. We use ${ARG} expansion here — the
+# build's layer cache key already includes ARG values via the `ARG` lines
+# above, so different ARG values invalidate the layer correctly.
 ENV NEXT_TELEMETRY_DISABLED=1 \
     NODE_ENV=production \
     NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL} \
@@ -79,6 +83,12 @@ ENV NEXT_TELEMETRY_DISABLED=1 \
 # Build shared package first (required by web)
 WORKDIR /app
 RUN npm run shared:build
+
+# Sanity check: print which NEXT_PUBLIC_* vars are visible to the build.
+# Values are not printed (only lengths) to avoid logging the DSN.
+RUN echo "[build-args] NEXT_PUBLIC_API_URL length: ${#NEXT_PUBLIC_API_URL}" && \
+    echo "[build-args] NEXT_PUBLIC_SENTRY_DSN length: ${#NEXT_PUBLIC_SENTRY_DSN}" && \
+    echo "[build-args] NEXT_PUBLIC_SENTRY_RELEASE: ${NEXT_PUBLIC_SENTRY_RELEASE:-<empty>}"
 
 # Build the Next.js app
 WORKDIR /app/apps/web
