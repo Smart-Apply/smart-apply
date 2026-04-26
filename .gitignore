@@ -81,4 +81,14 @@ uploads/
 *.tar.gz
 *.zip
 *.pem
+# Defence-in-depth: catch common typos / misnamed cert+key files
+*.pem.txt
+*.key
+*.key.txt
+*.crt
+*.cer
+*.pfx
+*.p12
+smart-apply-cert*
+smart-apply-key*
 cookies.txt
