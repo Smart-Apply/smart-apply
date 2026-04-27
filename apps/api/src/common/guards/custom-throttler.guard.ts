@@ -131,15 +131,38 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
   }
 
   /**
-   * Get tracker identifier (IP for public routes, user ID for authenticated routes)
+   * Get tracker identifier (user ID for authenticated routes, real client IP otherwise).
+   *
+   * IMPORTANT: behind nginx + Cloudflare, `req.ip` only equals the real
+   * client IP if `app.set('trust proxy', ...)` is enabled in main.ts.
+   * Without that, every connection looks like it comes from 127.0.0.1
+   * (nginx loopback) and ALL anonymous users would share one bucket.
+   *
+   * As a defense in depth, this method also reads the forwarded headers
+   * directly so a misconfiguration of `trust proxy` doesn't immediately
+   * collapse all visitors into one rate-limit bucket.
    */
   protected async getTracker(req: Record<string, any>): Promise<string> {
-    // For authenticated requests, use user ID
+    // For authenticated requests, bucket per user (independent of IP).
     if (req.user?.userId) {
       return `user:${req.user.userId}`;
     }
 
-    // For public requests, use IP address
+    // Prefer Cloudflare's real-client header (nginx already trusts CF and
+    // sets req.ip from it via real_ip_header CF-Connecting-IP, but be safe).
+    const cfIp = req.headers?.['cf-connecting-ip'];
+    if (typeof cfIp === 'string' && cfIp.length > 0) {
+      return cfIp;
+    }
+
+    // Fall back to the leftmost entry of X-Forwarded-For (the original client).
+    const xff = req.headers?.['x-forwarded-for'];
+    if (typeof xff === 'string' && xff.length > 0) {
+      const first = xff.split(',')[0]?.trim();
+      if (first) return first;
+    }
+
+    // Last resort: req.ip (correct only if trust proxy is configured).
     return req.ip || req.connection?.remoteAddress || 'unknown';
   }
 

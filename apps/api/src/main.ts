@@ -41,6 +41,21 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
 
+  // Trust the loopback proxy so that req.ip reflects the REAL client IP
+  // taken from X-Forwarded-For, instead of the nginx loopback address.
+  //
+  // Topology in production: Cloudflare → nginx (127.0.0.1 → backend) → Express.
+  // nginx sets X-Forwarded-For with the real client IP (it derives it from
+  // CF-Connecting-IP via `real_ip_header` in our nginx config). Without this
+  // setting, Express returns `127.0.0.1` for every request, which makes the
+  // rate-limiter bucket ALL anonymous traffic into a single tracker —
+  // causing /auth/csrf-token to 429 for every visitor as soon as the bucket
+  // is exhausted by the first few page loads.
+  //
+  // 'loopback' = trust only proxies on 127.0.0.1 / ::1 (i.e. our local nginx).
+  // Safer than `true` (trust everyone) and `1` (count of hops).
+  app.set('trust proxy', 'loopback');
+
   logger.log(`🚀 Starting Smart Apply API in ${configService.nodeEnv} mode`, 'Bootstrap');
   if (sentryEnabled) {
     logger.log('📊 Sentry error tracking enabled', 'Bootstrap');
