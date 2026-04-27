@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { api } from '@/lib/api-client';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAuthStore } from '@/stores/auth-store';
 
 type VerificationStatus = 'loading' | 'success' | 'error';
 
@@ -16,6 +17,7 @@ export default function VerifyEmailPage() {
   const [status, setStatus] = useState<VerificationStatus>('loading');
   const [email, setEmail] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const updateUser = useAuthStore((state) => state.updateUser);
 
   useEffect(() => {
     const verifyEmail = async () => {
@@ -23,6 +25,13 @@ export default function VerifyEmailPage() {
         const response = await api.auth.verifyEmail(token);
         setEmail(response.email);
         setStatus('success');
+
+        // Mark the locally persisted user as verified so the dashboard
+        // banner disappears immediately. Without this, the persisted
+        // Zustand user object keeps emailVerified=undefined and the
+        // banner shows forever — even after the backend flag flips —
+        // until the user logs out and back in.
+        updateUser({ emailVerified: true });
       } catch (error) {
         const { ApiError } = await import('@/lib/errors');
         if (ApiError.isApiError(error)) {
@@ -41,7 +50,7 @@ export default function VerifyEmailPage() {
     if (token) {
       verifyEmail();
     }
-  }, [token]);
+  }, [token, updateUser]);
 
   if (status === 'loading') {
     return (

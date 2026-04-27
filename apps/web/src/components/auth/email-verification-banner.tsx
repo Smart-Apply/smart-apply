@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api-client';
 import { toast } from 'sonner';
 import { Mail, X, Loader2 } from 'lucide-react';
@@ -8,9 +8,34 @@ import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/auth-store';
 
 export function EmailVerificationBanner() {
-  const { user } = useAuthStore();
+  const { user, setAuth } = useAuthStore();
   const [isDismissed, setIsDismissed] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const refreshedRef = useRef(false);
+
+  // Re-sync verification status from the backend when this banner mounts
+  // and the locally persisted user looks unverified. This handles the case
+  // where the user verified their email in another tab/device, or upgraded
+  // to a backend version that started returning `emailVerified` after they
+  // had already logged in. Without this, the persisted Zustand user keeps
+  // emailVerified=undefined forever and the banner never disappears.
+  useEffect(() => {
+    if (refreshedRef.current) return;
+    if (!user) return;
+    if (user.emailVerified) return;
+
+    refreshedRef.current = true;
+    api.auth
+      .me()
+      .then((fresh) => {
+        // Merge fresh fields onto the persisted user (don't overwrite any
+        // optional fields the /me endpoint omits).
+        setAuth({ ...user, ...fresh });
+      })
+      .catch(() => {
+        // Silent — banner stays as-is, user can dismiss or resend.
+      });
+  }, [user, setAuth]);
 
   // Don't show if user is verified, not logged in, or banner is dismissed
   if (!user || user.emailVerified || isDismissed) {

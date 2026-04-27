@@ -430,6 +430,11 @@ export class AuthService {
         firstName: true,
         lastName: true,
         provider: true,
+        // Required so GET /auth/me returns the verification flag.
+        // Without this, the frontend's user.emailVerified is always
+        // undefined and the verification banner shows forever even
+        // after the user successfully verifies.
+        emailVerified: true,
       },
     });
 
