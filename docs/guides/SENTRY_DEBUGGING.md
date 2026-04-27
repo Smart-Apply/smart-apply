@@ -14,16 +14,17 @@ test event end-to-end on the first try.
 across **four different attempts**, despite the build-time environment
 variable being correctly set (proven via diagnostic echo: `length=95`).
 
+**Resolution:** Writing a `.env.production` file inside `apps/web/` at
+Docker build time (Attempt 4) finally worked. Confirmed by greppinng the
+static JS chunks for the Sentry org-id — 1 chunk now contains the DSN.
+Frontend Sentry is fully operational.
+
 **Root cause (likely):** Next.js 15+ uses Turbopack as the default bundler
 for `next build`, which has stricter / different rules than Webpack for
 inlining `process.env.NEXT_PUBLIC_*` references in client code. The
 canonical mechanism Turbopack respects is a `.env.production` file present
-at the project root at build time.
-
-**Current status:** `.env.production` approach pushed (commit `32f4eb7`).
-Verification pending. If it fails, fallback plan is to hard-code the DSN
-literal in `instrumentation-client.ts` (DSNs are public credentials by
-design — this is acceptable and documented by Sentry).
+at the project root at build time — NOT shell ENV, NOT `next.config.ts`'s
+`env` field (which lands the value in `required-server-files.json` only).
 
 ---
 
@@ -160,7 +161,7 @@ runtime** (process.env on the Node side), but doesn't necessarily inline
 them into the **client bundle**. That's only documented to work for code
 that's part of the page tree.
 
-### Attempt 4 — `.env.production` written at Docker build time 🟡 (testing)
+### Attempt 4 — `.env.production` written at Docker build time ✅ (resolved)
 
 **Change:** Dockerfile.web writes `apps/web/.env.production` from
 build-args before running `next build`:
@@ -176,25 +177,22 @@ RUN printf 'NEXT_PUBLIC_API_URL=%s\nNEXT_PUBLIC_SENTRY_DSN=%s\nNEXT_PUBLIC_SENTR
 both Webpack and Turbopack respect identically. It's documented as the
 "correct" way to feed env vars into a Next.js build.
 
-**Status:** Pushed in commit `32f4eb7`. Verification pending on the next
-deploy.
-
-### Attempt 5 — Hardcode DSN literal (fallback)
-
-**If Attempt 4 fails:** Just embed the DSN as a string literal in
-`instrumentation-client.ts`:
-
-```ts
-Sentry.init({
-  dsn: 'https://9453beec...@o4511288476958720.ingest.de.sentry.io/4511288479318096',
-  // ...
-});
+**Status:** ✅ **Confirmed working.** Verification:
+```bash
+docker exec smartapply-web sh -c \
+  'grep -rl "o4511288476958720" apps/web/.next/static/ 2>/dev/null | wc -l'
+# → 1
 ```
+Client bundle now contains the Sentry org-id literal. Sentry initializes
+on page load and forwards exceptions to the dashboard.
 
-**Why this is acceptable:** Sentry DSNs are explicitly public credentials.
-Sentry's docs say so. They only allow sending events, not reading them.
-Anyone who inspects the bundle will see the DSN regardless of how it got
-there. The only downside is harder rotation.
+### Attempt 5 — Hardcode DSN literal (not needed, kept as reference)
+
+**Not applied.** Was the planned fallback if Attempt 4 had failed. Worth
+noting because Sentry DSNs are explicitly public credentials — hardcoding
+them in `instrumentation-client.ts` would have been acceptable and
+documented by Sentry. Sentry DSNs only allow sending events, not reading
+them; anyone inspecting the client bundle sees the DSN regardless.
 
 ---
 
@@ -323,8 +321,8 @@ If empty: client-side init never ran or DSN was empty.
 
 - **Backend Sentry:** ✅ Working, verified with test event ID
   `f80f1fb3df9b498bb722276426f30b45`
-- **Frontend Sentry:** 🟡 Pending verification of `.env.production`
-  approach (commit `32f4eb7`)
+- **Frontend Sentry:** ✅ Working, DSN baked into static bundle via
+  `.env.production` mechanism (commit `32f4eb7`)
 - **Both DSNs in chat history:** Should be rotated post-launch (DSNs are
   public credentials but rotation is good hygiene after debugging)
 
@@ -332,9 +330,8 @@ If empty: client-side init never ran or DSN was empty.
 
 ## Open TODOs related to Sentry
 
-- [ ] Verify `.env.production` approach actually inlines DSN into bundle
-- [ ] If still failing, switch to hardcoded literal as a fallback
-- [ ] Trigger a real client-side error and confirm capture in Sentry UI
+- [ ] Trigger a real client-side error from the live site and confirm
+  capture in the Sentry UI (browser DevTools → Network filter `sentry`)
 - [ ] Configure Sentry release tracking from CI commit SHA (already wired
   via `NEXT_PUBLIC_SENTRY_RELEASE`)
 - [ ] Set up Sentry alerts (email/Slack) for high-severity issues before
