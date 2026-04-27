@@ -16,13 +16,20 @@ export function useInterviewSessions(options?: {
   status?: InterviewSessionStatus;
   limit?: number;
   offset?: number;
+  /**
+   * Optional gate. Set to false (e.g. for FREE-tier users without the
+   * interviewCoach feature) to suppress the request entirely so the
+   * backend's 403s never reach the console.
+   */
+  enabled?: boolean;
 }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const { enabled: gated = true, ...listOptions } = options ?? {};
 
   return useQuery({
-    queryKey: ['interviews', 'list', options],
-    queryFn: () => api.interviews.list(options),
-    enabled: isAuthenticated,
+    queryKey: ['interviews', 'list', listOptions],
+    queryFn: () => api.interviews.list(listOptions),
+    enabled: isAuthenticated && gated,
     staleTime: 30000, // 30 seconds
   });
 }
@@ -44,13 +51,20 @@ export function useInterviewSession(sessionId: string | undefined) {
 /**
  * Hook to fetch interview statistics
  */
-export function useInterviewStats() {
+export function useInterviewStats(options?: {
+  /**
+   * Optional gate. Set to false for FREE-tier users without the
+   * interviewCoach feature to suppress the 403 request entirely.
+   */
+  enabled?: boolean;
+}) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const gated = options?.enabled ?? true;
 
   return useQuery({
     queryKey: ['interviews', 'stats'],
     queryFn: () => api.interviews.getStats(),
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && gated,
     staleTime: 60000, // 1 minute
   });
 }

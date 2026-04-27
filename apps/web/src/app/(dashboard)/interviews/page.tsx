@@ -2,13 +2,21 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useInterviewSessions, useInterviewStats, useStartInterview } from '@/hooks/use-interviews';
+import { useFeatureGate } from '@/hooks/use-tier-gate';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { StartInterviewDialog } from '@/components/interviews/start-interview-dialog';
 import { InterviewStatsCards } from '@/components/interviews/interview-stats-cards';
 import { InterviewProgressChart } from '@/components/interviews/interview-progress-chart';
@@ -20,6 +28,7 @@ import {
   CheckCircle,
   XCircle,
   Loader2,
+  Lock,
 } from 'lucide-react';
 import type { InterviewSession, InterviewSessionStatus } from '@/types';
 
@@ -122,11 +131,24 @@ export default function InterviewsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('all');
 
+  // Premium gate. We render the full page UI even for FREE users so they
+  // can see what they would unlock, but:
+  //  - the interactive surface is greyed out and pointer-events disabled
+  //  - hovering the locked area shows "Nur in Premium verfügbar"
+  //  - the underlying API calls are skipped (they would 403 anyway, and
+  //    each 403 used to flood the console).
+  const { hasAccess: hasInterviewCoach, isLoading: isLoadingTier } =
+    useFeatureGate('interviewCoach');
+  const isLocked = !isLoadingTier && !hasInterviewCoach;
+
   const statusFilter = activeTab === 'all' ? undefined : (activeTab as InterviewSessionStatus);
   const { data: sessionsData, isLoading: sessionsLoading } = useInterviewSessions({
     status: statusFilter,
+    enabled: hasInterviewCoach,
   });
-  const { data: stats, isLoading: statsLoading } = useInterviewStats();
+  const { data: stats, isLoading: statsLoading } = useInterviewStats({
+    enabled: hasInterviewCoach,
+  });
   const startInterview = useStartInterview();
 
   const handleStartInterview = async (data: Parameters<typeof startInterview.mutateAsync>[0]) => {
@@ -145,106 +167,173 @@ export default function InterviewsPage() {
             Üben Sie Vorstellungsgespräche mit KI-gestütztem Feedback
           </p>
         </div>
-        <Button onClick={() => setDialogOpen(true)} className="gap-2">
-          <Play className="h-4 w-4" />
-          Neues Interview starten
-        </Button>
+        {isLocked ? (
+          <Button asChild className="gap-2">
+            <Link href="/pricing">
+              <Lock className="h-4 w-4" />
+              Premium freischalten
+            </Link>
+          </Button>
+        ) : (
+          <Button onClick={() => setDialogOpen(true)} className="gap-2">
+            <Play className="h-4 w-4" />
+            Neues Interview starten
+          </Button>
+        )}
       </div>
 
-      {/* Stats Overview */}
-      {statsLoading ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Card key={i}>
-              <CardHeader className="pb-2">
-                <Skeleton className="h-4 w-24" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-8 w-16" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : stats ? (
-        <InterviewStatsCards stats={stats} />
-      ) : null}
-
-      {/* Progress Chart */}
-      {stats && stats.completedSessions > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Fortschritt
-            </CardTitle>
-            <CardDescription>
-              Ihre Entwicklung über die letzten Interviews
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <InterviewProgressChart stats={stats} />
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Sessions List */}
-      <div>
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="all">Alle</TabsTrigger>
-            <TabsTrigger value="IN_PROGRESS" className="gap-1">
-              <Loader2 className="h-3 w-3" />
-              Laufend
-            </TabsTrigger>
-            <TabsTrigger value="COMPLETED" className="gap-1">
-              <CheckCircle className="h-3 w-3" />
-              Abgeschlossen
-            </TabsTrigger>
-            <TabsTrigger value="ABANDONED" className="gap-1">
-              <XCircle className="h-3 w-3" />
-              Abgebrochen
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value={activeTab} className="mt-6">
-            {sessionsLoading ? (
-              <SessionsSkeleton />
-            ) : !sessionsData?.sessions?.length ? (
-              <EmptyState
-                icon={MessageSquare}
-                title="Keine Interview-Sessions"
-                description={
-                  activeTab === 'all'
-                    ? 'Starten Sie Ihr erstes KI-Interview, um Ihre Fähigkeiten zu verbessern.'
-                    : 'Keine Sessions mit diesem Status gefunden.'
-                }
-                action={
-                  activeTab === 'all'
-                    ? {
-                        label: 'Interview starten',
-                        onClick: () => setDialogOpen(true),
-                      }
-                    : undefined
-                }
-              />
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {sessionsData.sessions.map((session: InterviewSession) => (
-                  <SessionCard key={session.id} session={session} />
+      {/* Locked overlay wraps the rest of the page for FREE users.
+          The inner div is visually dimmed and pointer-events: none, while
+          a transparent absolutely-positioned layer captures hover so the
+          tooltip "Nur in Premium verfügbar" can appear. */}
+      <TooltipProvider delayDuration={150}>
+        <div className="relative">
+          <div
+            className={
+              isLocked
+                ? 'pointer-events-none select-none opacity-50 grayscale transition-opacity'
+                : ''
+            }
+            aria-hidden={isLocked}
+          >
+            {/* Stats Overview */}
+            {statsLoading ? (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <Card key={i}>
+                    <CardHeader className="pb-2">
+                      <Skeleton className="h-4 w-24" />
+                    </CardHeader>
+                    <CardContent>
+                      <Skeleton className="h-8 w-16" />
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
+            ) : stats ? (
+              <InterviewStatsCards stats={stats} />
+            ) : isLocked ? (
+              // Lightweight placeholder so FREE users see *something*
+              // behind the lock instead of an empty container.
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <Card key={i}>
+                    <CardHeader className="pb-2">
+                      <CardDescription>Vorschau</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">—</div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : null}
+
+            {/* Progress Chart */}
+            {stats && stats.completedSessions > 0 && (
+              <Card className="mt-8">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5" />
+                    Fortschritt
+                  </CardTitle>
+                  <CardDescription>
+                    Ihre Entwicklung über die letzten Interviews
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <InterviewProgressChart stats={stats} />
+                </CardContent>
+              </Card>
             )}
-          </TabsContent>
-        </Tabs>
-      </div>
+
+            {/* Sessions List */}
+            <div className="mt-8">
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList>
+                  <TabsTrigger value="all">Alle</TabsTrigger>
+                  <TabsTrigger value="IN_PROGRESS" className="gap-1">
+                    <Loader2 className="h-3 w-3" />
+                    Laufend
+                  </TabsTrigger>
+                  <TabsTrigger value="COMPLETED" className="gap-1">
+                    <CheckCircle className="h-3 w-3" />
+                    Abgeschlossen
+                  </TabsTrigger>
+                  <TabsTrigger value="ABANDONED" className="gap-1">
+                    <XCircle className="h-3 w-3" />
+                    Abgebrochen
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value={activeTab} className="mt-6">
+                  {sessionsLoading ? (
+                    <SessionsSkeleton />
+                  ) : !sessionsData?.sessions?.length ? (
+                    <EmptyState
+                      icon={MessageSquare}
+                      title="Keine Interview-Sessions"
+                      description={
+                        activeTab === 'all'
+                          ? 'Starten Sie Ihr erstes KI-Interview, um Ihre Fähigkeiten zu verbessern.'
+                          : 'Keine Sessions mit diesem Status gefunden.'
+                      }
+                      action={
+                        !isLocked && activeTab === 'all'
+                          ? {
+                              label: 'Interview starten',
+                              onClick: () => setDialogOpen(true),
+                            }
+                          : undefined
+                      }
+                    />
+                  ) : (
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {sessionsData.sessions.map((session: InterviewSession) => (
+                        <SessionCard key={session.id} session={session} />
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </div>
+          </div>
+
+          {/* Hover-trigger overlay: covers the dimmed area and shows the
+              tooltip on hover. Sits above the dimmed content (which has
+              pointer-events: none) so it always wins for hover/click.
+              Clicking jumps to the pricing page. */}
+          {isLocked && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  href="/pricing"
+                  aria-label="Nur in Premium verfügbar – jetzt upgraden"
+                  className="absolute inset-0 z-10 flex cursor-not-allowed items-start justify-center rounded-lg pt-12"
+                >
+                  <span className="rounded-full border border-amber-300 bg-amber-100/95 px-4 py-2 text-sm font-medium text-amber-900 shadow-sm backdrop-blur">
+                    <Lock className="mr-1 inline h-4 w-4" />
+                    Nur in Premium verfügbar
+                  </span>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-xs text-center">
+                Nur in Premium verfügbar. Klicke, um zu upgraden.
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+      </TooltipProvider>
 
       {/* Start Interview Dialog */}
-      <StartInterviewDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onStart={handleStartInterview}
-        isLoading={startInterview.isPending}
-      />
+      {!isLocked && (
+        <StartInterviewDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          onStart={handleStartInterview}
+          isLoading={startInterview.isPending}
+        />
+      )}
     </div>
   );
 }
