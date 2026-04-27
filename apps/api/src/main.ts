@@ -41,20 +41,25 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
 
-  // Trust the loopback proxy so that req.ip reflects the REAL client IP
-  // taken from X-Forwarded-For, instead of the nginx loopback address.
+  // Trust exactly ONE upstream proxy so that req.ip reflects the REAL
+  // client IP from X-Forwarded-For instead of the proxy's connection IP.
   //
-  // Topology in production: Cloudflare → nginx (127.0.0.1 → backend) → Express.
-  // nginx sets X-Forwarded-For with the real client IP (it derives it from
-  // CF-Connecting-IP via `real_ip_header` in our nginx config). Without this
-  // setting, Express returns `127.0.0.1` for every request, which makes the
-  // rate-limiter bucket ALL anonymous traffic into a single tracker —
-  // causing /auth/csrf-token to 429 for every visitor as soon as the bucket
-  // is exhausted by the first few page loads.
+  // Topology in production:
+  //   Cloudflare → nginx (host) → Docker bridge → Express (container)
   //
-  // 'loopback' = trust only proxies on 127.0.0.1 / ::1 (i.e. our local nginx).
-  // Safer than `true` (trust everyone) and `1` (count of hops).
-  app.set('trust proxy', 'loopback');
+  // Inside the container the TCP peer is the Docker bridge gateway
+  // (typically 172.x.x.x), NOT 127.0.0.1 — so a 'loopback' setting would
+  // be silently ignored and ALL traffic would collapse into one
+  // rate-limit bucket. We use the integer form `1` which means "trust
+  // the LAST entry in X-Forwarded-For added by exactly one upstream
+  // proxy" (our nginx). nginx, in turn, derives the real client IP from
+  // Cloudflare's CF-Connecting-IP header (`real_ip_header` directive),
+  // so the chain is end-to-end accurate.
+  //
+  // Spoofing concern: Express only ever sees connections from the Docker
+  // bridge — never from the public internet — so trusting one hop here
+  // is safe.
+  app.set('trust proxy', 1);
 
   logger.log(`🚀 Starting Smart Apply API in ${configService.nodeEnv} mode`, 'Bootstrap');
   if (sentryEnabled) {
