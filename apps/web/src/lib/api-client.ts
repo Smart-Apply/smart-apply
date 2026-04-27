@@ -67,6 +67,24 @@ let refreshPromise: Promise<boolean> | null = null;
 let isRedirectingToLogin = false;
 
 /**
+ * Rate-limit warning throttling.
+ *
+ * The backend returns `X-RateLimit-Remaining` on every response. Without
+ * de-duplication a low remaining count would emit a fresh toast on every
+ * subsequent request — typical dashboards fire 3-5 parallel queries on
+ * mount, which previously stacked 3-5 identical "Nur noch X Aktionen
+ * verfügbar" toasts on top of each other.
+ *
+ * We now show at most ONE warning per rate-limit reset window (identified
+ * by the `X-RateLimit-Reset` epoch). Subsequent warnings for the same
+ * window are skipped entirely. A stable sonner toast `id` also collapses
+ * any race where two warnings squeak through at the exact same time.
+ */
+let lastRateLimitWarningResetAt: number | null = null;
+const RATE_LIMIT_WARN_THRESHOLD = 5; // Warn only when ≤ 5 actions remain
+const RATE_LIMIT_TOAST_ID = 'rate-limit-warning';
+
+/**
  * Clear auth state and redirect to login
  * Uses a flag to prevent multiple redirects from concurrent requests
  */
@@ -170,22 +188,31 @@ async function apiRequest<T>(endpoint: string, options: RequestOptions = {}): Pr
       const rateLimitReset = response.headers.get('X-RateLimit-Reset');
       const rateLimitLimit = response.headers.get('X-RateLimit-Limit');
 
-      // Warn user if close to rate limit (less than 10 requests remaining)
+      // Warn user when approaching the rate limit, but at MOST ONCE per
+      // reset window. Without dedup, every query that runs while the
+      // budget is low would stack a new toast (see comment near
+      // `lastRateLimitWarningResetAt` definition).
       if (
         rateLimitRemaining &&
         rateLimitLimit &&
-        parseInt(rateLimitRemaining) < 10 &&
+        parseInt(rateLimitRemaining) <= RATE_LIMIT_WARN_THRESHOLD &&
         parseInt(rateLimitRemaining) > 0
       ) {
         const resetTime = rateLimitReset ? parseInt(rateLimitReset) : Date.now();
-        const minutesUntilReset = Math.ceil((resetTime - Date.now()) / 60000);
 
-        // Only show toast on client side
-        if (typeof window !== 'undefined') {
+        // Already warned for this exact reset window? Skip.
+        const alreadyWarnedForThisWindow =
+          lastRateLimitWarningResetAt !== null && lastRateLimitWarningResetAt === resetTime;
+
+        if (!alreadyWarnedForThisWindow && typeof window !== 'undefined') {
+          lastRateLimitWarningResetAt = resetTime;
+          const minutesUntilReset = Math.max(1, Math.ceil((resetTime - Date.now()) / 60000));
+
           const { toast } = await import('sonner');
           toast.warning(
             `Nur noch ${rateLimitRemaining} Aktionen verfügbar. ` +
               `Limit wird zurückgesetzt in ${minutesUntilReset} Minute${minutesUntilReset !== 1 ? 'n' : ''}.`,
+            { id: RATE_LIMIT_TOAST_ID },
           );
         }
       }
