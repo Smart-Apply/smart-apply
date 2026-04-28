@@ -61,7 +61,12 @@ jobs:
           # the frontend (and vice versa). The shared paths (root configs,
           # workflow file itself, packages/shared) trigger BOTH so a refactor
           # that touches both halves doesn't get half-deployed.
-          predicate-quantifier: 'every'
+          #
+          # Quantifier left at the default ('some') — a filter matches if
+          # ANY listed pattern matches a changed file. The previous 'every'
+          # value silently broke deploys: a single file can't match
+          # `apps/web/**` AND `packages/shared/**` AND `package.json`
+          # simultaneously, so both filters always evaluated to false.
           filters: |
             api:
               - 'apps/api/**'
