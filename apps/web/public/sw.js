@@ -1,8 +1,13 @@
 /// <reference lib="webworker" />
 
-const CACHE_NAME = 'smart-apply-v1';
-const STATIC_CACHE_NAME = 'smart-apply-static-v1';
-const DYNAMIC_CACHE_NAME = 'smart-apply-dynamic-v1';
+// IMPORTANT: bump this whenever you change cache behaviour or want to force
+// every existing user's browser to drop the previous SW's caches on next
+// visit. Anything not matching the current version below is deleted on
+// activation.
+const CACHE_VERSION = 'v2';
+const CACHE_NAME = `smart-apply-${CACHE_VERSION}`;
+const STATIC_CACHE_NAME = `smart-apply-static-${CACHE_VERSION}`;
+const DYNAMIC_CACHE_NAME = `smart-apply-dynamic-${CACHE_VERSION}`;
 
 // Static assets to cache immediately
 const STATIC_ASSETS = [
@@ -33,29 +38,35 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate event - clean up old caches
+// Activate event - aggressively purge ALL old caches.
+//
+// Why aggressive? When we cut frontend hosting from VM → Cloudflare Worker,
+// any user who'd visited before still has the old SW + caches in their
+// browser. Their cached cross-origin API responses are stale and cause
+// CORS errors against the new backend config. Wiping everything not
+// matching the CURRENT version forces a clean state on the next visit.
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
           .filter((name) => {
-            // Delete old versions of our caches
+            // Drop everything that isn't one of THIS version's caches.
             return (
-              name.startsWith('smart-apply-') &&
               name !== CACHE_NAME &&
               name !== STATIC_CACHE_NAME &&
               name !== DYNAMIC_CACHE_NAME
             );
           })
           .map((name) => {
-            console.log('[SW] Deleting old cache:', name);
+            console.log('[SW] Deleting stale cache:', name);
             return caches.delete(name);
           })
       );
     })
   );
-  // Take control of all clients immediately
+  // Take control of all clients immediately so the next request goes
+  // through this SW's logic, not the previous version's.
   self.clients.claim();
 });
 
