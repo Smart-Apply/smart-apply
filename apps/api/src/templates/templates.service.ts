@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, Logger, Inject, forwardRef } from '@nestjs/common';
-import * as NodeCache from 'node-cache';
+import NodeCache from 'node-cache';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { ConfigService } from '../config/config.service';

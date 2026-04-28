@@ -1,27 +1,14 @@
 {
+  "//": "Monorepo root stub. Real configs live in apps/api, apps/web, and packages/shared.",
   "compilerOptions": {
-    "module": "commonjs",
-    "moduleResolution": "node",
-    "declaration": true,
-    "removeComments": true,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "allowSyntheticDefaultImports": true,
-    "target": "ES2021",
-    "sourceMap": true,
-    "outDir": "./dist",
-    "baseUrl": "./",
-    "incremental": true,
+    "target": "ES2022",
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "skipLibCheck": true,
-    "strictNullChecks": true,
-    "noImplicitAny": false,
-    "strictBindCallApply": false,
-    "forceConsistentCasingInFileNames": false,
-    "noFallthroughCasesInSwitch": false,
-    "paths": {
-      "@/*": ["apps/api/src/*"]
-    }
+    "strict": true,
+    "noEmit": true,
+    "forceConsistentCasingInFileNames": true
   },
-  "include": ["apps/api/**/*"],
-  "exclude": ["node_modules", "dist", "apps/web"]
+  "files": [],
+  "exclude": ["**/*"]
 }
