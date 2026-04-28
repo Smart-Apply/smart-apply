@@ -4,7 +4,7 @@
 // every existing user's browser to drop the previous SW's caches on next
 // visit. Anything not matching the current version below is deleted on
 // activation.
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const CACHE_NAME = `smart-apply-${CACHE_VERSION}`;
 const STATIC_CACHE_NAME = `smart-apply-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE_NAME = `smart-apply-dynamic-${CACHE_VERSION}`;
@@ -186,8 +186,24 @@ async function staleWhileRevalidate(request, cacheName) {
       }
       return networkResponse;
     })
-    .catch(() => cachedResponse);
+    // If both the network AND the cache miss, the .catch must still
+    // resolve to a Response — returning undefined here makes the browser
+    // throw "Failed to convert value to 'Response'" and crash the
+    // FetchEvent. Falling back to a generic 503 keeps the SW honest;
+    // the page-level fetch will retry naturally.
+    .catch(
+      () =>
+        cachedResponse ||
+        new Response('Service unavailable', {
+          status: 503,
+          headers: { 'Content-Type': 'text/plain' },
+        }),
+    );
 
+  // Same defensive guarantee on the synchronous path: if the cache had
+  // nothing AND the network promise hasn't resolved yet, returning
+  // `undefined || fetchPromise` is fine, but we keep the pattern
+  // explicit so a future edit doesn't accidentally regress it.
   return cachedResponse || fetchPromise;
 }
 
