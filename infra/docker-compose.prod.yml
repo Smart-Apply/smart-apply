@@ -73,41 +73,56 @@ services:
       retries: 5
       start_period: 60s
 
-  web:
-    image: smartapply-web:latest
-    container_name: smartapply-web
-    restart: unless-stopped
-    logging: *default-logging
-    environment:
-      NODE_ENV: production
-      PORT: 3001
-      HOSTNAME: "0.0.0.0"
-      # Runtime API URL surfaced to the browser via /api/config.
-      # The browser fetches this at page-load and uses it for all API calls,
-      # so this can be changed without rebuilding the image.
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.smart-apply.io/api/v1}
-      # Runtime CSP allow-list (comma-separated origins). Read by proxy.ts at
-      # request time, so it does NOT require a rebuild. List every origin the
-      # browser may call from this web app — current API domain plus any
-      # legacy hostnames still in use during a domain migration.
-      CSP_API_ORIGINS: ${CSP_API_ORIGINS:-https://api.smart-apply.io,https://smartapplymvp.swedencentral.cloudapp.azure.com}
-    ports:
-      # Bind only to localhost — nginx on the VM proxies public traffic to it.
-      - "127.0.0.1:3001:3001"
-    depends_on:
-      - api
-    # Memory cap: Next.js standalone server is light. 800 MB is generous.
-    # When you flip DNS to the Cloudflare Worker, this container can be
-    # scaled to 0 entirely.
-    mem_limit: 800m
-    mem_reservation: 128m
-    cpus: 0.5
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3001"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 20s
+  # ─────────────────────────────────────────────────────────────────────
+  # web container — DISABLED on 2026-04-28
+  #
+  # Production traffic for smart-apply.io and www.smart-apply.io is served
+  # by the Cloudflare Worker (OpenNext) deployed via `npm run cf:deploy`
+  # in apps/web. DNS for those hostnames points only at Cloudflare's
+  # anycast IPs (104.21.x / 172.67.x), so no public traffic ever reached
+  # this container; verified via nginx access.log + container logs.
+  #
+  # Stopped here to free the 800 MB mem_limit / 0.5 CPU cap on the VM and
+  # reduce the attack surface. To bring back (e.g. as a CF Worker outage
+  # fallback): uncomment this block, then `docker-compose -f
+  # infra/docker-compose.prod.yml up -d web` and ensure the nginx vhost
+  # for smart-apply.io is re-enabled with a working upstream.
+  #
+  # web:
+  #   image: smartapply-web:latest
+  #   container_name: smartapply-web
+  #   restart: unless-stopped
+  #   logging: *default-logging
+  #   environment:
+  #     NODE_ENV: production
+  #     PORT: 3001
+  #     HOSTNAME: "0.0.0.0"
+  #     # Runtime API URL surfaced to the browser via /api/config.
+  #     # The browser fetches this at page-load and uses it for all API calls,
+  #     # so this can be changed without rebuilding the image.
+  #     NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.smart-apply.io/api/v1}
+  #     # Runtime CSP allow-list (comma-separated origins). Read by proxy.ts at
+  #     # request time, so it does NOT require a rebuild. List every origin the
+  #     # browser may call from this web app — current API domain plus any
+  #     # legacy hostnames still in use during a domain migration.
+  #     CSP_API_ORIGINS: ${CSP_API_ORIGINS:-https://api.smart-apply.io,https://smartapplymvp.swedencentral.cloudapp.azure.com}
+  #   ports:
+  #     # Bind only to localhost — nginx on the VM proxies public traffic to it.
+  #     - "127.0.0.1:3001:3001"
+  #   depends_on:
+  #     - api
+  #   # Memory cap: Next.js standalone server is light. 800 MB is generous.
+  #   # When you flip DNS to the Cloudflare Worker, this container can be
+  #   # scaled to 0 entirely.
+  #   mem_limit: 800m
+  #   mem_reservation: 128m
+  #   cpus: 0.5
+  #   healthcheck:
+  #     test: ["CMD", "wget", "-q", "--spider", "http://localhost:3001"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 20s
 
 volumes:
   postgres_data:
