@@ -51,7 +51,6 @@ RUN apk add --no-cache openssl python3 make g++
 
 # Copy root package files (needed for workspace)
 COPY package.json package-lock.json ./
-COPY tsconfig*.json ./
 
 # Create apps directory structure
 RUN mkdir -p apps/api packages/shared
