@@ -151,6 +151,21 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
   };
 
   const onRegisterSubmit = async (data: RegisterFormData) => {
+    // If Turnstile is configured (we shipped a site key) but the widget
+    // hasn't produced a token yet, short-circuit *before* hitting the
+    // backend. This avoids a needless CAPTCHA_FAILED round-trip and —
+    // more importantly — makes the error message accurate ("solve the
+    // CAPTCHA below") instead of "Bot-Schutz fehlgeschlagen", which
+    // suggests Cloudflare rejected something it never received.
+    const turnstileConfigured = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
+    if (turnstileConfigured && !turnstileToken) {
+      toast.error(
+        'Bitte löse zuerst das CAPTCHA unten. Falls es nicht erscheint, deaktiviere kurz den Tracking-Schutz / Adblocker für diese Seite.',
+        { duration: 8000 },
+      );
+      return;
+    }
+
     try {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { confirmPassword, ...registerData } = data;
@@ -176,11 +191,13 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
       setTurnstileToken(null);
 
       if (ApiError.isApiError(error)) {
-        // Captcha-specific failure surfaces a tailored message.
+        // Captcha-specific failure surfaces a tailored message that hints
+        // at common Firefox/Safari causes (Enhanced Tracking Protection,
+        // ad blockers, strict cookie settings).
         if (error.data?.code === 'CAPTCHA_FAILED') {
           toast.error(
-            error.data?.message ||
-              'Bot-Schutz fehlgeschlagen. Bitte aktualisiere die Seite und versuche es erneut.',
+            'Bot-Schutz fehlgeschlagen. Bitte löse das CAPTCHA erneut. Wenn es nicht erscheint, deaktiviere kurz den Tracking-Schutz oder Adblocker für diese Seite.',
+            { duration: 10000 },
           );
         } else if (error.status === 400 || error.status === 409) {
           toast.error('Diese E-Mail-Adresse ist bereits registriert.');
@@ -591,11 +608,14 @@ export function AuthContainer({ initialMode = 'login' }: AuthContainerProps) {
                   </SubmitButton>
                 </div>
 
-                {/* Cloudflare Turnstile (invisible CAPTCHA). Renders nothing
-                    in dev when NEXT_PUBLIC_TURNSTILE_SITE_KEY is unset. In
-                    production it usually doesn't display visible chrome
-                    (interaction-only mode) — only when Cloudflare deems the
-                    visitor suspicious. The token feeds into onRegisterSubmit. */}
+                {/* Cloudflare Turnstile CAPTCHA. Renders nothing in dev when
+                    NEXT_PUBLIC_TURNSTILE_SITE_KEY is unset. In production
+                    it's always visible (`appearance: 'always'`) so users on
+                    Firefox / Safari with Enhanced Tracking Protection can
+                    actually solve any required interactive challenge — the
+                    older `interaction-only` mode could leave the widget
+                    invisible while Cloudflare waited for a click. The
+                    token feeds into onRegisterSubmit. */}
                 <TurnstileWidget
                   className="mt-2 flex justify-center"
                   onToken={setTurnstileToken}

@@ -19,6 +19,7 @@ import { HealthModule } from './health/health.module';
 import { CleanupCronModule } from './common/cron/cleanup-cron.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
+import { CaptchaGuard } from './auth/guards/captcha.guard';
 import { ConfigService } from './config/config.service';
 import { AuditLoggerModule } from './common/audit-logger';
 import { CSPViolationController } from './common/csp/csp-violation.controller';
@@ -112,6 +113,15 @@ import { UpstashThrottlerStorage } from './common/throttler/upstash-throttler-st
     {
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,
+    },
+    // ORDER MATTERS: APP_GUARD providers run sequentially in registration
+    // order. CaptchaGuard MUST run before CustomThrottlerGuard so that
+    // failed Turnstile checks return 403 without consuming the route's
+    // rate-limit budget. Otherwise a Firefox user whose Turnstile widget
+    // can't issue a token gets locked out of /auth/register for 15 min.
+    {
+      provide: APP_GUARD,
+      useClass: CaptchaGuard,
     },
     {
       provide: APP_GUARD,

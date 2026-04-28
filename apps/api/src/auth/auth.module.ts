@@ -79,6 +79,14 @@ const microsoftStrategyProvider: Provider = {
     PrismaService,
     ConfigService,
   ],
-  exports: [AuthService, SessionService, TwoFactorService, JwtModule],
+  exports: [
+    AuthService,
+    SessionService,
+    TwoFactorService,
+    JwtModule,
+    // Exported so the global `CaptchaGuard` (registered in AppModule)
+    // can resolve it via DI.
+    CloudflareTurnstileService,
+  ],
 })
 export class AuthModule {}

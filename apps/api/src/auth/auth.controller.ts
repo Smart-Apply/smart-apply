@@ -10,7 +10,6 @@ import {
   Res,
   Req,
   UnauthorizedException,
-  ForbiddenException,
   HttpCode,
   HttpStatus,
   Logger,
@@ -19,7 +18,6 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
-import { CloudflareTurnstileService } from './services/cloudflare-turnstile.service';
 import {
   RegisterDto,
   LoginDto,
@@ -32,6 +30,7 @@ import {
 } from './dto';
 import { Public } from '../common/decorators/public.decorator';
 import { UseThrottler } from '../common/decorators/throttle.decorator';
+import { RequiresCaptcha } from './decorators/requires-captcha.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { ConfigService } from '../config/config.service';
 
@@ -43,10 +42,10 @@ export class AuthController {
   constructor(
     private authService: AuthService,
     private configService: ConfigService,
-    private turnstileService: CloudflareTurnstileService,
   ) {}
 
   @Public()
+  @RequiresCaptcha()
   @UseThrottler('auth')
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
@@ -55,20 +54,9 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    // Bot protection: verify Cloudflare Turnstile token before doing
-    // any work. Returns true if Turnstile isn't configured (dev/local).
-    const captchaOk = await this.turnstileService.verify(
-      dto.turnstileToken,
-      req.ip || req.socket.remoteAddress,
-    );
-    if (!captchaOk) {
-      throw new ForbiddenException({
-        message:
-          'Bot-Schutz fehlgeschlagen. Bitte aktualisiere die Seite und versuche es erneut.',
-        error: 'CAPTCHA_FAILED',
-        code: 'CAPTCHA_FAILED',
-      });
-    }
+    // Bot protection runs in `CaptchaGuard` *before* the throttler, so
+    // failed Turnstile checks don't consume rate-limit budget. By the
+    // time we get here the captcha (if configured) has already passed.
 
     const userAgent = req.headers['user-agent'];
     const ipAddress = req.ip || req.socket.remoteAddress;

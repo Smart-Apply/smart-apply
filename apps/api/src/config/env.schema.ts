@@ -128,9 +128,16 @@ const envSchema = z.object({
   RATE_LIMIT_MAX: z.string().default('5000'), // Very high for development to avoid blocking during testing (lower in production)
 
   // Rate Limiting - Auth endpoints (stricter)
-  // PRODUCTION RECOMMENDATION: keep TTL=900 and set MAX=5
+  // PRODUCTION RECOMMENDATION: keep TTL=900 and set MAX=15
+  // NOTE: 5 was too aggressive — legitimate users on Firefox/Safari with
+  // strict tracking protection sometimes need to retry the registration
+  // form a few times before Cloudflare Turnstile produces a valid token.
+  // CAPTCHA failures themselves no longer consume the budget (they're
+  // rejected by `CaptchaGuard` before the throttler runs), but typos in
+  // password / 2FA / forgot-password flows still do, and 5/15min was
+  // tripping real users.
   RATE_LIMIT_AUTH_TTL: z.string().default('900'), // 15 minutes in seconds
-  RATE_LIMIT_AUTH_MAX: z.string().default('10'), // Increased from 5 to 10 for development
+  RATE_LIMIT_AUTH_MAX: z.string().default('15'),
 
   // Cron Jobs
   ENABLE_CRON_JOBS: z

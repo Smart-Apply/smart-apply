@@ -98,7 +98,17 @@ export function TurnstileWidget({
           'error-callback': () => onTokenRef.current(null),
           'expired-callback': () => onTokenRef.current(null),
           theme,
-          appearance: 'interaction-only', // Hide chrome unless user interaction is required
+          // `always` keeps the widget visible at all times. We previously
+          // used `interaction-only` (widget hidden until Cloudflare asks
+          // for a challenge), but that broke registration on Firefox and
+          // Safari users with Enhanced Tracking Protection / ITP enabled:
+          // Cloudflare would require interaction, but the widget was
+          // hidden so the user couldn't solve it. Token stayed `null`,
+          // backend returned CAPTCHA_FAILED on submit, and the rate
+          // limiter (incorrectly) burned through the user's budget.
+          // Always-visible avoids the silent failure mode.
+          appearance: 'always',
+          size: 'flexible',
         });
       } catch (err) {
         // Cloudflare throws if the same container is rendered twice
