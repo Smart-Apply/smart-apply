@@ -56,6 +56,13 @@ KEYS_TO_SYNC=(
   QSTASH_TOKEN
   QSTASH_CURRENT_SIGNING_KEY
   QSTASH_NEXT_SIGNING_KEY
+  # Auth rate limit — bumped from 5 to 15 (Apr 2026) so legitimate users
+  # on Firefox/Safari with strict tracking protection don't get locked
+  # out for 15min after a few CAPTCHA retries. CAPTCHA failures themselves
+  # no longer consume the budget (rejected by CaptchaGuard before the
+  # throttler), but typos / 2FA / forgot-password retries still do.
+  RATE_LIMIT_AUTH_TTL
+  RATE_LIMIT_AUTH_MAX
 )
 
 # Keys forced to a specific production value (overrides whatever the local
