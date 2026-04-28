@@ -9,7 +9,7 @@
     "lint": "eslint",
     "cf:hide-local-env": "test ! -f .env.local || mv .env.local .env.local.bak",
     "cf:restore-local-env": "test ! -f .env.local.bak || mv .env.local.bak .env.local",
-    "cf:build": "npm run cf:hide-local-env && (NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://api.smart-apply.io/api/v1} OPEN_NEXT=true opennextjs-cloudflare build); status=$?; npm run cf:restore-local-env; exit $status",
+    "cf:build": "npm run cf:hide-local-env && (NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://api.smart-apply.io/api/v1} NEXT_PUBLIC_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-0x4AAAAAADEb1zo5z5Pb47Dz} OPEN_NEXT=true opennextjs-cloudflare build); status=$?; npm run cf:restore-local-env; exit $status",
     "cf:preview": "npm run cf:build && OPEN_NEXT=true opennextjs-cloudflare preview",
     "cf:deploy": "npm run cf:build && OPEN_NEXT=true opennextjs-cloudflare deploy",
     "cf:upload": "npm run cf:build && OPEN_NEXT=true opennextjs-cloudflare upload"
