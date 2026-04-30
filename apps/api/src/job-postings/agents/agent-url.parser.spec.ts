@@ -4,17 +4,16 @@ import { AgentUrlParser } from './agent-url.parser';
 process.env.AGENT_MAX_STEPS = '10';
 process.env.AGENT_TIMEOUT = '30000';
 process.env.ENABLE_AGENT_PARSER = 'true';
+process.env.AZURE_OPENAI_ENDPOINT =
+  process.env.AZURE_OPENAI_ENDPOINT || 'https://example.openai.azure.com';
+process.env.AZURE_OPENAI_API_KEY = process.env.AZURE_OPENAI_API_KEY || 'mock-key-for-testing';
+process.env.AZURE_OPENAI_DEPLOYMENT_NAME =
+  process.env.AZURE_OPENAI_DEPLOYMENT_NAME || 'gpt-4o-mini';
 
 describe('AgentUrlParser', () => {
   let parser: AgentUrlParser;
 
-  beforeEach(() => {
-    // Set OPENAI_API_KEY to 'mock' for testing (will fail gracefully)
-    process.env.OPENAI_API_KEY = 'mock-key-for-testing';
-  });
-
   afterEach(async () => {
-    // Cleanup
     if (parser) {
       await parser['closeBrowser']();
     }
@@ -45,25 +44,21 @@ describe('AgentUrlParser', () => {
     expect(typeof isHealthy).toBe('boolean');
   });
 
-  // Note: Full integration tests require valid API keys and real URLs
-  // These should be run in E2E test environment with proper configuration
+  // Full integration tests require valid API keys, real URLs, and Playwright browsers
   describe('Integration tests (requires API keys)', () => {
     beforeEach(() => {
-      // Skip if no real API key is set
-      if (!process.env.AZURE_OPENAI_API_KEY && !process.env.OPENAI_API_KEY) {
-        pending('Skipping integration tests - no API key configured');
+      if (!process.env.AZURE_OPENAI_API_KEY || process.env.AZURE_OPENAI_API_KEY === 'mock-key-for-testing') {
+        pending('Skipping integration tests — no real Azure OpenAI key configured');
       }
     });
 
     it.skip('should parse a simple job posting page', async () => {
       parser = new AgentUrlParser();
-
-      // This would require a real URL and API key
       const result = await parser.parse('https://example.com/job-posting');
-
       expect(result.title).toBeDefined();
       expect(result.company).toBeDefined();
       expect(result.fullText).toBeDefined();
     });
   });
 });
+

@@ -15,7 +15,7 @@
 │                      Azure Container Apps (auto-scale)           │
 │  ┌────────────┬───────────┬───────────┬──────────┬────────────┐  │
 │  │   Auth     │  Profile  │   Jobs    │   LLM    │    PDF     │  │
-│  │ (JWT/OAuth)│  (CRUD)   │ (parsing) │(LangChain│(Puppeteer) │  │
+│  │ (JWT/OAuth)│  (CRUD)   │ (parsing) │ (Azure   │(Puppeteer) │  │
 │  └────────────┴───────────┴───────────┴──────────┴────────────┘  │
 │  ┌────────────┬───────────┬───────────┬──────────┬────────────┐  │
 │  │  Resume    │ Interviews│ Templates │  Email   │Subscription│  │
@@ -25,21 +25,21 @@
      │          │          │          │          │         │
      ▼          ▼          ▼          ▼          ▼         ▼
 ┌─────────┐ ┌────────┐ ┌─────────┐ ┌────────┐ ┌──────┐ ┌────────┐
-│Postgres │ │ Azure  │ │Upstash  │ │ Azure  │ │Sentry│ │Resend  │
-│  16     │ │ Blob / │ │ QStash /│ │   AI   │ │      │ │ (mail) │
-│(pg pool)│ │ AWS S3 │ │SvcBus   │ │Foundry │ │(APM) │ │        │
-│         │ │ / disk │ │ / mem   │ │+OpenAI │ │      │ │        │
+│Postgres │ │  R2 /  │ │Upstash  │ │ Azure  │ │Sentry│ │Resend  │
+│  16     │ │  disk  │ │ QStash /│ │   AI   │ │      │ │ (mail) │
+│(pg pool)│ │        │ │  mem    │ │Foundry │ │(APM) │ │        │
+│         │ │        │ │         │ │+OpenAI │ │      │ │        │
 └─────────┘ └────────┘ └─────────┘ └────────┘ └──────┘ └────────┘
                                        │
                                        ▼
                               ┌────────────────┐
-                              │ GPT-4o agents  │
-                              │ (LangGraph)    │
+                              │ Azure OpenAI   │
+                              │ + Foundry agts │
                               └────────────────┘
 ```
 
-> **Pluggable providers:** Storage (Blob/S3/disk), Queue (QStash/Service Bus/in-memory),
-> LLM (Azure OpenAI/Hugging Face/mock), and Cache (Upstash Redis/node-cache) are all selected via env.
+> **Pluggable providers:** Storage (Cloudflare R2 / disk), Queue (QStash / in-memory),
+> LLM (Azure OpenAI / Azure AI Foundry / mock), and Cache (Upstash Redis / node-cache) are all selected via env.
 
 ## 📦 Monorepo Structure (npm Workspaces + Turborepo)
 
@@ -61,7 +61,7 @@ smart-apply/
 │   │   │   ├── health/            # Terminus health checks
 │   │   │   ├── interviews/        # AI mock interview generator
 │   │   │   ├── job-postings/      # Text/URL/file parsers
-│   │   │   ├── jobs/              # Queue providers (QStash / SB / mem)
+│   │   │   ├── jobs/              # Queue providers (QStash / mem)
 │   │   │   ├── keywords/          # ATS keyword extraction & matching
 │   │   │   ├── linkedin-jobs/     # LinkedIn job search
 │   │   │   ├── llm/               # LLM provider abstraction
@@ -70,7 +70,7 @@ smart-apply/
 │   │   │   ├── prisma/            # PrismaService (pg adapter)
 │   │   │   ├── profile/           # Profile CRUD (differential updates)
 │   │   │   ├── resume-parser/     # PDF/DOCX → Profile bootstrap
-│   │   │   ├── storage/           # Blob / S3 / disk providers
+│   │   │   ├── storage/           # Cloudflare R2 / disk providers
 │   │   │   ├── subscription/      # Plans & usage limits
 │   │   │   ├── templates/         # Template catalog
 │   │   │   ├── uploads/           # Upload endpoints
@@ -111,7 +111,7 @@ User → Frontend (Next.js)
         │
         ▼
 ┌──────────────────────────────────────┐
-│ Queue (QStash / Service Bus / mem)   │
+│ Queue (QStash / in-memory)           │
 └──────────────────────────────────────┘
         │
         ▼
@@ -126,9 +126,9 @@ User → Frontend (Next.js)
         │
         ▼
 ┌──────────────────────────────────────┐
-│ LLM Service (LangChain + LangGraph)  │
+│ LLM Service                          │
 │ Provider: Azure OpenAI (GPT-4o) /    │
-│           Hugging Face / mock        │
+│           Azure AI Foundry / mock    │
 │ Circuit-breaker + retries (opossum)  │
 │ 1. Generate cover letter             │
 │ 2. Generate resume                   │
@@ -144,9 +144,9 @@ User → Frontend (Next.js)
         │
         ▼
 ┌──────────────────────────────────────┐
-│ Storage (Azure Blob / S3 / disk)     │
+│ Storage (Cloudflare R2 / disk)       │
 │ 1. Upload PDFs                       │
-│ 2. Generate SAS / pre-signed URLs    │
+│ 2. Generate pre-signed URLs          │
 │ 3. Persist keys in Application       │
 │ 4. Status → READY (SSE push)         │
 └──────────────────────────────────────┘
@@ -227,10 +227,10 @@ User 1:1 Subscription
 | Database    | PostgreSQL 16                                        |
 | ORM         | Prisma 6.19 (`@prisma/adapter-pg` + connection pool) |
 | Auth        | passport-jwt · passport-google · passport-microsoft · passport-azure-ad · argon2 · otplib (2FA) |
-| Queue       | Upstash QStash · Azure Service Bus · in-memory       |
+| Queue       | Upstash QStash · in-memory                           |
 | Cache       | Upstash Redis · node-cache                           |
-| Storage     | Azure Blob · AWS S3 · local disk                     |
-| LLM         | Azure AI Foundry · Azure OpenAI · LangChain · LangGraph · Hugging Face |
+| Storage     | Cloudflare R2 (S3-compatible) · local disk           |
+| LLM         | Azure AI Foundry · Azure OpenAI · mock               |
 | PDF         | Puppeteer 24 + Playwright · Handlebars · pdf-lib · pdf-parse · mammoth (DOCX) |
 | Email       | Resend                                               |
 | Logging     | Pino (req logs) + Winston (audit, daily rotation)    |

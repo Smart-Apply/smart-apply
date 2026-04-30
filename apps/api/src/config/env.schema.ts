@@ -32,10 +32,7 @@ const envSchema = z.object({
   JWT_EXPIRES_IN: z.string().default('15m'),
 
   // Storage
-  STORAGE_DRIVER: z.enum(['disk', 'azure', 'r2']).default('disk'),
-  AZURE_STORAGE_ACCOUNT: z.string().optional(),
-  AZURE_STORAGE_CONTAINER: z.string().default('smartapply'),
-  AZURE_STORAGE_CONNECTION_STRING: z.string().optional(),
+  STORAGE_DRIVER: z.enum(['disk', 'r2']).default('disk'),
 
   // Cloudflare R2 (S3-compatible) — used when STORAGE_DRIVER=r2
   R2_ACCOUNT_ID: z.string().optional(),
@@ -53,7 +50,7 @@ const envSchema = z.object({
   UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
 
   // Jobs / Queue
-  JOBS_DRIVER: z.enum(['in-memory', 'service-bus', 'qstash']).default('in-memory'),
+  JOBS_DRIVER: z.enum(['in-memory', 'qstash']).default('in-memory'),
 
   // Upstash QStash — used when JOBS_DRIVER=qstash
   // Get values at https://console.upstash.com/qstash
@@ -65,10 +62,6 @@ const envSchema = z.object({
   // Falls back to API_BASE_URL + '/api/v1/jobs/qstash-webhook' when unset.
   QSTASH_WEBHOOK_URL: z.string().optional(),
 
-  // Azure Service Bus
-  SERVICE_BUS_CONNECTION_STRING: z.string().optional(),
-  SERVICE_BUS_QUEUE_NAME: z.string().default('application-jobs'),
-
   // Azure Key Vault
   KEY_VAULT_URI: z.string().optional(),
 
@@ -77,7 +70,7 @@ const envSchema = z.object({
   AZURE_OPENAI_API_KEY: z.string().optional(),
   AZURE_OPENAI_DEPLOYMENT_NAME: z.string().default('gpt-4o'),
   AZURE_OPENAI_API_VERSION: z.string().default('2024-02-15-preview'),
-  LLM_PROVIDER: z.enum(['azure-openai', 'azure-ai-foundry', 'mock', 'huggingface']).default('mock'),
+  LLM_PROVIDER: z.enum(['azure-openai', 'azure-ai-foundry', 'mock']).default('mock'),
 
   // LLM Configuration (reuses AZURE_OPENAI_DEPLOYMENT_NAME for model)
   LLM_TEMPERATURE_DEFAULT: z.string().optional(),
@@ -94,10 +87,6 @@ const envSchema = z.object({
   ATS_AGENT_ID: z.string().optional(),
   CV_WRITER_AGENT_ID: z.string().optional(),
   CL_WRITER_AGENT_ID: z.string().optional(),
-
-  // Hugging Face
-  HUGGINGFACE_API_KEY: z.string().optional(),
-  HUGGINGFACE_MODEL: z.string().default('meta-llama/Llama-2-7b-chat-hf'),
 
   // PDF Generation
   PUPPETEER_EXECUTABLE_PATH: z.string().optional(),

@@ -67,20 +67,8 @@ export class ConfigService {
   }
 
   // Storage
-  get storageDriver(): 'disk' | 'azure' | 'r2' {
+  get storageDriver(): 'disk' | 'r2' {
     return this.nestConfig.get('STORAGE_DRIVER', { infer: true });
-  }
-
-  get azureStorageAccount(): string | undefined {
-    return this.nestConfig.get('AZURE_STORAGE_ACCOUNT', { infer: true });
-  }
-
-  get azureStorageContainer(): string {
-    return this.nestConfig.get('AZURE_STORAGE_CONTAINER', { infer: true });
-  }
-
-  get azureStorageConnectionString(): string | undefined {
-    return this.nestConfig.get('AZURE_STORAGE_CONNECTION_STRING', { infer: true });
   }
 
   // Cloudflare R2 (S3-compatible)
@@ -118,15 +106,6 @@ export class ConfigService {
     return this.nestConfig.get('UPSTASH_REDIS_REST_TOKEN', { infer: true });
   }
 
-  // Service Bus
-  get serviceBusConnectionString(): string | undefined {
-    return this.nestConfig.get('SERVICE_BUS_CONNECTION_STRING', { infer: true });
-  }
-
-  get serviceBusQueueName(): string {
-    return this.nestConfig.get('SERVICE_BUS_QUEUE_NAME', { infer: true });
-  }
-
   // Key Vault
   get keyVaultUri(): string | undefined {
     return this.nestConfig.get('KEY_VAULT_URI', { infer: true });
@@ -149,7 +128,7 @@ export class ConfigService {
     return this.nestConfig.get('AZURE_OPENAI_API_VERSION', { infer: true });
   }
 
-  get llmProvider(): 'azure-openai' | 'azure-ai-foundry' | 'mock' | 'huggingface' {
+  get llmProvider(): 'azure-openai' | 'azure-ai-foundry' | 'mock' {
     return this.nestConfig.get('LLM_PROVIDER', { infer: true });
   }
 
@@ -166,14 +145,6 @@ export class ConfigService {
     return this.nestConfig.get('LOG_LLM_CALLS', { infer: true }) === 'true';
   }
 
-  get huggingFaceApiKey(): string | undefined {
-    return this.nestConfig.get('HUGGINGFACE_API_KEY', { infer: true });
-  }
-
-  get huggingFaceModel(): string {
-    return this.nestConfig.get('HUGGINGFACE_MODEL', { infer: true });
-  }
-
   // Azure AI Foundry Agents
   get azureAIFoundryCvWriterEndpoint(): string | undefined {
     return this.nestConfig.get('AZURE_AI_FOUNDRY_CV_WRITER_ENDPOINT', { infer: true });
@@ -188,7 +159,7 @@ export class ConfigService {
   }
 
   // Jobs
-  get jobsDriver(): 'in-memory' | 'service-bus' | 'qstash' {
+  get jobsDriver(): 'in-memory' | 'qstash' {
     return this.nestConfig.get('JOBS_DRIVER', { infer: true });
   }
 

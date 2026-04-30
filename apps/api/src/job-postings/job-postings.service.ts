@@ -43,26 +43,24 @@ export class JobPostingsService {
     let parsed: ParsedJobData;
 
     // 1. Determine input source and extract text
-    // Priority: URL > File > Text (URLs are most specific and should use agent parser)
+    // Priority: URL > File > Text
     if (dto.url) {
       this.logger.log(`Parsing job posting from URL: ${dto.url}`);
       const urlResult = await this.urlParser.parse(dto.url);
 
-      // Check if we got structured data from agent parser
       if (typeof urlResult === 'object' && 'rawText' in urlResult) {
-        // Agent parser returned structured data
+        // Agent parser returned structured data (dynamic site or Cheerio fallback)
         rawText = urlResult.rawText;
         parsed = urlResult;
-        this.logger.log('✅ Agent parser returned structured data');
+        this.logger.log('Agent parser returned structured data');
       } else {
         // Cheerio parser returned raw text
         rawText = urlResult as string;
         parsed = this.extractStructuredData(rawText);
-        // Ensure fullText is present
         if (!parsed.fullText) {
           parsed.fullText = rawText;
         }
-        this.logger.log('✅ Cheerio parser returned raw text');
+        this.logger.log('Cheerio parser returned raw text');
       }
     } else if (dto.fileId) {
       this.logger.log(`Parsing job posting from file: ${dto.fileId}`);

@@ -19,8 +19,21 @@ export class UrlParser {
   private readonly useAgentFallback: boolean;
   private agentParser?: AgentUrlParser;
 
+  /**
+   * Job boards that render content with JavaScript and need the
+   * Playwright-based agent parser. Cheerio cannot extract anything
+   * meaningful from these.
+   */
+  private readonly DYNAMIC_SITES = [
+    'linkedin.com',
+    'workwise.io',
+    'indeed.com',
+    'glassdoor.com',
+    'xing.com',
+  ];
+
   constructor() {
-    // Check if agent-based parsing is enabled
+    // Agent parser is enabled by default; disable with ENABLE_AGENT_PARSER=false
     this.useAgentFallback = process.env.ENABLE_AGENT_PARSER !== 'false';
 
     if (this.useAgentFallback) {
@@ -28,34 +41,36 @@ export class UrlParser {
         this.agentParser = new AgentUrlParser();
         this.logger.log('Agent-based URL parser enabled as fallback');
       } catch (error) {
-        this.logger.warn('Failed to initialize agent parser, continuing with Cheerio only');
+        this.logger.warn(
+          `Failed to initialize agent parser, continuing with Cheerio only: ${error.message}`,
+        );
         this.useAgentFallback = false;
       }
     }
   }
 
   /**
-   * Parse job posting from URL with intelligent fallback strategy
-   * 1. For dynamic sites (LinkedIn, Workwise, etc.), use agent parser directly
-   * 2. For static sites, try fast Cheerio parser first
-   * 3. If insufficient data, use agent-based parser as fallback
-   * 4. Return error with guidance if both fail
-   * @param url URL to job posting page
-   * @returns Parsed job data or raw text
+   * Parse job posting from URL with intelligent fallback strategy:
+   * 1. Known dynamic sites (LinkedIn, Workwise, etc.) → agent parser directly
+   * 2. Static sites → fast Cheerio first
+   * 3. If Cheerio returns thin content → agent parser fallback
+   * 4. Otherwise → friendly error asking the user to paste the text
    */
   async parse(url: string): Promise<string | ParsedJobData> {
-    // Check if URL is from a known dynamic site that requires agent parser
-    const dynamicSites = ['linkedin.com', 'workwise.io', 'indeed.com', 'glassdoor.com', 'xing.com'];
+    const isDynamicSite = this.DYNAMIC_SITES.some((site) => url.includes(site));
 
-    const isDynamicSite = dynamicSites.some((site) => url.includes(site));
+    if (isDynamicSite) {
+      if (!this.useAgentFallback || !this.agentParser) {
+        throw new BadRequestException(
+          'This job board renders content with JavaScript and requires the agent parser. ' +
+            'Please copy the job description text directly into the form, ' +
+            'or set ENABLE_AGENT_PARSER=true.',
+        );
+      }
 
-    // For dynamic sites, skip Cheerio and go directly to agent parser
-    if (isDynamicSite && this.useAgentFallback && this.agentParser) {
       this.logger.log(`Detected dynamic site, using agent parser directly for ${url}`);
       try {
         const agentResult = await this.agentParser.parse(url);
-
-        // Convert agent result to our format (convert null to undefined)
         return {
           title: agentResult.title,
           company: agentResult.company,
@@ -66,37 +81,31 @@ export class UrlParser {
         };
       } catch (error) {
         this.logger.error(`Agent parser failed for ${url}: ${error.message}`);
-        // Re-throw with original message if it's already a user-friendly error (from bot protection detection)
         throw new BadRequestException(
           error.message ||
             'Failed to parse job posting from dynamic site. ' +
-              'Try copying the job description text directly instead of using the URL.',
+              'Please copy the job description text directly into the form.',
         );
       }
     }
 
-    // Step 1: Try fast Cheerio-based parsing for static sites
+    // Static / server-rendered sites: try fast Cheerio first
     try {
       const text = await this.parseWithCheerio(url);
-
-      // Check if we got sufficient content
       if (this.isSufficientContent(text)) {
         this.logger.log(`Successfully parsed ${url} with Cheerio (fast path)`);
         return text;
       }
-
       this.logger.warn(`Insufficient content from Cheerio for ${url}, trying agent parser...`);
     } catch (error) {
       this.logger.debug(`Cheerio parser failed for ${url}: ${error.message}`);
     }
 
-    // Step 2: Try agent-based parsing if enabled
+    // Cheerio failed or returned thin content → try the agent
     if (this.useAgentFallback && this.agentParser) {
       try {
         this.logger.log(`Using agent-based parser for ${url}`);
         const agentResult = await this.agentParser.parse(url);
-
-        // Convert agent result to our format (convert null to undefined)
         return {
           title: agentResult.title,
           company: agentResult.company,
@@ -107,27 +116,22 @@ export class UrlParser {
         };
       } catch (error) {
         this.logger.error(`Agent parser also failed for ${url}: ${error.message}`);
-        // Re-throw with original message if it's already a user-friendly error (from bot protection detection)
         throw new BadRequestException(
           error.message ||
-            'Failed to parse job posting. This site may require manual copying. ' +
-              'Try copying the job description text directly instead of using the URL.',
+            'Failed to parse job posting. Please copy the job description text directly into the form.',
         );
       }
     }
 
-    // Step 3: No fallback available
     throw new BadRequestException(
       'Could not extract sufficient content from URL. ' +
         'This site may use heavy JavaScript rendering. ' +
-        'Try enabling the agent-based parser (ENABLE_AGENT_PARSER=true) or copy the text directly.',
+        'Try enabling the agent parser (ENABLE_AGENT_PARSER=true) or copy the text directly.',
     );
   }
 
   /**
    * Parse job posting using Cheerio (fast but limited to static HTML)
-   * @param url URL to job posting page
-   * @returns Extracted text content
    */
   private async parseWithCheerio(url: string): Promise<string> {
     try {
@@ -232,7 +236,8 @@ export class UrlParser {
   }
 
   /**
-   * Convert agent result to raw text format
+   * Convert agent extraction result into a plain-text "raw" representation
+   * (used as the JobPosting.rawText for downstream consumers).
    */
   private convertToRawText(agentResult: JobPostingExtraction): string {
     const parts: string[] = [];
@@ -244,7 +249,6 @@ export class UrlParser {
       parts.push(`Location: ${agentResult.location}`);
     }
 
-    // Add full text content
     if (agentResult.fullText) {
       parts.push(`\n${agentResult.fullText}`);
     }
@@ -252,3 +256,4 @@ export class UrlParser {
     return parts.join('\n');
   }
 }
+

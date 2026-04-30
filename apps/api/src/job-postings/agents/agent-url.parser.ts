@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { chromium, Browser, Page } from 'playwright';
-import { AzureChatOpenAI } from '@langchain/openai';
 import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { PromptService } from '../../common/services';
@@ -31,7 +30,14 @@ const JobPostingSchema = z.object({
 export type JobPostingExtraction = z.infer<typeof JobPostingSchema>;
 
 // Constants
-const MAX_CONTENT_LENGTH = 12000; // Character limit for LLM processing (GPT-4o-mini context window optimization)
+const MAX_CONTENT_LENGTH = 12000; // Character limit for LLM processing
+const LLM_TEMPERATURE = 0; // Deterministic — no creative rewriting/translation
+const LLM_MAX_TOKENS = 16000; // High limit for long job postings
+
+interface ChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
 
 @Injectable()
 export class AgentUrlParser {
@@ -39,39 +45,33 @@ export class AgentUrlParser {
   private browser: Browser | null = null;
   private readonly maxSteps: number;
   private readonly timeout: number;
-  private readonly llm: AzureChatOpenAI;
+
+  // Azure OpenAI config (read from env, same vars as AzureOpenAIProvider)
+  private readonly azureEndpoint: string;
+  private readonly azureApiKey: string;
+  private readonly azureDeployment: string;
+  private readonly azureApiVersion: string;
 
   constructor() {
-    // Configuration from environment variables
     this.maxSteps = parseInt(process.env.AGENT_MAX_STEPS || '10', 10);
     this.timeout = parseInt(process.env.AGENT_TIMEOUT || '30000', 10);
 
-    // Initialize LLM for agent reasoning using Azure OpenAI
-    const azureEndpoint = process.env.AZURE_OPENAI_ENDPOINT;
-    const azureApiKey = process.env.AZURE_OPENAI_API_KEY;
-    const azureDeployment = process.env.AZURE_OPENAI_DEPLOYMENT_NAME;
-    const azureApiVersion = process.env.AZURE_OPENAI_API_VERSION || '2024-10-21';
+    this.azureEndpoint = process.env.AZURE_OPENAI_ENDPOINT || '';
+    this.azureApiKey = process.env.AZURE_OPENAI_API_KEY || '';
+    this.azureDeployment = process.env.AZURE_OPENAI_DEPLOYMENT_NAME || '';
+    this.azureApiVersion = process.env.AZURE_OPENAI_API_VERSION || '2024-10-21';
 
-    if (!azureEndpoint || !azureApiKey || !azureDeployment) {
+    if (!this.azureEndpoint || !this.azureApiKey || !this.azureDeployment) {
       throw new Error(
         'Azure OpenAI configuration missing. Please set AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY, and AZURE_OPENAI_DEPLOYMENT_NAME',
       );
     }
 
-    this.llm = new AzureChatOpenAI({
-      azureOpenAIApiKey: azureApiKey,
-      azureOpenAIApiDeploymentName: azureDeployment,
-      azureOpenAIApiVersion: azureApiVersion,
-      azureOpenAIEndpoint: azureEndpoint,
-      temperature: 0.0, // Zero temperature = deterministic, no creativity, no translation
-      maxTokens: 16000, // High limit for long job postings (GPT-4o-mini supports up to 16k output tokens)
-    });
-
-    this.logger.log('AgentUrlParser initialized with Azure OpenAI');
+    this.logger.log('AgentUrlParser initialized with Azure OpenAI (direct HTTP)');
   }
 
   /**
-   * Parse job posting from URL using AI agent with browser automation
+   * Parse job posting from URL using a headless browser + Azure OpenAI extraction.
    * @param url The job posting URL
    * @returns Structured job posting data
    */
@@ -80,22 +80,11 @@ export class AgentUrlParser {
     const startTime = Date.now();
 
     try {
-      // Step 1: Initialize browser
       await this.initBrowser();
-
-      // Step 2: Navigate to URL and wait for content
       const page = await this.navigateToUrl(url);
-
-      // Step 3: Extract page content
       const pageContent = await this.extractPageContent(page);
-
-      // Step 3.5: Check for bot protection / blocking
       this.detectBotProtection(pageContent, url);
-
-      // Step 4: Use LLM to extract structured data
       const extracted = await this.extractStructuredData(pageContent, url);
-
-      // Step 5: Validate extraction completeness
       this.validateExtraction(extracted);
 
       const duration = Date.now() - startTime;
@@ -106,47 +95,41 @@ export class AgentUrlParser {
       this.logger.error(`Agent parsing failed for ${url}: ${error.message}`);
       throw error;
     } finally {
-      // Cleanup
       await this.closeBrowser();
     }
   }
 
   /**
    * Detect if the page is blocked by bot protection (Cloudflare, CAPTCHA, etc.)
-   * Throws a user-friendly error if blocking is detected
    */
   private detectBotProtection(pageContent: string, url: string): void {
     const contentLower = pageContent.toLowerCase();
     const hostname = new URL(url).hostname;
 
-    // Cloudflare block indicators
     const cloudflareBlocked =
       contentLower.includes('you have been blocked') ||
       contentLower.includes('ray id') ||
       contentLower.includes('cloudflare') ||
       (contentLower.includes('request blocked') && contentLower.includes('error'));
 
-    // CAPTCHA indicators
     const captchaBlocked =
       contentLower.includes('captcha') ||
       contentLower.includes('verify you are human') ||
       contentLower.includes('i am not a robot') ||
       contentLower.includes('recaptcha');
 
-    // Access denied indicators
     const accessDenied =
       contentLower.includes('access denied') ||
       contentLower.includes('403 forbidden') ||
       contentLower.includes('permission denied');
 
-    // Rate limiting indicators
     const rateLimited =
       contentLower.includes('too many requests') ||
       contentLower.includes('rate limit') ||
       contentLower.includes('429');
 
     if (cloudflareBlocked) {
-      this.logger.warn(`🛡️ Cloudflare block detected for ${hostname}`);
+      this.logger.warn(`Cloudflare block detected for ${hostname}`);
       throw new Error(
         `Diese Webseite (${hostname}) blockiert automatisierte Zugriffe mit Cloudflare. ` +
           `Bitte kopiere die Stellenbeschreibung direkt und füge sie als Text ein.`,
@@ -154,7 +137,7 @@ export class AgentUrlParser {
     }
 
     if (captchaBlocked) {
-      this.logger.warn(`🤖 CAPTCHA detected for ${hostname}`);
+      this.logger.warn(`CAPTCHA detected for ${hostname}`);
       throw new Error(
         `Diese Webseite (${hostname}) erfordert eine CAPTCHA-Verifizierung. ` +
           `Bitte kopiere die Stellenbeschreibung direkt und füge sie als Text ein.`,
@@ -162,7 +145,7 @@ export class AgentUrlParser {
     }
 
     if (accessDenied) {
-      this.logger.warn(`🚫 Access denied for ${hostname}`);
+      this.logger.warn(`Access denied for ${hostname}`);
       throw new Error(
         `Zugriff auf diese Webseite (${hostname}) wurde verweigert. ` +
           `Bitte kopiere die Stellenbeschreibung direkt und füge sie als Text ein.`,
@@ -170,20 +153,18 @@ export class AgentUrlParser {
     }
 
     if (rateLimited) {
-      this.logger.warn(`⏱️ Rate limited by ${hostname}`);
+      this.logger.warn(`Rate limited by ${hostname}`);
       throw new Error(
         `Zu viele Anfragen an ${hostname}. Bitte warte einen Moment und versuche es erneut, ` +
           `oder kopiere die Stellenbeschreibung direkt und füge sie als Text ein.`,
       );
     }
 
-    // Check if content is too short (likely blocked or error page)
     const cleanedContent = pageContent.replace(/\s+/g, ' ').trim();
     if (cleanedContent.length < 300) {
       this.logger.warn(
-        `📄 Page content suspiciously short (${cleanedContent.length} chars) for ${hostname}`,
+        `Page content suspiciously short (${cleanedContent.length} chars) for ${hostname}`,
       );
-      // Don't throw here, let the LLM try to extract what it can
     }
   }
 
@@ -197,7 +178,6 @@ export class AgentUrlParser {
 
     this.logger.debug('Launching browser...');
 
-    // Use system Chromium if available (Docker/production)
     const executablePath =
       process.env.CHROMIUM_EXECUTABLE_PATH ||
       process.env.PUPPETEER_EXECUTABLE_PATH ||
@@ -224,33 +204,23 @@ export class AgentUrlParser {
     }
 
     const page = await this.browser.newPage();
-
-    // Set realistic viewport and user agent
     await page.setViewportSize({ width: 1920, height: 1080 });
 
     try {
       this.logger.debug(`Navigating to ${url}`);
 
-      // Navigate with timeout
       await page.goto(url, {
         waitUntil: 'domcontentloaded',
         timeout: this.timeout,
       });
 
-      // Wait for network to be idle (dynamic content loaded)
       await page
-        .waitForLoadState('networkidle', {
-          timeout: 5000,
-        })
+        .waitForLoadState('networkidle', { timeout: 5000 })
         .catch(() => {
-          // Ignore timeout, some sites continuously load content
           this.logger.debug('Network idle timeout, proceeding anyway');
         });
 
-      // Handle common popups and cookie banners
       await this.handlePopups(page);
-
-      // Additional wait for JavaScript rendering
       await page.waitForTimeout(3000);
 
       return page;
@@ -264,7 +234,6 @@ export class AgentUrlParser {
    * Handle cookie banners and popups
    */
   private async handlePopups(page: Page): Promise<void> {
-    // Common selectors for accept buttons on cookie banners
     const acceptSelectors = [
       'button:has-text("Accept")',
       'button:has-text("Accept all")',
@@ -285,35 +254,30 @@ export class AgentUrlParser {
           break;
         }
       } catch {
-        // Ignore if button not found or not clickable
+        // ignore
       }
     }
   }
 
   /**
-   * Extract text content from page
-   * Uses a generic approach: tries multiple common selectors and picks the one with most content
+   * Extract text content from page using a battery of common selectors.
    */
   private async extractPageContent(page: Page): Promise<string> {
     this.logger.debug('Extracting page content...');
 
-    // Generic selectors for job postings across different sites
-    // Ordered by specificity (more specific first)
     const mainContentSelectors = [
-      // LinkedIn-specific selectors (MOST SPECIFIC - try first)
+      // LinkedIn-specific
       '.jobs-description__content',
       '.jobs-description',
       '.show-more-less-html__markup',
       '[class*="jobs-description"]',
-
-      // ID-based selectors (most specific)
+      // ID-based
       '#jobDescriptionText',
       '#job-description',
       '#jobDescription',
       '[id*="job-description"]',
       '[id*="jobDescription"]',
-
-      // Class-based selectors (common patterns)
+      // Class-based
       '.job-description',
       '.job-detail',
       '.job-details',
@@ -321,12 +285,10 @@ export class AgentUrlParser {
       '.posting',
       '[class*="job-description"]',
       '[class*="jobDescription"]',
-
-      // Data attribute selectors
+      // Data attributes
       '[data-testid="job-description"]',
       '[data-testid*="description"]',
-
-      // Semantic HTML (generic fallbacks)
+      // Semantic HTML
       'main',
       '[role="main"]',
       'article',
@@ -337,7 +299,6 @@ export class AgentUrlParser {
     let bestSelector = '';
     let bestLength = 0;
 
-    // Try all selectors and keep the one with most content
     for (const selector of mainContentSelectors) {
       try {
         const element = page.locator(selector).first();
@@ -350,11 +311,10 @@ export class AgentUrlParser {
           }
         }
       } catch {
-        // Continue trying other selectors
+        // ignore
       }
     }
 
-    // Fallback to body if no good content found
     if (bestLength < 200) {
       this.logger.debug('No sufficient content from specific selectors, using body as fallback');
       bestContent = await page.locator('body').innerText();
@@ -364,61 +324,33 @@ export class AgentUrlParser {
 
     this.logger.debug(`Best selector: ${bestSelector} with ${bestLength} characters`);
 
-    // Clean up the content before sending to LLM
     bestContent = this.cleanContent(bestContent);
 
-    // Log content preview for debugging
-    if (bestContent.length < 500) {
-      this.logger.warn(`Content seems short after cleaning: ${bestContent}`);
-    } else {
-      this.logger.debug(`Content preview after cleaning: ${bestContent.substring(0, 300)}...`);
-    }
-
-    // Get page title for additional context
     let title = await page.title();
-
-    // Clean job board names from title (often contains "at Workwise", "- LinkedIn", etc.)
     title = title
       .replace(/\s*[-|]\s*(?:Workwise|LinkedIn|Indeed|StepStone|Xing|Monster|Glassdoor)\s*$/gi, '')
       .replace(/\s*at\s+(?:Workwise|LinkedIn|Indeed|StepStone|Xing|Monster|Glassdoor)\s*$/gi, '')
       .trim();
 
-    this.logger.debug(`Original page title: ${await page.title()}`);
-    this.logger.debug(`Cleaned page title: ${title}`);
-
     const fullContent = `Page Title: ${title}\n\n${bestContent}`;
-
     await page.close();
-
     return fullContent;
   }
 
   /**
-   * Clean extracted content by removing common noise patterns
-   * Removes UI elements, navigation, login prompts, similar jobs, etc.
-   * CONSERVATIVE APPROACH: Only remove obvious noise, keep all job content
+   * Conservative content cleanup — only remove obvious UI noise.
    */
   private cleanContent(content: string): string {
-    // Remove ONLY very specific noise patterns (much less aggressive)
     const noisePatterns = [
-      // Login/Sign-in prompts (only very specific patterns)
       /sign in to create job alert/gi,
       /new to linkedin\? join now/gi,
       /forgot password\?/gi,
-
-      // Job alerts (specific)
       /get notified about new .* jobs/gi,
-
-      // LinkedIn UI noise (specific)
       /be among the first \d+ applicants/gi,
       /over \d+ applicants/gi,
       /\d+ applicants/gi,
-
-      // Repeated UI patterns (specific)
       /show more\s+show less/gi,
       /apply\s+save\s+share/gi,
-
-      // Multiple consecutive newlines
       /\n{4,}/g,
     ];
 
@@ -427,7 +359,6 @@ export class AgentUrlParser {
       cleaned = cleaned.replace(pattern, '\n\n');
     }
 
-    // Remove ONLY very short UI lines (< 20 chars with specific keywords)
     const uiKeywords = /^(apply|save|share|report|sign in|join now|back|home|search|filter|show)$/i;
     const lines = cleaned.split('\n');
     const filteredLines: string[] = [];
@@ -435,14 +366,9 @@ export class AgentUrlParser {
 
     for (const line of lines) {
       const trimmed = line.trim();
-
-      // Skip empty lines temporarily
       if (trimmed.length === 0) continue;
-
-      // Remove ONLY very short UI lines (< 20 chars)
       if (trimmed.length < 20 && uiKeywords.test(trimmed)) continue;
 
-      // Remove duplicate lines (especially job titles repeated)
       const normalized = trimmed.toLowerCase();
       if (seenLines.has(normalized)) continue;
       seenLines.add(normalized);
@@ -452,10 +378,9 @@ export class AgentUrlParser {
 
     cleaned = filteredLines.join('\n');
 
-    // Final cleanup: normalize whitespace but preserve structure
     cleaned = cleaned
-      .replace(/[ \t]+/g, ' ') // Multiple spaces/tabs to single space
-      .replace(/\n{3,}/g, '\n\n') // Max 2 consecutive newlines
+      .replace(/[ \t]+/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
       .trim();
 
     return cleaned;
@@ -463,7 +388,6 @@ export class AgentUrlParser {
 
   /**
    * Segment content into logical sections (requirements, responsibilities, etc.)
-   * This helps the LLM focus on the right content for each field
    */
   private segmentContent(content: string): {
     companyInfo?: string;
@@ -475,7 +399,6 @@ export class AgentUrlParser {
   } {
     const sections: Record<string, string> = {};
 
-    // Pattern to detect section headers (German and English)
     const sectionPatterns = [
       {
         key: 'companyInfo',
@@ -507,7 +430,6 @@ export class AgentUrlParser {
     for (const { key, regex } of sectionPatterns) {
       const matches = [...content.matchAll(regex)];
       if (matches.length > 0) {
-        // Take the first substantial match
         const match = matches[0];
         const extracted = match[key === 'companyInfo' ? 2 : 1]?.trim();
         if (extracted && extracted.length > 30) {
@@ -523,33 +445,24 @@ export class AgentUrlParser {
   }
 
   /**
-   * Use LLM to extract structured job posting data from page content
+   * Use Azure OpenAI (direct HTTP) to extract structured job posting data.
    */
   private async extractStructuredData(content: string, url: string): Promise<JobPostingExtraction> {
-    this.logger.debug('Using LLM to extract structured data...');
-
-    // Log first 500 chars of cleaned content for debugging
-    this.logger.log(`📄 Cleaned content preview (first 500 chars):\n${content.substring(0, 500)}`);
+    this.logger.debug('Using Azure OpenAI to extract structured data...');
 
     const schema = zodToJsonSchema(JobPostingSchema as any);
-
-    // Segment content into logical sections
     const segments = this.segmentContent(content);
-
-    // Detect company name from content
     const companyHint = this.detectCompany(content);
 
-    // Log company detection result prominently
     if (companyHint) {
-      this.logger.log(`🏢 ✅ Detected company: "${companyHint}"`);
+      this.logger.log(`Detected company: "${companyHint}"`);
     } else {
-      this.logger.warn(`🏢 ❌ No company detected - LLM will have to extract from content`);
+      this.logger.warn('No company detected — LLM will have to extract from content');
     }
 
-    // Build structured input for LLM with segmented sections
     let structuredContent = segments.fullContent;
 
-    // CRITICAL: Cut off at "Similar jobs" section to prevent confusion
+    // Cut off at "Similar jobs" section to prevent confusion
     const similarJobsIndex = structuredContent.search(
       /\b(similar jobs|people also viewed|show more jobs|explore collaborative articles)\b/i,
     );
@@ -558,10 +471,8 @@ export class AgentUrlParser {
       this.logger.debug(`Cut content at "Similar jobs" section (position ${similarJobsIndex})`);
     }
 
-    // Limit to max length
     structuredContent = structuredContent.substring(0, MAX_CONTENT_LENGTH);
 
-    // Add segmented sections as hints if available
     if (segments.companyInfo) {
       structuredContent += `\n\n=== COMPANY SECTION ===\n${segments.companyInfo}`;
     }
@@ -575,7 +486,6 @@ export class AgentUrlParser {
       structuredContent += `\n\n=== NICE TO HAVE SECTION ===\n${segments.niceToHave}`;
     }
 
-    // Load prompt template and inject variables
     const prompt = await PromptService.renderPrompt('extract-job-posting', {
       url,
       content: structuredContent,
@@ -583,17 +493,8 @@ export class AgentUrlParser {
       companyHint: companyHint || 'Not detected - extract from content',
     });
 
-    // Log what we're sending to LLM
-    this.logger.log(
-      `📤 Sending to LLM with company hint: "${companyHint || 'Not detected - extract from content'}"`,
-    );
-    this.logger.log(
-      `📤 FULL CONTENT SENT TO LLM (${structuredContent.length} chars):\n${'='.repeat(80)}\n${structuredContent}\n${'='.repeat(80)}`,
-    );
-
     try {
-      // Invoke LLM with strict system message to prevent translation/rewriting
-      const response = await this.llm.invoke([
+      const responseText = await this.callAzureOpenAI([
         {
           role: 'system',
           content:
@@ -608,13 +509,8 @@ export class AgentUrlParser {
         },
       ]);
 
-      // Parse the response - handle both JSON and text responses
-      let jsonText = response.content.toString();
-
-      // Log RAW LLM response for debugging
-      this.logger.log(`📥 RAW LLM RESPONSE (first 500 chars): ${jsonText.substring(0, 500)}`);
-
       // Extract JSON from markdown code blocks if present
+      let jsonText = responseText;
       const jsonMatch = jsonText.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
       if (jsonMatch) {
         jsonText = jsonMatch[1];
@@ -622,24 +518,9 @@ export class AgentUrlParser {
       }
 
       const parsed = JSON.parse(jsonText);
-      this.logger.log(`📥 PARSED JSON keys: ${Object.keys(parsed).join(', ')}`);
-      this.logger.log(
-        `📥 PARSED fullText exists: ${!!parsed.fullText}, length: ${parsed.fullText?.length || 0}`,
-      );
-
-      // Validate against schema
       const validated = JobPostingSchema.parse(parsed);
 
-      // Log extracted company for comparison
-      this.logger.log(`📥 LLM extracted company: "${validated.company}"`);
-      this.logger.log(
-        `📥 LLM extracted fullText length: ${validated.fullText?.length || 0} characters`,
-      );
-      this.logger.log(
-        `📥 LLM extracted fullText preview (first 200 chars): ${validated.fullText?.substring(0, 200) || 'EMPTY'}`,
-      );
-
-      // Post-processing: Override if LLM extracted a job board name but we detected the real company
+      // Override if LLM picked a job board name but we detected the real company
       const jobBoardBlacklist = [
         'Workwise',
         'LinkedIn',
@@ -651,12 +532,12 @@ export class AgentUrlParser {
       ];
       if (companyHint && jobBoardBlacklist.includes(validated.company)) {
         this.logger.warn(
-          `⚠️ LLM extracted blacklisted job board "${validated.company}" - overriding with detected company "${companyHint}"`,
+          `LLM extracted blacklisted job board "${validated.company}" — overriding with detected company "${companyHint}"`,
         );
         validated.company = companyHint;
       } else if (companyHint && validated.company !== companyHint) {
         this.logger.warn(
-          `⚠️ COMPANY MISMATCH! Detected: "${companyHint}" but LLM extracted: "${validated.company}"`,
+          `Company mismatch — detected: "${companyHint}" but LLM extracted: "${validated.company}"`,
         );
       }
 
@@ -669,10 +550,51 @@ export class AgentUrlParser {
   }
 
   /**
+   * Direct HTTP call to Azure OpenAI chat completions endpoint.
+   * Replaces the previous LangChain `AzureChatOpenAI.invoke()` dependency.
+   */
+  private async callAzureOpenAI(messages: ChatMessage[]): Promise<string> {
+    const url =
+      `${this.azureEndpoint.replace(/\/$/, '')}` +
+      `/openai/deployments/${this.azureDeployment}/chat/completions` +
+      `?api-version=${this.azureApiVersion}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'api-key': this.azureApiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messages,
+        temperature: LLM_TEMPERATURE,
+        max_tokens: LLM_MAX_TOKENS,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text().catch(() => '');
+      throw new Error(
+        `Azure OpenAI request failed: ${response.status} ${response.statusText}${errorBody ? ` — ${errorBody.slice(0, 500)}` : ''}`,
+      );
+    }
+
+    const data = (await response.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
+    };
+
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) {
+      throw new Error('Azure OpenAI returned no content');
+    }
+
+    return content;
+  }
+
+  /**
    * Detect company name from content using patterns
    */
   private detectCompany(content: string): string | null {
-    // Try to find "Über [Company]" or "About [Company]" patterns (highest priority)
     const aboutPatterns = [
       /über\s+([A-Z][A-Za-z0-9\s&.,-]{2,50}(?:\s+GmbH|\s+AG|\s+SE|\s+Inc\.|\s+LLC|\s+Ltd\.))/i,
       /about\s+([A-Z][A-Za-z0-9\s&.,-]{2,50}(?:\s+GmbH|\s+AG|\s+SE|\s+Inc\.|\s+LLC|\s+Ltd\.))/i,
@@ -681,17 +603,12 @@ export class AgentUrlParser {
     for (const pattern of aboutPatterns) {
       const match = content.match(pattern);
       if (match && match[1]) {
-        const company = match[1].trim();
-        this.logger.debug(`Detected company from 'Über/About' section: ${company}`);
-        return company;
+        return match[1].trim();
       }
     }
 
-    // Try to find company in job posting metadata patterns
     const metadataPatterns = [
-      // "Platform Architect - AWS at SAPERED Essen"
       /at\s+([A-Z][A-Za-z0-9\s&.,-]{2,50})\s+(?:Essen|Berlin|Munich|Hamburg|remote)/i,
-      // "SAPERED GmbH 2 weeks ago"
       /([A-Z][A-Za-z0-9\s&.,-]{2,50}(?:\s+GmbH|\s+AG|\s+SE))\s+\d+\s+(?:hours?|days?|weeks?|months?)\s+ago/i,
     ];
 
@@ -709,7 +626,6 @@ export class AgentUrlParser {
           'Talent',
         ];
         if (!blacklist.some((term) => company.includes(term))) {
-          this.logger.debug(`Detected company from metadata: ${company}`);
           return company;
         }
       }
@@ -730,12 +646,9 @@ export class AgentUrlParser {
       throw new Error('Company name not found or too short');
     }
 
-    // Validate fullText has sufficient content
     if (!data.fullText || data.fullText.length < 50) {
       throw new Error('Insufficient job posting content extracted');
     }
-
-    this.logger.debug('Extraction validation passed');
   }
 
   /**
@@ -750,7 +663,7 @@ export class AgentUrlParser {
   }
 
   /**
-   * Health check for agent functionality
+   * Health check — verifies the browser can launch.
    */
   async healthCheck(): Promise<boolean> {
     try {
@@ -763,3 +676,4 @@ export class AgentUrlParser {
     }
   }
 }
+

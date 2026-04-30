@@ -3,7 +3,7 @@
 ## Goal
 Deliver a production-grade, multi-provider application with:
 1) **Frontend (Next.js 16 + React 19)**: Auth (email/password + OAuth + 2FA), profile management, job-posting ingestion, application dashboard with PDF preview/editing, deployed to **Cloudflare Workers** via OpenNext.
-2) **Backend API (NestJS 11)**: Candidate profile (skills, experiences, education, certificates, projects, languages), ingests job postings (text/URL/file → normalized), generates tailored cover letter + resume via **LangChain + LangGraph** on Azure OpenAI / Hugging Face / mock.
+2) **Backend API (NestJS 11)**: Candidate profile (skills, experiences, education, certificates, projects, languages), ingests job postings (text/URL/file → normalized), generates tailored cover letter + resume on Azure OpenAI / mock.
 3) **PDF Generation**: Puppeteer + Handlebars (50 templates, ATS-optimized), stored via pluggable storage (Azure Blob / AWS S3 / disk) and retrieved via signed URLs.
 
 ## Agent Instructions
@@ -52,12 +52,12 @@ Also update this `copilot-instructions.md` file (Tech Stack, Backend Modules, Da
 - **Auth:** passport-jwt, passport-google-oauth20, passport-microsoft, passport-azure-ad, argon2id, **otplib + qrcode + speakeasy** (TOTP 2FA)
 - **Refresh tokens:** dual-token rotation, device tracking, max 5/user
 - **Sessions:** multi-device, IP/UA, remote logout, cron cleanup
-- **Storage (pluggable via `STORAGE_DRIVER`):** `disk` | `azure-blob` | `s3` (`@azure/storage-blob`, `@aws-sdk/client-s3`)
-- **Queue (pluggable via `JOBS_PROVIDER`):** `in-memory` | `service-bus` | `qstash` (`@upstash/qstash`)
+- **Storage (pluggable via `STORAGE_DRIVER`):** `disk` | `r2` (`@aws-sdk/client-s3`)
+- **Queue (pluggable via `JOBS_PROVIDER`):** `in-memory` | `qstash` (`@upstash/qstash`)
 - **Cache:** Upstash Redis (`@upstash/redis`) + `node-cache`
-- **LLM (pluggable via `LLM_PROVIDER`):** `azure-openai` | `huggingface` | `mock`
-  - Orchestration via **LangChain 1.2 + LangGraph 1.0** (`@langchain/openai`, `@langchain/community`)
-  - Azure AI Foundry agents (`@azure/ai-agents`) for URL parsing
+- **LLM (pluggable via `LLM_PROVIDER`):** `azure-openai` | `azure-ai-foundry` | `mock`
+  - Direct Azure OpenAI HTTP calls (`@nestjs/axios`)
+  - Azure AI Foundry agents (`@azure/ai-agents`) for ATS keyword extraction, CV/CL writing
   - **opossum** circuit breaker around LLM calls
 - **PDF:** Puppeteer 24 + Playwright 1.56 + Handlebars + pdf-lib + pdf-parse + mammoth (DOCX); browser instance pool via `generic-pool`
 - **Email:** Resend (`resend`) for transactional mail
@@ -97,16 +97,16 @@ Also update this `copilot-instructions.md` file (Tech Stack, Backend Modules, Da
 - `health` — Terminus health checks
 - `interviews` — AI mock-interview Q&A generator
 - `job-postings` — parse text/URL/file → normalized JobPosting
-- `jobs` — pluggable queue providers (`in-memory` | `service-bus` | `qstash`)
+- `jobs` — pluggable queue providers (`in-memory` | `qstash`)
 - `keywords` — ATS keyword extraction & matching with language detection
 - `linkedin-jobs` — LinkedIn job search
-- `llm` — pluggable providers (`azure-openai` | `huggingface` | `mock`) with automatic language detection, LangChain/LangGraph orchestration, opossum circuit breaker
+- `llm` — pluggable providers (`azure-openai` | `azure-ai-foundry` | `mock`) with automatic language detection, opossum circuit breaker
 - `logger` — Pino + Winston audit logger
 - `pdf` — Puppeteer + Handlebars (50 templates), ATS-optimized; browser pool via `generic-pool`
 - `prisma` — PrismaService
 - `profile` — CRUD with **differential updates** (Skills, Experiences, Education, Certificates, Projects, Languages)
 - `resume-parser` — PDF/DOCX → Profile bootstrap (pdf-parse + mammoth)
-- `storage` — pluggable providers (`disk` | `azure-blob` | `s3`)
+- `storage` — pluggable providers (`disk` | `r2`)
 - `subscription` — plans & usage limits
 - `templates` — template catalog
 - `uploads` — file uploads
@@ -356,11 +356,11 @@ PUT /api/v1/profile
 1. Load Profile + JobPosting; enforce subscription usage limits
 2. Detect language (DE/EN), select template (lang × design), extract ATS keywords
 3. Render prompt templates (`prompts/cover-letter.md`, `prompts/resume.md`)
-4. Call LLM via LangChain/LangGraph (provider abstraction) wrapped in **opossum** circuit breaker → Markdown/HTML
+4. Call LLM via provider abstraction wrapped in **opossum** circuit breaker → Markdown/HTML
 5. HTML → PDF via Puppeteer **browser pool** (`generic-pool`); pdf-lib post-processing
 6. Upload PDFs via storage provider (Blob/S3/disk); persist keys + signed URLs
 7. Status: `PENDING → GENERATING → READY | FAILED` (pushed to client via **SSE**)
-8. Background work via pluggable queue (`qstash` | `service-bus` | `in-memory`)
+8. Background work via pluggable queue (`qstash` | `in-memory`)
 
 ## Prompt Templates
 - **cover-letter.md**: concise, 1 page, intro → fit (3–5 bullets) → motivation → closing
@@ -471,7 +471,7 @@ RATE_LIMIT_AUTH_MAX=5        # Auth endpoints (STRICT)
 ENABLE_CSRF=false
 
 # Storage (pluggable)
-STORAGE_DRIVER=disk          # disk | azure-blob | s3
+STORAGE_DRIVER=disk          # disk | r2
 AZURE_STORAGE_ACCOUNT=<account>
 AZURE_STORAGE_CONTAINER=smartapply
 AZURE_STORAGE_CONNECTION_STRING=<conn-string>
@@ -481,8 +481,7 @@ AWS_ACCESS_KEY_ID=<key>
 AWS_SECRET_ACCESS_KEY=<secret>
 
 # Queue (pluggable)
-JOBS_PROVIDER=in-memory      # in-memory | service-bus | qstash
-SERVICE_BUS_CONNECTION_STRING=<sb-conn>
+JOBS_PROVIDER=in-memory      # in-memory | qstash
 QSTASH_TOKEN=<upstash-qstash-token>
 QSTASH_CURRENT_SIGNING_KEY=<key>
 QSTASH_NEXT_SIGNING_KEY=<key>
@@ -492,11 +491,10 @@ UPSTASH_REDIS_REST_URL=<url>
 UPSTASH_REDIS_REST_TOKEN=<token>
 
 # LLM (pluggable)
-LLM_PROVIDER=mock            # azure-openai | huggingface | mock
+LLM_PROVIDER=mock            # azure-openai | azure-ai-foundry | mock
 AZURE_OPENAI_ENDPOINT=https://your-aoai.openai.azure.com/
 AZURE_OPENAI_API_KEY=<key>
 AZURE_OPENAI_DEPLOYMENT_NAME=<deployment>
-HUGGINGFACE_API_KEY=<key>
 
 # Azure AI Foundry (URL parsing agents)
 AZURE_AI_FOUNDRY_ENDPOINT=<endpoint>

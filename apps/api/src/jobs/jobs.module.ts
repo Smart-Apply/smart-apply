@@ -11,15 +11,13 @@ import { JobsService } from './jobs.service';
 import { JobsController } from './jobs.controller';
 import { QStashWebhookController } from './qstash-webhook.controller';
 import { InMemoryQueueProvider } from './providers/in-memory-queue.provider';
-import { AzureServiceBusProvider } from './providers/azure-service-bus.provider';
 import { QStashQueueProvider } from './providers/qstash-queue.provider';
 import { ApplicationProcessor } from './processors/application.processor';
 
 /**
  * JobsModule wires the queue provider chosen by JOBS_DRIVER:
- *   - 'in-memory'   → InMemoryQueueProvider (default; lost on restart)
- *   - 'service-bus' → AzureServiceBusProvider
- *   - 'qstash'      → QStashQueueProvider + QStashWebhookController active
+ *   - 'in-memory' → InMemoryQueueProvider (default; lost on restart)
+ *   - 'qstash'    → QStashQueueProvider + QStashWebhookController active
  *
  * The QStash webhook controller is always mounted but inert when the driver
  * isn't qstash — it returns 503 if invoked without a configured provider.
@@ -36,9 +34,6 @@ import { ApplicationProcessor } from './processors/application.processor';
       provide: 'QUEUE_PROVIDER',
       useFactory: (configService: ConfigService, prismaService: PrismaService) => {
         const driver = configService.jobsDriver;
-        if (driver === 'service-bus') {
-          return new AzureServiceBusProvider(configService, prismaService);
-        }
         if (driver === 'qstash') {
           return new QStashQueueProvider(configService, prismaService);
         }
@@ -77,3 +72,4 @@ import { ApplicationProcessor } from './processors/application.processor';
   exports: [JobsService],
 })
 export class JobsModule {}
+
