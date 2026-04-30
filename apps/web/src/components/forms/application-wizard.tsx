@@ -37,10 +37,24 @@ const steps: StepConfig[] = [
 
 export type ApplicationLanguage = 'de' | 'en' | 'fr' | 'es' | 'it';
 
-export function ApplicationWizard() {
+interface ApplicationWizardProps {
+  /**
+   * If provided, the wizard skips the "Stelle" step and lands directly on
+   * the generation step with this job pre-selected. Used by the LinkedIn
+   * job-search flow that imports a JobPosting and routes to
+   * `/applications/new?jobPostingId=...`.
+   */
+  initialJobPosting?: JobPosting | null;
+}
+
+export function ApplicationWizard({ initialJobPosting }: ApplicationWizardProps = {}) {
   const router = useRouter();
-  const [currentStep, setCurrentStep] = useState<WizardStep>('job');
-  const [selectedJob, setSelectedJob] = useState<JobPosting | null>(null);
+  const [currentStep, setCurrentStep] = useState<WizardStep>(
+    initialJobPosting ? 'generate' : 'job',
+  );
+  const [selectedJob, setSelectedJob] = useState<JobPosting | null>(
+    initialJobPosting ?? null,
+  );
 
   const { data: profile, isLoading: profileLoading } = useProfile();
 

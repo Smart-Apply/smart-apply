@@ -9,17 +9,41 @@ import { useEffect } from 'react';
  */
 export function ServiceWorkerRegistration() {
   useEffect(() => {
-    // Only register service worker in production or when PWA is enabled
-    if (
-      typeof window !== 'undefined' &&
-      'serviceWorker' in navigator &&
-      process.env.NODE_ENV === 'production'
-    ) {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+
+    if (process.env.NODE_ENV === 'production') {
       registerServiceWorker();
+    } else {
+      // Dev: aggressively kill any stale SW + caches left behind by a
+      // previous `next build` / Cloudflare deploy on the same origin.
+      // Without this, the prod bundle (with prod API URL baked in) keeps
+      // getting served from the SW cache and dev edits never reach the
+      // browser.
+      unregisterAllServiceWorkers();
     }
   }, []);
 
   return null;
+}
+
+async function unregisterAllServiceWorkers() {
+  try {
+    const regs = await navigator.serviceWorker.getRegistrations();
+    if (regs.length === 0) return;
+    await Promise.all(regs.map((r) => r.unregister()));
+    if (typeof caches !== 'undefined') {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+    }
+    // eslint-disable-next-line no-console
+    console.log(
+      `[PWA dev] Unregistered ${regs.length} stale service worker(s) and cleared caches. Reloading...`,
+    );
+    window.location.reload();
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.warn('[PWA dev] Failed to clear stale service worker:', err);
+  }
 }
 
 async function registerServiceWorker() {

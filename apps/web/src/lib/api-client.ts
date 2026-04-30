@@ -43,6 +43,9 @@ import type {
   Disable2FADto,
   RegenerateBackupCodesDto,
   TrustedDevice,
+  LinkedInJob,
+  LinkedInJobSearchFilters,
+  LinkedInJobSearchResponse,
 } from '@/types';
 import {
   ApiError,
@@ -671,6 +674,30 @@ export const api = {
     delete: (id: string) =>
       apiRequest<void>(`/job-postings/${id}`, {
         method: 'DELETE',
+      }),
+  },
+
+  // LinkedIn Jobs (Pro feature)
+  linkedinJobs: {
+    /**
+     * Search LinkedIn job postings via the configured Apify actor.
+     * Throttled server-side to 10 searches/hour to keep Apify costs bounded.
+     */
+    search: (filters: LinkedInJobSearchFilters) =>
+      apiRequest<LinkedInJobSearchResponse>('/linkedin-jobs/search', {
+        method: 'POST',
+        body: JSON.stringify(filters),
+      }),
+
+    /**
+     * Persist a LinkedIn job result as a JobPosting.
+     * Returns the JobPosting so the caller can navigate into the
+     * application wizard (e.g. /applications/new?jobPostingId=...).
+     */
+    import: (job: LinkedInJob) =>
+      apiRequest<JobPosting>('/linkedin-jobs/import', {
+        method: 'POST',
+        body: JSON.stringify({ job }),
       }),
   },
 

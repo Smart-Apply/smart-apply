@@ -40,6 +40,8 @@ export interface TierFeatures {
   prioritySupport: boolean;
   advancedAnalytics: boolean;
   interviewCoach: boolean;
+  /** LinkedIn job search & import (Pro feature) */
+  linkedinImport?: boolean;
 }
 
 export interface TierLimits {
@@ -823,3 +825,106 @@ export interface TrustedDevicesResponse {
   devices: TrustedDevice[];
 }
 
+
+// ============================================
+// LinkedIn Job Search Types (Pro Feature)
+// ============================================
+
+export type LinkedInExperienceLevel = '1' | '2' | '3' | '4' | '5' | '6';
+// 1 = Internship, 2 = Entry level, 3 = Associate, 4 = Mid-Senior level,
+// 5 = Director, 6 = Executive
+
+export type LinkedInJobType = 'F' | 'P' | 'C' | 'T' | 'I' | 'V' | 'O';
+// F = Full-time, P = Part-time, C = Contract, T = Temporary,
+// I = Internship, V = Volunteer, O = Other
+
+export type LinkedInRemoteFilter = '1' | '2' | '3';
+// 1 = On-site, 2 = Remote, 3 = Hybrid
+
+export type LinkedInDatePosted = 'r86400' | 'r604800' | 'r2592000';
+// r86400 = past 24 hours, r604800 = past week, r2592000 = past month
+
+export type LinkedInSortBy = 'R' | 'DD';
+// R = Most relevant, DD = Most recent
+
+/**
+ * Country scopes the user can pick from. Maps to a LinkedIn geoId
+ * server-side. Without this, an ambiguous text-only `location` (e.g.
+ * "NRW") falls back to a worldwide LinkedIn search.
+ */
+export type LinkedInCountry =
+  | 'de'
+  | 'at'
+  | 'ch'
+  | 'gb'
+  | 'us'
+  | 'nl'
+  | 'fr'
+  | 'es'
+  | 'it'
+  | 'ww';
+
+/**
+ * Filters supported by the Apify LinkedIn jobs scraper.
+ * Mirrors the actor's URL query parameters.
+ */
+export interface LinkedInJobSearchFilters {
+  keywords?: string;
+  location?: string;
+  /** LinkedIn geoId (numeric region/city ID) — overrides `country` */
+  geoId?: string;
+  /** Country scope (defaults to `de` server-side) */
+  country?: LinkedInCountry;
+  experienceLevel?: LinkedInExperienceLevel[];
+  jobType?: LinkedInJobType[];
+  remote?: LinkedInRemoteFilter[];
+  datePosted?: LinkedInDatePosted;
+  sortBy?: LinkedInSortBy;
+  /** "true" = only easy-apply jobs */
+  easyApply?: boolean;
+  /** Maximum number of results to return (1–250) */
+  count?: number;
+}
+
+/**
+ * A single LinkedIn job result returned by the search endpoint.
+ */
+export interface LinkedInJob {
+  /** Stable identifier returned by Apify (LinkedIn job posting ID) */
+  id: string;
+  title: string;
+  company: string;
+  companyUrl?: string;
+  companyLogoUrl?: string;
+  location?: string;
+  /** Detected work mode: remote / hybrid / on-site */
+  workType?: string;
+  /** Detected employment type: full-time, part-time, contract, etc. */
+  employmentType?: string;
+  /** Experience level seniority */
+  seniority?: string;
+  /** Posted-at timestamp from LinkedIn (ISO) */
+  postedAt?: string;
+  /** Number of applicants (when available) */
+  applicantsCount?: number;
+  /** Salary range string when LinkedIn surfaced it */
+  salary?: string;
+  /** Public LinkedIn URL of the posting */
+  url: string;
+  /** Plain-text description (HTML stripped) */
+  description?: string;
+}
+
+export interface LinkedInJobSearchResponse {
+  results: LinkedInJob[];
+  totalCount: number;
+  /** ISO timestamp the search executed at */
+  searchedAt: string;
+  /** Echo of the filters used */
+  filters: LinkedInJobSearchFilters;
+}
+
+export interface ImportLinkedInJobDto {
+  /** Full LinkedIn job object as returned by /linkedin-jobs/search */
+  job: LinkedInJob;
+}

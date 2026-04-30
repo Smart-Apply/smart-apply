@@ -92,7 +92,6 @@ export class FeatureGuard implements CanActivate {
       'atsOptimization',
       'basicAnalytics',
       'extendedProfile',
-      'linkedinImport',
       'noAds',
     ];
 
@@ -102,6 +101,7 @@ export class FeatureGuard implements CanActivate {
       'customBranding',
       'advancedAnalytics',
       'interviewCoach',
+      'linkedinImport',
       'autoApplyAgent',
       'emailParsing',
       'prioritySupport',

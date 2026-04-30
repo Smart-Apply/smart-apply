@@ -3,6 +3,13 @@ import { z } from 'zod';
 const envSchema = z.object({
   // Node environment
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  /**
+   * Logical deployment stage. Independent of NODE_ENV (which only switches
+   * dev/prod build behaviour). Use this to select the correct downstream
+   * services (DB, blob, queue, OpenAI, etc.). The value is also used by
+   * `ConfigModule` to layer `.env.${APP_ENV}` on top of the shared `.env`.
+   */
+  APP_ENV: z.enum(['local', 'dev', 'int', 'prod']).default('local'),
   PORT: z.string().default('3000'),
 
   // Logging
@@ -199,6 +206,13 @@ const envSchema = z.object({
   // Sentry error tracking (optional — if unset, Sentry stays disabled)
   SENTRY_DSN: z.string().optional(),
   SENTRY_RELEASE: z.string().optional(), // commit SHA from CI for source-map matching
+
+  // Apify (LinkedIn job search — Pro feature)
+  // Get token from https://console.apify.com/account/integrations
+  // When unset, the LinkedIn job search endpoint returns 503.
+  APIFY_TOKEN: z.string().optional(),
+  // Default actor: curious_coder/linkedin-jobs-scraper (id: hKByXkMQaC5Qt9UMN)
+  APIFY_LINKEDIN_ACTOR_ID: z.string().default('hKByXkMQaC5Qt9UMN'),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

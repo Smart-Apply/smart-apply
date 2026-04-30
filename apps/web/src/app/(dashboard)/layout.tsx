@@ -8,23 +8,46 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { CurrentTierBadge } from '@/components/subscription';
+import { useFeatureGate } from '@/hooks/use-tier-gate';
+import type { TierFeatures } from '@/types';
 import {
   FileText,
   User,
   LogOut,
+  Lock,
   Menu,
   Home,
   Settings,
   MessagesSquare,
+  Sparkles,
 } from 'lucide-react';
 import { EmailVerificationBanner } from '@/components/auth/email-verification-banner';
 
-const navigation = [
+interface NavItem {
+  name: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  /**
+   * If set, the item is gated by this feature flag. Users without
+   * access see a non-clickable, greyed-out tile with an upgrade tooltip
+   * (no broken navigation into a paywalled page).
+   */
+  requiresFeature?: keyof TierFeatures;
+}
+
+const navigation: NavItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Profil', href: '/profile', icon: User },
   { name: 'Bewerbungen', href: '/applications', icon: FileText },
-  { name: 'Interview-Coach', href: '/interviews', icon: MessagesSquare },
+  { name: 'Job-Suche', href: '/job-search', icon: Sparkles, requiresFeature: 'linkedinImport' },
+  { name: 'Interview-Coach', href: '/interviews', icon: MessagesSquare, requiresFeature: 'interviewCoach' },
   { name: 'Einstellungen', href: '/settings', icon: Settings },
 ];
 
@@ -123,6 +146,7 @@ function DashboardLayoutInner({
   }
 
   return (
+    <TooltipProvider delayDuration={150}>
     <div className="flex min-h-screen bg-muted/30">
       {/* Email Verification Banner - shows above everything */}
       <div className="fixed top-0 left-0 right-0 z-50">
@@ -150,26 +174,13 @@ function DashboardLayoutInner({
               <div className="mb-4 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
                 Menu
               </div>
-              {navigation.map((item) => {
-                const isActive = pathname === item.href;
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={`group flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 ${isActive
-                        ? 'bg-primary/5 text-primary shadow-sm'
-                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                      }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Icon className={`h-5 w-5 transition-colors ${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`} />
-                      {item.name}
-                    </div>
-                    {isActive && <div className="h-1.5 w-1.5 rounded-full bg-primary" />}
-                  </Link>
-                );
-              })}
+              {navigation.map((item) => (
+                <NavLink
+                  key={item.name}
+                  item={item}
+                  isActive={pathname === item.href}
+                />
+              ))}
             </nav>
 
             <div className="p-4 border-t border-border/50 bg-muted/10">
@@ -243,26 +254,13 @@ function DashboardLayoutInner({
                   <div className="mb-4 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
                     Menu
                   </div>
-                  {navigation.map((item) => {
-                    const isActive = pathname === item.href;
-                    const Icon = item.icon;
-                    return (
-                      <Link
-                        key={item.name}
-                        href={item.href}
-                        className={`group flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 ${isActive
-                            ? 'bg-primary/5 text-primary shadow-sm'
-                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                          }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <Icon className={`h-5 w-5 transition-colors ${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`} />
-                          {item.name}
-                        </div>
-                        {isActive && <div className="h-1.5 w-1.5 rounded-full bg-primary" />}
-                      </Link>
-                    );
-                  })}
+                  {navigation.map((item) => (
+                    <NavLink
+                      key={item.name}
+                      item={item}
+                      isActive={pathname === item.href}
+                    />
+                  ))}
                 </nav>
 
                 <div className="p-4 border-t border-border/50 bg-muted/10">
@@ -307,5 +305,126 @@ function DashboardLayoutInner({
         )}
       </main>
     </div>
+    </TooltipProvider>
+  );
+}
+
+/**
+ * Single navigation item. Renders as a clickable Link when the user has
+ * access (or no feature gate is set), otherwise as a non-clickable,
+ * greyed-out tile with a tooltip prompting the user to upgrade.
+ *
+ * Why two render paths:
+ *  - Free users clicking on a Premium-only link previously landed on a
+ *    backend 403 / error page. By disabling the link entirely, there is
+ *    no broken state to handle.
+ *  - The lock icon + tooltip make it obvious *why* the item is disabled.
+ */
+function NavLink({
+  item,
+  isActive,
+}: {
+  item: NavItem;
+  isActive: boolean;
+}) {
+  const Icon = item.icon;
+
+  if (item.requiresFeature) {
+    return (
+      <NavLinkGated item={item} isActive={isActive} Icon={Icon} />
+    );
+  }
+
+  return (
+    <Link
+      href={item.href}
+      className={`group flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+        isActive
+          ? 'bg-primary/5 text-primary shadow-sm'
+          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+      }`}
+    >
+      <div className="flex items-center gap-3">
+        <Icon
+          className={`h-5 w-5 transition-colors ${
+            isActive
+              ? 'text-primary'
+              : 'text-muted-foreground group-hover:text-foreground'
+          }`}
+        />
+        {item.name}
+      </div>
+      {isActive && <div className="h-1.5 w-1.5 rounded-full bg-primary" />}
+    </Link>
+  );
+}
+
+/**
+ * Feature-gated nav item. We split this into its own component so the
+ * `useFeatureGate` hook is only called for items that actually need it
+ * (one subscription fetch instead of one per item).
+ */
+function NavLinkGated({
+  item,
+  isActive,
+  Icon,
+}: {
+  item: NavItem;
+  isActive: boolean;
+  Icon: React.ComponentType<{ className?: string }>;
+}) {
+  const { hasAccess, isLoading } = useFeatureGate(item.requiresFeature!);
+
+  // While the subscription tier is loading, render the item as a normal
+  // link — avoids a flash of “locked” state for paying users.
+  if (isLoading || hasAccess) {
+    return (
+      <Link
+        href={item.href}
+        className={`group flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+          isActive
+            ? 'bg-primary/5 text-primary shadow-sm'
+            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+        }`}
+      >
+        <div className="flex items-center gap-3">
+          <Icon
+            className={`h-5 w-5 transition-colors ${
+              isActive
+                ? 'text-primary'
+                : 'text-muted-foreground group-hover:text-foreground'
+            }`}
+          />
+          {item.name}
+        </div>
+        {isActive && <div className="h-1.5 w-1.5 rounded-full bg-primary" />}
+      </Link>
+    );
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        {/* The wrapping span is required — Radix Tooltip needs a focusable
+            target, but disabled <a> tags can't receive focus. */}
+        <span
+          aria-disabled="true"
+          tabIndex={0}
+          className="group flex cursor-not-allowed items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground/60 opacity-60 transition-colors hover:bg-muted/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <div className="flex items-center gap-3">
+            <Icon className="h-5 w-5 text-muted-foreground/60" />
+            {item.name}
+          </div>
+          <Lock className="h-3.5 w-3.5 text-muted-foreground/60" />
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="right" className="max-w-xs">
+        <p className="font-medium">Upgrade jetzt zu Premium</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          {item.name} ist nur für Premium-Mitglieder verfügbar.
+        </p>
+      </TooltipContent>
+    </Tooltip>
   );
 }

@@ -30,15 +30,6 @@
       "purpose": "any"
     }
   ],
-  "screenshots": [
-    {
-      "src": "/Images/dashboard-screenshot.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Smart Apply Dashboard"
-    }
-  ],
   "shortcuts": [
     {
       "name": "Neue Bewerbung",

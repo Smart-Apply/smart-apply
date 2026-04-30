@@ -26,6 +26,19 @@ export class ConfigService {
     return this.nodeEnv === 'test';
   }
 
+  /**
+   * Logical deployment stage — `local | dev | int | prod`. Use this to
+   * branch on the environment when several stages share the same NODE_ENV
+   * (e.g. `dev`, `int`, and `prod` are all NODE_ENV=production builds).
+   */
+  get appEnv(): 'local' | 'dev' | 'int' | 'prod' {
+    return this.nestConfig.get('APP_ENV', { infer: true });
+  }
+
+  get isLocal(): boolean {
+    return this.appEnv === 'local';
+  }
+
   // Logging
   get logLevel(): 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal' | 'silent' {
     return this.nestConfig.get('LOG_LEVEL', { infer: true });
@@ -386,5 +399,14 @@ export class ConfigService {
    */
   get turnstileSecretKey(): string | undefined {
     return this.nestConfig.get('TURNSTILE_SECRET_KEY', { infer: true });
+  }
+
+  // Apify (LinkedIn job search — Pro feature)
+  get apifyToken(): string | undefined {
+    return this.nestConfig.get('APIFY_TOKEN', { infer: true });
+  }
+
+  get apifyLinkedInActorId(): string {
+    return this.nestConfig.get('APIFY_LINKEDIN_ACTOR_ID', { infer: true });
   }
 }

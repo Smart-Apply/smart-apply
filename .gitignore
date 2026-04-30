@@ -15,6 +15,11 @@ build/
 .env
 .env.local
 .env.*.local
+.env.dev
+.env.int
+.env.prod
+!.env.stage.example
+!**/.env.stage.example
 
 # IDE
 .vscode/

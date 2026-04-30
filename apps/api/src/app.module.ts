@@ -26,6 +26,7 @@ import { CSPViolationController } from './common/csp/csp-violation.controller';
 import { TimeoutMiddleware, RequestIdMiddleware } from './common/middleware';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { InterviewsModule } from './interviews/interviews.module';
+import { LinkedInJobsModule } from './linkedin-jobs/linkedin-jobs.module';
 import { EmailModule } from './email/email.module';
 import { ContactModule } from './contact/contact.module';
 import { UpstashThrottlerStorage } from './common/throttler/upstash-throttler-storage';
@@ -104,6 +105,7 @@ import { UpstashThrottlerStorage } from './common/throttler/upstash-throttler-st
     TemplatesModule,
     UserPreferencesModule,
     InterviewsModule,
+    LinkedInJobsModule,
     EmailModule,
     ContactModule,
     HealthModule,
