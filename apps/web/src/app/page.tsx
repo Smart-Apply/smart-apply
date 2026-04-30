@@ -356,11 +356,7 @@ export default function Home() {
                   </li>
                   <li className="flex items-start gap-3">
                     <span className={`mt-1 ${selectedPlan === 'pro' ? 'text-green-400' : 'text-green-600'}`}>✓</span>
-                    <span>Mehrsprachige Anschreiben (DE & EN)</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className={`mt-1 ${selectedPlan === 'pro' ? 'text-green-400' : 'text-green-600'}`}>✓</span>
-                    <span>LinkedIn-Import & Keine Werbung</span>
+                    <span>Linked In Job suche integriert</span>
                   </li>
                 </ul>
                 <div className="mt-8 flex justify-center">
