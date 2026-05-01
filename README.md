@@ -21,14 +21,14 @@ AI-powered job application assistant — generate tailored, ATS-optimized cover 
 | Layer          | Technology                                                                  |
 | -------------- | --------------------------------------------------------------------------- |
 | **Frontend**   | Next.js 16 · React 19 · Tailwind v4 · shadcn/ui · TanStack Query · Zustand  |
-| **Backend**    | NestJS 11 · Prisma 6 (pg adapter) · PostgreSQL 16 · Pino · Helmet           |
+| **Backend**    | NestJS 11 · Prisma 6 (pg adapter) · Neon Postgres (pooled + direct) · Pino · Helmet |
 | **AI**         | Azure AI Foundry · Azure OpenAI · LangChain · LangGraph · Hugging Face      |
 | **PDF**        | Puppeteer 24 · Handlebars · pdf-lib · pdf-parse · mammoth (DOCX)            |
-| **Storage**   | Azure Blob · AWS S3 · local disk (pluggable)                                |
-| **Queue**      | Upstash QStash · Azure Service Bus · in-memory (pluggable)                  |
+| **Storage**   | Cloudflare R2 (S3-compatible, EU jurisdiction) · local disk (pluggable)    |
+| **Queue**      | Upstash QStash · in-memory (pluggable)                                     |
 | **Cache**      | Upstash Redis · node-cache                                                  |
 | **Monorepo**   | npm workspaces · Turborepo                                                  |
-| **Deployment** | Docker · Azure Container Apps (API) · Cloudflare Workers / OpenNext (Web)   |
+| **Deployment** | Docker · Azure Container Apps (API; Fly.io migration planned) · Cloudflare Workers / OpenNext (Web) |
 | **Monitoring** | Sentry · Winston (audit logs, daily rotation)                               |
 
 ## 🚀 Quick Start
@@ -36,7 +36,9 @@ AI-powered job application assistant — generate tailored, ATS-optimized cover 
 ### Prerequisites
 
 - Node.js **24+** (or 20.19+) and npm 10+
-- Docker Desktop
+- A Postgres database — either:
+  - a **[Neon](https://neon.tech)** project (recommended; the EU/Frankfurt region keeps GDPR), or
+  - **Docker Desktop** for a local Postgres container.
 
 ### Setup
 
@@ -44,7 +46,12 @@ AI-powered job application assistant — generate tailored, ATS-optimized cover 
 # 1. Install dependencies (workspaces)
 npm install
 
-# 2. Start PostgreSQL
+# 2. Provision Postgres
+#    Option A — Neon (recommended): create a project, then set both
+#    DATABASE_URL (pooled, hostname contains `-pooler`) and DIRECT_URL
+#    (unpooled) in apps/api/.env. See apps/api/.env.example for the format.
+#
+#    Option B — Local Docker Postgres:
 docker compose -f infra/docker-compose.yml up -d db
 
 # 3. Configure environment
@@ -52,9 +59,11 @@ cp .env.example .env
 # (edit apps/api/.env and apps/web/.env.local as needed)
 
 # 4. Migrate & seed database (includes 50 PDF templates)
-npm run prisma:migrate
-npm run prisma:seed
-npm run prisma:seed:templates
+#    Migrations + seed use DIRECT_URL when set (required for Neon),
+#    falling back to DATABASE_URL for plain Postgres.
+npm --workspace @smart-apply/api run prisma:migrate
+npm --workspace @smart-apply/api run prisma:seed
+npm --workspace @smart-apply/api run prisma:seed:templates
 
 # 5. Run API + Web in parallel (Turborepo)
 npm run dev

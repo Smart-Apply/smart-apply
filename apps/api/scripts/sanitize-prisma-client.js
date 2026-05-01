@@ -69,11 +69,23 @@ function sanitize(file) {
     importMetaFixes++;
   }
 
-  // 2. Strip `.ts` extensions from relative imports.
-  //    `from "./foo.ts"` → `from "./foo"`
-  const tsExtRegex = /(from\s+['"])(\.{1,2}\/[^'"]+?)\.ts(['"])/g;
-  if (tsExtRegex.test(content)) {
-    content = content.replace(tsExtRegex, '$1$2$3');
+  // 2. Strip explicit relative-import extensions so both ts-node (CJS) and the
+  //    compiled JS runtime can resolve them.
+  //
+  //    Prisma 6.19.x emits TypeScript files whose relative imports include the
+  //    target file extension (`./internal/class.js` or `./foo.ts`). Two failure
+  //    modes follow:
+  //      - With `moduleResolution: "node"`, ts-node turns `from "./foo.ts"`
+  //        into `require("./foo.ts")` → MODULE_NOT_FOUND.
+  //      - The newer Prisma output uses NodeNext-style `.js` suffixes inside
+  //        `.ts` source files; ts-node in CJS mode also can't resolve those
+  //        because no `.js` sibling exists at runtime.
+  //
+  //    Stripping both extensions normalizes the imports so Node's standard
+  //    resolver picks up the actual sibling file (whether .ts or .js).
+  const extRegex = /(from\s+['"])(\.{1,2}\/[^'"]+?)\.(?:ts|js)(['"])/g;
+  if (extRegex.test(content)) {
+    content = content.replace(extRegex, '$1$2$3');
     tsExtensionFixes++;
   }
 

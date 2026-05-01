@@ -25,8 +25,8 @@
      │          │          │          │          │         │
      ▼          ▼          ▼          ▼          ▼         ▼
 ┌─────────┐ ┌────────┐ ┌─────────┐ ┌────────┐ ┌──────┐ ┌────────┐
-│Postgres │ │  R2 /  │ │Upstash  │ │ Azure  │ │Sentry│ │Resend  │
-│  16     │ │  disk  │ │ QStash /│ │   AI   │ │      │ │ (mail) │
+│  Neon   │ │  R2 /  │ │Upstash  │ │ Azure  │ │Sentry│ │Resend  │
+│Postgres │ │  disk  │ │ QStash /│ │   AI   │ │      │ │ (mail) │
 │(pg pool)│ │        │ │  mem    │ │Foundry │ │(APM) │ │        │
 │         │ │        │ │         │ │+OpenAI │ │      │ │        │
 └─────────┘ └────────┘ └─────────┘ └────────┘ └──────┘ └────────┘
@@ -224,7 +224,7 @@ User 1:1 Subscription
 | ----------- | ---------------------------------------------------- |
 | Runtime     | Node.js 24 (>= 20.19)                                |
 | Framework   | NestJS 11                                            |
-| Database    | PostgreSQL 16                                        |
+| Database    | Neon Postgres (serverless, EU/Frankfurt; pooled + direct URLs) |
 | ORM         | Prisma 6.19 (`@prisma/adapter-pg` + connection pool) |
 | Auth        | passport-jwt · passport-google · passport-microsoft · passport-azure-ad · argon2 · otplib (2FA) |
 | Queue       | Upstash QStash · in-memory                           |
@@ -267,7 +267,7 @@ User 1:1 Subscription
 | Registry   | Azure Container Registry (ACR)                |
 | CI/CD      | GitHub Actions + Azure OIDC                   |
 | Secrets    | Azure Key Vault (prod) · `.env` (dev)         |
-| Database   | Azure Database for PostgreSQL Flexible Server |
+| Database   | Neon Postgres (serverless; `DATABASE_URL` pooled, `DIRECT_URL` for migrations) |
 | DNS/CDN    | Cloudflare                                    |
 
 ## 📊 API Endpoints (selection)
@@ -329,7 +329,7 @@ GitHub Actions
   └── Deploy
        ├── API → Azure Container Apps (rolling, OIDC)
        │        └─ env from Azure Key Vault
-       │        └─ Postgres Flexible · Blob · Service Bus
+       │        └─ Neon Postgres · Cloudflare R2 · QStash
        └── Web → Cloudflare Workers (OpenNext)
                 └─ wrangler deploy
 ```

@@ -40,6 +40,11 @@ LOCAL_ENV="${LOCAL_ENV:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/apps/ap
 
 # Keys we want to push. Order matters for the resulting file.
 KEYS_TO_SYNC=(
+  # Database (Neon Postgres) — pooled URL for app runtime, direct URL for
+  # Prisma CLI (migrations / seed). Both must be set in the local .env;
+  # use the EU/Frankfurt region for GDPR data residency.
+  DATABASE_URL
+  DIRECT_URL
   STORAGE_DRIVER
   R2_ACCOUNT_ID
   R2_ACCESS_KEY_ID

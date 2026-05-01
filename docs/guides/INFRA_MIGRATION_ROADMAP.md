@@ -10,8 +10,8 @@
 
 | # | Step | Status | Effort | Risk | Saves/mo |
 |---|---|---|---|---|---|
-| 1 | **Neon (Postgres)** | 🟡 In progress | ~1 h | Low | ~$25–50 |
-| 2 | **Cloudflare R2 (object storage)** | ⬜ Not started | ~1–2 h | Low | ~$5–15 |
+| 1 | **Neon (Postgres)** | ✅ Done (local cutover) | ~1 h | Low | ~$25–50 |
+| 2 | **Cloudflare R2 (object storage)** | ✅ Done (local cutover) | ~1–2 h | Low | ~$5–15 |
 | 3 | **Fly.io (backend host)** | ⬜ Not started | ~1 day | Medium | ~$30–80 |
 | 4 | **Foundry → direct chat completions** (optional) | ⬜ Not started | ~2 h | Low | ~10× faster URL parsing, –200 LOC |
 | 5 | **Doppler (secrets)** (optional) | ⬜ Not started | ~30 min | Low | $0 (DX win) |
@@ -20,63 +20,32 @@
 
 ---
 
-## Step 1 — Neon (Postgres) 🟡 IN PROGRESS
+## Step 1 — Neon (Postgres) ✅ DONE (local cutover)
 
 ### What's done ✅
 - Neon project created (region: `eu-central-1` Frankfurt)
-- Pooled connection string obtained
-- Codebase already supports Neon (uses `PrismaPg` adapter + `pg.Pool` in `apps/api/src/prisma/prisma.service.ts`)
+- Pooled + direct connection strings configured in `apps/api/.env`
+- `apps/api/prisma.config.ts` updated to prefer `DIRECT_URL` for the Prisma CLI, falling back to `DATABASE_URL`
+- `DIRECT_URL` added as an optional var in `apps/api/src/config/env.schema.ts`
+- `.env.example` documents both URLs (dev + prod blocks)
+- All 46 migrations applied via `prisma migrate deploy` against Neon
+- Demo data + 14 templates seeded
+- Smoke test passed locally: `/api/v1/health` reports `database: up`, demo login succeeds
+- Docs synced (`README.md`, `ARCHITECTURE.md`, `.github/copilot-instructions.md`)
 
-### ⚠️ Security action required
-A Neon password was leaked in chat. **Rotate it immediately:**
-1. Neon dashboard → **Roles** → `neondb_owner` → **Reset password**
-2. Copy the new connection string
+### ⚠️ Prisma 7 deviation from the original roadmap
 
-### Remaining work
+The original step 1.2 said to add `directUrl = env("DIRECT_URL")` to `schema.prisma`. **That syntax was removed in Prisma 7** (`datasource.directUrl` is gone in both `schema.prisma` and `prisma.config.ts`). The schema-block approach is no longer needed:
 
-#### 1.1 Get the direct (unpooled) URL
-The pooled URL ends with `-pooler.c-3.eu-central-1.aws.neon.tech`. The direct URL is the **same hostname without `-pooler`**. You need both:
-- **Pooled** → app runtime (`DATABASE_URL`)
-- **Direct** → Prisma migrations (`DIRECT_URL`)
+- The **runtime** PrismaClient (via `PrismaPg` adapter in `apps/api/src/prisma/prisma.service.ts`) uses `DATABASE_URL` directly through the `pg.Pool` constructor.
+- The **Prisma CLI** uses whatever URL `prisma.config.ts` exposes via `datasource.url`. We made that resolve to `process.env.DIRECT_URL || process.env.DATABASE_URL`, which gives us the same effect (CLI on direct, runtime on pooled) without any schema-level config.
 
-Or in Neon dashboard: toggle **Connection pooling** off to reveal it.
+So the schema file is intentionally left untouched.
 
-#### 1.2 Update Prisma schema to support `directUrl`
-Edit [apps/api/prisma/schema.prisma](../../apps/api/prisma/schema.prisma):
+### ⚠️ Security action that still applies
+The Neon password leaked in chat must remain rotated. If you ever paste a fresh URL into chat, immediately reset the role password again in the Neon dashboard.
 
-```prisma
-datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
-}
-```
-
-#### 1.3 Update local env
-Edit `apps/api/.env`:
-```bash
-DATABASE_URL="postgresql://neondb_owner:NEW_PW@ep-red-heart-aljqrpfj-pooler.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
-DIRECT_URL="postgresql://neondb_owner:NEW_PW@ep-red-heart-aljqrpfj.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
-```
-
-#### 1.4 Update `.env.example`
-Document both vars in [apps/api/.env.example](../../apps/api/.env.example).
-
-#### 1.5 Push schema to Neon
-```bash
-cd apps/api
-npx prisma migrate deploy
-npx prisma db seed   # optional: seed demo data
-npx prisma studio    # verify in GUI
-```
-
-#### 1.6 Smoke test locally
-```bash
-npm run start:dev
-# In another terminal:
-curl http://localhost:3000/health
-npm run test:e2e
-```
+### Remaining work for full prod cutover
 
 #### 1.7 Migrate prod data (if needed)
 Skip if prod has only demo data. Otherwise:
@@ -94,12 +63,6 @@ psql "$DIRECT_URL" < backup.sql
 - Monitor Sentry + Neon dashboard for 24–48 h
 - Then **delete Azure Postgres Flexible Server**
 
-#### 1.9 Update docs
-Per the **Documentation Sync** rule in `copilot-instructions.md`:
-- Update `README.md` (mention Neon instead of Azure Postgres)
-- Update `ARCHITECTURE.md`
-- Update `copilot-instructions.md` (Tech Stack → Backend section)
-
 ### Neon gotchas
 | Issue | Mitigation |
 |---|---|
@@ -110,64 +73,39 @@ Per the **Documentation Sync** rule in `copilot-instructions.md`:
 
 ---
 
-## Step 2 — Cloudflare R2 (Object Storage)
+## Step 2 — Cloudflare R2 (Object Storage) ✅ DONE (local cutover)
 
 **Replaces:** Azure Blob Storage (and/or AWS S3)
 **Why:** S3-compatible API, **zero egress fees**, ~$0.015/GB.
 
-### Tasks
+### What's done ✅
+- R2 bucket `smart-apply-prod` is provisioned in the **EU jurisdiction** (Cloudflare's `.eu.r2.cloudflarestorage.com` endpoint), keeping GDPR data residency.
+- [`R2StorageProvider`](../../apps/api/src/storage/providers/r2-storage.provider.ts) is implemented (S3-compatible via `@aws-sdk/client-s3`, presigned URLs via `@aws-sdk/s3-request-presigner`, `forcePathStyle: true`, `HeadBucket` health probe).
+- [`storage.module.ts`](../../apps/api/src/storage/storage.module.ts) factory routes `STORAGE_DRIVER=r2` → `R2StorageProvider`, anything else → `DiskStorageProvider`.
+- `STORAGE_DRIVER` enum in [`env.schema.ts`](../../apps/api/src/config/env.schema.ts) is already `disk | r2` (no `azure-blob` left).
+- Local `apps/api/.env` flipped to `STORAGE_DRIVER=r2`; bucket `smart-apply-prod`; EU endpoint pinned.
+- Smoke test passed: `/api/v1/health` reports `storage: up` (HeadBucket) and a `POST /api/v1/uploads` of a real PDF returned 201 with the file landing in R2 (logs: `R2StorageProvider - File uploaded to R2: ...`).
+- Tombstoned legacy providers deleted: `azure-blob.provider.ts`, `azure-blob-storage.provider.ts`.
+- `.env.example` (dev block + production-overrides block) and `.github/copilot-instructions.md` env-vars section now document only `disk | r2` (Azure Storage / generic AWS_S3 vars removed).
 
-#### 2.1 Cloudflare setup
-- Create R2 bucket: `smartapply-prod` (and `smartapply-dev` for local)
-- Generate R2 API token with Object Read & Write scope
-- Note the S3 endpoint: `https://<ACCOUNT_ID>.r2.cloudflarestorage.com`
+### Remaining work for full prod cutover
 
-#### 2.2 Add R2 storage provider
-In `apps/api/src/storage/`, add an `r2.provider.ts` mirroring the existing pattern. R2 is S3-compatible, so use `@aws-sdk/client-s3` (already a dependency):
-
-```ts
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-
-const s3 = new S3Client({
-  region: 'auto',
-  endpoint: process.env.R2_ENDPOINT,
-  credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID,
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
-  },
-});
-```
-
-#### 2.3 Wire into the storage factory
-Extend `STORAGE_DRIVER` enum in `apps/api/src/config/` to accept `r2`. Register the new provider in `storage.module.ts`.
-
-#### 2.4 Add env vars
-```bash
-STORAGE_DRIVER=r2
-R2_ACCOUNT_ID=<account-id>
-R2_ACCESS_KEY_ID=<key>
-R2_SECRET_ACCESS_KEY=<secret>
-R2_BUCKET=smartapply-prod
-R2_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
-R2_PUBLIC_URL=https://pub-xxx.r2.dev   # optional, if exposing via R2 public bucket
-```
-
-#### 2.5 Migrate existing PDFs
+#### 2.5 Migrate existing PDFs (only if there are any prod files left on Azure Blob)
 Use [`rclone`](https://rclone.org/):
 ```bash
-rclone copy azure:smartapply r2:smartapply-prod --progress
+rclone copy azure:smartapply r2:smart-apply-prod --progress
 ```
 
 #### 2.6 Replace SAS URLs with presigned R2 URLs
-Application download endpoints (`/applications/:id/files`) already return signed URLs from the storage abstraction — should work transparently.
+Application download endpoints (`/applications/:id/files`) already return signed URLs from the storage abstraction (`StorageProvider.getSignedUrl`). When prod flips to `STORAGE_DRIVER=r2`, the app starts handing out R2 presigned URLs (1-hour TTL) without code changes.
 
 #### 2.7 Cut over and decommission
-- Set `STORAGE_DRIVER=r2` in prod
-- Verify downloads work
-- Delete Azure Storage Account after 1 week
+- Set `STORAGE_DRIVER=r2` + the `R2_*` secrets on the Azure VM
+- Restart the API; verify `/health` reports `storage: up` and a generated application's PDFs download
+- Delete the Azure Storage Account after ~1 week of stable traffic
 
-#### 2.8 Update docs (`README.md`, `ARCHITECTURE.md`, `copilot-instructions.md`)
+### Known minor follow-up
+The smoke-test upload landed at key `undefined/1777624267367-r2-smoke.pdf` — the storage key prefix in `UploadsService` is producing `undefined/...` because the user-id interpolation is broken. Pre-existing bug, unrelated to R2; track separately.
 
 ---
 

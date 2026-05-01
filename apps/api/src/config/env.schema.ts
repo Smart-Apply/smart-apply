@@ -17,6 +17,10 @@ const envSchema = z.object({
 
   // Database
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+  // Direct (non-pooled) database URL — required for Prisma CLI / migrations
+  // when DATABASE_URL points at a transaction-mode pooler (e.g. Neon pgbouncer,
+  // Supabase Supavisor). Optional for plain Postgres connections.
+  DIRECT_URL: z.string().optional(),
 
   // JWT
   JWT_SECRET: z

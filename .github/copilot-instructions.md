@@ -48,7 +48,10 @@ Also update this `copilot-instructions.md` file (Tech Stack, Backend Modules, Da
 - **NestJS 11** (TypeScript)
 - **Prisma 6.19** with `@prisma/adapter-pg` 7.3 (PrismaPg + connection pool)
   - Schema in `apps/api/prisma/schema.prisma`; client generated via `prisma.config.ts`
-  - Dev: Docker Postgres 16 · Prod: **Azure Database for PostgreSQL Flexible Server**
+  - Dev/Prod: **Neon Postgres** (serverless, EU/Frankfurt for GDPR). Two URLs:
+    - `DATABASE_URL` — **pooled** (pgbouncer hostname contains `-pooler`); used by the runtime PrismaService
+    - `DIRECT_URL` — **unpooled**; used by the Prisma CLI for migrations & seed (transaction-mode poolers don't support Prisma Migrate)
+  - Local fallback: Docker Postgres 16 (`infra/docker-compose.yml`); CLI falls back to `DATABASE_URL` when `DIRECT_URL` is unset
 - **Auth:** passport-jwt, passport-google-oauth20, passport-microsoft, passport-azure-ad, argon2id, **otplib + qrcode + speakeasy** (TOTP 2FA)
 - **Refresh tokens:** dual-token rotation, device tracking, max 5/user
 - **Sessions:** multi-device, IP/UA, remote logout, cron cleanup
@@ -451,8 +454,14 @@ See `MVP_FEATURES.md` for detailed security tasks with priorities and estimates.
 
 ### Backend (`apps/api/.env`)
 ```bash
-# Database
-DATABASE_URL=postgresql://postgres:postgres@db:5432/smartapply
+# Database (Neon Postgres — serverless, EU/Frankfurt for GDPR)
+# Pooled connection (used by the app at runtime via PrismaPg adapter)
+DATABASE_URL=postgresql://USER:PW@ep-xxx-pooler.<region>.aws.neon.tech/<db>?sslmode=require&channel_binding=require
+# Direct (unpooled) connection — REQUIRED for `prisma migrate` / `prisma db seed`
+# (transaction-mode poolers like pgbouncer don't support Prisma Migrate).
+# Same hostname as DATABASE_URL but WITHOUT the `-pooler` suffix.
+# Falls back to DATABASE_URL when unset (e.g. local Docker Postgres).
+DIRECT_URL=postgresql://USER:PW@ep-xxx.<region>.aws.neon.tech/<db>?sslmode=require&channel_binding=require
 
 # JWT (CRITICAL: openssl rand -base64 64)
 JWT_SECRET=REPLACE_WITH_SECURE_RANDOM_SECRET_MINIMUM_64_CHARACTERS
@@ -472,13 +481,14 @@ ENABLE_CSRF=false
 
 # Storage (pluggable)
 STORAGE_DRIVER=disk          # disk | r2
-AZURE_STORAGE_ACCOUNT=<account>
-AZURE_STORAGE_CONTAINER=smartapply
-AZURE_STORAGE_CONNECTION_STRING=<conn-string>
-AWS_S3_BUCKET=<bucket>
-AWS_S3_REGION=eu-central-1
-AWS_ACCESS_KEY_ID=<key>
-AWS_SECRET_ACCESS_KEY=<secret>
+
+# Cloudflare R2 (S3-compatible) — required when STORAGE_DRIVER=r2
+# Use an EU-jurisdiction bucket + EU-scoped token for GDPR data residency.
+R2_ACCOUNT_ID=<account-id>
+R2_ACCESS_KEY_ID=<key>
+R2_SECRET_ACCESS_KEY=<secret>
+R2_BUCKET=smart-apply-prod
+R2_ENDPOINT=https://<account-id>.eu.r2.cloudflarestorage.com
 
 # Queue (pluggable)
 JOBS_PROVIDER=in-memory      # in-memory | qstash
