@@ -300,5 +300,5 @@ Ensure all imports use `dynamic()`.
 ## Related Documentation
 
 - [Performance Optimization Roadmap](../../docs/features/PERFORMANCE_OPTIMIZATION.md) (if exists)
-- [Deployment Guide](../../docs/guides/AZURE_DEPLOYMENT.md)
+- [Domain & Cloudflare setup](../../docs/guides/DOMAIN_CLOUDFLARE_SETUP.md)
 - [Testing Strategy](../../docs/testing/TESTING_STRATEGY.md)

@@ -66,9 +66,6 @@ const envSchema = z.object({
   // Falls back to API_BASE_URL + '/api/v1/jobs/qstash-webhook' when unset.
   QSTASH_WEBHOOK_URL: z.string().optional(),
 
-  // Azure Key Vault
-  KEY_VAULT_URI: z.string().optional(),
-
   // Azure OpenAI
   AZURE_OPENAI_ENDPOINT: z.string().optional(),
   AZURE_OPENAI_API_KEY: z.string().optional(),

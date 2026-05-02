@@ -37,22 +37,21 @@ export class JobsService implements OnModuleInit {
     const jobId = await this.queueProvider.publish(type, data);
     this.logger.log(`Job ${jobId} published: ${type}`);
 
-    // For in-memory provider, create database record for tracking
-    // Service Bus provider handles this internally
-    if (process.env.JOBS_DRIVER !== 'service-bus') {
-      try {
-        await this.prisma.backgroundJob.create({
-          data: {
-            id: jobId,
-            type,
-            status: BackgroundJobStatus.PENDING,
-            data: data as object,
-            maxRetries: 3,
-          },
-        });
-      } catch (error) {
-        this.logger.warn(`Failed to create job record: ${error}`);
-      }
+    // Persist a tracking row so the SSE/status endpoints can report
+    // PENDING/RUNNING/COMPLETED. Both supported drivers (in-memory and
+    // QStash) rely on this row — there's no provider-managed status store.
+    try {
+      await this.prisma.backgroundJob.create({
+        data: {
+          id: jobId,
+          type,
+          status: BackgroundJobStatus.PENDING,
+          data: data as object,
+          maxRetries: 3,
+        },
+      });
+    } catch (error) {
+      this.logger.warn(`Failed to create job record: ${error}`);
     }
 
     return jobId;

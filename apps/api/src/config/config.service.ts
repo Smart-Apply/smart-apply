@@ -106,11 +106,6 @@ export class ConfigService {
     return this.nestConfig.get('UPSTASH_REDIS_REST_TOKEN', { infer: true });
   }
 
-  // Key Vault
-  get keyVaultUri(): string | undefined {
-    return this.nestConfig.get('KEY_VAULT_URI', { infer: true });
-  }
-
   // Azure OpenAI
   get azureOpenAIEndpoint(): string | undefined {
     return this.nestConfig.get('AZURE_OPENAI_ENDPOINT', { infer: true });

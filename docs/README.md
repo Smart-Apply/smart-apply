@@ -45,7 +45,7 @@ Anleitungen
 - **MVP_EVALUATION_DEC_2025.md** - Aktueller MVP Status
 - **TEMPLATE_GUIDE.md** - Template System Guide
 - **TESTING_GUIDE.md** - Testing Best Practices
-- **AZURE_DEPLOYMENT.md** - Azure Deployment Guide
+- **DOMAIN_CLOUDFLARE_SETUP.md** - Cloudflare + Fly.io domain setup (postmortem)
 - **DOCKER_OPTIMIZATION.md** - Docker Optimierung
 - **MONOREPO_WORKSPACE.md** - Workspace Architektur
 
@@ -59,4 +59,4 @@ Anleitungen
 | **Sicherheit** | [SECURITY.md](./security/SECURITY.md)                             | Sicherheitsübersicht   |
 | **Templates**  | [TEMPLATE_GUIDE.md](./guides/TEMPLATE_GUIDE.md)                   | Template System        |
 | **Testing**    | [TESTING_GUIDE.md](./guides/TESTING_GUIDE.md)                     | Test Anleitungen       |
-| **Azure**      | [AZURE_DEPLOYMENT.md](./guides/AZURE_DEPLOYMENT.md)               | Deployment Guide       |
+| **Azure**      | [AZURE_AI_FOUNDRY_AGENTS.md](./guides/AZURE_AI_FOUNDRY_AGENTS.md) | AI Foundry agents      |

@@ -15,7 +15,7 @@ For specific tasks, refer to these specialized instruction files:
 **Whenever the architecture changes, you MUST update both `README.md` and `ARCHITECTURE.md` in the same change set.** This includes (but is not limited to):
 - Adding/removing/renaming a backend module or frontend route group
 - Adding/removing a Prisma model or significant schema change
-- Adding/changing a pluggable provider (`STORAGE_DRIVER`, `JOBS_PROVIDER`, `LLM_PROVIDER`, cache, email)
+- Adding/changing a pluggable provider (`STORAGE_DRIVER`, `JOBS_DRIVER`, `LLM_PROVIDER`, cache, email)
 - Changing the application generation pipeline (LLM orchestration, PDF, queueing, SSE)
 - Adding/removing third-party services (Sentry, Resend, Upstash, Cloudflare, Azure resources)
 - Major dependency upgrades that affect the stack (Next.js, NestJS, Prisma, React, Tailwind)
@@ -56,7 +56,7 @@ Also update this `copilot-instructions.md` file (Tech Stack, Backend Modules, Da
 - **Refresh tokens:** dual-token rotation, device tracking, max 5/user
 - **Sessions:** multi-device, IP/UA, remote logout, cron cleanup
 - **Storage (pluggable via `STORAGE_DRIVER`):** `disk` | `r2` (`@aws-sdk/client-s3`)
-- **Queue (pluggable via `JOBS_PROVIDER`):** `in-memory` | `qstash` (`@upstash/qstash`)
+- **Queue (pluggable via `JOBS_DRIVER`):** `in-memory` | `qstash` (`@upstash/qstash`)
 - **Cache:** Upstash Redis (`@upstash/redis`) + `node-cache`
 - **LLM (pluggable via `LLM_PROVIDER`):** `azure-openai` | `azure-ai-foundry` | `mock`
   - Direct Azure OpenAI HTTP calls (`@nestjs/axios`)
@@ -501,7 +501,7 @@ R2_BUCKET=smart-apply-prod
 R2_ENDPOINT=https://<account-id>.eu.r2.cloudflarestorage.com
 
 # Queue (pluggable)
-JOBS_PROVIDER=in-memory      # in-memory | qstash
+JOBS_DRIVER=in-memory      # in-memory | qstash
 QSTASH_TOKEN=<upstash-qstash-token>
 QSTASH_CURRENT_SIGNING_KEY=<key>
 QSTASH_NEXT_SIGNING_KEY=<key>
@@ -539,9 +539,6 @@ SENTRY_ENVIRONMENT=development
 
 # Admin (comma-separated, case-insensitive). Leave empty to disable /admin/*.
 ADMIN_EMAILS=you@example.com,coworker@example.com
-
-# Azure Key Vault (prod)
-KEY_VAULT_URI=https://your-kv.vault.azure.net/
 
 # PDF Generation
 PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
