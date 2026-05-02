@@ -205,6 +205,50 @@ export class SubscriptionService {
   }
 
   /**
+   * Admin: set a user's subscription tier and (re)start a billing period.
+   *
+   * Idempotent — safe to call repeatedly. Used by `/admin/users/:email/tier`
+   * and the seed/dev tooling. For paid downgrades the caller is responsible
+   * for any Stripe-side cleanup; this method only mutates the local row.
+   */
+  async setUserTier(
+    userId: string,
+    tier: SubscriptionTier,
+    options?: { periodMonths?: number },
+  ) {
+    const now = new Date();
+    const periodEnd = new Date(now);
+    if (options?.periodMonths && options.periodMonths > 0) {
+      periodEnd.setMonth(periodEnd.getMonth() + options.periodMonths);
+    } else {
+      periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+    }
+
+    const updated = await this.prisma.subscription.upsert({
+      where: { userId },
+      update: {
+        tier,
+        status: SubscriptionStatus.ACTIVE,
+        currentPeriodStart: now,
+        currentPeriodEnd: periodEnd,
+        cancelAtPeriodEnd: false,
+      },
+      create: {
+        userId,
+        tier,
+        status: SubscriptionStatus.ACTIVE,
+        currentPeriodStart: now,
+        currentPeriodEnd: periodEnd,
+        usage: { create: { periodStart: now, periodEnd } },
+      },
+      include: { usage: true },
+    });
+
+    this.logger.log(`Admin: set tier=${tier} for user ${userId} (period ends ${periodEnd.toISOString()})`);
+    return updated;
+  }
+
+  /**
    * Get user's current subscription tier
    */
   async getUserTier(userId: string): Promise<SubscriptionTier> {

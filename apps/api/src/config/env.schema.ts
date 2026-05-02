@@ -206,6 +206,11 @@ const envSchema = z.object({
   APIFY_TOKEN: z.string().optional(),
   // Default actor: curious_coder/linkedin-jobs-scraper (id: hKByXkMQaC5Qt9UMN)
   APIFY_LINKEDIN_ACTOR_ID: z.string().default('hKByXkMQaC5Qt9UMN'),
+
+  // Admin allow-list (comma-separated emails). Users whose `email` matches
+  // one of these (case-insensitive) can call the /admin/* endpoints. When
+  // unset, all /admin/* routes return 403.
+  ADMIN_EMAILS: z.string().optional(),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

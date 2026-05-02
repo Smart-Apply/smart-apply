@@ -227,6 +227,16 @@ export class ConfigService {
     return this.nestConfig.get('GOOGLE_CLIENT_SECRET', { infer: true });
   }
 
+  // Admin allow-list (lower-cased)
+  get adminEmails(): string[] {
+    const raw = this.nestConfig.get('ADMIN_EMAILS', { infer: true }) as string | undefined;
+    if (!raw) return [];
+    return raw
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
+  }
+
   // Public base URL of the API (used for OAuth callbacks)
   // Falls back to http://localhost:${PORT} when API_BASE_URL is not set (dev)
   get apiBaseUrl(): string {

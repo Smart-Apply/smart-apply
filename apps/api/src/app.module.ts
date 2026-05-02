@@ -30,6 +30,7 @@ import { LinkedInJobsModule } from './linkedin-jobs/linkedin-jobs.module';
 import { EmailModule } from './email/email.module';
 import { ContactModule } from './contact/contact.module';
 import { UpstashThrottlerStorage } from './common/throttler/upstash-throttler-storage';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -108,6 +109,7 @@ import { UpstashThrottlerStorage } from './common/throttler/upstash-throttler-st
     LinkedInJobsModule,
     EmailModule,
     ContactModule,
+    AdminModule,
     HealthModule,
   ],
   controllers: [CSPViolationController],

@@ -57,7 +57,7 @@ smart-apply/
 ├── apps/
 │   ├── api/                  # @smart-apply/api (NestJS 11)
 │   │   ├── src/
-│   │   │   ├── admin/             # Admin dashboard endpoints
+│   │   │   ├── admin/             # Allow-listed admin endpoints (ADMIN_EMAILS)
 │   │   │   ├── agents/            # Azure AI Foundry agents
 │   │   │   ├── applications/      # Generation pipeline
 │   │   │   ├── auth/              # JWT, OAuth, 2FA, sessions, refresh tokens
@@ -315,6 +315,8 @@ All routes are prefixed `/api/v1` and documented at <http://localhost:3000/docs>
 | GET      | `/sessions`                    | Active sessions          |
 | DELETE   | `/sessions/:id`                | Remote logout            |
 | GET      | `/subscription`                | Plan & usage             |
+| GET      | `/admin/users?email=`          | Admin: search users (allow-listed) |
+| POST     | `/admin/users/:email/tier`     | Admin: set subscription tier (allow-listed) |
 | GET/PUT  | `/user-preferences`            | Settings                 |
 
 ## 🚀 Deployment

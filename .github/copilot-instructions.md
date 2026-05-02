@@ -89,7 +89,7 @@ Also update this `copilot-instructions.md` file (Tech Stack, Backend Modules, Da
 - **Deployment:** **Cloudflare Workers** via `@opennextjs/cloudflare` 1.19 + `wrangler` 4.85
 
 ## Backend Modules (`apps/api/src/`)
-- `admin` — admin dashboard endpoints
+- `admin` — allow-listed admin endpoints (gated by `ADMIN_EMAILS` env), e.g. `POST /admin/users/:email/tier`
 - `agents` — Azure AI Foundry agents (URL parsing, etc.)
 - `applications` — generation pipeline (profile + job → LLM → PDF → storage), SSE status stream
 - `auth` — JWT, refresh-token rotation, OAuth (Google/Microsoft/Azure AD), TOTP 2FA, password reset
@@ -206,6 +206,16 @@ All endpoints are prefixed with `/api/v1` and documented at `http://localhost:30
 ### Subscription (Protected)
 
 **GET /api/v1/subscription** — current plan + usage counters
+
+### Admin (Protected, allow-listed)
+
+Gated by `ADMIN_EMAILS` (comma-separated, case-insensitive). Returns 403 when the env var is empty or the caller's email isn't listed.
+
+**GET /api/v1/admin/users?email=<query>** — search users by partial email (case-insensitive, max 20 results)
+**POST /api/v1/admin/users/:email/tier** — set a user's subscription tier and reset the billing period
+  - Body: `{ "tier": "FREE" | "PREMIUM" | "PREMIUM_PLUS", "periodMonths"?: number (1–120, default 12) }`
+  - Idempotent; `:email` matched case-insensitively
+  - Replaces the old `flyctl ssh` + `node /app/promote-premium.js` workflow
 
 ### User Preferences (Protected)
 
@@ -526,6 +536,9 @@ RESEND_FROM=noreply@smartapply.com
 # Monitoring (Sentry)
 SENTRY_DSN=<dsn>
 SENTRY_ENVIRONMENT=development
+
+# Admin (comma-separated, case-insensitive). Leave empty to disable /admin/*.
+ADMIN_EMAILS=you@example.com,coworker@example.com
 
 # Azure Key Vault (prod)
 KEY_VAULT_URI=https://your-kv.vault.azure.net/
