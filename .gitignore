@@ -60,7 +60,9 @@ tmp/
 temp/
 
 # Docker
-.dockerignore
+# (No entries — .dockerignore is intentionally tracked so Fly's remote
+# builder, GitHub Actions, and any local `docker build` all use the same
+# build-context filtering.)
 
 # Azure
 .azure/

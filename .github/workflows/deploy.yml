@@ -1,0 +1,215 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/ISSUE_TEMPLATE/**'
+  # Manual trigger from the Actions tab. workflow_dispatch redeploys both
+  # API and Web regardless of which paths changed (handy for cache-busts).
+  workflow_dispatch:
+
+# Concurrency is scoped per ref so an API deploy doesn't block a Web deploy
+# and vice versa. Don't cancel in progress — we'd rather two deploys race
+# in deterministic order than abort a half-pushed image.
+concurrency:
+  group: deploy-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  # Force any actions still bundled for Node 20 onto the Node 24 runtime.
+  # See https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  # ── Repo Variables (Settings → Secrets and variables → Actions → Variables) ──
+  #   PUBLIC_API_URL    — baked into the CF Worker bundle at build time.
+  #                       Default points at the still-offline custom domain;
+  #                       override to https://smart-apply-api.fly.dev/api/v1
+  #                       while api.smart-apply.io is down (or to test
+  #                       against a Fly preview machine).
+  #   FLY_APP           — Fly app name. Override only if you fork or rename.
+  #   HEALTH_CHECK_HOST — hostname used for the post-deploy health check.
+  #                       Mirrors PUBLIC_API_URL minus the path.
+  PUBLIC_API_URL: ${{ vars.PUBLIC_API_URL || 'https://api.smart-apply.io/api/v1' }}
+  FLY_APP: ${{ vars.FLY_APP || 'smart-apply-api' }}
+  HEALTH_CHECK_HOST: ${{ vars.HEALTH_CHECK_HOST || 'smart-apply-api.fly.dev' }}
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────
+  # detect-changes — figure out which deploy targets need to run.
+  # Splits API (Fly.io) from Web (Cloudflare Worker) so a backend-only
+  # change doesn't redeploy the Worker, halving CI time and avoiding
+  # unnecessary Worker version bumps.
+  # ─────────────────────────────────────────────────────────────────────
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+      web: ${{ steps.filter.outputs.web }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          # workflow_dispatch always rebuilds both regardless of changed
+          # paths (see the `if:` on each job below). On `push`, we filter
+          # so a docs/api-only change doesn't redeploy the frontend (and
+          # vice versa). Shared paths (root configs, workflow file itself,
+          # packages/shared) trigger BOTH so a refactor that touches both
+          # halves doesn't get half-deployed.
+          filters: |
+            api:
+              - 'apps/api/**'
+              - 'packages/shared/**'
+              - 'infra/Dockerfile'
+              - '.dockerignore'
+              - 'fly.toml'
+              - 'package.json'
+              - 'package-lock.json'
+              - '.github/workflows/deploy.yml'
+            web:
+              - 'apps/web/**'
+              - 'packages/shared/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - '.github/workflows/deploy.yml'
+
+  # ─────────────────────────────────────────────────────────────────────
+  # deploy-api — Build + deploy the NestJS API to Fly.io.
+  #
+  # Fly's remote builder handles the Docker build (no GHCR push needed,
+  # no SSH to a VM, no docker-compose dance). `flyctl deploy` is one shot:
+  # tar build context → remote builder → image registry → rolling restart
+  # → health-check.
+  #
+  # Required secret:
+  #   FLY_API_TOKEN — Personal token with deploy perms. Create with
+  #                   `fly tokens create deploy` (NOT `fly auth token`,
+  #                   which is your full-account token — too privileged
+  #                   for CI). Store under repo Settings → Secrets and
+  #                   variables → Actions → Secrets.
+  # ─────────────────────────────────────────────────────────────────────
+  deploy-api:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.api == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy to Fly.io
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        # --remote-only forces the build onto Fly's hosted Depot builder
+        # so we don't ship the entire build context through Docker Buildx
+        # on the runner (saves ~3-5 min and ~2GB of CI bandwidth).
+        # --strategy rolling matches the default `fly.toml` behaviour but
+        # we set it explicitly so a future fly.toml edit can't surprise CI.
+        run: |
+          flyctl deploy \
+            --app "${{ env.FLY_APP }}" \
+            --remote-only \
+            --strategy rolling \
+            --wait-timeout 600
+
+      - name: External health check
+        run: |
+          echo "⏳ Verifying https://${{ env.HEALTH_CHECK_HOST }}/api/v1/health..."
+          # `fly deploy` already waits for the in-Fly health probe, but we
+          # double-check from outside Fly's network in case there's a
+          # proxy/cert issue affecting public traffic only.
+          for i in {1..6}; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 \
+              "https://${{ env.HEALTH_CHECK_HOST }}/api/v1/health")
+            if [ "$code" = "200" ]; then
+              echo "✅ External health check passed"
+              exit 0
+            fi
+            echo "Attempt $i/6 — got $code, waiting 5s…"
+            sleep 5
+          done
+          echo "❌ External health check failed"
+          exit 1
+
+      - name: Show recent Fly logs on failure
+        if: failure()
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          echo "=== Last 100 log lines ==="
+          flyctl logs --app "${{ env.FLY_APP }}" --no-tail 2>&1 | tail -100 || true
+          echo ""
+          echo "=== Machine status ==="
+          flyctl status --app "${{ env.FLY_APP }}" 2>&1 || true
+
+  # ─────────────────────────────────────────────────────────────────────
+  # deploy-web — Build + deploy the Cloudflare Worker (OpenNext).
+  # Independent of the API deploy: runs in parallel and on its own change
+  # filter (apps/web/**).
+  #
+  # Required secret:
+  #   CLOUDFLARE_API_TOKEN — Wrangler API token with Workers:Edit perms
+  #                          (https://dash.cloudflare.com/profile/api-tokens)
+  #
+  # The TURNSTILE_SITE_KEY default is hardcoded in apps/web/package.json's
+  # cf:build script (it's a public key by Cloudflare's design — the secret
+  # half lives on the API). Override here only if you ever need staging vs.
+  # prod with different widgets.
+  # ─────────────────────────────────────────────────────────────────────
+  deploy-web:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.web == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          # Pinned to 20 because the Cloudflare Workers runtime + wrangler
+          # toolchain still target Node 20 LTS. Bump to 24 once @opennextjs
+          # publishes a Node-24-tested release.
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies (root + web + shared workspaces)
+        # `--include=dev` because the build needs Next/OpenNext/Wrangler which
+        # are devDependencies. Web workspace pulls shared via local symlink.
+        run: npm ci --workspace=apps/web --workspace=packages/shared --include=dev --legacy-peer-deps
+
+      - name: Build shared package
+        run: npm run shared:build
+
+      - name: Build + deploy Cloudflare Worker
+        working-directory: apps/web
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          # Override the package.json defaults via repo vars/secrets.
+          # All NEXT_PUBLIC_* are inlined at build time and shipped to the
+          # browser, so site keys and DSNs are public by design.
+          NEXT_PUBLIC_API_URL: ${{ env.PUBLIC_API_URL }}
+          NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
+          NEXT_PUBLIC_SENTRY_DSN: ${{ vars.SENTRY_DSN_WEB }}
+          NEXT_PUBLIC_SENTRY_RELEASE: ${{ github.sha }}
+        run: npm run cf:deploy
+
+      - name: Smoke test deployed Worker
+        run: |
+          echo "⏳ Verifying https://smart-apply.io/register loads..."
+          sleep 5
+          for i in {1..6}; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 https://smart-apply.io/register)
+            if [ "$code" = "200" ]; then
+              echo "✅ /register returned 200"
+              exit 0
+            fi
+            echo "Attempt $i/6 — got $code, waiting 5s…"
+            sleep 5
+          done
+          echo "❌ /register did not return 200"
+          exit 1

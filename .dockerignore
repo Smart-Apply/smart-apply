@@ -1,0 +1,106 @@
+# ============================================================================
+# .dockerignore — keep the Fly build context small and never leak secrets
+# ============================================================================
+# `fly deploy` (and `docker build`) sends the entire build context to the
+# Docker daemon / Fly remote builder before any COPY runs. Without this file
+# we'd ship .git history, every node_modules, uploaded user PDFs, logs, the
+# Cloudflare Worker bundle, and (worst of all) every .env file with prod
+# secrets. This trims the context to just what infra/Dockerfile actually
+# needs.
+# ============================================================================
+
+# --- VCS / IDE ----------------------------------------------------------------
+.git
+.gitignore
+.gitattributes
+.github
+.vscode
+.idea
+
+# --- Secrets — NEVER ship these ----------------------------------------------
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+*.pem
+*.key
+demo-cookies.txt
+
+# --- Dependencies (Dockerfile runs `npm ci` itself) ---------------------------
+node_modules
+**/node_modules
+.pnpm-store
+.turbo
+**/.turbo
+
+# --- Build outputs (rebuilt inside the image) --------------------------------
+dist
+**/dist
+build
+**/build
+.next
+**/.next
+.open-next
+**/.open-next
+out
+**/out
+coverage
+**/coverage
+*.tsbuildinfo
+
+# --- Runtime data the API generates locally — must not leak to the image ----
+uploads
+storage
+apps/api/uploads
+apps/api/storage
+apps/api/logs
+logs
+**/logs
+
+# --- Web app (the API image doesn't need it) ---------------------------------
+apps/web
+packages/shared/dist
+
+# --- Docs / scripts that aren't needed at build time -------------------------
+docs
+README.md
+ARCHITECTURE.md
+CHANGELOG.md
+QUICKSTART.md
+**/*.md
+# Re-include prompt templates — the LLM service loads these .md files at
+# runtime (`/app/prompts/v1/skill-selector.md` etc.), so they MUST land in
+# the image. Without this exception the container boots but blows up on the
+# first generation request with `Template not found: v1/skill-selector.md`.
+!apps/api/prompts/**/*.md
+!apps/api/prisma/migrations/**/migration_lock.toml
+
+# --- Tests / fixtures --------------------------------------------------------
+# (tsconfig.build.json already excludes these from compilation; we just keep
+# them out of the build context to shrink it. Exception: apps/api/test/ is
+# COPYed by the Dockerfile, so we re-include it.)
+**/*.spec.ts
+**/*.test.ts
+**/__tests__
+**/__mocks__
+test
+**/test
+!apps/api/test
+!apps/api/test/**
+
+# --- OS / editor cruft -------------------------------------------------------
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# --- Misc ---------------------------------------------------------------------
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.cache

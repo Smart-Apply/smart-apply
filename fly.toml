@@ -1,0 +1,78 @@
+# fly.toml app configuration file generated for smart-apply-api on 2026-05-02T16:27:41+02:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'smart-apply-api'
+primary_region = 'fra'
+
+[build]
+  dockerfile = 'infra/Dockerfile'
+
+# Release command runs ONCE per deploy in a temporary one-off VM (uses
+# all the same env vars + secrets as a regular machine) BEFORE the new
+# app machines start serving traffic. If this exits non-zero the deploy
+# aborts and the previous version keeps running.
+#
+# `prisma migrate deploy` is the production-safe migration runner — only
+# applies migrations already committed to apps/api/prisma/migrations,
+# never generates new ones, never prompts. Idempotent: a no-op when the
+# DB is already at HEAD.
+#
+# - We invoke the locally-installed CLI via `node_modules/.bin/prisma`
+#   (NOT `npx prisma`) because npx with no version pin pulls the newest
+#   Prisma from the registry, which currently rejects schemas that still
+#   declare `url = env("DATABASE_URL")` in the datasource block.
+#   The pinned 6.19.x in node_modules accepts both schema-block and
+#   prisma.config.ts datasources.
+# - `prisma` and `tsx` are runtime dependencies in apps/api/package.json
+#   so they survive `npm prune --production` in the Docker build. `tsx`
+#   is required by Prisma to load the TypeScript config file.
+# - prisma.config.ts prefers DIRECT_URL over DATABASE_URL, which is the
+#   correct path for migrations against Neon's pgbouncer.
+[deploy]
+  release_command = 'node_modules/.bin/prisma migrate deploy --schema=apps/api/prisma/schema.prisma'
+
+[env]
+  JOBS_DRIVER = 'qstash'
+  LLM_PROVIDER = 'azure-openai'
+  LOG_LEVEL = 'info'
+  NODE_ENV = 'production'
+  PORT = '3000'
+  PUPPETEER_EXECUTABLE_PATH = '/usr/bin/chromium-browser'
+  PUPPETEER_IDLE_TIMEOUT_MS = '60000'
+  PUPPETEER_MAX_BROWSERS = '2'
+  PUPPETEER_MIN_BROWSERS = '0'
+  PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = 'true'
+  STORAGE_DRIVER = 'r2'
+  THROTTLER_STORAGE = 'upstash'
+
+[processes]
+  app = ''
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = 'suspend'
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ['app']
+
+  [http_service.concurrency]
+    type = 'requests'
+    hard_limit = 250
+    soft_limit = 200
+
+  [[http_service.checks]]
+    interval = '15s'
+    timeout = '5s'
+    grace_period = '30s'
+    method = 'get'
+    path = '/api/v1/health'
+
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 1024
