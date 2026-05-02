@@ -96,15 +96,18 @@ Generate a token scoped to **only** that bucket (R2 → Manage R2 API tokens →
 
 ### 1.4 Azure OpenAI staging deployment
 
-In your existing Azure OpenAI resource, add a sibling deployment:
+Already provisioned in your existing Azure OpenAI resource:
 
 ```
 deployments/
-  gpt-4.1            ← prod (current)
-  gpt-4.1-staging    ← new (low TPM quota, e.g. 10K TPM)
+  gpt-4.1            ← prod    (200K TPM)
+  gpt-4.1-staging    ← staging (medium quota)
+  gpt-4.1-local      ← local dev (low quota — runaway-loop safe)
 ```
 
-Same API key, different `AZURE_OPENAI_DEPLOYMENT_NAME`. Lets staging run real prompts without burning prod's quota.
+Same API key across all three; only `AZURE_OPENAI_DEPLOYMENT_NAME` differs
+per environment. This way a bad prompt loop in staging or local can't
+starve prod of TPM.
 
 ### 1.5 Fly staging app
 
