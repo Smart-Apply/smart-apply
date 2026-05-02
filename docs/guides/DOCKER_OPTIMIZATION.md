@@ -1,5 +1,21 @@
 # Docker Image Optimization Guide
 
+> **⚠️ Status (May 2026): Historical — superseded by Fly.io + Cloudflare Workers.**
+>
+> This document was written when both API and Web were containerised and
+> deployed via `docker-compose` on an Azure VM. The current production
+> setup deploys:
+>
+> - **API** → Fly.io (single Dockerfile, `infra/Dockerfile`); image size is
+>   handled by Fly's build cache and `npm prune --production`. The
+>   `scripts/build-optimized.sh` helper and `infra/Dockerfile.web` referenced
+>   below have been deleted.
+> - **Web** → Cloudflare Workers via `@opennextjs/cloudflare` (no Docker
+>   image at all).
+>
+> Keep this doc only as reference for the multi-stage / cache-mount
+> patterns we still use in `infra/Dockerfile`.
+
 ## Problem
 
 Die aktuellen Container-Images sind zu groß und verursachen lange Deploy-Zeiten:

@@ -347,5 +347,4 @@ If empty: client-side init never ran or DSN was empty.
 - Sentry GitHub: [Turbopack support announcement](https://github.com/getsentry/sentry-javascript/issues)
 - Repo: [`apps/web/instrumentation-client.ts`](../../apps/web/instrumentation-client.ts),
   [`apps/web/instrumentation.ts`](../../apps/web/instrumentation.ts),
-  [`apps/web/sentry.server.config.ts`](../../apps/web/sentry.server.config.ts),
-  [`infra/Dockerfile.web`](../../infra/Dockerfile.web)
+  [`apps/web/sentry.server.config.ts`](../../apps/web/sentry.server.config.ts)

@@ -1,5 +1,23 @@
 # 🌐 Domain & Cloudflare Integration — Postmortem & Runbook
 
+> **⚠️ Status (May 2026): Historical postmortem.** The Azure VM described
+> below was decommissioned after the migration to **Fly.io** (API) +
+> **Cloudflare Workers** (web). The current production topology is:
+>
+> - `smart-apply.io` / `www.smart-apply.io` → Cloudflare Worker `smart-apply-web`
+> - `api.smart-apply.io` → CNAME (Cloudflare-proxied) → `93ke51y.smart-apply-api.fly.dev`
+> - Fly issues the Let's Encrypt cert directly via DNS-01; the
+>   `_acme-challenge.api` CNAME **must be DNS-only** (gray cloud) or
+>   Cloudflare hides it from Let's Encrypt and issuance hangs.
+> - The `_fly-ownership.api` TXT record is required because traffic is
+>   proxied (Fly's anti-spoof check).
+>
+> The nginx + Origin Cert + Real-IP setup described below is **no longer in
+> use** — Fly terminates TLS at its anycast edge with a real Let's Encrypt
+> cert, so `Full (strict)` Just Works. Keep this doc as the postmortem of
+> the original April 2026 cutover; for the current setup see the README and
+> `infra/README.md`.
+
 > Dokumentation der Migration von `smartapplymvp.swedencentral.cloudapp.azure.com` auf die eigene Domain **`smart-apply.io`** (April 2026), inklusive Cloudflare-Setup, nginx-Reverse-Proxy und HTTPS-Härtung.
 
 ## Inhaltsverzeichnis
