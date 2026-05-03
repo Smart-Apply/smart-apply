@@ -94,6 +94,11 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.api == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    # Gate on the GitHub Environment named `production`. The environment
+    # has a required-reviewer rule so this job blocks until you approve
+    # it in the Actions UI. Secrets/vars are read from the environment
+    # scope first, falling back to repo scope for backwards compatibility.
+    environment: production
     permissions:
       contents: read
     steps:
@@ -165,6 +170,10 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.web == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    # Same gating as deploy-api — pauses until you approve in the
+    # Actions UI. Both jobs request approval in parallel; one click
+    # releases both.
+    environment: production
     steps:
       - uses: actions/checkout@v5
 
