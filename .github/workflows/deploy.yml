@@ -49,7 +49,7 @@ jobs:
       web: ${{ steps.filter.outputs.web }}
     steps:
       - uses: actions/checkout@v5
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           # workflow_dispatch always rebuilds both regardless of changed
@@ -178,7 +178,7 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           # Pinned to 20 because the Cloudflare Workers runtime + wrangler
           # toolchain still target Node 20 LTS. Bump to 24 once @opennextjs
