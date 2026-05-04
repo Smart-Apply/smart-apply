@@ -31,5 +31,28 @@
   //   Add: smart-apply.io  (or new.smart-apply.io for soft launch)
   "observability": {
     "enabled": true
+  },
+
+  // ───────────────────────────────────────────────────────────────────────
+  // Per-environment overrides. Selected at deploy time:
+  //   wrangler deploy                 → top-level config (PROD)
+  //   wrangler deploy --env staging   → this block merged on top
+  //
+  // CRITICAL: NEXT_PUBLIC_* values are inlined into the JS bundle at BUILD
+  // time, NOT read from this file at runtime. The `vars` block here exists
+  // for documentation / wrangler-tail visibility — the actual API URL must
+  // be set as `NEXT_PUBLIC_API_URL` env var BEFORE `npm run cf:build` runs.
+  // See `cf:build:staging` script in apps/web/package.json.
+  // ───────────────────────────────────────────────────────────────────────
+  "env": {
+    "staging": {
+      "name": "smart-apply-web-staging",
+      "vars": {
+        "NEXT_PUBLIC_API_URL": "https://smart-apply-api-staging.fly.dev/api/v1"
+      },
+      "observability": {
+        "enabled": true
+      }
+    }
   }
 }
