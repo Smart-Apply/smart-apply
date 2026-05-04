@@ -27,6 +27,12 @@ build/
 .env.*.local
 .env.bak
 
+# Defence-in-depth: catch ad-hoc secret files used to bootstrap Fly /
+# Cloudflare environments (e.g. `fly secrets import < fly-*.env`).
+*-secrets.env
+*-secrets*.env
+secrets.env
+
 # IDE
 .vscode/
 .idea/

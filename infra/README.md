@@ -29,7 +29,10 @@ after `npm run cf:build` in `apps/web/`.
 
 ```bash
 # API → Fly.io
-flyctl deploy                                # uses fly.toml + infra/Dockerfile
+# Prod
+flyctl deploy --config fly.prod.toml --app smart-apply-api
+# Staging
+flyctl deploy --config fly.staging.toml --app smart-apply-api-staging
 flyctl logs -a smart-apply-api
 flyctl secrets list -a smart-apply-api
 

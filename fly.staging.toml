@@ -1,0 +1,80 @@
+# fly.toml — STAGING configuration for smart-apply-api-staging.
+#
+# Sister file to fly.prod.toml. Differences from prod, summarized:
+#   • app name              → smart-apply-api-staging
+#   • min_machines_running  → 0  (suspend on idle, save €€)
+#   • VM size               → shared-cpu-1x / 1 GB (smaller than prod)
+#   • concurrency limits    → halved (less traffic expected)
+#
+# Same Docker image, same release command, same health checks. Secrets
+# (DATABASE_URL, JWT_SECRET, R2_*, etc.) are scoped to the staging app
+# via `flyctl secrets set --app smart-apply-api-staging` — never read
+# from this file.
+#
+# Deploy with:
+#   flyctl deploy --config fly.staging.toml --app smart-apply-api-staging --remote-only
+
+app = 'smart-apply-api-staging'
+primary_region = 'fra'
+
+[build]
+  dockerfile = 'infra/Dockerfile'
+
+# Identical to prod — runs migrations against staging's DATABASE_URL/DIRECT_URL
+# secret (Neon `staging` branch). See fly.prod.toml for the full explanation
+# of why we invoke prisma via `node`.
+[deploy]
+  release_command = 'node apps/api/node_modules/prisma/build/index.js migrate deploy --schema=apps/api/prisma/schema.prisma'
+
+[env]
+  JOBS_DRIVER = 'qstash'
+  LLM_PROVIDER = 'azure-openai'
+  LOG_LEVEL = 'info'
+  NODE_ENV = 'production'
+  PORT = '3000'
+  PUPPETEER_EXECUTABLE_PATH = '/usr/bin/chromium-browser'
+  PUPPETEER_IDLE_TIMEOUT_MS = '60000'
+  PUPPETEER_MAX_BROWSERS = '1'             # halved vs prod (less traffic)
+  PUPPETEER_MIN_BROWSERS = '0'
+  PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = 'true'
+  STORAGE_DRIVER = 'r2'
+  # Single staging machine → no need for distributed throttling. Saves the
+  # Upstash Redis free-tier slot for prod, which actually runs >1 machine.
+  THROTTLER_STORAGE = 'memory'
+
+[processes]
+  app = ''
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = 'suspend'
+  auto_start_machines = true
+  # Suspend the (single) staging machine when idle. Cold-start is ~300 ms
+  # on Fly suspend/resume — fine for soak testing, costs ~€0/mo when nobody
+  # is hitting it.
+  min_machines_running = 0
+  processes = ['app']
+
+  [http_service.concurrency]
+    type = 'requests'
+    hard_limit = 100         # halved vs prod (250)
+    soft_limit = 80          # halved vs prod (200)
+
+  [[http_service.checks]]
+    interval = '15s'
+    timeout = '5s'
+    grace_period = '30s'
+    method = 'get'
+    path = '/api/v1/health'
+
+# VM size: shared-cpu-1x · 1 GB RAM. Half of prod's 2x/2GB because:
+#   • PUPPETEER_MAX_BROWSERS=1 (vs 2 on prod) — half the browser pool memory
+#   • Single-instance — no concurrent agent URL parses competing for RAM
+#   • Acceptable to OOM under heavy synthetic load — that's what staging is for
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 1024

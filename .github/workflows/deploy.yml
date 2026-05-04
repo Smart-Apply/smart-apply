@@ -64,7 +64,8 @@ jobs:
               - 'packages/shared/**'
               - 'infra/Dockerfile'
               - '.dockerignore'
-              - 'fly.toml'
+              - 'fly.prod.toml'
+              - 'fly.staging.toml'
               - 'package.json'
               - 'package-lock.json'
               - '.github/workflows/deploy.yml'
@@ -113,11 +114,15 @@ jobs:
         # --remote-only forces the build onto Fly's hosted Depot builder
         # so we don't ship the entire build context through Docker Buildx
         # on the runner (saves ~3-5 min and ~2GB of CI bandwidth).
-        # --strategy rolling matches the default `fly.toml` behaviour but
-        # we set it explicitly so a future fly.toml edit can't surprise CI.
+        # --strategy rolling matches the default fly.prod.toml behaviour
+        # but we set it explicitly so a future toml edit can't surprise CI.
+        # --config fly.prod.toml — fly.toml was renamed when we added the
+        # staging sister config (fly.staging.toml). flyctl no longer auto-
+        # finds a config file, so the path must be explicit.
         run: |
           flyctl deploy \
             --app "${{ env.FLY_APP }}" \
+            --config fly.prod.toml \
             --remote-only \
             --strategy rolling \
             --wait-timeout 600
