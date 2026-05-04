@@ -1,8 +1,34 @@
 # DevOps Roadmap — Multi-Stage Environments, Secrets & Releases
 
-> **Status:** Plan, not yet implemented.
+> **Status:** ✅ **Implemented** (May 2026). The plan below is preserved for
+> reference. See the "Shipped state" section directly below for what's
+> actually live.
 > **Audience:** Solo / small team running Smart Apply on Fly.io + Cloudflare Workers + Neon.
 > **Goal state:** `local → staging → prod` with safe migrations, scoped secrets, and tag-driven releases via Conventional Commits + release-please.
+
+---
+
+## Shipped state (May 2026)
+
+| Phase | Item | Status | Where |
+|---|---|---|---|
+| 1 | Neon `staging` branch + R2 bucket + Upstash QStash + Fly app + CF Worker | ✅ | live |
+| 1 | Custom domains (`*.staging.smart-apply.io`) | ⏸ deferred | use `*.workers.dev` / `*.fly.dev` |
+| 2 | GitHub Environments: `production` (gated), `staging` (auto), `copilot` | ✅ | repo Settings |
+| 2 | Per-env JWT/2FA secrets, scoped Fly tokens, secret rotation runbook | ✅ | [SECRETS_ROTATION.md](../security/SECRETS_ROTATION.md) |
+| 2 | Push protection + secret scanning + Dependabot security updates | ✅ | org-level |
+| 2 | gitleaks pre-commit hook | ⏸ deferred | optional |
+| 3 | `ci.yml` (lint + tests + lockfile sync check) | ✅ | runs on every PR |
+| 3 | `deploy-staging.yml` (auto on `main` push) | ✅ | no approval gate |
+| 3 | `deploy-prod.yml` (gated on `v*.*.*` tag push) | ✅ | requires manual approval |
+| 4 | release-please workflow + Conventional Commits adoption | ✅ | first release: v1.1.0 |
+| 4 | commitlint pre-commit hook | ⏸ deferred | self-discipline for now |
+| 4 | Sentry release tagging in deploy workflows | ⏸ deferred | nice-to-have |
+| 5 | Per-PR Neon migration dry-run + drift check | ✅ | [ci.yml](../../.github/workflows/ci.yml) |
+| 5 | Migration rollback runbook | ✅ | [MIGRATION_ROLLBACK.md](../security/MIGRATION_ROLLBACK.md) |
+| 6 | PR previews, Doppler, k6 load tests, synthetic monitoring | ⏸ deferred | when scale demands |
+
+**The contributor workflow it produced:** see [CONTRIBUTING.md](../../CONTRIBUTING.md) for the daily-use guide.
 
 ---
 
