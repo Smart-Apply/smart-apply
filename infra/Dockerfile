@@ -2,7 +2,7 @@
 # Expected size reduction: ~3.5GB → ~800MB
 
 # Stage 1: Build dependencies
-FROM node:24-alpine AS deps
+FROM node:25-alpine AS deps
 
 WORKDIR /app
 
@@ -38,7 +38,7 @@ RUN --mount=type=cache,target=/root/.npm \
     npm ci --workspace=apps/api --workspace=packages/shared --omit=dev --legacy-peer-deps
 
 # Stage 2: Build application
-FROM node:24-alpine AS builder
+FROM node:25-alpine AS builder
 
 WORKDIR /app
 
@@ -115,7 +115,7 @@ RUN npm prune --production && \
     rm -rf node_modules/.cache
 
 # Stage 3: Production runtime
-FROM node:24-alpine AS production
+FROM node:25-alpine AS production
 
 # Install only runtime dependencies (minimal set)
 RUN apk add --no-cache \
