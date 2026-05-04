@@ -113,6 +113,12 @@ updates:
       # bump the runtime.
       - dependency-name: '@types/node'
         update-types: [version-update:semver-major]
+      # lucide-react v1.0 removed all third-party brand icons (LinkedIn,
+      # GitHub, Twitter, etc.) for trademark reasons. Migration requires
+      # replacing each brand-icon import with custom SVGs or a different
+      # icon set — bump deliberately when you've planned the migration.
+      - dependency-name: 'lucide-react'
+        update-types: [version-update:semver-major]
 
   # ───────────────────────────────────────────────────────────────────
   # GitHub Actions workflow versions (actions/checkout, setup-node, etc.)

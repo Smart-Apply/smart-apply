@@ -18,7 +18,7 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register ../../node_modules/.bin/jest --runInBand",
-    "test:unit": "jest --config ./test/jest-unit.json",
+    "test:unit": "jest --config ./test/jest-unit.json --forceExit",
     "test:unit:watch": "jest --config ./test/jest-unit.json --watch",
     "test:unit:cov": "jest --config ./test/jest-unit.json --coverage",
     "test:integration": "NODE_ENV=test jest --config ./test/jest-integration.json --runInBand",

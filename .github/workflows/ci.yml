@@ -19,6 +19,13 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Workflow-level default permissions. Individual jobs can override / narrow
+# these. `pull-requests: read` is required by dorny/paths-filter to fetch
+# the list of changed files from the GitHub API on PR events.
+permissions:
+  contents: read
+  pull-requests: read
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -44,14 +51,30 @@ jobs:
         # If a contributor edited package.json without running `npm install`,
         # `npm ci` succeeds but the lockfile drifts. Catch that here so it
         # doesn't break a downstream `fly deploy` that uses `npm ci` too.
+        #
+        # Why we filter the diff: different npm versions (10.x vs 11.x) emit
+        # cosmetic differences in lockfile metadata flags (devOptional vs
+        # dev, hoisting tie-breaks, etc.) that don't reflect any real
+        # dependency change. We only fail when a `"version":` line actually
+        # moves — that's the bit that affects what gets installed.
         run: |
-          npm install --package-lock-only --legacy-peer-deps
-          if ! git diff --quiet package-lock.json; then
-            echo "::error::package-lock.json is out of sync with package.json. Run 'npm install --legacy-peer-deps' locally, commit, and push."
-            git diff package-lock.json | head -100
-            exit 1
+          npm install --package-lock-only --legacy-peer-deps --no-audit --no-fund
+          if git diff --quiet package-lock.json; then
+            echo "✅ Lockfile in sync"
+            exit 0
           fi
-          echo "✅ Lockfile in sync"
+
+          # Filter the diff to only resolved-package lines (name + version).
+          MEANINGFUL=$(git diff package-lock.json | grep -E '^[-+]\s*"(name|version|resolved)":' || true)
+          if [ -z "$MEANINGFUL" ]; then
+            echo "ℹ️  Lockfile has cosmetic drift (npm metadata flags only). Ignoring."
+            exit 0
+          fi
+
+          echo "::error::package-lock.json is out of sync with package.json. Run 'npm install --legacy-peer-deps' locally, commit, and push."
+          echo "Meaningful changes (name/version/resolved):"
+          echo "$MEANINGFUL" | head -50
+          exit 1
 
       - name: Build shared package (required by api + web)
         run: npm run shared:build
