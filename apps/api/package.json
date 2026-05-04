@@ -104,7 +104,7 @@
     "pino-http": "^9.0.0",
     "pino-pretty": "^10.3.1",
     "playwright": "^1.56.1",
-    "prisma": "6.19.2",
+    "prisma": "6.19.3",
     "puppeteer": "^24.36.0",
     "qrcode": "^1.5.4",
     "reflect-metadata": "^0.2.1",
