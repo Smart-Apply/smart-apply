@@ -1,21 +1,43 @@
-name: Deploy
+name: Deploy → Production
+
+# Triggers ONLY on a SemVer tag push (vX.Y.Z), NOT on every push to main.
+# Tags are created by release-please when its release PR is merged.
+#
+# This decoupling means:
+#   - main can advance freely without touching prod
+#   - staging soaks every main commit (see deploy-staging.yml)
+#   - prod only ships at deliberate "release" moments
+#   - rollback = re-deploy a previous tag instead of "find the right SHA"
+#
+# Triggers:
+#   - push of a tag matching v*.*.* (e.g. v1.2.3, v1.2.3-rc.1)
+#   - manual via workflow_dispatch (re-deploy a specific tag without a new release)
+#
+# Required GitHub Environment: `production`
+#   Required reviewers: @Ar1anit  (gates the deploy on manual approval)
+#   Branch restrictions: tags v*.*.* and main only
+#   Secrets:
+#     FLY_API_TOKEN          — scoped to smart-apply-api only
+#     CLOUDFLARE_API_TOKEN   — Worker:Edit
+#   Variables:
+#     PUBLIC_API_URL         — https://api.smart-apply.io/api/v1
+#     FLY_APP                — smart-apply-api
+#     HEALTH_CHECK_HOST      — api.smart-apply.io
+#     TURNSTILE_SITE_KEY     — public CAPTCHA site key
+#     SENTRY_DSN_WEB         — public Sentry DSN
 
 on:
   push:
-    branches: [main]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - '.github/ISSUE_TEMPLATE/**'
-  # Manual trigger from the Actions tab. workflow_dispatch redeploys both
-  # API and Web regardless of which paths changed (handy for cache-busts).
+    tags:
+      - 'v*.*.*'
+  # Manual trigger lets you re-deploy a specific tag (Actions → Run workflow → enter ref).
   workflow_dispatch:
 
 # Concurrency is scoped per ref so an API deploy doesn't block a Web deploy
 # and vice versa. Don't cancel in progress — we'd rather two deploys race
 # in deterministic order than abort a half-pushed image.
 concurrency:
-  group: deploy-${{ github.workflow }}-${{ github.ref }}
+  group: deploy-prod-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
 env:
@@ -24,13 +46,8 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   # ── Repo Variables (Settings → Secrets and variables → Actions → Variables) ──
   #   PUBLIC_API_URL    — baked into the CF Worker bundle at build time.
-  #                       Default points at the still-offline custom domain;
-  #                       override to https://smart-apply-api.fly.dev/api/v1
-  #                       while api.smart-apply.io is down (or to test
-  #                       against a Fly preview machine).
   #   FLY_APP           — Fly app name. Override only if you fork or rename.
   #   HEALTH_CHECK_HOST — hostname used for the post-deploy health check.
-  #                       Mirrors PUBLIC_API_URL minus the path.
   PUBLIC_API_URL: ${{ vars.PUBLIC_API_URL || 'https://api.smart-apply.io/api/v1' }}
   FLY_APP: ${{ vars.FLY_APP || 'smart-apply-api' }}
   HEALTH_CHECK_HOST: ${{ vars.HEALTH_CHECK_HOST || 'smart-apply-api.fly.dev' }}
@@ -93,7 +110,13 @@ jobs:
   # ─────────────────────────────────────────────────────────────────────
   deploy-api:
     needs: detect-changes
-    if: needs.detect-changes.outputs.api == 'true' || github.event_name == 'workflow_dispatch'
+    # On tag push: always run (a release should always touch prod, even if no
+    # API code changed — you might be releasing only a frontend change but you
+    # want the prod release marker on the API container too).
+    # On workflow_dispatch: respect path filter (allows manual targeted re-deploy).
+    if: |
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.api == 'true')
     runs-on: ubuntu-latest
     # Gate on the GitHub Environment named `production`. The environment
     # has a required-reviewer rule so this job blocks until you approve
@@ -173,7 +196,10 @@ jobs:
   # ─────────────────────────────────────────────────────────────────────
   deploy-web:
     needs: detect-changes
-    if: needs.detect-changes.outputs.web == 'true' || github.event_name == 'workflow_dispatch'
+    # Same logic as deploy-api: tag push always runs, workflow_dispatch respects filter.
+    if: |
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_dispatch' && needs.detect-changes.outputs.web == 'true')
     runs-on: ubuntu-latest
     # Same gating as deploy-api — pauses until you approve in the
     # Actions UI. Both jobs request approval in parallel; one click

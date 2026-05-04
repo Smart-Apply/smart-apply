@@ -1,0 +1,200 @@
+name: CI
+
+# Runs on every pull request targeting main. Catches lint errors, broken
+# unit tests, and out-of-sync lockfiles BEFORE they can be merged.
+#
+# This file is intentionally minimal — heavy integration / e2e tests
+# require a real Postgres + Redis and are run elsewhere (or before
+# release). The goal here is "fast enough that nobody bypasses it."
+
+on:
+  pull_request:
+    branches: [main]
+  # Manual trigger lets you re-run checks on demand without pushing.
+  workflow_dispatch:
+
+# Cancel in-flight runs on the same PR when a new commit is pushed.
+# Saves CI minutes and avoids confusing "out of date" status checks.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────
+  # lint-and-typecheck — fast feedback on style/type errors.
+  # No DB needed, runs in <2 min.
+  # ─────────────────────────────────────────────────────────────────────
+  lint-and-typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Verify lockfile is in sync with package.json files
+        # If a contributor edited package.json without running `npm install`,
+        # `npm ci` succeeds but the lockfile drifts. Catch that here so it
+        # doesn't break a downstream `fly deploy` that uses `npm ci` too.
+        run: |
+          npm install --package-lock-only --legacy-peer-deps
+          if ! git diff --quiet package-lock.json; then
+            echo "::error::package-lock.json is out of sync with package.json. Run 'npm install --legacy-peer-deps' locally, commit, and push."
+            git diff package-lock.json | head -100
+            exit 1
+          fi
+          echo "✅ Lockfile in sync"
+
+      - name: Build shared package (required by api + web)
+        run: npm run shared:build
+
+      - name: Lint
+        run: npm run lint
+
+  # ─────────────────────────────────────────────────────────────────────
+  # unit-tests — backend unit tests (no DB, no external services).
+  # ─────────────────────────────────────────────────────────────────────
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Build shared package
+        run: npm run shared:build
+
+      - name: Run unit tests
+        run: npm run test:unit
+
+  # ─────────────────────────────────────────────────────────────────────
+  # migration-check — dry-run new Prisma migrations against an ephemeral
+  # Neon branch. Catches:
+  #   - Syntax errors in migration SQL
+  #   - Migrations that fail against the staging schema (e.g. ALTER on a
+  #     column that was already dropped by a teammate's earlier merge)
+  #   - Migrations that take too long to apply (we'll see it here, not in
+  #     the staging Fly release-command timeout)
+  #
+  # The branch is created off the staging Neon branch (so the schema mirrors
+  # what's about to receive the migration on the next staging deploy), and
+  # auto-deleted when the PR closes.
+  #
+  # Only runs when the PR actually changes Prisma migrations or the schema
+  # — saves CI minutes on docs/UI-only PRs.
+  #
+  # Required GitHub secrets (org-level recommended):
+  #   NEON_API_KEY   — https://console.neon.tech/app/settings/api-keys
+  # Required GitHub variables (repo-level):
+  #   NEON_PROJECT_ID — the project containing main + staging branches
+  # ─────────────────────────────────────────────────────────────────────
+  detect-migration-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.filter.outputs.migrations }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            migrations:
+              - 'apps/api/prisma/schema.prisma'
+              - 'apps/api/prisma/migrations/**'
+
+  migration-check:
+    needs: detect-migration-changes
+    if: needs.detect-migration-changes.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write   # allow posting a status comment on the PR
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        # Only need the api workspace + shared for prisma to load.
+        run: npm ci --workspace=apps/api --workspace=packages/shared --include=dev --legacy-peer-deps
+
+      - name: Build shared package
+        run: npm run shared:build
+
+      # Create an ephemeral Neon branch off `staging`. Branch name is
+      # deterministic per PR (pr-1234) so re-runs reuse the same branch
+      # — Neon dedupes by name and just resets it to a fresh COW snapshot.
+      # `expires_at` is a safety net: even if the delete-branch step fails
+      # (cancelled job, GitHub outage), Neon will auto-delete after 7 days.
+      - name: Compute branch expiration (7 days from now)
+        id: expiration
+        run: echo "EXPIRES_AT=$(date -u --date '+7 days' +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
+
+      - name: Create ephemeral Neon branch
+        id: neon-branch
+        uses: neondatabase/create-branch-action@v6
+        with:
+          project_id: ${{ vars.NEON_PROJECT_ID }}
+          parent_branch: staging
+          branch_name: pr-${{ github.event.pull_request.number }}
+          expires_at: ${{ steps.expiration.outputs.EXPIRES_AT }}
+          api_key: ${{ secrets.NEON_API_KEY }}
+
+      - name: Apply pending migrations to ephemeral branch
+        env:
+          DATABASE_URL: ${{ steps.neon-branch.outputs.db_url_pooled }}
+          DIRECT_URL: ${{ steps.neon-branch.outputs.db_url }}
+        # `prisma migrate deploy` is the same command Fly's release_command
+        # runs on actual deploys. If it succeeds here, it will succeed there.
+        run: |
+          cd apps/api
+          echo "::group::Migration plan"
+          npx prisma migrate status
+          echo "::endgroup::"
+
+          echo "::group::Applying migrations"
+          npx prisma migrate deploy
+          echo "::endgroup::"
+
+      # Drift check: after applying migrations, the live schema should match
+      # what schema.prisma declares. If `migrate diff` finds anything, someone
+      # edited schema.prisma without generating a migration.
+      - name: Verify no schema drift
+        env:
+          DIRECT_URL: ${{ steps.neon-branch.outputs.db_url }}
+        run: |
+          cd apps/api
+          if ! npx prisma migrate diff \
+            --from-url "$DIRECT_URL" \
+            --to-schema-datamodel prisma/schema.prisma \
+            --exit-code; then
+            echo "::error::schema.prisma diverges from the migrated DB state. Run 'npx prisma migrate dev --name <descriptive_name>' to generate the missing migration."
+            exit 1
+          fi
+          echo "✅ Schema matches migrations"
+
+      # Always delete the ephemeral branch, even on failure, to keep Neon
+      # branch count under the plan limit.
+      - name: Delete ephemeral Neon branch
+        if: always()
+        uses: neondatabase/delete-branch-action@v3
+        with:
+          project_id: ${{ vars.NEON_PROJECT_ID }}
+          branch: pr-${{ github.event.pull_request.number }}
+          api_key: ${{ secrets.NEON_API_KEY }}

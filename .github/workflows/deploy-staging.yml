@@ -1,0 +1,173 @@
+name: Deploy → Staging
+
+# Auto-deploys to STAGING on every push to main. No approval gate —
+# staging exists exactly so you can ship fast and watch what breaks.
+#
+# Triggers:
+#   - push to main (after PR merge)
+#   - manual via workflow_dispatch (re-deploy without code changes)
+#
+# Required GitHub Environment: `staging`
+#   Secrets:
+#     FLY_API_TOKEN          — scoped to smart-apply-api-staging only
+#     CLOUDFLARE_API_TOKEN   — Worker:Edit, can be same as production
+#   Variables:
+#     STAGING_FLY_APP        — smart-apply-api-staging
+#     STAGING_API_URL        — https://smart-apply-api-staging.fly.dev/api/v1
+#     STAGING_HEALTH_HOST    — smart-apply-api-staging.fly.dev
+#     TURNSTILE_SITE_KEY     — public CAPTCHA site key
+#     SENTRY_DSN_WEB         — public Sentry DSN
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/ISSUE_TEMPLATE/**'
+  workflow_dispatch:
+
+# Don't cancel an in-flight staging deploy when a second push lands —
+# rolling-restart serializes them anyway and we want both to ship.
+concurrency:
+  group: deploy-staging-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  STAGING_FLY_APP: ${{ vars.STAGING_FLY_APP || 'smart-apply-api-staging' }}
+  STAGING_API_URL: ${{ vars.STAGING_API_URL || 'https://smart-apply-api-staging.fly.dev/api/v1' }}
+  STAGING_HEALTH_HOST: ${{ vars.STAGING_HEALTH_HOST || 'smart-apply-api-staging.fly.dev' }}
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+      web: ${{ steps.filter.outputs.web }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            api:
+              - 'apps/api/**'
+              - 'packages/shared/**'
+              - 'infra/Dockerfile'
+              - '.dockerignore'
+              - 'fly.prod.toml'
+              - 'fly.staging.toml'
+              - 'package.json'
+              - 'package-lock.json'
+              - '.github/workflows/deploy-staging.yml'
+            web:
+              - 'apps/web/**'
+              - 'packages/shared/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - '.github/workflows/deploy-staging.yml'
+
+  # ─────────────────────────────────────────────────────────────────────
+  # deploy-api — Push the API to smart-apply-api-staging Fly app.
+  # Uses fly.staging.toml (smaller VM, suspend-on-idle).
+  # ─────────────────────────────────────────────────────────────────────
+  deploy-api:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.api == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    # `staging` GitHub Environment — no required reviewers (auto-deploys).
+    # Provides the staging-scoped FLY_API_TOKEN.
+    environment: staging
+    steps:
+      - uses: actions/checkout@v6
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy staging API
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          flyctl deploy \
+            --app "${{ env.STAGING_FLY_APP }}" \
+            --config fly.staging.toml \
+            --remote-only \
+            --strategy rolling \
+            --wait-timeout 600
+
+      - name: External health check
+        run: |
+          echo "⏳ Verifying https://${{ env.STAGING_HEALTH_HOST }}/api/v1/health..."
+          for i in {1..6}; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 \
+              "https://${{ env.STAGING_HEALTH_HOST }}/api/v1/health")
+            if [ "$code" = "200" ]; then
+              echo "✅ Staging API healthy"
+              exit 0
+            fi
+            echo "Attempt $i/6 — got $code, waiting 5s…"
+            sleep 5
+          done
+          echo "❌ Staging API health check failed"
+          exit 1
+
+      - name: Show recent Fly logs on failure
+        if: failure()
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          echo "=== Last 100 log lines ==="
+          flyctl logs --app "${{ env.STAGING_FLY_APP }}" --no-tail 2>&1 | tail -100 || true
+          echo "=== Machine status ==="
+          flyctl status --app "${{ env.STAGING_FLY_APP }}" 2>&1 || true
+
+  # ─────────────────────────────────────────────────────────────────────
+  # deploy-web — Push the Worker to smart-apply-web-staging.
+  # Uses wrangler.jsonc env.staging block; bakes staging API URL into bundle.
+  # ─────────────────────────────────────────────────────────────────────
+  deploy-web:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.web == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --workspace=apps/web --workspace=packages/shared --include=dev --legacy-peer-deps
+
+      - name: Build shared package
+        run: npm run shared:build
+
+      - name: Build + deploy Worker (staging)
+        working-directory: apps/web
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          # NEXT_PUBLIC_* values are inlined at build time. Staging URL
+          # comes from the GitHub Environment variable.
+          NEXT_PUBLIC_API_URL: ${{ env.STAGING_API_URL }}
+          NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
+          NEXT_PUBLIC_SENTRY_DSN: ${{ vars.SENTRY_DSN_WEB }}
+          NEXT_PUBLIC_SENTRY_RELEASE: ${{ github.sha }}
+        run: npm run cf:deploy:staging
+
+      - name: Smoke test deployed Worker
+        run: |
+          echo "⏳ Verifying https://smart-apply-web-staging.ari41dev.workers.dev/register..."
+          sleep 5
+          for i in {1..6}; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 \
+              https://smart-apply-web-staging.ari41dev.workers.dev/register)
+            if [ "$code" = "200" ]; then
+              echo "✅ Staging Worker /register returned 200"
+              exit 0
+            fi
+            echo "Attempt $i/6 — got $code, waiting 5s…"
+            sleep 5
+          done
+          echo "❌ Staging Worker did not return 200"
+          exit 1
