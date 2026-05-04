@@ -81,7 +81,7 @@
     "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
     "csrf-csrf": "^4.0.3",
-    "eslint": "9.39.2",
+    "eslint": "10.3.0",
     "generic-pool": "^3.9.0",
     "handlebars": "^4.7.8",
     "helmet": "^7.1.0",
