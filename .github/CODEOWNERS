@@ -1,0 +1,8 @@
+# Default owner for everything
+* @Ar1anit
+
+# Critical files that need extra attention
+/.github/workflows/      @Ar1anit
+/apps/api/prisma/        @Ar1anit
+/fly.toml                @Ar1anit
+/infra/                  @Ar1anit
