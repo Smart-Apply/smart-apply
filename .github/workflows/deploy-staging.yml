@@ -97,14 +97,23 @@ jobs:
       - name: External health check
         run: |
           echo "⏳ Verifying https://${{ env.STAGING_HEALTH_HOST }}/api/v1/health..."
-          for i in {1..6}; do
+          # Staging runs with min_machines_running = 0 (suspend on idle).
+          # First request after suspend triggers a cold start (~5-10 sec to
+          # finish Nest bootstrap). The first curl with a 60s timeout acts
+          # as the wake-up call; subsequent polls measure actual readiness.
+          echo "→ Wake-up request (long timeout to absorb cold start)…"
+          curl -s -o /dev/null -w "  wake-up returned HTTP %{http_code} in %{time_total}s\n" \
+            --max-time 60 "https://${{ env.STAGING_HEALTH_HOST }}/api/v1/health" || true
+
+          # Now poll for readiness. 12 attempts × 5s = up to 60s total.
+          for i in {1..12}; do
             code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 \
               "https://${{ env.STAGING_HEALTH_HOST }}/api/v1/health")
             if [ "$code" = "200" ]; then
               echo "✅ Staging API healthy"
               exit 0
             fi
-            echo "Attempt $i/6 — got $code, waiting 5s…"
+            echo "Attempt $i/12 — got $code, waiting 5s…"
             sleep 5
           done
           echo "❌ Staging API health check failed"
