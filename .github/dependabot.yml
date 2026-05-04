@@ -2,23 +2,29 @@
 #
 # Docs: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 #
+# Why a SINGLE root npm block (and not one per workspace):
+#   npm workspaces keep a single `package-lock.json` at the repo root.
+#   Dependabot only updates files BELOW its `directory:` setting, so a
+#   `directory: /apps/web` block would bump `apps/web/package.json` but
+#   leave the root lockfile untouched → CI fails with "lock file out of
+#   sync". The `directory: /` block discovers all workspaces via npm and
+#   produces atomic PRs that touch the right workspace package.json AND
+#   the root lockfile.
+#
 # Strategy:
-#   • Group non-major bumps into one weekly PR per ecosystem so the
-#     review queue doesn't explode (one Tailwind patch + one Prisma
-#     patch + one shadcn patch = 1 PR, not 3).
-#   • Major bumps stay individual — they're the ones that break things,
-#     so they deserve their own PR with their own changelog review.
-#   • npm workspaces: scan each workspace separately so the right
-#     package.json gets edited.
+#   • Group non-major bumps by ecosystem family so the review queue
+#     stays manageable (one Tailwind patch + one Prisma patch + one
+#     shadcn patch = 1 PR per family, not 3).
+#   • Major bumps stay individual — they're the ones that break things.
 #   • Dependabot security updates (Settings → Code security) run
 #     independently of this file and ALWAYS open immediately.
-#
-# Limits per ecosystem keep the weekly noise capped — bump if you need.
 
 version: 2
 updates:
   # ───────────────────────────────────────────────────────────────────
-  # Root workspace (turbo, prisma CLI, prettier, eslint, etc.)
+  # All npm workspaces (root + apps/api + apps/web + packages/shared).
+  # Discovered automatically because the root package.json declares
+  # `workspaces: ["apps/api", "apps/web", "packages/shared"]`.
   # ───────────────────────────────────────────────────────────────────
   - package-ecosystem: npm
     directory: /
@@ -27,167 +33,86 @@ updates:
       day: monday
       time: '06:00'
       timezone: Europe/Berlin
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 10
     commit-message:
       prefix: chore
       prefix-development: chore
       include: scope
     labels:
       - dependencies
-      - root
     groups:
-      root-minor-patch:
-        update-types:
-          - minor
-          - patch
-    # Don't auto-bump these without manual review — they break the world
-    # if upgraded carelessly.
-    ignore:
-      - dependency-name: typescript
-        update-types: [version-update:semver-major]
-      - dependency-name: turbo
-        update-types: [version-update:semver-major]
-
-  # ───────────────────────────────────────────────────────────────────
-  # Backend API workspace (NestJS, Prisma, Puppeteer, Azure SDKs)
-  # ───────────────────────────────────────────────────────────────────
-  - package-ecosystem: npm
-    directory: /apps/api
-    schedule:
-      interval: weekly
-      day: monday
-      time: '06:00'
-      timezone: Europe/Berlin
-    open-pull-requests-limit: 5
-    commit-message:
-      prefix: chore
-      prefix-development: chore
-      include: scope
-    labels:
-      - dependencies
-      - backend
-    groups:
+      # Backend ecosystem families
       api-nest:
         patterns:
           - '@nestjs/*'
           - 'nestjs-*'
-        update-types:
-          - minor
-          - patch
+        update-types: [minor, patch]
       api-prisma:
         patterns:
           - 'prisma'
           - '@prisma/*'
-        update-types:
-          - minor
-          - patch
+        update-types: [minor, patch]
       api-azure:
         patterns:
           - '@azure/*'
-        update-types:
-          - minor
-          - patch
+        update-types: [minor, patch]
       api-aws:
         patterns:
           - '@aws-sdk/*'
-        update-types:
-          - minor
-          - patch
-      api-misc:
-        update-types:
-          - minor
-          - patch
-    ignore:
-      # Major NestJS bumps require coordinated upgrade across all @nestjs/* packages.
-      - dependency-name: '@nestjs/*'
-        update-types: [version-update:semver-major]
-      # Prisma majors require schema migrations + adapter compatibility checks.
-      - dependency-name: 'prisma'
-        update-types: [version-update:semver-major]
-      - dependency-name: '@prisma/*'
-        update-types: [version-update:semver-major]
-      # Puppeteer + Playwright majors often require Chromium re-pinning.
-      - dependency-name: 'puppeteer'
-        update-types: [version-update:semver-major]
-      - dependency-name: 'playwright'
-        update-types: [version-update:semver-major]
+        update-types: [minor, patch]
 
-  # ───────────────────────────────────────────────────────────────────
-  # Frontend Web workspace (Next.js, React, Tailwind, Wrangler)
-  # ───────────────────────────────────────────────────────────────────
-  - package-ecosystem: npm
-    directory: /apps/web
-    schedule:
-      interval: weekly
-      day: monday
-      time: '06:00'
-      timezone: Europe/Berlin
-    open-pull-requests-limit: 5
-    commit-message:
-      prefix: chore
-      prefix-development: chore
-      include: scope
-    labels:
-      - dependencies
-      - frontend
-    groups:
+      # Frontend ecosystem families
       web-radix:
         patterns:
           - '@radix-ui/*'
-        update-types:
-          - minor
-          - patch
+        update-types: [minor, patch]
       web-tanstack:
         patterns:
           - '@tanstack/*'
-        update-types:
-          - minor
-          - patch
+        update-types: [minor, patch]
       web-cloudflare:
         patterns:
           - '@opennextjs/*'
           - 'wrangler'
-        update-types:
-          - minor
-          - patch
-      web-misc:
-        update-types:
-          - minor
-          - patch
+        update-types: [minor, patch]
+
+      # Shared dev tooling (eslint, prettier, jest, ts-*, types/*…)
+      dev-tooling:
+        dependency-type: development
+        update-types: [minor, patch]
+
+      # Catch-all for anything not matched above (lucide, sonner, axios…)
+      misc:
+        update-types: [minor, patch]
+
     ignore:
-      # Next.js + React majors require app router / RSC compatibility checks.
+      # Major bumps that historically break and need coordinated work.
+      - dependency-name: '@nestjs/*'
+        update-types: [version-update:semver-major]
+      - dependency-name: 'prisma'
+        update-types: [version-update:semver-major]
+      - dependency-name: '@prisma/*'
+        update-types: [version-update:semver-major]
+      - dependency-name: 'puppeteer'
+        update-types: [version-update:semver-major]
+      - dependency-name: 'playwright'
+        update-types: [version-update:semver-major]
       - dependency-name: 'next'
         update-types: [version-update:semver-major]
       - dependency-name: 'react'
         update-types: [version-update:semver-major]
       - dependency-name: 'react-dom'
         update-types: [version-update:semver-major]
-      # Tailwind v4 already in use; future majors need theme migration.
       - dependency-name: 'tailwindcss'
         update-types: [version-update:semver-major]
-
-  # ───────────────────────────────────────────────────────────────────
-  # Shared package (TypeScript types only — low-risk)
-  # ───────────────────────────────────────────────────────────────────
-  - package-ecosystem: npm
-    directory: /packages/shared
-    schedule:
-      interval: weekly
-      day: monday
-      time: '06:00'
-      timezone: Europe/Berlin
-    open-pull-requests-limit: 3
-    commit-message:
-      prefix: chore
-      include: scope
-    labels:
-      - dependencies
-      - shared
-    groups:
-      shared-all:
-        update-types:
-          - minor
-          - patch
+      - dependency-name: 'typescript'
+        update-types: [version-update:semver-major]
+      - dependency-name: 'turbo'
+        update-types: [version-update:semver-major]
+      # @types/node majors track Node LTS — bump deliberately when you
+      # bump the runtime.
+      - dependency-name: '@types/node'
+        update-types: [version-update:semver-major]
 
   # ───────────────────────────────────────────────────────────────────
   # GitHub Actions workflow versions (actions/checkout, setup-node, etc.)
@@ -208,9 +133,7 @@ updates:
       - ci
     groups:
       gh-actions:
-        update-types:
-          - minor
-          - patch
+        update-types: [minor, patch]
 
   # ───────────────────────────────────────────────────────────────────
   # Docker base images (infra/Dockerfile)
