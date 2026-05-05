@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.1](https://github.com/Smart-Apply/smart-apply/compare/v1.1.0...v1.1.1) (2026-05-05)
+
+
+### Bug Fixes
+
+* **api:** pin eslint to v9 + add flat config ([#361](https://github.com/Smart-Apply/smart-apply/issues/361)) ([b9c6411](https://github.com/Smart-Apply/smart-apply/commit/b9c6411778ffa8365e54bf5daf268f9e7aedb508))
+* **web:** pin lucide-react to v0 (v1 removed brand icons) ([#360](https://github.com/Smart-Apply/smart-apply/issues/360)) ([893cd39](https://github.com/Smart-Apply/smart-apply/commit/893cd393af3941a32a7f771aa2b1adc29adb9248))
+
 ## [1.1.0](https://github.com/Smart-Apply/smart-apply/compare/v1.0.0...v1.1.0) (2026-05-04)
 
 
