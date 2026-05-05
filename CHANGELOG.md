@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0](https://github.com/Smart-Apply/smart-apply/compare/v1.2.1...v1.3.0) (2026-05-05)
+
+
+### Features
+
+* **contact:** implement premium support detection and routing in contact form submissions ([#368](https://github.com/Smart-Apply/smart-apply/issues/368)) ([8f8e572](https://github.com/Smart-Apply/smart-apply/commit/8f8e57263a4cd77337bc772f1382efdf8719f9f1))
+* **email:** add optional tags for email prioritization in Resend ([8f8e572](https://github.com/Smart-Apply/smart-apply/commit/8f8e57263a4cd77337bc772f1382efdf8719f9f1))
+* **settings:** display Premium Support card for premium users in settings ([8f8e572](https://github.com/Smart-Apply/smart-apply/commit/8f8e57263a4cd77337bc772f1382efdf8719f9f1))
+
 ## [1.2.1](https://github.com/Smart-Apply/smart-apply/compare/v1.2.0...v1.2.1) (2026-05-05)
 
 
