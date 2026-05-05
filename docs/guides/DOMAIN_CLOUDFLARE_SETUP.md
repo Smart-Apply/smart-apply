@@ -18,6 +18,82 @@
 > the original April 2026 cutover; for the current setup see the README and
 > `infra/README.md`.
 
+---
+
+## Current Setup (May 2026) — Staging Custom Domains
+
+Staging mirrors production on dedicated subdomains so we can test the full
+custom-domain code path (cookies, CORS, OAuth callbacks) without touching
+prod. Live mappings:
+
+| Hostname                       | Target                                            | TLS                       |
+| ------------------------------ | ------------------------------------------------- | ------------------------- |
+| `staging.smart-apply.io`       | Cloudflare Worker `smart-apply-web-staging`       | Cloudflare Universal Edge |
+| `api-staging.smart-apply.io`   | Fly app `smart-apply-api-staging` (CNAME, DNS-only) | Fly Let's Encrypt (DNS-01) |
+
+The Worker domain is **declared in code** ([`apps/web/wrangler.jsonc`](../../apps/web/wrangler.jsonc) → `env.staging.routes`), so Cloudflare auto-provisions the proxied DNS record on every `wrangler deploy --env staging`. The Fly domain is **manual one-time setup** because Fly issues its own cert and needs the `_acme-challenge` CNAME to be unproxied.
+
+### One-time setup checklist
+
+```bash
+# 1. Fly: provision the API custom hostname + cert
+fly certs add api-staging.smart-apply.io -a smart-apply-api-staging
+fly certs show api-staging.smart-apply.io -a smart-apply-api-staging
+#   → prints the _acme-challenge CNAME you need to add to Cloudflare DNS
+```
+
+In Cloudflare DNS (zone `smart-apply.io`), add:
+
+| Type  | Name                       | Target                              | Proxy                  |
+| ----- | -------------------------- | ----------------------------------- | ---------------------- |
+| CNAME | `api-staging`              | `smart-apply-api-staging.fly.dev`   | **DNS only** (gray) ⚠️ |
+| CNAME | `_acme-challenge.api-staging` | (value from `fly certs show`)    | **DNS only** (gray) ⚠️ |
+
+> Both records **must** stay unproxied. Fly terminates TLS itself, and Let's
+> Encrypt's DNS-01 validator can't see records hidden behind Cloudflare's
+> proxy. Same gotcha as the prod `api.smart-apply.io` record (see status
+> banner above).
+
+Re-run `fly certs show api-staging.smart-apply.io -a smart-apply-api-staging`
+until status is **Ready** (usually <5 min).
+
+```bash
+# 2. Update the staging API's CORS allow-list so the new web origin is accepted
+fly secrets set CORS_ORIGINS="https://staging.smart-apply.io" -a smart-apply-api-staging
+```
+
+```bash
+# 3. Trigger a staging deploy — wrangler will auto-create the proxied
+#    Worker DNS record for staging.smart-apply.io on first deploy.
+git push origin main   # or: gh workflow run "Deploy → Staging"
+```
+
+### Verification
+
+```bash
+curl -I https://api-staging.smart-apply.io/api/v1/health   # → 200
+curl -I https://staging.smart-apply.io/register            # → 200
+```
+
+The staging deploy workflow ([`.github/workflows/deploy-staging.yml`](../../.github/workflows/deploy-staging.yml))
+defaults `STAGING_API_URL`, `STAGING_HEALTH_HOST`, and `STAGING_WEB_HOST` to
+the new domains. To roll back to the `*.fly.dev` / `*.workers.dev` origins
+without a code change, set those three GitHub repo Variables to the old
+values — the workflow falls back to them via `${{ vars.X || 'default' }}`.
+
+### Common failure modes
+
+- **522 from `staging.smart-apply.io`** — the Worker route hasn't propagated
+  yet. Wait ~30 s after `wrangler deploy` or check
+  Cloudflare → Workers & Pages → `smart-apply-web-staging` → Settings → Domains.
+- **Fly cert stuck in `Awaiting configuration`** — `_acme-challenge` CNAME
+  is missing or proxied. Toggle to DNS-only and re-run `fly certs show`.
+- **CORS errors in browser console** — `CORS_ORIGINS` on the staging Fly app
+  doesn't include `https://staging.smart-apply.io`. Re-set the secret and
+  `fly deploy` (the secret triggers a restart automatically).
+
+---
+
 > Dokumentation der Migration von `smartapplymvp.swedencentral.cloudapp.azure.com` auf die eigene Domain **`smart-apply.io`** (April 2026), inklusive Cloudflare-Setup, nginx-Reverse-Proxy und HTTPS-Härtung.
 
 ## Inhaltsverzeichnis
