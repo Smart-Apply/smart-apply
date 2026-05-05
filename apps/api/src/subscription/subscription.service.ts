@@ -9,8 +9,8 @@ import type { SubscriptionUsage } from '../generated/prisma/client';
  *
  * Pricing Model:
  * - FREE (€0): Basic features with strict limits
- * - PRO (€9.99/month): Full application features for active job seekers
- * - PREMIUM (€17.99/month): Maximum automation & advanced features
+ * - PRO (€7.99/month): 50 applications/month for active job seekers
+ * - PREMIUM (€14.99/month): Maximum automation & advanced features
  */
 export interface TierLimits {
   // Generation limits
@@ -61,9 +61,9 @@ export interface TierLimits {
 
 export const TIER_LIMITS: Record<SubscriptionTier, TierLimits> = {
   FREE: {
-    coverLettersPerMonth: 30,
-    resumesPerMonth: 30,
-    jobParsingPerMonth: 30,
+    coverLettersPerMonth: 3,
+    resumesPerMonth: 3,
+    jobParsingPerMonth: 10,
     interviewSessionsPerMonth: 0,
     applicationsPerDay: 5,
     priority: 'low',
@@ -88,8 +88,8 @@ export const TIER_LIMITS: Record<SubscriptionTier, TierLimits> = {
     },
   },
   PRO: {
-    coverLettersPerMonth: -1, // Unlimited
-    resumesPerMonth: -1, // Unlimited
+    coverLettersPerMonth: 50,
+    resumesPerMonth: 50,
     jobParsingPerMonth: -1, // Unlimited
     interviewSessionsPerMonth: 0, // Not included in Pro
     applicationsPerDay: -1,
@@ -105,7 +105,7 @@ export const TIER_LIMITS: Record<SubscriptionTier, TierLimits> = {
       basicAnalytics: true,
       advancedAnalytics: false,
       extendedProfile: true,
-      linkedinImport: true,
+      linkedinImport: false, // Premium-only feature
       multiLanguage: 'de-en',
       interviewCoach: false,
       autoApplyAgent: false,

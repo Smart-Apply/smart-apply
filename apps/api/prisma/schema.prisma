@@ -597,8 +597,8 @@ model BackgroundJob {
 
 // Subscription tier levels (3-tier pricing model)
 // FREE (€0) - Basic features with limits
-// PRO (€9.99/month) - Full application features
-// PREMIUM (€17.99/month) - All features + automation
+// PRO (€7.99/month) - 50 applications/month + Pro features
+// PREMIUM (€14.99/month) - All features + automation
 enum SubscriptionTier {
   FREE
   PRO

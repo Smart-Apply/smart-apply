@@ -266,23 +266,11 @@ export default function Home() {
                   </li>
                   <li className="flex items-start gap-3">
                     <span className={`mt-1 ${selectedPlan === 'free' ? 'text-green-400' : 'text-green-600'}`}>✓</span>
-                    <span>Bis zu 10 Job-Parses pro Monat</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className={`mt-1 ${selectedPlan === 'free' ? 'text-green-400' : 'text-green-600'}`}>✓</span>
                     <span>Standard-Template</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className={`mt-1 ${selectedPlan === 'free' ? 'text-green-400' : 'text-green-600'}`}>✓</span>
                     <span>Manuelles Bewerbungstracking</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className={`mt-1 ${selectedPlan === 'free' ? 'text-red-400' : 'text-red-500'}`}>✗</span>
-                    <span className="opacity-70">Keine PDF-Exports</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className={`mt-1 ${selectedPlan === 'free' ? 'text-red-400' : 'text-red-500'}`}>✗</span>
-                    <span className="opacity-70">Werbung sichtbar</span>
                   </li>
                 </ul>
                 <div className="mt-8 flex justify-center">
@@ -321,22 +309,14 @@ export default function Home() {
                   }`}>PRO</h3>
                   <p className={`font-poppins font-medium text-lg md:text-xl transition-colors duration-300 ${
                     selectedPlan === 'pro' ? 'text-white' : 'text-black'
-                  }`}>(9,99 € / Monat)</p>
+                  }`}>(7,99 € / Monat)</p>
                 </div>
                 <ul className={`flex-1 space-y-4 font-poppins text-base md:text-lg transition-colors duration-300 ${
                   selectedPlan === 'pro' ? 'text-white' : 'text-[#1B2A49]'
                 }`}>
                   <li className="flex items-start gap-3">
                     <span className={`mt-1 ${selectedPlan === 'pro' ? 'text-green-400' : 'text-green-600'}`}>✓</span>
-                    <span>Unbegrenzte KI-Anschreiben</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className={`mt-1 ${selectedPlan === 'pro' ? 'text-green-400' : 'text-green-600'}`}>✓</span>
-                    <span>Unbegrenzte KI-Lebensläufe</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className={`mt-1 ${selectedPlan === 'pro' ? 'text-green-400' : 'text-green-600'}`}>✓</span>
-                    <span>PDF-Export (Anschreiben & Lebenslauf)</span>
+                    <span>50 Bewerbungen pro Monat</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className={`mt-1 ${selectedPlan === 'pro' ? 'text-green-400' : 'text-green-600'}`}>✓</span>
@@ -353,10 +333,6 @@ export default function Home() {
                   <li className="flex items-start gap-3">
                     <span className={`mt-1 ${selectedPlan === 'pro' ? 'text-green-400' : 'text-green-600'}`}>✓</span>
                     <span>Analytics (Keyword Score, ATS Score)</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className={`mt-1 ${selectedPlan === 'pro' ? 'text-green-400' : 'text-green-600'}`}>✓</span>
-                    <span>Linked In Job suche integriert</span>
                   </li>
                 </ul>
                 <div className="mt-8 flex justify-center">
@@ -386,7 +362,7 @@ export default function Home() {
                   }`}>PREMIUM</h3>
                   <p className={`font-poppins font-medium text-lg md:text-xl transition-colors duration-300 ${
                     selectedPlan === 'premium' ? 'text-white' : 'text-black'
-                  }`}>(17,99 € / Monat)</p>
+                  }`}>(14,99 € / Monat)</p>
                 </div>
                 <ul className={`flex-1 space-y-4 font-poppins text-base md:text-lg transition-colors duration-300 ${
                   selectedPlan === 'premium' ? 'text-white' : 'text-[#1B2A49]'
@@ -414,6 +390,10 @@ export default function Home() {
                   <li className="flex items-start gap-3">
                     <span className={`mt-1 ${selectedPlan === 'premium' ? 'text-green-400' : 'text-green-600'}`}>✓</span>
                     <span>Queue-Priorisierung & Premium Support</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className={`mt-1 ${selectedPlan === 'premium' ? 'text-green-400' : 'text-green-600'}`}>✓</span>
+                    <span>Job Suche</span>
                   </li>
                 </ul>
                 <div className="mt-8 flex justify-center">

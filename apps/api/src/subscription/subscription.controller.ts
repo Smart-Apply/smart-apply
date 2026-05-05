@@ -107,13 +107,10 @@ export class SubscriptionController {
           features: [
             '3 KI-Anschreiben pro Monat',
             '3 KI-Lebensläufe pro Monat',
-            'Bis zu 10 Job-Parses pro Monat',
             'Standard-Template',
             'Manuelles Bewerbungstracking',
           ],
           limitations: [
-            'Keine PDF-Exports',
-            'Werbung sichtbar',
             'Kein ATS-Optimierung',
           ],
           limits: this.subscriptionService.getTierLimits('FREE'),
@@ -121,38 +118,33 @@ export class SubscriptionController {
         {
           id: 'PRO',
           name: 'Pro',
-          price: 999, // cents
-          priceDisplay: '9,99 €',
+          price: 799, // cents
+          priceDisplay: '7,99 €',
           priceInterval: 'Monat',
           popular: true,
           features: [
-            'Unbegrenzte KI-Anschreiben',
-            'Unbegrenzte KI-Lebensläufe',
-            'Unbegrenztes Job-Parsing',
-            'PDF-Export (Cover Letter & Resume)',
+            '50 Bewerbungen pro Monat',
             'Mehrere professionelle Templates',
             'ATS-Optimierung & Keyword-Matching',
             'Halbautomatisches Bewerbungstracking',
-            'Basis-Analytics (Keyword Score, ATS Score)',
-            'Erweitertes Profil',
-            'Linked In Job suche integriert',
+            'Analytics (Keyword Score, ATS Score)',
           ],
           limits: this.subscriptionService.getTierLimits('PRO'),
         },
         {
           id: 'PREMIUM',
           name: 'Premium',
-          price: 1799, // cents
-          priceDisplay: '17,99 €',
+          price: 1499, // cents
+          priceDisplay: '14,99 €',
           priceInterval: 'Monat',
           features: [
             'Alles aus Pro',
             'KI Interview-Coach',
             'Auto-Apply Bewerbungsagent',
             'Automatisches Bewerbungstracking (E-Mail Parsing)',
-            'Advanced Analytics (Erfolgsquoten, Trends)',
-            'Queue-Priorisierung (schnellere Verarbeitung)',
-            'Premium Support',
+            'Advanced Analytics & Trends',
+            'Queue-Priorisierung & Premium Support',
+            'Job Suche',
           ],
           limits: this.subscriptionService.getTierLimits('PREMIUM'),
         },

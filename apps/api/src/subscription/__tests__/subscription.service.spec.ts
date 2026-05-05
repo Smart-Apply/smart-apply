@@ -59,8 +59,8 @@ describe('SubscriptionService', () => {
 
     it('should return PRO tier limits', () => {
       const limits = service.getTierLimits(SubscriptionTier.PRO);
-      expect(limits.coverLettersPerMonth).toBe(-1); // Unlimited
-      expect(limits.resumesPerMonth).toBe(-1); // Unlimited
+      expect(limits.coverLettersPerMonth).toBe(50);
+      expect(limits.resumesPerMonth).toBe(50);
       expect(limits.jobParsingPerMonth).toBe(-1); // Unlimited
       expect(limits.interviewSessionsPerMonth).toBe(0);
       expect(limits.priority).toBe('normal');
