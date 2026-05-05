@@ -22,9 +22,9 @@ primary_region = 'fra'
 
 # Identical to prod — runs migrations against staging's DATABASE_URL/DIRECT_URL
 # secret (Neon `staging` branch). See fly.prod.toml for the full explanation
-# of why we invoke prisma via `node`.
+# of why we invoke prisma via `node` and why --config is mandatory.
 [deploy]
-  release_command = 'node apps/api/node_modules/prisma/build/index.js migrate deploy --schema=apps/api/prisma/schema.prisma'
+  release_command = 'node apps/api/node_modules/prisma/build/index.js migrate deploy --config=apps/api/prisma.config.ts --schema=apps/api/prisma/schema.prisma'
 
 [env]
   JOBS_DRIVER = 'qstash'
