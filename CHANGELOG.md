@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.1](https://github.com/Smart-Apply/smart-apply/compare/v1.2.0...v1.2.1) (2026-05-05)
+
+
+### Bug Fixes
+
+* **deploy:** update staging API URLs and add custom domain configuration ([#365](https://github.com/Smart-Apply/smart-apply/issues/365)) ([c669ecd](https://github.com/Smart-Apply/smart-apply/commit/c669ecd08a3ab63236474670e00dbbb1e64c8e6f))
+
 ## [1.2.0](https://github.com/Smart-Apply/smart-apply/compare/v1.1.1...v1.2.0) (2026-05-05)
 
 
