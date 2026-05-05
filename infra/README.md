@@ -21,9 +21,11 @@ deployment.
 | `Dockerfile`        | Multi-stage build for the NestJS API; consumed by `flyctl deploy` |
 | `docker-compose.yml`| Local dev (Postgres only, started by `setup.sh`)                 |
 
-The API image is built and pushed by `flyctl deploy` (called from
-`.github/workflows/deploy.yml`). The web app is deployed by `wrangler deploy`
-after `npm run cf:build` in `apps/web/`.
+The API image is built and pushed by `flyctl deploy`. CI invokes it from
+two workflows: [`deploy-staging.yml`](../.github/workflows/deploy-staging.yml)
+on every push to `main`, and [`deploy-prod.yml`](../.github/workflows/deploy-prod.yml)
+on `v*.*.*` tag pushes (gated by the `production` GitHub Environment). The
+web app is deployed by `wrangler deploy` after `npm run cf:build` in `apps/web/`.
 
 ## Deployment commands
 

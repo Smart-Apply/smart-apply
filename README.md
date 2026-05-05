@@ -57,8 +57,11 @@ npm install
 docker compose -f infra/docker-compose.yml up -d db
 
 # 3. Configure environment
-cp .env.example .env
-# (edit apps/api/.env and apps/web/.env.local as needed)
+#    Copy the per-app templates and fill in real values.
+#    Local defaults run fully offline (Docker Postgres, mock LLM).
+#    To enable real services, flip the matching driver in apps/api/.env.
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env
 
 # 4. Migrate & seed database (includes 50 PDF templates)
 #    Migrations + seed use DIRECT_URL when set (required for Neon),
@@ -167,21 +170,30 @@ See [docs/security/](docs/security/) for details.
 
 ## 🌐 Deployment
 
-**API → Fly.io** (`smart-apply-api`, region `fra`):
+We run **two environments** — staging and production — backed by sister Fly
+apps + Cloudflare Workers + Neon branches. See
+[docs/guides/DEVOPS_ROADMAP.md](docs/guides/DEVOPS_ROADMAP.md) for the full
+topology and [CONTRIBUTING.md](CONTRIBUTING.md) for the daily-use flow.
+
+| Environment | Trigger                              | Approval         | URL                                                 |
+| ----------- | ------------------------------------ | ---------------- | --------------------------------------------------- |
+| **Staging** | Push to `main`                       | None (auto)      | `smart-apply-api-staging.fly.dev` + `smart-apply-web-staging.ari41dev.workers.dev` |
+| **Prod**    | Tag push `v*.*.*` (via release-please) | Manual click   | `api.smart-apply.io` + `smart-apply.io`             |
+
+**Manual deploy commands** (rarely needed — CI handles both):
 
 ```bash
-flyctl deploy                    # builds infra/Dockerfile + runs prisma migrate deploy
-flyctl secrets list -a smart-apply-api
-flyctl logs -a smart-apply-api
-```
+# Prod (uses fly.prod.toml)
+flyctl deploy --config fly.prod.toml --app smart-apply-api --remote-only
 
-Deploys are also triggered automatically by `.github/workflows/deploy.yml` on pushes to `main`.
+# Staging (uses fly.staging.toml — smaller VM, suspend on idle)
+flyctl deploy --config fly.staging.toml --app smart-apply-api-staging --remote-only
 
-**Web → Cloudflare Workers** (via OpenNext):
+# Web (production)
+cd apps/web && npm run cf:deploy
 
-```bash
-cd apps/web
-npm run cf:deploy                # builds + wrangler deploy
+# Web (staging)
+cd apps/web && npm run cf:deploy:staging
 ```
 
 **Custom domain (`smart-apply.io`):**
@@ -198,22 +210,27 @@ Full walkthrough (Fly cert issuance, Cloudflare proxy gotchas, runtime API URL
 via `/api/config`, the `PUBLIC_API_URL` GitHub Variable trap) lives in
 [docs/guides/DOMAIN_CLOUDFLARE_SETUP.md](docs/guides/DOMAIN_CLOUDFLARE_SETUP.md).
 
-**CI/CD** → GitHub Actions (`.github/workflows/deploy.yml`)
+**CI/CD** — four GitHub Actions workflows:
 
-- Builds the Turborepo + runs tests with cache
-- `flyctl deploy` for the API (Neon migrations run as a Fly release command)
-- `wrangler deploy` for the Worker (with `NEXT_PUBLIC_API_URL` baked in at build)
+- [`ci.yml`](.github/workflows/ci.yml) — lint + unit tests + lockfile sync + per-PR Neon migration dry-run (on every PR)
+- [`deploy-staging.yml`](.github/workflows/deploy-staging.yml) — auto-deploy on push to `main`
+- [`deploy-prod.yml`](.github/workflows/deploy-prod.yml) — deploy on tag `v*.*.*` push, gated by the `production` GitHub Environment
+- [`release-please.yml`](.github/workflows/release-please.yml) — maintains the SemVer Release PR + tags from Conventional Commits
 
 ## 📖 Documentation
 
-| Document                                     | Description            |
-| -------------------------------------------- | ---------------------- |
-| [ARCHITECTURE.md](ARCHITECTURE.md)           | System architecture    |
-| [QUICKSTART.md](QUICKSTART.md)               | Detailed setup guide   |
-| [docs/features/](docs/features/)             | Feature specs          |
-| [docs/guides/](docs/guides/)                 | Operational guides     |
-| [docs/security/](docs/security/)             | Security documentation |
-| [docs/implementation/](docs/implementation/) | Implementation notes   |
+| Document                                                              | Description                                |
+| --------------------------------------------------------------------- | ------------------------------------------ |
+| [ARCHITECTURE.md](ARCHITECTURE.md)                                    | System architecture                        |
+| [QUICKSTART.md](QUICKSTART.md)                                        | Detailed setup guide                       |
+| [CONTRIBUTING.md](CONTRIBUTING.md)                                    | Daily contributor workflow                 |
+| [docs/guides/DEVOPS_ROADMAP.md](docs/guides/DEVOPS_ROADMAP.md)        | Multi-stage env, secrets, releases         |
+| [docs/security/SECRETS_ROTATION.md](docs/security/SECRETS_ROTATION.md) | How to rotate every credential            |
+| [docs/security/MIGRATION_ROLLBACK.md](docs/security/MIGRATION_ROLLBACK.md) | Schema rollback runbook              |
+| [docs/features/](docs/features/)                                      | Feature specs                              |
+| [docs/guides/](docs/guides/)                                          | Operational guides                         |
+| [docs/security/](docs/security/)                                      | Security documentation                     |
+| [docs/implementation/](docs/implementation/)                          | Implementation notes                       |
 
 ## 📄 License
 

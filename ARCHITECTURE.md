@@ -271,7 +271,7 @@ User 1:1 Subscription
 | Container  | Docker (multi-stage, `infra/Dockerfile`)      |
 | API host   | **Fly.io** (`smart-apply-api`, region `fra`, shared-cpu-1x / 1 GB) |
 | Web host   | Cloudflare Workers via `@opennextjs/cloudflare` (`smart-apply-web`) |
-| CI/CD      | GitHub Actions → `flyctl deploy` (API) + `wrangler deploy` (Web) |
+| CI/CD      | GitHub Actions — `ci.yml` (PR checks) + `deploy-staging.yml` (auto on `main`) + `deploy-prod.yml` (gated on `v*.*.*` tag) + `release-please.yml` (SemVer + CHANGELOG) |
 | Secrets    | Fly Secrets (API) · Cloudflare Worker vars/secrets (Web) · `.env` (dev) |
 | Database   | Neon Postgres (serverless, EU/Frankfurt; `DATABASE_URL` pooled, `DIRECT_URL` for migrations) |
 | DNS/CDN    | Cloudflare (proxied for all hostnames; ACME challenge DNS-only) |
@@ -331,19 +331,55 @@ npm run web:dev      # Next.js on :3001
 
 ### Production
 
+We run **two independent environments** (staging + prod) on sister Fly
+apps + Cloudflare Workers + Neon branches. Each environment has its own
+secrets, scoped Fly tokens, and Worker namespace. Promotion happens via
+Git tags created by release-please when its Release PR is merged.
+
+```text
+PR opened   → ci.yml runs (lint, tests, lockfile, migration dry-run)
+Merge to main → deploy-staging.yml fires (auto, no approval)
+                + release-please opens / updates a Release PR
+Merge Release PR → PAT pushes tag v1.x.y → deploy-prod.yml fires
+                 → blocks at `production` GitHub Environment gate
+                 → you click "Approve and deploy" → prod ships
+```
+
+| Environment | API (Fly app)              | Web (Worker)                                          | DB (Neon branch) | R2 bucket             |
+| ----------- | -------------------------- | ----------------------------------------------------- | ---------------- | --------------------- |
+| **Staging** | `smart-apply-api-staging`  | `smart-apply-web-staging` (`*.workers.dev`)           | `staging`        | `smart-apply-staging` |
+| **Prod**    | `smart-apply-api`          | `smart-apply-web` (`smart-apply.io`)                  | `main`           | `smart-apply-prod`    |
+
+Fly config files split per env: [`fly.prod.toml`](./fly.prod.toml) and
+[`fly.staging.toml`](./fly.staging.toml). Both use the same `infra/Dockerfile`;
+staging uses a smaller VM (1x/1GB) with `min_machines_running = 0` (suspend
+on idle) to minimise cost.
+
 ```text
 GitHub Actions
-  ├── Build & test (Turborepo cache)
-  └── Deploy
-       ├── API → Fly.io (flyctl deploy, infra/Dockerfile)
-       │        ├─ Release command: prisma migrate deploy (Neon DIRECT_URL)
-       │        ├─ Secrets via `flyctl secrets set` (CORS_ORIGINS, JWT_*, R2_*, …)
-       │        ├─ HTTPS terminated by Fly (Let's Encrypt for api.smart-apply.io)
-       │        └─ Backed by Neon Postgres · Cloudflare R2 · Upstash QStash/Redis
-       └── Web → Cloudflare Workers (OpenNext)
-                ├─ Build with NEXT_PUBLIC_API_URL injected from PUBLIC_API_URL env
-                ├─ Runtime config served at /api/config (single source of truth)
-                └─ wrangler deploy
+  ├── ci.yml (PR-triggered)
+  │     ├─ lint + lockfile sync check
+  │     ├─ unit tests (currently non-blocking, see CONTRIBUTING.md)
+  │     └─ migration-check (per-PR Neon branch + prisma migrate deploy dry-run)
+  │
+  ├── deploy-staging.yml (push to main)
+  │     ├─ API → Fly (smart-apply-api-staging, fly.staging.toml)
+  │     └─ Web → Cloudflare Worker (smart-apply-web-staging, env.staging block)
+  │
+  ├── release-please.yml (push to main)
+  │     └─ Maintains Release PR + creates v*.*.* tags via PAT
+  │
+  └── deploy-prod.yml (tag v*.*.* push)
+        ├─ Blocks at `production` GitHub Environment (manual approval)
+        ├─ API → Fly (smart-apply-api, fly.prod.toml)
+        │   ├─ Release command: prisma migrate deploy (Neon DIRECT_URL)
+        │   ├─ Secrets via `flyctl secrets set` (CORS_ORIGINS, JWT_*, R2_*, ...)
+        │   ├─ HTTPS terminated by Fly (Let's Encrypt for api.smart-apply.io)
+        │   └─ Backed by Neon Postgres · Cloudflare R2 · Upstash QStash/Redis
+        └─ Web → Cloudflare Worker (smart-apply-web, OpenNext)
+            ├─ Build with NEXT_PUBLIC_API_URL injected from PUBLIC_API_URL env
+            ├─ Runtime config served at /api/config (single source of truth)
+            └─ wrangler deploy
 ```
 
 > ⚠️ **PUBLIC_API_URL trap:** the GitHub Actions workflow honours the
