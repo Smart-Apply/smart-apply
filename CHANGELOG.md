@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.0](https://github.com/Smart-Apply/smart-apply/compare/v1.3.0...v1.4.0) (2026-05-05)
+
+
+### Features
+
+* **analytics:** add premium analytics dashboard and related API endpoints ([#370](https://github.com/Smart-Apply/smart-apply/issues/370)) ([a5f9d35](https://github.com/Smart-Apply/smart-apply/commit/a5f9d35830e2e666685c951f3e44b7084ee1e17e))
+
 ## [1.3.0](https://github.com/Smart-Apply/smart-apply/compare/v1.2.1...v1.3.0) (2026-05-05)
 
 
