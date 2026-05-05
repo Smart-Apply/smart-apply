@@ -217,7 +217,7 @@ export function generatePdfFilename(options: FilenameOptions): string {
   // Fallback: No position provided
   if (lastName && company) {
     parts = [lastName, company, documentType];
-    let filename = parts.join('_');
+    const filename = parts.join('_');
     
     if (filename.length <= maxFilenameLength) {
       return filename + pdfExtension;
@@ -233,7 +233,7 @@ export function generatePdfFilename(options: FilenameOptions): string {
   // Fallback: No company provided
   if (lastName && position) {
     parts = [lastName, position, documentType];
-    let filename = parts.join('_');
+    const filename = parts.join('_');
     
     if (filename.length <= maxFilenameLength) {
       return filename + pdfExtension;
