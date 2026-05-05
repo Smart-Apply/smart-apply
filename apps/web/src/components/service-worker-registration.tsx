@@ -35,13 +35,13 @@ async function unregisterAllServiceWorkers() {
       const keys = await caches.keys();
       await Promise.all(keys.map((k) => caches.delete(k)));
     }
-    // eslint-disable-next-line no-console
+     
     console.log(
       `[PWA dev] Unregistered ${regs.length} stale service worker(s) and cleared caches. Reloading...`,
     );
     window.location.reload();
   } catch (err) {
-    // eslint-disable-next-line no-console
+     
     console.warn('[PWA dev] Failed to clear stale service worker:', err);
   }
 }

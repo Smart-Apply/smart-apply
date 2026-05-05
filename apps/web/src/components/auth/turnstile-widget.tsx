@@ -115,7 +115,7 @@ export function TurnstileWidget({
         // (e.g. React strict-mode double-effect in dev). Safe to ignore
         // — the existing widget is still bound to the same callback.
         if (process.env.NODE_ENV === 'development') {
-          // eslint-disable-next-line no-console
+           
           console.warn('Turnstile render skipped:', err);
         }
       }

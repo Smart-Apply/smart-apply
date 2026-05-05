@@ -135,7 +135,7 @@ export default function ProfileEditPage() {
       setEducation(educationWithYears);
       dataInitializedRef.current = true;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [profile]);
 
   // Handle importing data from parsed resume

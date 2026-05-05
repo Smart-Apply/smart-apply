@@ -24,9 +24,11 @@ export function CookieBanner() {
     try {
       if (typeof window === "undefined") return;
       const dismissed = window.localStorage.getItem(STORAGE_KEY);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (!dismissed) setVisible(true);
     } catch {
       // localStorage unavailable (private mode) — show banner anyway
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setVisible(true);
     }
   }, []);

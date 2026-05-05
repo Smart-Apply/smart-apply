@@ -93,6 +93,7 @@ function DashboardLayoutInner({
     // Handle OAuth success - fetch user data from cookies
     const oauthParam = searchParams.get('oauth');
     if (oauthParam === 'success' && !isAuthenticated && !isLoadingOAuth) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoadingOAuth(true);
       
       // Fetch user data using the HttpOnly cookie set by OAuth callback

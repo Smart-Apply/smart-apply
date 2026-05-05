@@ -303,6 +303,7 @@ export default function ApplicationsPage() {
 
   // Reset to page 1 when filter, sort, or search changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentPage(1);
   }, [debouncedTab, debouncedSort, debouncedSearchTerm]);
 

@@ -173,9 +173,9 @@ export default function ApplicationDetailPage() {
         }
         
         // Update query cache with new status
-        queryClient.setQueryData(['applications', applicationId], (old: any) => {
-          if (!old) return old;
-          return { ...old, status: data.status };
+        queryClient.setQueryData(['applications', applicationId], (old: unknown) => {
+          if (!old || typeof old !== 'object') return old;
+          return { ...(old as Record<string, unknown>), status: data.status };
         });
 
         // If status changed to READY or FAILED, refetch full details

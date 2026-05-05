@@ -34,15 +34,15 @@ interface TrustedDevicesDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-function getDeviceIcon(os: string | null) {
+function DeviceIcon({ os, className }: { os: string | null; className?: string }) {
   const osLower = os?.toLowerCase() || '';
   if (osLower.includes('ios') || osLower.includes('android')) {
-    return Smartphone;
+    return <Smartphone className={className} />;
   }
   if (osLower.includes('ipad')) {
-    return Tablet;
+    return <Tablet className={className} />;
   }
-  return Monitor;
+  return <Monitor className={className} />;
 }
 
 function formatDate(dateStr: string) {
@@ -68,14 +68,13 @@ function DeviceItem({
   onRevoke: (id: string) => void;
   isRevoking: boolean;
 }) {
-  const Icon = getDeviceIcon(device.os);
   const expired = isExpired(device.expiresAt);
 
   return (
     <div className="flex items-start justify-between gap-4 py-3">
       <div className="flex items-start gap-3">
         <div className="mt-1 rounded-lg bg-muted p-2">
-          <Icon className="h-4 w-4 text-muted-foreground" />
+          <DeviceIcon os={device.os} className="h-4 w-4 text-muted-foreground" />
         </div>
         <div className="space-y-1">
           <div className="flex items-center gap-2">
