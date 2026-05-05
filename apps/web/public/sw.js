@@ -4,7 +4,7 @@
 // every existing user's browser to drop the previous SW's caches on next
 // visit. Anything not matching the current version below is deleted on
 // activation.
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v4';
 const CACHE_NAME = `smart-apply-${CACHE_VERSION}`;
 const STATIC_CACHE_NAME = `smart-apply-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE_NAME = `smart-apply-dynamic-${CACHE_VERSION}`;
@@ -98,6 +98,18 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Hashed Next.js build artefacts (`/_next/static/...`) — always go to
+  // network. After a deploy these hashes change; if the SW served a
+  // cached 404 (or a stale chunk from a previous deploy) the browser
+  // refuses the response with a MIME error and the React tree breaks
+  // half-mounted. Network-only with NO caching is the only safe option:
+  // hashed URLs are immutable so the browser HTTP cache already handles
+  // repeat-visit perf.
+  if (url.pathname.startsWith('/_next/static/')) {
+    event.respondWith(networkOnlyPassthrough(request));
+    return;
+  }
+
   // Static assets - Cache first, network fallback
   if (isStaticAsset(url.pathname)) {
     event.respondWith(cacheFirst(request, STATIC_CACHE_NAME));
@@ -125,12 +137,27 @@ async function cacheFirst(request, cacheName) {
 
   try {
     const networkResponse = await fetch(request);
+    // Only cache successful 2xx responses. A 404 here typically means we
+    // hit a stale chunk hash after a deploy; caching that response would
+    // permanently brick the user.
     if (networkResponse.ok) {
       cache.put(request, networkResponse.clone());
     }
     return networkResponse;
   } catch (error) {
     console.error('[SW] Cache-first network fetch failed:', error);
+    return new Response('Offline', { status: 503 });
+  }
+}
+
+// Network-only passthrough — no caching, no fallback. Used for hashed
+// build artefacts where stale-cache responses would do more harm than
+// good.
+async function networkOnlyPassthrough(request) {
+  try {
+    return await fetch(request);
+  } catch (error) {
+    console.error('[SW] Network-only fetch failed:', error);
     return new Response('Offline', { status: 503 });
   }
 }

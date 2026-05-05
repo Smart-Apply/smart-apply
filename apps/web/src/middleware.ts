@@ -58,16 +58,22 @@ export function middleware(_request: NextRequest) {
   // the CSP blocks both.
   const turnstileOrigin = 'https://challenges.cloudflare.com';
 
+  // Cloudflare Web Analytics (auto-injected by Workers when enabled in
+  // the dashboard) loads a beacon from static.cloudflareinsights.com.
+  // Without this allow-list the script is blocked and the CSP report
+  // floods the console — purely a noise issue, but worth fixing.
+  const cloudflareInsightsOrigin = 'https://static.cloudflareinsights.com';
+
   // Set CSP header dynamically based on runtime environment
   // Note: 'unsafe-eval' is required for Handlebars template compilation in the browser
   // This is needed for the template preview feature which renders Handlebars templates client-side
   const csp = [
     "default-src 'self'",
-    `script-src 'self' 'unsafe-eval' 'unsafe-inline' ${turnstileOrigin}`,
+    `script-src 'self' 'unsafe-eval' 'unsafe-inline' ${turnstileOrigin} ${cloudflareInsightsOrigin}`,
     "style-src 'self' 'unsafe-inline'",
     `img-src 'self' data: https: ${apiOriginList}`,
     "font-src 'self' data:",
-    `connect-src ${connectSrc} ${turnstileOrigin}`,
+    `connect-src ${connectSrc} ${turnstileOrigin} ${cloudflareInsightsOrigin}`,
     `frame-src ${turnstileOrigin}`,
     "frame-ancestors 'none'",
     "base-uri 'self'",
