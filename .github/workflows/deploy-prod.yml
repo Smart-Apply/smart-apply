@@ -19,6 +19,7 @@ name: Deploy → Production
 #   Secrets:
 #     FLY_API_TOKEN          — scoped to smart-apply-api only
 #     CLOUDFLARE_API_TOKEN   — Worker:Edit
+#     CLOUDFLARE_ACCOUNT_ID  — Cloudflare account ID (avoids /memberships lookup)
 #   Variables:
 #     PUBLIC_API_URL         — https://api.smart-apply.io/api/v1
 #     FLY_APP                — smart-apply-api
@@ -229,6 +230,7 @@ jobs:
         working-directory: apps/web
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           # Override the package.json defaults via repo vars/secrets.
           # All NEXT_PUBLIC_* are inlined at build time and shipped to the
           # browser, so site keys and DSNs are public by design.

@@ -11,6 +11,7 @@ name: Deploy → Staging
 #   Secrets:
 #     FLY_API_TOKEN          — scoped to smart-apply-api-staging only
 #     CLOUDFLARE_API_TOKEN   — Worker:Edit, can be same as production
+#     CLOUDFLARE_ACCOUNT_ID  — Cloudflare account ID (avoids /memberships lookup)
 #   Variables:
 #     STAGING_FLY_APP        — smart-apply-api-staging
 #     STAGING_API_URL        — https://smart-apply-api-staging.fly.dev/api/v1
@@ -156,6 +157,7 @@ jobs:
         working-directory: apps/web
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           # NEXT_PUBLIC_* values are inlined at build time. Staging URL
           # comes from the GitHub Environment variable.
           NEXT_PUBLIC_API_URL: ${{ env.STAGING_API_URL }}
