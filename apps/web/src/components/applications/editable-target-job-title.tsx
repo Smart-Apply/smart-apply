@@ -31,6 +31,7 @@ export function EditableTargetJobTitle({
   // Sync state when props change (e.g., after successful save)
   useEffect(() => {
     if (!isEditing) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTargetJobTitle(initialTargetJobTitle || fallbackTitle);
     }
   }, [initialTargetJobTitle, fallbackTitle, isEditing]);

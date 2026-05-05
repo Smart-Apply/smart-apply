@@ -307,7 +307,7 @@ export default function JobsPage() {
           <DialogHeader>
             <DialogTitle>Stellenanzeige löschen?</DialogTitle>
             <DialogDescription>
-              Möchtest du die Stellenanzeige <span className="font-medium text-foreground">"{jobToDelete?.title}"</span> wirklich löschen?
+              Möchtest du die Stellenanzeige <span className="font-medium text-foreground">&quot;{jobToDelete?.title}&quot;</span> wirklich löschen?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

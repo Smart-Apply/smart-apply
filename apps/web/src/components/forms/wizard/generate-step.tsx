@@ -105,6 +105,7 @@ export function GenerateStep({ jobPosting }: GenerateStepProps) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   useEffect(() => {
     if (!isGenerating) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setElapsedSeconds(0);
       return;
     }

@@ -31,11 +31,12 @@ import {
   ChevronRight,
   Zap,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { formatDateSmart } from '@/lib/format-date';
 
 const STATUS_CONFIG: Record<
   ApplicationTrackingStatus,
-  { label: string; color: string; bgColor: string; icon: any }
+  { label: string; color: string; bgColor: string; icon: LucideIcon }
 > = {
   CREATED: {
     label: 'Erstellt',
@@ -382,7 +383,7 @@ function StatsCard({
 }: {
   title: string;
   value: number;
-  icon: any;
+  icon: LucideIcon;
   iconColor: string;
   bgColor: string;
 }) {
