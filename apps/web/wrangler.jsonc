@@ -48,8 +48,18 @@
     "staging": {
       "name": "smart-apply-web-staging",
       "vars": {
-        "NEXT_PUBLIC_API_URL": "https://smart-apply-api-staging.fly.dev/api/v1"
+        "NEXT_PUBLIC_API_URL": "https://api-staging.smart-apply.io/api/v1"
       },
+      // Workers Custom Domain. Cloudflare auto-creates the proxied DNS
+      // record on the smart-apply.io zone the first time this deploys.
+      // Requires the zone to live in the same Cloudflare account as the
+      // Worker (CLOUDFLARE_ACCOUNT_ID secret).
+      "routes": [
+        {
+          "pattern": "staging.smart-apply.io",
+          "custom_domain": true
+        }
+      ],
       "observability": {
         "enabled": true
       }

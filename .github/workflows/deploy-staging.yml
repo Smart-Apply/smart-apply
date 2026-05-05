@@ -14,8 +14,9 @@ name: Deploy → Staging
 #     CLOUDFLARE_ACCOUNT_ID  — Cloudflare account ID (avoids /memberships lookup)
 #   Variables:
 #     STAGING_FLY_APP        — smart-apply-api-staging
-#     STAGING_API_URL        — https://smart-apply-api-staging.fly.dev/api/v1
-#     STAGING_HEALTH_HOST    — smart-apply-api-staging.fly.dev
+#     STAGING_API_URL        — https://api-staging.smart-apply.io/api/v1
+#     STAGING_HEALTH_HOST    — api-staging.smart-apply.io
+#     STAGING_WEB_HOST       — staging.smart-apply.io
 #     TURNSTILE_SITE_KEY     — public CAPTCHA site key
 #     SENTRY_DSN_WEB         — public Sentry DSN
 
@@ -37,8 +38,12 @@ concurrency:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   STAGING_FLY_APP: ${{ vars.STAGING_FLY_APP || 'smart-apply-api-staging' }}
-  STAGING_API_URL: ${{ vars.STAGING_API_URL || 'https://smart-apply-api-staging.fly.dev/api/v1' }}
-  STAGING_HEALTH_HOST: ${{ vars.STAGING_HEALTH_HOST || 'smart-apply-api-staging.fly.dev' }}
+  # Custom domains (set up once in Fly + Cloudflare DNS — see
+  # docs/guides/DOMAIN_CLOUDFLARE_SETUP.md). Override via repo Variables
+  # to fall back to the *.fly.dev / *.workers.dev origins if needed.
+  STAGING_API_URL: ${{ vars.STAGING_API_URL || 'https://api-staging.smart-apply.io/api/v1' }}
+  STAGING_HEALTH_HOST: ${{ vars.STAGING_HEALTH_HOST || 'api-staging.smart-apply.io' }}
+  STAGING_WEB_HOST: ${{ vars.STAGING_WEB_HOST || 'staging.smart-apply.io' }}
 
 jobs:
   detect-changes:
@@ -168,11 +173,13 @@ jobs:
 
       - name: Smoke test deployed Worker
         run: |
-          echo "⏳ Verifying https://smart-apply-web-staging.ari41dev.workers.dev/register..."
-          sleep 5
+          echo "⏳ Verifying https://${{ env.STAGING_WEB_HOST }}/register..."
+          # Cloudflare propagates the custom-domain DNS + cert within ~30s
+          # of `wrangler deploy` on a zone we already own. Give it a beat.
+          sleep 10
           for i in {1..6}; do
             code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 \
-              https://smart-apply-web-staging.ari41dev.workers.dev/register)
+              "https://${{ env.STAGING_WEB_HOST }}/register")
             if [ "$code" = "200" ]; then
               echo "✅ Staging Worker /register returned 200"
               exit 0
