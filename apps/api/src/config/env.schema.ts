@@ -215,7 +215,6 @@ export type EnvConfig = z.infer<typeof envSchema>;
 export function validateEnv(config: Record<string, unknown>): EnvConfig {
   // Debug logging only in development (before Pino is available)
   if (process.env.NODE_ENV === 'development') {
-    // eslint-disable-next-line no-console
     console.log('[EnvSchema] Validating environment config:', {
       configKeys: config ? Object.keys(config).length : 0,
       hasDatabase: !!config?.DATABASE_URL,
@@ -233,7 +232,7 @@ export function validateEnv(config: Record<string, unknown>): EnvConfig {
       throw new Error(`❌ Environment validation failed:\n${missingVars}`);
     }
     // Errors should always be logged regardless of environment
-    // eslint-disable-next-line no-console
+
     console.error('[EnvSchema] Environment validation error (not ZodError):', error);
     throw error;
   }

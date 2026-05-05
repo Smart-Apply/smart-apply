@@ -113,6 +113,13 @@ updates:
       # bump the runtime.
       - dependency-name: '@types/node'
         update-types: [version-update:semver-major]
+      # ESLint v10 dropped support for the legacy .eslintrc format and
+      # tightened several rule defaults. Bump deliberately when ready to
+      # migrate ALL workspaces' configs simultaneously.
+      - dependency-name: 'eslint'
+        update-types: [version-update:semver-major]
+      - dependency-name: 'eslint-config-next'
+        update-types: [version-update:semver-major]
       # lucide-react v1.0 removed all third-party brand icons (LinkedIn,
       # GitHub, Twitter, etc.) for trademark reasons. Migration requires
       # replacing each brand-icon import with custom SVGs or a different

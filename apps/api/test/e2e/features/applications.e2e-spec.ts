@@ -266,9 +266,9 @@ describe('ApplicationsController (e2e)', () => {
       pendingApplicationId = pendingApp.id;
 
       // Create dummy files for testing
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
+
       const fs = require('fs');
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
+
       const path = require('path');
       const uploadsDir = path.join(process.cwd(), 'uploads/test');
       if (!fs.existsSync(uploadsDir)) {

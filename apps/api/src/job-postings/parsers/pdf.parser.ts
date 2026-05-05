@@ -1,7 +1,7 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 
 // pdf-parse has a non-standard module export, so we use require
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+
 const pdfParse = require('pdf-parse');
 
 @Injectable()

@@ -22,7 +22,6 @@ const stageEnv = join(apiRoot, `.env.${appEnv}`);
 const envFilePath = [stageEnv, baseEnv].filter((p) => existsSync(p));
 
 if (process.env.NODE_ENV === 'development') {
-  // eslint-disable-next-line no-console
   console.log(`[ConfigModule] APP_ENV=${appEnv} — loading:`, envFilePath);
 }
 
