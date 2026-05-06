@@ -213,7 +213,23 @@ export class MicrosoftGraphService {
     if (!res.ok) {
       const text = await res.text();
       this.logger.error(`Failed to create Graph subscription (${res.status}): ${text}`);
-      throw new BadGatewayException('Microsoft Graph subscription creation failed');
+      // Surface the Graph error code in the message so the UI can show
+      // something actionable. Graph returns JSON like:
+      //   { "error": { "code": "InvalidRequest", "message": "..." } }
+      // We extract a short reason and append it to the thrown message.
+      let reason = `HTTP ${res.status}`;
+      try {
+        const parsed = JSON.parse(text) as {
+          error?: { code?: string; message?: string };
+        };
+        if (parsed.error?.code) reason = parsed.error.code;
+        if (parsed.error?.message) reason += `: ${parsed.error.message.slice(0, 200)}`;
+      } catch {
+        // Non-JSON body — keep the HTTP status as the reason.
+      }
+      throw new BadGatewayException(
+        `Microsoft Graph subscription creation failed (${reason})`,
+      );
     }
 
     const json = (await res.json()) as MsGraphSubscription;
