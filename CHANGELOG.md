@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.4](https://github.com/Smart-Apply/smart-apply/compare/v1.5.3...v1.5.4) (2026-05-06)
+
+
+### Bug Fixes
+
+* **ui:** handle loading state correctly for Button component when using asChild prop ([5f16b43](https://github.com/Smart-Apply/smart-apply/commit/5f16b4378f073db22ed2c49f96f973ecdf94f388))
+
 ## [1.5.3](https://github.com/Smart-Apply/smart-apply/compare/v1.5.2...v1.5.3) (2026-05-06)
 
 
