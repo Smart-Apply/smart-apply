@@ -22,9 +22,9 @@ primary_region = 'fra'
 
 # Identical to prod — runs migrations against staging's DATABASE_URL/DIRECT_URL
 # secret (Neon `staging` branch). See fly.prod.toml for the full explanation
-# of why we invoke prisma via `node` and why --config is mandatory.
+# of the shell guard + DATABASE_URL=$DIRECT_URL injection.
 [deploy]
-  release_command = 'node apps/api/node_modules/prisma/build/index.js migrate deploy --config=apps/api/prisma.config.ts --schema=apps/api/prisma/schema.prisma'
+  release_command = '''sh -c 'if [ -z "$DIRECT_URL" ]; then echo "[release] FATAL: DIRECT_URL secret not set on this machine." >&2; exit 1; fi; DATABASE_URL="$DIRECT_URL" exec node apps/api/node_modules/prisma/build/index.js migrate deploy --schema=apps/api/prisma/schema.prisma' '''
 
 [env]
   JOBS_DRIVER = 'qstash'
