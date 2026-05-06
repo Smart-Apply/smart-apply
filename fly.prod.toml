@@ -22,25 +22,24 @@ primary_region = 'fra'
 # Implementation notes:
 # - We invoke the prisma JS entrypoint directly via `node` rather than the
 #   `node_modules/.bin/prisma` symlink. The official node:24-alpine
-#   docker-entrypoint.sh auto-prepends `node` to the release command when
-#   it doesn't recognize an executable, then tries to `require()` the bin
-#   wrapper — which fails because npm workspaces put the actual bin
-#   under apps/api/node_modules/.bin/ rather than the root .bin/. Going
-#   directly to `node node_modules/prisma/build/index.js` sidesteps the
-#   bin-resolution layer entirely.
+# Notes on the release_command shell pipeline:
+# - We deliberately bypass prisma.config.ts (which prefers DIRECT_URL via
+#   tsx-loaded TypeScript). On Node 25 the tsx loader has surfaced silent
+#   failures: the config 'loads' but `process.env.DIRECT_URL` is read as
+#   undefined inside it, so Prisma falls back to schema.prisma's
+#   env("DATABASE_URL") = the pooled hostname → P1002 advisory_lock
+#   timeout. Setting DATABASE_URL=$DIRECT_URL in the release shell makes
+#   schema.prisma's env() resolve directly to the unpooled hostname and
+#   removes the prisma.config.ts dependency entirely from migrations.
+# - The `[ -z "$DIRECT_URL" ]` guard fails the deploy with a clear
+#   message instead of silently falling back to the pooled URL.
 # - `prisma` and `tsx` are runtime dependencies in apps/api/package.json
-#   so they survive `npm prune --production` in the Docker build. `tsx`
-#   is required by the Prisma CLI to load prisma.config.ts (TypeScript).
-# - prisma.config.ts prefers DIRECT_URL over DATABASE_URL, which is the
-#   correct path for migrations against Neon's pgbouncer.
-# - --config MUST be passed explicitly. Prisma 7 auto-discovers
-#   prisma.config.ts only from the CWD (here: /app) or upward, but the
-#   file lives at /app/apps/api/prisma.config.ts. Without --config the
-#   override is silently skipped, schema.prisma's env("DATABASE_URL")
-#   wins, and the migration runs against the pooled hostname → P1002
-#   `pg_advisory_lock` timeout (Neon's pgbouncer drops advisory locks).
+#   so they survive `npm prune --production` in the Docker build.
+# - Going directly to `node node_modules/prisma/build/index.js` sidesteps
+#   docker-entrypoint.sh's bin-resolution (npm workspaces put the actual
+#   prisma binary under apps/api/node_modules/.bin/, not the root .bin/).
 [deploy]
-  release_command = 'node apps/api/node_modules/prisma/build/index.js migrate deploy --config=apps/api/prisma.config.ts --schema=apps/api/prisma/schema.prisma'
+  release_command = '''sh -c 'if [ -z "$DIRECT_URL" ]; then echo "[release] FATAL: DIRECT_URL secret not set on this machine." >&2; exit 1; fi; DATABASE_URL="$DIRECT_URL" exec node apps/api/node_modules/prisma/build/index.js migrate deploy --schema=apps/api/prisma/schema.prisma' '''
 
 [env]
   JOBS_DRIVER = 'qstash'
