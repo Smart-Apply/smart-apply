@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.6.1](https://github.com/Smart-Apply/smart-apply/compare/v1.6.0...v1.6.1) (2026-05-06)
+
+
+### Bug Fixes
+
+* **web:** bump CSRF fetch timeout to 20s for Fly cold-start tolerance ([0bf2cb3](https://github.com/Smart-Apply/smart-apply/commit/0bf2cb3b8a32c6edf093dc26e3cec54130549d99))
+
 ## [1.6.0](https://github.com/Smart-Apply/smart-apply/compare/v1.5.4...v1.6.0) (2026-05-06)
 
 
