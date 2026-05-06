@@ -7,7 +7,7 @@ import { api } from '@/lib/api-client';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import {
   Tooltip,
   TooltipContent,
@@ -242,6 +242,15 @@ function DashboardLayoutInner({
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-80 p-0 bg-card border-r border-border">
+              {/* Required by Radix Dialog for screen-reader users.
+                  Hidden visually with `sr-only` so the existing logo/header
+                  stays as the visible title. Without these, Radix's a11y
+                  guard cascades into a React.Children.only crash that
+                  bricks every page that mounts the dashboard layout. */}
+              <SheetTitle className="sr-only">Hauptmenü</SheetTitle>
+              <SheetDescription className="sr-only">
+                Navigation des Smart Apply Dashboards.
+              </SheetDescription>
               <div className="flex h-full flex-col">
                 <div className="flex h-16 items-center px-4 border-b border-border/50">
                   <Link href="/dashboard" className="flex items-center">
