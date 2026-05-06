@@ -42,6 +42,11 @@ primary_region = 'fra'
   release_command = '''sh -c 'if [ -z "$DIRECT_URL" ]; then echo "[release] FATAL: DIRECT_URL secret not set on this machine." >&2; exit 1; fi; DATABASE_URL="$DIRECT_URL" exec node apps/api/node_modules/prisma/build/index.js migrate deploy --schema=apps/api/prisma/schema.prisma' '''
 
 [env]
+  # Public origin of THIS API. Drives OAuth callback URLs and the
+  # Microsoft Graph push-notification webhook URL (mailbox-sync). Without
+  # this, the API falls back to http://localhost:3000 — which Graph cannot
+  # reach → subscription creation fails on every Outlook connect.
+  API_BASE_URL = 'https://api.smart-apply.io'
   JOBS_DRIVER = 'qstash'
   LLM_PROVIDER = 'azure-openai'
   LOG_LEVEL = 'info'
