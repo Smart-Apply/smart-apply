@@ -180,6 +180,7 @@ Resulting flow: PR → merge to main → staging deploys + Release PR opens/upda
 - `linkedin-jobs` — LinkedIn job search
 - `llm` — pluggable providers (`azure-openai` | `azure-ai-foundry` | `mock`) with automatic language detection, opossum circuit breaker
 - `logger` — Pino + Winston audit logger
+- `mailbox-sync` — **Email Tracking (Premium)**: OAuth inbox sync (Microsoft Graph; Gmail planned). Detects company replies in the user's inbox, classifies them with the LLM, and updates the matching `Application.applicationStatus` automatically. Encrypts refresh tokens at rest (AES-256-GCM, `MAILBOX_TOKEN_ENCRYPTION_KEY`). No email bodies are persisted — only metadata + classification.
 - `pdf` — Puppeteer + Handlebars (50 templates), ATS-optimized; browser pool via `generic-pool`
 - `prisma` — PrismaService
 - `profile` — CRUD with **differential updates** (Skills, Experiences, Education, Certificates, Projects, Languages)
@@ -218,6 +219,7 @@ Resulting flow: PR → merge to main → staging deploys + Release PR opens/upda
 - **RefreshToken**, **Session** (auth/security)
 - **Subscription** (plans & usage)
 - **AuditLog** (security events)
+- **MailboxConnection**, **ApplicationEmailEvent** (email tracking — Premium)
 
 ## API Endpoints (v1)
 
@@ -304,6 +306,16 @@ Gated by `ADMIN_EMAILS` (comma-separated, case-insensitive). Returns 403 when th
 ### LinkedIn Jobs (Protected)
 
 **GET /api/v1/linkedin-jobs/search** — search LinkedIn job postings
+
+### Email Tracking — Inbox Sync (Premium)
+
+All endpoints under `/api/v1/mailbox-sync/*` are gated by `@RequiresFeature('emailParsing')` (Premium tier) **except** the public `microsoft/callback` and `microsoft/webhook` routes.
+
+**GET /api/v1/mailbox-sync/connections** — list the user's connected mailboxes
+**GET /api/v1/mailbox-sync/microsoft/connect** — returns `{ authorizationUrl }` to redirect the browser to Microsoft consent
+**GET /api/v1/mailbox-sync/microsoft/callback** — public OAuth redirect target; persists the connection and redirects to `${APP_URL}/settings?email_tracking=connected`
+**DELETE /api/v1/mailbox-sync/connections/:id** — disconnect mailbox + revoke Graph subscription
+**POST /api/v1/mailbox-sync/microsoft/webhook** — public Microsoft Graph push-notification endpoint (validation handshake + change notifications). Verified per-connection via `clientState`. Returns 202 immediately and processes asynchronously. Daily cron renews subscriptions before their ~70.5h Graph cap expires.
 
 ### Templates (Protected)
 
@@ -614,6 +626,18 @@ SENTRY_ENVIRONMENT=development
 
 # Admin (comma-separated, case-insensitive). Leave empty to disable /admin/*.
 ADMIN_EMAILS=you@example.com,coworker@example.com
+
+# Email Tracking (Premium feature) — OAuth Inbox Sync
+# AES-256-GCM key (32 bytes hex) for encrypting persisted refresh tokens.
+# Generate with: openssl rand -hex 32
+MAILBOX_TOKEN_ENCRYPTION_KEY=<64-hex-chars>
+# SEPARATE Microsoft Entra app from the social-login one — needs delegated
+# Mail.Read + offline_access scopes.
+MS_GRAPH_CLIENT_ID=<id>
+MS_GRAPH_CLIENT_SECRET=<secret>
+MS_GRAPH_TENANT=common  # or a specific tenant id
+# MS_GRAPH_POST_CONNECT_REDIRECT=<defaults to APP_URL/settings?email_tracking=connected>
+# MAILBOX_SUBSCRIPTION_RENEWAL_MARGIN_MINUTES=360  # default 6h margin
 
 # PDF Generation
 PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium

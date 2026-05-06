@@ -1,0 +1,2 @@
+-- RenameIndex
+ALTER INDEX "application_email_events_mailboxConnectionId_providerMessageId_" RENAME TO "application_email_events_mailboxConnectionId_providerMessag_key";

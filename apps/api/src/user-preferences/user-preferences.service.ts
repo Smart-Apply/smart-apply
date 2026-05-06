@@ -52,6 +52,8 @@ export class UserPreferencesService {
     if (dto.applicationUpdates !== undefined) data.applicationUpdates = dto.applicationUpdates;
     if (dto.newJobPostings !== undefined) data.newJobPostings = dto.newJobPostings;
     if (dto.marketingEmails !== undefined) data.marketingEmails = dto.marketingEmails;
+    if (dto.emailTrackingNotify !== undefined)
+      data.emailTrackingNotify = dto.emailTrackingNotify;
     if (dto.language !== undefined) data.language = dto.language;
     if (dto.theme !== undefined) data.theme = dto.theme;
     if (dto.profilePublic !== undefined) data.profilePublic = dto.profilePublic;
@@ -67,6 +69,7 @@ export class UserPreferencesService {
       applicationUpdates: preferences.applicationUpdates,
       newJobPostings: preferences.newJobPostings,
       marketingEmails: preferences.marketingEmails,
+      emailTrackingNotify: preferences.emailTrackingNotify,
       language: preferences.language,
       theme: preferences.theme,
       profilePublic: preferences.profilePublic,

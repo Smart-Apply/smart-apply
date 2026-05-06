@@ -46,6 +46,16 @@ export class UpdateUserPreferencesDto {
   @IsBoolean()
   marketingEmails?: boolean;
 
+  @ApiProperty({
+    example: true,
+    required: false,
+    description:
+      'Receive an email when the inbox-tracking agent (Premium) changes the status of one of your applications.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  emailTrackingNotify?: boolean;
+
   // Preferences
   @ApiProperty({
     example: 'de',
@@ -93,6 +103,12 @@ export class UserPreferencesResponseDto {
 
   @ApiProperty({ example: false })
   marketingEmails: boolean;
+
+  @ApiProperty({
+    example: true,
+    description: 'Notify on inbox-tracking-driven status changes (Premium)',
+  })
+  emailTrackingNotify: boolean;
 
   @ApiProperty({ example: 'de' })
   language: string;

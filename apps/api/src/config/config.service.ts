@@ -385,4 +385,81 @@ export class ConfigService {
   get apifyLinkedInActorId(): string {
     return this.nestConfig.get('APIFY_LINKEDIN_ACTOR_ID', { infer: true });
   }
+
+  // ---------------------------------------------------------------------------
+  // Email Tracking (Premium feature) — OAuth Inbox Sync
+  // ---------------------------------------------------------------------------
+
+  /**
+   * AES-256-GCM key used to encrypt persisted OAuth refresh tokens in
+   * `mailbox_connections`. 32 bytes (returned as Buffer). When unset, the
+   * mailbox-sync module refuses to connect new mailboxes (existing rows
+   * stay readable only if the key was set when they were written).
+   */
+  get mailboxTokenEncryptionKey(): Buffer | undefined {
+    const keyHex = this.nestConfig.get('MAILBOX_TOKEN_ENCRYPTION_KEY', { infer: true });
+    if (!keyHex) return undefined;
+    return Buffer.from(keyHex, 'hex');
+  }
+
+  get msGraphClientId(): string | undefined {
+    return this.nestConfig.get('MS_GRAPH_CLIENT_ID', { infer: true });
+  }
+
+  get msGraphClientSecret(): string | undefined {
+    return this.nestConfig.get('MS_GRAPH_CLIENT_SECRET', { infer: true });
+  }
+
+  get msGraphTenant(): string {
+    return this.nestConfig.get('MS_GRAPH_TENANT', { infer: true });
+  }
+
+  /**
+   * Public callback URL the Microsoft consent screen redirects to. Built
+   * from `apiBaseUrl` so it matches the URL registered with the Azure AD
+   * app, regardless of stage.
+   */
+  get msGraphCallbackUrl(): string {
+    return `${this.apiBaseUrl}/api/v1/mailbox-sync/microsoft/callback`;
+  }
+
+  /**
+   * Public webhook URL Microsoft Graph POSTs change notifications to.
+   * Must be HTTPS in prod (Graph rejects plain http for subscriptions).
+   */
+  get msGraphWebhookUrl(): string {
+    return `${this.apiBaseUrl}/api/v1/mailbox-sync/microsoft/webhook`;
+  }
+
+  /**
+   * Where the user is redirected after a successful OAuth round-trip.
+   * Defaults to APP_URL + '/settings?email_tracking=connected'.
+   */
+  get msGraphPostConnectRedirect(): string {
+    const explicit = this.nestConfig.get('MS_GRAPH_POST_CONNECT_REDIRECT', { infer: true });
+    return explicit || `${this.appUrl}/settings?email_tracking=connected`;
+  }
+
+  /**
+   * Renew Graph subscriptions when they have less than this many minutes left.
+   * The renewal cron runs daily; default 6h margin keeps us safe even if a
+   * cron run fails.
+   */
+  get mailboxSubscriptionRenewalMarginMinutes(): number {
+    return parseInt(
+      this.nestConfig.get('MAILBOX_SUBSCRIPTION_RENEWAL_MARGIN_MINUTES', { infer: true }),
+      10,
+    );
+  }
+
+  /**
+   * True when the email-tracking module has all the secrets it needs to
+   * accept new connections. Used by the controller to short-circuit with a
+   * 503 instead of failing deep in the OAuth flow.
+   */
+  get mailboxSyncEnabled(): boolean {
+    return Boolean(
+      this.mailboxTokenEncryptionKey && this.msGraphClientId && this.msGraphClientSecret,
+    );
+  }
 }

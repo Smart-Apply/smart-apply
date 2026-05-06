@@ -208,6 +208,39 @@ const envSchema = z.object({
   // one of these (case-insensitive) can call the /admin/* endpoints. When
   // unset, all /admin/* routes return 403.
   ADMIN_EMAILS: z.string().optional(),
+
+  // -------------------------------------------------------------------------
+  // Email Tracking (Premium feature) — OAuth Inbox Sync
+  // -------------------------------------------------------------------------
+  // Encrypts the OAuth refresh tokens we persist in `mailbox_connections`.
+  // Same format as TWO_FACTOR_ENCRYPTION_KEY (32 bytes, hex). Generate with:
+  //   openssl rand -hex 32
+  // When unset, the mailbox-sync module refuses to connect new mailboxes.
+  MAILBOX_TOKEN_ENCRYPTION_KEY: z
+    .string()
+    .length(64, 'MAILBOX_TOKEN_ENCRYPTION_KEY must be 64 hex characters (32 bytes) for AES-256')
+    .regex(/^[a-fA-F0-9]+$/, 'MAILBOX_TOKEN_ENCRYPTION_KEY must be a valid hex string')
+    .optional(),
+
+  // Microsoft 365 / Outlook OAuth app for the inbox sync.
+  // Reuses the AZURE_AD_TENANT_ID from social-login above. We use a separate
+  // client ID/secret because this app needs `Mail.Read offline_access`,
+  // which is a different consent surface from the sign-in flow.
+  MS_GRAPH_CLIENT_ID: z.string().optional(),
+  MS_GRAPH_CLIENT_SECRET: z.string().optional(),
+  // Tenant for the OAuth flow. Default `common` allows both work and personal
+  // accounts (Outlook.com + Microsoft 365). Override to a specific tenant id
+  // for single-tenant deployments.
+  MS_GRAPH_TENANT: z.string().default('common'),
+
+  // Public URL the inbox sync redirects to after a successful OAuth
+  // round-trip. Defaults to APP_URL + '/settings?email_tracking=connected'.
+  MS_GRAPH_POST_CONNECT_REDIRECT: z.string().optional(),
+
+  // Lifetime of a Microsoft Graph mail-folder push subscription is capped
+  // at 4230 minutes (~70.5 h). We renew on a daily cron with a comfortable
+  // safety margin. Override only for testing.
+  MAILBOX_SUBSCRIPTION_RENEWAL_MARGIN_MINUTES: z.string().default('360'), // 6h
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

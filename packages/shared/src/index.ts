@@ -341,6 +341,9 @@ export type ApplicationTrackingStatus =
   | 'ACCEPTED'
   | 'REJECTED';
 export type ApplicationStatus = ApplicationGenerationStatus;
+// Who/what last set Application.applicationStatus. Surfaced in the UI as a
+// small "📧" pill when the change came from inbox tracking.
+export type ApplicationStatusSource = 'SYSTEM' | 'USER' | 'EMAIL_TRACKING';
 
 export interface Application {
   id: string;
@@ -350,6 +353,8 @@ export interface Application {
   targetJobTitle?: string;
   applicationStatus: ApplicationTrackingStatus;
   statusUpdatedAt?: string;
+  /** Who/what last changed `applicationStatus`. Drives the UI source pill. */
+  statusSource?: ApplicationStatusSource;
   status: ApplicationGenerationStatus;
   notes?: string;
   coverLetterText?: string;
@@ -576,6 +581,8 @@ export interface UserPreferences {
   applicationUpdates: boolean;
   newJobPostings: boolean;
   marketingEmails: boolean;
+  /** Notify the user when inbox tracking changed an application status. */
+  emailTrackingNotify: boolean;
   language: string;
   theme: string;
   profilePublic: boolean;
@@ -588,6 +595,7 @@ export interface UpdateUserPreferencesDto {
   applicationUpdates?: boolean;
   newJobPostings?: boolean;
   marketingEmails?: boolean;
+  emailTrackingNotify?: boolean;
   language?: string;
   theme?: string;
   profilePublic?: boolean;
@@ -1047,4 +1055,54 @@ export interface AutoApplySuggestionsResponse {
 
 export interface ApproveAutoApplySuggestionResponse {
   applicationId: string;
+}
+
+// ============================================
+// Email Tracking (Premium feature) — Mailbox Sync
+// ============================================
+// Connects an external mailbox (Microsoft 365 / Outlook.com first; Gmail
+// later) so smart-apply can detect application-related emails the company
+// sends and update the matching Application's tracking status automatically.
+
+export type MailboxProvider = 'MICROSOFT' | 'GOOGLE';
+export type MailboxConnectionStatus = 'ACTIVE' | 'DISABLED' | 'ERROR';
+
+export interface MailboxConnection {
+  id: string;
+  provider: MailboxProvider;
+  status: MailboxConnectionStatus;
+  emailAddress: string;
+  lastSyncedAt?: string;
+  lastErrorMessage?: string | null;
+  subscriptionExpiresAt?: string;
+  createdAt: string;
+}
+
+/** Initiates the OAuth flow — returns the URL to redirect the browser to. */
+export interface ConnectMailboxResponse {
+  authorizationUrl: string;
+}
+
+export type EmailClassification =
+  | 'APPLIED_CONFIRMATION'
+  | 'INTERVIEW_INVITE'
+  | 'OFFER'
+  | 'REJECTION'
+  | 'REQUEST_FOR_INFO'
+  | 'OTHER';
+
+export interface ApplicationEmailEvent {
+  id: string;
+  applicationId: string | null;
+  fromAddress: string;
+  fromName?: string | null;
+  subject: string;
+  receivedAt: string;
+  classification?: EmailClassification | null;
+  confidence?: number | null;
+  resultedInStatusChange: boolean;
+  previousStatus?: ApplicationTrackingStatus | null;
+  newStatus?: ApplicationTrackingStatus | null;
+  reason?: string | null;
+  createdAt: string;
 }

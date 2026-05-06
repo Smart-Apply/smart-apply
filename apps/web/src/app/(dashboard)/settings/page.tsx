@@ -35,6 +35,7 @@ import type { UserPreferences } from '@/types';
 import { ApiError } from '@/lib/errors';
 import { TwoFactorStatusCard } from '@/components/two-factor';
 import { PremiumSupportCard } from '@/components/subscription/premium-support-card';
+import { EmailTrackingSection } from '@/components/settings/email-tracking-section';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -438,6 +439,14 @@ export default function SettingsPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Email Tracking (Premium feature) — OAuth inbox sync. Lives
+              under "Benachrichtigungen" instead of getting its own tab. */}
+          <EmailTrackingSection
+            preferences={preferences}
+            onTogglePreference={(key, value) => handleUpdatePreference(key, value)}
+            isLoadingPreferences={isLoadingPreferences}
+          />
         </TabsContent>
 
         {/* Preferences Tab */}

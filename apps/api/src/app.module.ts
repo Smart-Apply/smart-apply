@@ -33,6 +33,7 @@ import { UpstashThrottlerStorage } from './common/throttler/upstash-throttler-st
 import { AdminModule } from './admin/admin.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { AutoApplyModule } from './auto-apply/auto-apply.module';
+import { MailboxSyncModule } from './mailbox-sync/mailbox-sync.module';
 
 @Module({
   imports: [
@@ -114,6 +115,7 @@ import { AutoApplyModule } from './auto-apply/auto-apply.module';
     AdminModule,
     AnalyticsModule,
     AutoApplyModule,
+    MailboxSyncModule,
     HealthModule,
   ],
   controllers: [CSPViolationController],

@@ -52,6 +52,8 @@ import type {
   AutoApplySuggestionsResponse,
   AutoApplySuggestionStatus,
   ApproveAutoApplySuggestionResponse,
+  MailboxConnection,
+  ConnectMailboxResponse,
 } from '@/types';
 import {
   ApiError,
@@ -1055,5 +1057,24 @@ export const api = {
       apiRequest<void>(`/auto-apply/suggestions/${suggestionId}/block`, {
         method: 'POST',
       }),
+  },
+
+  // Email Tracking — OAuth Inbox Sync (Premium feature)
+  mailboxSync: {
+    /** List the user's connected mailboxes (empty array when none configured). */
+    listConnections: () =>
+      apiRequest<MailboxConnection[]>('/mailbox-sync/connections'),
+
+    /**
+     * Initiate the Microsoft OAuth flow. Returns the consent URL — the
+     * caller is responsible for navigating the browser to it (a full-page
+     * redirect, NOT fetch — the OAuth callback redirects back to /settings).
+     */
+    initiateMicrosoft: () =>
+      apiRequest<ConnectMailboxResponse>('/mailbox-sync/microsoft/connect'),
+
+    /** Disconnect a mailbox + revoke its provider subscription. */
+    disconnect: (id: string) =>
+      apiRequest<void>(`/mailbox-sync/connections/${id}`, { method: 'DELETE' }),
   },
 };

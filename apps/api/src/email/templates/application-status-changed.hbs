@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Status-Update zu deiner Bewerbung</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.5; color: #1f2937; margin: 0; padding: 0; background-color: #f9fafb;">
+  <div style="max-width: 600px; margin: 0 auto; padding: 32px 16px;">
+    <div style="background: #ffffff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); padding: 32px;">
+
+      <div style="text-align: center; margin-bottom: 24px;">
+        <h1 style="color: #1B2A49; font-size: 22px; margin: 0 0 4px 0;">Smart Apply</h1>
+        <p style="color: #6b7280; font-size: 13px; margin: 0;">Bewerbungs-Tracking</p>
+      </div>
+
+      <h2 style="font-size: 18px; color: #111827; margin: 0 0 8px 0;">
+        Hallo {{firstName}}, der Status hat sich geändert
+      </h2>
+
+      <p style="color: #4b5563; font-size: 14px; margin: 0 0 20px 0;">
+        Wir haben eine E-Mail vom Unternehmen erkannt und den Status deiner Bewerbung automatisch aktualisiert.
+      </p>
+
+      <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 20px; background: #f9fafb;">
+        <p style="margin: 0 0 4px 0; font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">Bewerbung</p>
+        <p style="margin: 0 0 12px 0; font-size: 16px; color: #111827; font-weight: 600;">{{applicationTitle}}</p>
+
+        <p style="margin: 0 0 4px 0; font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">Position</p>
+        <p style="margin: 0 0 12px 0; font-size: 14px; color: #111827;">{{jobTitle}} · {{company}}</p>
+
+        <div style="display: flex; gap: 8px; align-items: center; margin-top: 16px;">
+          <span style="display: inline-block; padding: 4px 10px; border-radius: 999px; background: #e5e7eb; color: #4b5563; font-size: 12px; font-weight: 600;">
+            {{previousStatusLabel}}
+          </span>
+          <span style="color: #6b7280;">→</span>
+          <span style="display: inline-block; padding: 4px 10px; border-radius: 999px; background: {{newStatusBg}}; color: {{newStatusFg}}; font-size: 12px; font-weight: 600;">
+            {{newStatusLabel}}
+          </span>
+        </div>
+      </div>
+
+      <div style="border-left: 3px solid #1B2A49; padding: 12px 16px; margin-bottom: 24px; background: #f3f4f6;">
+        <p style="margin: 0 0 4px 0; font-size: 12px; color: #6b7280;">Erkannt aus E-Mail</p>
+        <p style="margin: 0 0 2px 0; font-size: 14px; color: #111827;"><strong>Von:</strong> {{fromAddress}}</p>
+        <p style="margin: 0 0 2px 0; font-size: 14px; color: #111827;"><strong>Betreff:</strong> {{subject}}</p>
+        <p style="margin: 0; font-size: 12px; color: #6b7280;">Empfangen: {{receivedAtLabel}}</p>
+      </div>
+
+      <div style="text-align: center; margin: 24px 0;">
+        <a href="{{applicationUrl}}" style="display: inline-block; padding: 12px 24px; background: #1B2A49; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px;">
+          Bewerbung öffnen
+        </a>
+      </div>
+
+      <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 24px 0 0 0;">
+        Du erhältst diese E-Mail, weil du das automatische Bewerbungs-Tracking für dein Postfach aktiviert hast.<br>
+        <a href="{{settingsUrl}}" style="color: #6b7280;">Benachrichtigungen anpassen</a>
+      </p>
+
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;">
+      <p style="color: #9ca3af; font-size: 11px; text-align: center; margin: 0;">
+        © {{currentYear}} Smart Apply
+      </p>
+    </div>
+  </div>
+</body>
+</html>

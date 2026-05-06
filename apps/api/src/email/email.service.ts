@@ -8,7 +8,11 @@ import { ConfigService } from '../config/config.service';
 export interface SendEmailOptions {
   to: string;
   subject: string;
-  template: 'verification-email' | 'password-reset-email' | 'auto-apply-digest';
+  template:
+    | 'verification-email'
+    | 'password-reset-email'
+    | 'auto-apply-digest'
+    | 'application-status-changed';
   context: Record<string, unknown>;
 }
 
@@ -31,7 +35,12 @@ export class EmailService {
 
   private loadTemplates(): void {
     const templateDir = path.join(__dirname, 'templates');
-    const templateNames = ['verification-email', 'password-reset-email', 'auto-apply-digest'];
+    const templateNames = [
+      'verification-email',
+      'password-reset-email',
+      'auto-apply-digest',
+      'application-status-changed',
+    ];
 
     for (const name of templateNames) {
       try {
@@ -152,6 +161,54 @@ export class EmailService {
         userName: userName || 'there',
         resetUrl,
         expiresIn: '1 hour',
+        currentYear: new Date().getFullYear(),
+      },
+    });
+  }
+
+  /**
+   * Sent when the inbox-tracking agent detected a status change for one of
+   * the user's applications. Skipped on user-initiated changes (the
+   * orchestrator only calls this when `statusSource === EMAIL_TRACKING`
+   * AND `userPreferences.emailTrackingNotify === true`).
+   */
+  async sendApplicationStatusChangedEmail(opts: {
+    to: string;
+    firstName?: string | null;
+    applicationId: string;
+    applicationTitle: string;
+    jobTitle: string;
+    company: string;
+    previousStatusLabel: string;
+    newStatusLabel: string;
+    /** Tailwind-ish hex pair for the new-status pill in the template. */
+    newStatusBg: string;
+    newStatusFg: string;
+    fromAddress: string;
+    subject: string;
+    receivedAtLabel: string;
+  }): Promise<boolean> {
+    const applicationUrl = `${this.configService.appUrl}/applications/${opts.applicationId}`;
+    const settingsUrl = `${this.configService.appUrl}/settings?tab=notifications`;
+
+    return this.sendEmail({
+      to: opts.to,
+      subject: `Status-Update: ${opts.applicationTitle} → ${opts.newStatusLabel}`,
+      template: 'application-status-changed',
+      context: {
+        firstName: opts.firstName || 'da',
+        applicationTitle: opts.applicationTitle,
+        jobTitle: opts.jobTitle,
+        company: opts.company,
+        previousStatusLabel: opts.previousStatusLabel,
+        newStatusLabel: opts.newStatusLabel,
+        newStatusBg: opts.newStatusBg,
+        newStatusFg: opts.newStatusFg,
+        fromAddress: opts.fromAddress,
+        subject: opts.subject,
+        receivedAtLabel: opts.receivedAtLabel,
+        applicationUrl,
+        settingsUrl,
         currentYear: new Date().getFullYear(),
       },
     });

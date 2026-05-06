@@ -73,6 +73,7 @@ smart-apply/
 │   │   │   ├── linkedin-jobs/     # LinkedIn job search
 │   │   │   ├── llm/               # LLM provider abstraction
 │   │   │   ├── logger/            # Pino + Winston audit
+│   │   │   ├── mailbox-sync/      # Email Tracking (Premium): MS Graph OAuth + classifier
 │   │   │   ├── pdf/               # Puppeteer + Handlebars (50 templates)
 │   │   │   ├── prisma/            # PrismaService (pg adapter)
 │   │   │   ├── profile/           # Profile CRUD (differential updates)
@@ -311,6 +312,11 @@ All routes are prefixed `/api/v1` and documented at <http://localhost:3000/docs>
 | GET      | `/applications/:id/files`      | SAS download URLs        |
 | GET      | `/applications/:id/stream`     | SSE status stream        |
 | POST     | `/interviews`                  | Generate mock interview  |
+| GET      | `/mailbox-sync/connections`    | List connected mailboxes (Premium)         |
+| GET      | `/mailbox-sync/microsoft/connect` | Start MS Graph OAuth (Premium)          |
+| GET      | `/mailbox-sync/microsoft/callback` | OAuth redirect target (public)         |
+| POST     | `/mailbox-sync/microsoft/webhook`  | MS Graph push notifications (public)   |
+| DELETE   | `/mailbox-sync/connections/:id` | Disconnect mailbox (Premium)              |
 | GET      | `/templates`                   | Template catalog         |
 | GET      | `/sessions`                    | Active sessions          |
 | DELETE   | `/sessions/:id`                | Remote logout            |

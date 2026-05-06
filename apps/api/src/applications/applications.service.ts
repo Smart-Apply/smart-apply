@@ -2530,12 +2530,15 @@ Summary: ${resume.summary || 'Not provided'}
   ): Promise<ApplicationResponseDto> {
     this.logger.log(`Updating application ${applicationId} status to ${status} for user ${userId}`);
 
-    // Update status and timestamp
+    // Update status and timestamp. We mark `statusSource = USER` so the
+    // mailbox-sync notification logic knows NOT to send a "status changed"
+    // email — the user already knows, they just clicked the dropdown.
     const updated = await this.prisma.application.update({
       where: { id: applicationId },
       data: {
         applicationStatus: status,
         statusUpdatedAt: new Date(),
+        statusSource: 'USER',
       },
       include: {
         jobPosting: true,
@@ -2637,6 +2640,7 @@ Summary: ${resume.summary || 'Not provided'}
       targetJobTitle: application.targetJobTitle,
       applicationStatus: application.applicationStatus,
       statusUpdatedAt: application.statusUpdatedAt,
+      statusSource: application.statusSource,
       status: application.status as ApplicationStatus,
       notes: application.notes,
       coverLetterText: application.coverLetterText,

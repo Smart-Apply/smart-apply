@@ -48,6 +48,9 @@ model User {
   autoApplyConfig      AutoApplyConfig?
   autoApplySuggestions AutoApplySuggestion[]
 
+  // Email tracking (Premium feature) — connected mailbox(es) we sync via OAuth
+  mailboxConnections MailboxConnection[]
+
   // Two-Factor Authentication
   twoFactorAuth  TwoFactorAuth?
   trustedDevices TrustedDevice[]
@@ -73,9 +76,13 @@ model UserPreferences {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Notifications
-  applicationUpdates Boolean @default(true)
-  newJobPostings     Boolean @default(false)
-  marketingEmails    Boolean @default(false)
+  applicationUpdates  Boolean @default(true)
+  newJobPostings      Boolean @default(false)
+  marketingEmails     Boolean @default(false)
+  // Notify the user when an application status was changed by inbox tracking
+  // (NOT when the user changes the status themselves). Default ON because
+  // tracking-driven changes are exactly the events the user wants to know about.
+  emailTrackingNotify Boolean @default(true)
 
   // Preferences
   language         String  @default("de")
@@ -300,6 +307,12 @@ model Application {
   // Application Status Tracking (user-facing)
   applicationStatus ApplicationTrackingStatus @default(CREATED)
   statusUpdatedAt   DateTime?
+  // Who/what last set `applicationStatus`. Used to suppress notification
+  // emails for status changes the user made themselves.
+  statusSource      ApplicationStatusSource   @default(SYSTEM)
+
+  // Email tracking events (audit trail of inbox-driven status changes)
+  emailEvents ApplicationEmailEvent[]
 
   // PDF Generation Status (system-facing)
   status ApplicationGenerationStatus @default(PENDING)
@@ -366,6 +379,17 @@ enum ApplicationTrackingStatus {
   INTERVIEW // Interview
   ACCEPTED // Angenommen
   REJECTED // Abgelehnt
+}
+
+// Who/what last changed Application.applicationStatus.
+// SYSTEM        - initial creation, internal pipeline
+// USER          - the user updated the status manually in the UI
+// EMAIL_TRACKING - the inbox-sync agent classified an incoming email and
+//                  changed the status (only path that triggers notification mail)
+enum ApplicationStatusSource {
+  SYSTEM
+  USER
+  EMAIL_TRACKING
 }
 
 // System-facing PDF generation status
@@ -1034,4 +1058,126 @@ model AutoApplySuggestion {
   @@index([userId, status, createdAt(sort: Desc)])
   @@index([configId])
   @@map("auto_apply_suggestions")
+}
+
+// =============================================================================
+// EMAIL TRACKING (Premium feature)
+// =============================================================================
+// Connects a user's external mailbox (Microsoft 365 / Outlook.com first; Gmail
+// later) so smart-apply can detect application-related emails the company
+// sends and update the matching Application's tracking status automatically.
+// Stores OAuth tokens encrypted at rest (AES-256-GCM, see TokenCipher).
+// We never persist email bodies — only metadata + LLM classification result.
+
+enum MailboxProvider {
+  MICROSOFT // Microsoft Graph (Outlook, Outlook.com, Microsoft 365)
+  GOOGLE    // Gmail / Google Workspace (planned)
+}
+
+enum MailboxConnectionStatus {
+  ACTIVE    // healthy: webhooks landing, classifier running
+  DISABLED  // user disconnected; row kept for audit, no work done
+  ERROR     // token refresh / subscription renewal failing repeatedly
+}
+
+model MailboxConnection {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  provider     MailboxProvider
+  status       MailboxConnectionStatus @default(ACTIVE)
+  emailAddress String                  // mailbox we're watching, surfaced in UI
+
+  // OAuth tokens (refresh token encrypted-at-rest with AES-256-GCM,
+  // see common/crypto/token-cipher.ts). Access tokens are short-lived and
+  // re-fetched on each pipeline run, so we don't persist them.
+  refreshTokenCiphertext String  @db.Text
+  refreshTokenIv         String
+  refreshTokenAuthTag    String
+  scope                  String? // granted OAuth scope string
+
+  // Microsoft Graph / Gmail subscription (push-notification handle).
+  // We never poll — providers POST to our webhook when new mail arrives.
+  subscriptionId        String?  @unique
+  subscriptionExpiresAt DateTime?
+  // Per-connection secret echoed in webhook payloads (`clientState` for MS Graph,
+  // `X-Goog-Channel-Token` for Gmail). Lets us verify the webhook is for us.
+  webhookClientState String
+
+  // Operational counters
+  lastSyncedAt    DateTime?
+  lastErrorAt     DateTime?
+  lastErrorMessage String?
+  consecutiveErrors Int @default(0)
+
+  emailEvents ApplicationEmailEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // One Microsoft mailbox per user per provider (until we explicitly support
+  // multiple inboxes). Hash partitioning on (userId, provider) is fine —
+  // we only ever look up by userId, by subscriptionId, or by id.
+  @@unique([userId, provider])
+  @@index([userId])
+  @@index([status, subscriptionExpiresAt]) // renewal cron query
+  @@map("mailbox_connections")
+}
+
+// Audit trail for inbound emails processed by the tracking agent.
+// We deliberately do NOT store the email body — only metadata + the LLM
+// classification result. This keeps GDPR exposure minimal.
+model ApplicationEmailEvent {
+  id String @id @default(cuid())
+
+  // Source mailbox (kept even if the connection is later deleted? — no,
+  // cascade-delete because the audit isn't useful without context).
+  mailboxConnectionId String
+  mailboxConnection   MailboxConnection @relation(fields: [mailboxConnectionId], references: [id], onDelete: Cascade)
+
+  // The application this event was matched to (nullable: low-confidence
+  // matches are still persisted for debugging / future re-classification).
+  applicationId String?
+  application   Application? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  // External provider message id — used to dedupe replays of the same webhook.
+  providerMessageId String
+
+  // Email metadata (truncated to keep the row small)
+  fromAddress String
+  fromName    String?
+  subject     String  @db.VarChar(500)
+  receivedAt  DateTime
+
+  // LLM classification (null if classifier failed / fell back)
+  classification         EmailClassification?
+  confidence             Float? // 0..1
+  classifierModel        String?
+
+  // Outcome
+  resultedInStatusChange Boolean                  @default(false)
+  previousStatus         ApplicationTrackingStatus?
+  newStatus              ApplicationTrackingStatus?
+  notificationSent       Boolean                  @default(false)
+
+  // Optional human-readable reason persisted only when classifier returns one
+  // (e.g. matched company name, recognised phrase). NEVER the email body.
+  reason String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([mailboxConnectionId, providerMessageId]) // dedupe webhook replays
+  @@index([applicationId, createdAt(sort: Desc)])
+  @@index([mailboxConnectionId, createdAt(sort: Desc)])
+  @@map("application_email_events")
+}
+
+enum EmailClassification {
+  APPLIED_CONFIRMATION
+  INTERVIEW_INVITE
+  OFFER
+  REJECTION
+  REQUEST_FOR_INFO
+  OTHER
 }

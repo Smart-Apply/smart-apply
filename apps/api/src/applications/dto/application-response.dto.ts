@@ -16,6 +16,15 @@ export enum ApplicationTrackingStatus {
   REJECTED = 'REJECTED',
 }
 
+// Who/what last changed Application.applicationStatus.
+// Drives the "📧 detected by inbox tracking" pill in the UI and the
+// notification-mail gate in the orchestrator.
+export enum ApplicationStatusSource {
+  SYSTEM = 'SYSTEM',
+  USER = 'USER',
+  EMAIL_TRACKING = 'EMAIL_TRACKING',
+}
+
 export class ApplicationResponseDto {
   @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440000' })
   id: string;
@@ -50,6 +59,14 @@ export class ApplicationResponseDto {
     description: 'Timestamp when application status was last updated',
   })
   statusUpdatedAt?: Date;
+
+  @ApiPropertyOptional({
+    enum: ApplicationStatusSource,
+    example: ApplicationStatusSource.USER,
+    description:
+      'Who/what last changed `applicationStatus`. EMAIL_TRACKING means the inbox-sync agent detected the change in an incoming mail.',
+  })
+  statusSource?: ApplicationStatusSource;
 
   @ApiProperty({
     enum: ApplicationStatus,

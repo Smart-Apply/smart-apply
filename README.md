@@ -14,6 +14,7 @@ AI-powered job application assistant — generate tailored, ATS-optimized cover 
 - **Resume parser** — Upload an existing resume to bootstrap your profile
 - **Real-time updates** — SSE for live application pipeline status
 - **Mock interviews** — AI-generated interview questions per job
+- **Email tracking (Premium)** — Connect Outlook/Microsoft 365; smart-apply detects company replies (interview invites, confirmations, rejections) and updates the application status automatically. No email bodies are persisted.
 - **Auth & security** — JWT in HttpOnly cookies, refresh-token rotation, multi-device sessions, OAuth (Google, Microsoft, Azure AD), 2FA (TOTP), CSRF, rate limiting, audit logs, Sentry
 - **Subscriptions** — Tiered plans with usage limits
 - **Transactional email** — Resend integration
@@ -108,6 +109,7 @@ smart-apply/
 │   │   │   ├── keywords/         # ATS keyword matching
 │   │   │   ├── linkedin-jobs/    # LinkedIn job search
 │   │   │   ├── llm/              # LLM provider abstraction
+│   │   │   ├── mailbox-sync/     # Email Tracking (Premium): MS Graph OAuth + classifier
 │   │   │   ├── pdf/              # Puppeteer + Handlebars
 │   │   │   ├── profile/          # Profile CRUD
 │   │   │   ├── resume-parser/    # PDF/DOCX → Profile

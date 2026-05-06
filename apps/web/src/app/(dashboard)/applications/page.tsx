@@ -549,11 +549,21 @@ export default function ApplicationsPage() {
                               <StatusIcon className={`mr-1.5 h-3 w-3 ${application.status === 'GENERATING' ? 'animate-spin' : ''}`} />
                               {statusInfo.label}
                             </Badge>
-                            <StatusDropdown
-                              applicationId={application.id}
-                              currentStatus={application.applicationStatus}
-                              variant="dropdown"
-                            />
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <StatusDropdown
+                                applicationId={application.id}
+                                currentStatus={application.applicationStatus}
+                                variant="dropdown"
+                              />
+                              {application.statusSource === 'EMAIL_TRACKING' && (
+                                <span
+                                  className="inline-flex items-center rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700"
+                                  title="Status wurde durch automatisches E-Mail-Tracking aktualisiert"
+                                >
+                                  📧 Auto
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>

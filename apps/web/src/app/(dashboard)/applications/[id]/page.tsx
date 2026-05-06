@@ -469,11 +469,21 @@ export default function ApplicationDetailPage() {
         </div>
         <div className="flex items-center gap-2">
           {application.applicationStatus ? (
-            <StatusDropdown
-              applicationId={applicationId}
-              currentStatus={application.applicationStatus}
-              variant="dropdown"
-            />
+            <>
+              <StatusDropdown
+                applicationId={applicationId}
+                currentStatus={application.applicationStatus}
+                variant="dropdown"
+              />
+              {application.statusSource === 'EMAIL_TRACKING' && (
+                <span
+                  className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700"
+                  title="Status wurde durch automatisches E-Mail-Tracking aktualisiert"
+                >
+                  📧 Auto-Tracking
+                </span>
+              )}
+            </>
           ) : (
             <div className="text-xs text-red-500 bg-red-50 px-2 py-1 rounded">
               Kein Status (bitte Seite neu laden)
