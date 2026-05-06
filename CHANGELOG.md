@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.6.0](https://github.com/Smart-Apply/smart-apply/compare/v1.5.4...v1.6.0) (2026-05-06)
+
+
+### Features
+
+* **mailbox-sync:** add Microsoft Graph inbox sync for application tracking ([#383](https://github.com/Smart-Apply/smart-apply/issues/383)) ([331d2a7](https://github.com/Smart-Apply/smart-apply/commit/331d2a7c27600c5903c6f58a74bb94bca261a3cd))
+
 ## [1.5.4](https://github.com/Smart-Apply/smart-apply/compare/v1.5.3...v1.5.4) (2026-05-06)
 
 
