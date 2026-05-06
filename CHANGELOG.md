@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.2](https://github.com/Smart-Apply/smart-apply/compare/v1.5.1...v1.5.2) (2026-05-06)
+
+
+### Bug Fixes
+
+* **web:** add SheetTitle/Description to mobile sidebar (a11y + crash) ([#377](https://github.com/Smart-Apply/smart-apply/issues/377)) ([6476259](https://github.com/Smart-Apply/smart-apply/commit/64762597edd2de3ad53042cd1984e2d2a2f96f0f))
+
 ## [1.5.1](https://github.com/Smart-Apply/smart-apply/compare/v1.5.0...v1.5.1) (2026-05-05)
 
 
