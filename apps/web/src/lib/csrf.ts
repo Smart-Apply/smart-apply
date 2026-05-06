@@ -76,7 +76,12 @@ export async function fetchCsrfToken(): Promise<void> {
       const response = await fetch(`${baseUrl}/auth/csrf-token`, {
         method: 'GET',
         credentials: 'include', // Include cookies
-        signal: AbortSignal.timeout(5000), // 5 second timeout
+        // Generous timeout: staging Fly machines are suspended on idle
+        // (`min_machines_running = 0`) and the cold-start can take 3-8s
+        // before the app accepts connections. 5s was too tight and the
+        // very first request after suspension always failed → user could
+        // never reach the login screen. 20s covers Fly resume + Node boot.
+        signal: AbortSignal.timeout(20_000),
       });
 
       if (!response.ok) {
