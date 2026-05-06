@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.3](https://github.com/Smart-Apply/smart-apply/compare/v1.5.2...v1.5.3) (2026-05-06)
+
+
+### Bug Fixes
+
+* **infra:** make Prisma release_command immune to silent DIRECT_URL fallback ([#379](https://github.com/Smart-Apply/smart-apply/issues/379)) ([68de167](https://github.com/Smart-Apply/smart-apply/commit/68de1672a1536dc9a11405a3adea2fae9a3ffb6c))
+
 ## [1.5.2](https://github.com/Smart-Apply/smart-apply/compare/v1.5.1...v1.5.2) (2026-05-06)
 
 
