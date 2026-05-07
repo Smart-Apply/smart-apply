@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.0](https://github.com/Smart-Apply/smart-apply/compare/v1.6.1...v1.7.0) (2026-05-07)
+
+
+### Features
+
+* **auth:** implement cookie domain for cross-subdomain authentication ([b45a346](https://github.com/Smart-Apply/smart-apply/commit/b45a346e69549340efe4fcb70d49373dc459a087))
+
 ## [1.6.1](https://github.com/Smart-Apply/smart-apply/compare/v1.6.0...v1.6.1) (2026-05-06)
 
 
