@@ -239,6 +239,19 @@ export class ConfigService {
     return fromEnv || `http://localhost:${this.port}`;
   }
 
+  /**
+   * Parent domain to scope auth cookies to (e.g. `.smart-apply.io`). When
+   * set, the browser stores them as first-party for ALL subdomains, which
+   * sidesteps Chrome's third-party-cookie tracking protection silently
+   * dropping cookies between `staging.smart-apply.io` and
+   * `api-staging.smart-apply.io`. Returns `undefined` locally so cookies
+   * stay host-only on localhost.
+   */
+  get cookieDomain(): string | undefined {
+    const value = this.nestConfig.get('COOKIE_DOMAIN', { infer: true });
+    return value && value.trim().length > 0 ? value.trim() : undefined;
+  }
+
   // OAuth Callback URLs (built from API_BASE_URL, must match the URL registered with the provider)
   get googleCallbackUrl(): string {
     return `${this.apiBaseUrl}/api/v1/auth/google/callback`;

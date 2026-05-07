@@ -121,6 +121,7 @@ export class AuthController {
         httpOnly: true,
         secure: this.configService.isProduction,
         sameSite: this.configService.isProduction ? 'strict' : 'lax',
+        domain: this.configService.cookieDomain,
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
         path: '/',
       });
@@ -206,11 +207,16 @@ export class AuthController {
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
 
-    // Clear both cookies
+    // Clear both cookies. NOTE: the Domain attribute MUST match what was
+    // set on Set-Cookie, otherwise the browser keeps the original cookie
+    // alive and the user stays "logged in" until JWT expiry.
+    const domain = this.configService.cookieDomain;
+
     res.clearCookie('access_token', {
       httpOnly: true,
       secure: this.configService.isProduction,
       sameSite: 'strict',
+      domain,
       path: '/',
     });
 
@@ -218,6 +224,7 @@ export class AuthController {
       httpOnly: true,
       secure: this.configService.isProduction,
       sameSite: 'strict',
+      domain,
       path: '/',
     });
 
@@ -226,6 +233,7 @@ export class AuthController {
       httpOnly: true,
       secure: this.configService.isProduction,
       sameSite: 'strict',
+      domain,
       path: '/',
     });
 
@@ -257,11 +265,16 @@ export class AuthController {
   ) {
     await this.authService.changePassword(user.id, dto, req);
 
-    // Clear cookies after password change (user must re-login)
+    // Clear cookies after password change (user must re-login). Domain
+    // must match Set-Cookie above, otherwise the browser ignores the
+    // clear and keeps the old cookie alive.
+    const domain = this.configService.cookieDomain;
+
     res.clearCookie('access_token', {
       httpOnly: true,
       secure: this.configService.isProduction,
       sameSite: 'strict',
+      domain,
       path: '/',
     });
 
@@ -269,6 +282,7 @@ export class AuthController {
       httpOnly: true,
       secure: this.configService.isProduction,
       sameSite: 'strict',
+      domain,
       path: '/',
     });
 
@@ -288,11 +302,14 @@ export class AuthController {
   ) {
     await this.authService.deleteAccount(user.id, dto, req);
 
-    // Clear cookies after account deletion
+    // Clear cookies after account deletion. Domain must match Set-Cookie.
+    const domain = this.configService.cookieDomain;
+
     res.clearCookie('access_token', {
       httpOnly: true,
       secure: this.configService.isProduction,
       sameSite: 'strict',
+      domain,
       path: '/',
     });
 
@@ -300,6 +317,7 @@ export class AuthController {
       httpOnly: true,
       secure: this.configService.isProduction,
       sameSite: 'strict',
+      domain,
       path: '/',
     });
 
@@ -505,12 +523,19 @@ export class AuthController {
    */
   private setAuthCookies(res: Response, accessToken: string, refreshToken: string) {
     const isProduction = this.configService.isProduction;
+    const domain = this.configService.cookieDomain;
 
     // Access token cookie (short-lived: 15 minutes)
     res.cookie('access_token', accessToken, {
       httpOnly: true, // Prevents JavaScript access (XSS protection)
       secure: isProduction, // HTTPS only in production
       sameSite: isProduction ? 'strict' : 'lax', // 'lax' in dev for cross-origin (3001->3000), 'strict' in prod
+      // Scope to parent domain in prod (e.g. .smart-apply.io) so the cookie
+      // is first-party for both `staging.smart-apply.io` (frontend) and
+      // `api-staging.smart-apply.io` (this API). Without this, Chrome's
+      // tracking protection drops the cookie cross-subdomain and the user
+      // gets bounced back to the login screen after a successful login.
+      domain,
       maxAge: 15 * 60 * 1000, // 15 minutes (matches JWT expiry)
       path: '/', // Available for all routes
     });
@@ -520,6 +545,7 @@ export class AuthController {
       httpOnly: true, // Prevents JavaScript access (XSS protection)
       secure: isProduction, // HTTPS only in production
       sameSite: isProduction ? 'strict' : 'lax', // 'lax' in dev for cross-origin (3001->3000), 'strict' in prod
+      domain,
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days (matches JWT expiry)
       path: '/', // Available for all routes
     });

@@ -620,6 +620,14 @@ AZURE_AD_TENANT_ID=<tenant>
 RESEND_API_KEY=<key>
 RESEND_FROM=noreply@smartapply.com
 
+# Cookie scope for cross-subdomain auth (prod/staging only — leave UNSET locally
+# so cookies stay host-only on `localhost`). Without this, Chrome's tracking
+# protection silently drops cookies between `<env>.smart-apply.io` and
+# `api-<env>.smart-apply.io` and the user gets bounced back to login.
+# Prod:    COOKIE_DOMAIN=.smart-apply.io
+# Staging: COOKIE_DOMAIN=.smart-apply.io
+COOKIE_DOMAIN=
+
 # Monitoring (Sentry)
 SENTRY_DSN=<dsn>
 SENTRY_ENVIRONMENT=development
