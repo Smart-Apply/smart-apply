@@ -46,6 +46,8 @@ export interface TierFeatures {
   autoApplyAgent?: boolean;
   /** Email-based application tracking (future Premium feature) */
   emailParsing?: boolean;
+  /** ATS keyword analysis & match score (Pro & Premium feature) */
+  atsOptimization?: boolean;
 }
 
 export interface TierLimits {
