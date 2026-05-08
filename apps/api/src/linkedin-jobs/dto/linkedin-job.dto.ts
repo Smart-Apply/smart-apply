@@ -9,7 +9,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { Sanitize } from '../../common/decorators/sanitize.decorator';
 
 /**
@@ -79,6 +79,23 @@ export class LinkedInJobDto {
 
   @ApiPropertyOptional({ description: 'Number of applicants' })
   @IsOptional()
+  // Tolerate the heterogeneous shapes the Apify actor produces:
+  // numbers, "200+", "Über 100", floats, negatives, etc. Coerce to a
+  // non-negative integer or strip the field. The producer-side
+  // (LinkedInJobsService.normalizeApplicantsCount) already does this,
+  // but we re-apply here so old cached search results that the browser
+  // re-sends to /import don't fail validation.
+  @Transform(({ value }) => {
+    if (value === null || value === undefined) return undefined;
+    let n: number | undefined;
+    if (typeof value === 'number') n = value;
+    else if (typeof value === 'string') {
+      const m = value.match(/-?\d+/);
+      if (m) n = Number(m[0]);
+    }
+    if (n === undefined || !Number.isFinite(n) || n < 0) return undefined;
+    return Math.floor(n);
+  })
   @IsInt()
   @Min(0)
   applicantsCount?: number;

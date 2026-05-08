@@ -346,7 +346,9 @@ export class LinkedInJobsService {
       employmentType: item.employmentType ?? item.contractType ?? undefined,
       seniority: item.seniorityLevel ?? item.experienceLevel ?? undefined,
       postedAt: this.normalizePostedAt(item),
-      applicantsCount: item.applicantsCount ?? item.applicants ?? item.numApplicants ?? undefined,
+      applicantsCount: this.normalizeApplicantsCount(
+        item.applicantsCount ?? item.applicants ?? item.numApplicants,
+      ),
       salary: item.salary ?? item.salaryRange ?? undefined,
       url,
       description: this.normalizeDescription(item),
@@ -374,6 +376,33 @@ export class LinkedInJobsService {
     }
     const parsed = new Date(value);
     return Number.isNaN(parsed.getTime()) ? value : parsed.toISOString();
+  }
+
+  /**
+   * Coerce the applicantsCount Apify returns to a non-negative integer.
+   *
+   * The actor is loosely typed and we've seen all of:
+   *   • `200`         → 200
+   *   • `"200+"`      → 200
+   *   • `"Über 100"`  → 100
+   *   • `0.5`         → 0  (some scrapers return ratios)
+   *   • `-1`          → undefined  (sentinel for "unknown")
+   *   • `null`/missing → undefined
+   *
+   * Returns `undefined` when no usable number can be extracted, so the
+   * field stays optional and class-validator's `@IsInt @Min(0)` passes
+   * cleanly on the round-trip /import call.
+   */
+  private normalizeApplicantsCount(raw: unknown): number | undefined {
+    if (raw === null || raw === undefined) return undefined;
+    let n: number | undefined;
+    if (typeof raw === 'number') n = raw;
+    else if (typeof raw === 'string') {
+      const match = raw.match(/-?\d+/);
+      if (match) n = Number(match[0]);
+    }
+    if (n === undefined || !Number.isFinite(n) || n < 0) return undefined;
+    return Math.floor(n);
   }
 
   private extractIdFromUrn(urn: string | undefined): string | undefined {
