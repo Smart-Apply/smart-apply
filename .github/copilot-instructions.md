@@ -177,7 +177,8 @@ Resulting flow: PR → merge to main → staging deploys + Release PR opens/upda
 - `job-postings` — parse text/URL/file → normalized JobPosting
 - `jobs` — pluggable queue providers (`in-memory` | `qstash`)
 - `keywords` — ATS keyword extraction & matching with language detection
-- `linkedin-jobs` — LinkedIn job search
+- `linkedin-jobs` — LinkedIn job search via Apify scraper (Premium-only single-source endpoint, kept for backward compat)
+- `job-search` — **Pluggable multi-source job search** (`JobSearchProvider` interface). Concrete providers: `linkedin` (Premium, wraps `linkedin-jobs`) and `arbeitnow` (free, German-first public API). Fan-out by default; per-source try/catch; cross-source dedup by `(title, company)`. Add new sources by implementing `JobSearchProvider` and binding under `JOB_SEARCH_PROVIDERS` in `JobSearchModule`.
 - `llm` — pluggable providers (`azure-openai` | `azure-ai-foundry` | `mock`) with automatic language detection, opossum circuit breaker
 - `logger` — Pino + Winston audit logger
 - `mailbox-sync` — **Email Tracking (Premium)**: OAuth inbox sync (Microsoft Graph; Gmail planned). Detects company replies in the user's inbox, classifies them with the LLM, and updates the matching `Application.applicationStatus` automatically. Encrypts refresh tokens at rest (AES-256-GCM, `MAILBOX_TOKEN_ENCRYPTION_KEY`). No email bodies are persisted — only metadata + classification.
@@ -303,9 +304,23 @@ Gated by `ADMIN_EMAILS` (comma-separated, case-insensitive). Returns 403 when th
 **POST /api/v1/interviews** — generate AI mock-interview Q&A for a job posting
 **GET /api/v1/interviews/:id** — fetch saved interview
 
-### LinkedIn Jobs (Protected)
+### LinkedIn Jobs (Protected, legacy single-source)
 
-**GET /api/v1/linkedin-jobs/search** — search LinkedIn job postings
+**GET /api/v1/linkedin-jobs/search** — search LinkedIn job postings via Apify (Premium). Kept for backward compatibility with the existing frontend; new clients should prefer the unified `/job-search` endpoints below.
+
+### Unified Job Search (Protected)
+
+Pluggable multi-source endpoints. Source implementations live in `apps/api/src/job-search/providers/` and are picked up by the `JobSearchService` registry via the `JOB_SEARCH_PROVIDERS` DI token — mirrors the same pattern used for `STORAGE_DRIVER`, `LLM_PROVIDER`, `JOBS_DRIVER`.
+
+**GET /api/v1/job-search/sources** — list configured providers + per-tier availability so the frontend can render the "Search in:" picker accurately.
+
+**POST /api/v1/job-search** — fan-out search across all configured providers. Body: `{ keywords?, location?, country?, remoteOnly?, sources?: ('linkedin'|'arbeitnow')[], perSourceLimit? }`. Returns `{ results, totalCount, sources, searchedAt }` where `sources[]` reports `ok | skipped | error` per provider so partial failures stay visible. Throttled to 30/hour per user.
+
+**POST /api/v1/job-search/import** — persist a `UnifiedJobDto` as a JobPosting via its originating provider. Throttled to 60/hour. 403 if the source requires Premium and the caller isn't on Premium.
+
+Provider gating:
+- `arbeitnow` — free public API (`https://www.arbeitnow.com/api/job-board-api`), no auth, German-first corpus, **available to FREE tier**.
+- `linkedin` — Apify-backed (`APIFY_TOKEN` required), **Premium-only**, costs ~€0.01–0.05 per search.
 
 ### Email Tracking — Inbox Sync (Premium)
 

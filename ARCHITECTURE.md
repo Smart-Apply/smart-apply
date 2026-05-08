@@ -70,7 +70,8 @@ smart-apply/
 │   │   │   ├── job-postings/      # Text/URL/file parsers
 │   │   │   ├── jobs/              # Queue providers (QStash / mem)
 │   │   │   ├── keywords/          # ATS keyword extraction & matching
-│   │   │   ├── linkedin-jobs/     # LinkedIn job search
+│   │   │   ├── linkedin-jobs/     # LinkedIn job search (Apify, Premium-only source)
+│   │   │   ├── job-search/        # Unified multi-source search (pluggable JobSearchProvider: LinkedIn + Arbeitnow)
 │   │   │   ├── llm/               # LLM provider abstraction
 │   │   │   ├── logger/            # Pino + Winston audit
 │   │   │   ├── mailbox-sync/      # Email Tracking (Premium): MS Graph OAuth + classifier
@@ -307,7 +308,10 @@ All routes are prefixed `/api/v1` and documented at <http://localhost:3000/docs>
 | POST     | `/resume-parser/parse`         | Resume → profile         |
 | GET/POST | `/job-postings`                | Job CRUD                 |
 | POST     | `/job-postings/parse`          | Parse text/URL/file      |
-| GET      | `/linkedin-jobs/search`        | LinkedIn job search      |
+| GET      | `/linkedin-jobs/search`        | LinkedIn job search (legacy, single-source) |
+| GET      | `/job-search/sources`          | Configured job-search sources + per-tier availability |
+| POST     | `/job-search`                  | Multi-source job search (LinkedIn + Arbeitnow, deduped) |
+| POST     | `/job-search/import`           | Persist a search result as a JobPosting     |
 | GET/POST | `/applications`                | Application pipeline     |
 | GET      | `/applications/:id/files`      | SAS download URLs        |
 | GET      | `/applications/:id/stream`     | SSE status stream        |

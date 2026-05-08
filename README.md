@@ -107,7 +107,8 @@ smart-apply/
 │   │   │   ├── job-postings/     # Text/URL/file parsers
 │   │   │   ├── jobs/             # Queue providers
 │   │   │   ├── keywords/         # ATS keyword matching
-│   │   │   ├── linkedin-jobs/    # LinkedIn job search
+│   │   │   ├── linkedin-jobs/    # LinkedIn job search (Apify, Premium)
+│   │   │   ├── job-search/       # Unified multi-source search (LinkedIn + Arbeitnow, pluggable)
 │   │   │   ├── llm/              # LLM provider abstraction
 │   │   │   ├── mailbox-sync/     # Email Tracking (Premium): MS Graph OAuth + classifier
 │   │   │   ├── pdf/              # Puppeteer + Handlebars

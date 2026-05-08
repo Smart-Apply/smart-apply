@@ -27,6 +27,7 @@ import { TimeoutMiddleware, RequestIdMiddleware } from './common/middleware';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { InterviewsModule } from './interviews/interviews.module';
 import { LinkedInJobsModule } from './linkedin-jobs/linkedin-jobs.module';
+import { JobSearchModule } from './job-search/job-search.module';
 import { EmailModule } from './email/email.module';
 import { ContactModule } from './contact/contact.module';
 import { UpstashThrottlerStorage } from './common/throttler/upstash-throttler-storage';
@@ -110,6 +111,7 @@ import { MailboxSyncModule } from './mailbox-sync/mailbox-sync.module';
     UserPreferencesModule,
     InterviewsModule,
     LinkedInJobsModule,
+    JobSearchModule,
     EmailModule,
     ContactModule,
     AdminModule,
