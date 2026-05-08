@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.1](https://github.com/Smart-Apply/smart-apply/compare/v1.8.0...v1.8.1) (2026-05-08)
+
+
+### Bug Fixes
+
+* **ats:** make locked tab truly unclickable + match upgrade copy ([63ea014](https://github.com/Smart-Apply/smart-apply/commit/63ea0140e28e51ab61d04f4f89b90b388c093988))
+
 ## [1.8.0](https://github.com/Smart-Apply/smart-apply/compare/v1.7.0...v1.8.0) (2026-05-07)
 
 
