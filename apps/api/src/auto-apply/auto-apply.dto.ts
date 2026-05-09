@@ -116,6 +116,35 @@ export class UpsertAutoApplyConfigDto {
   @IsOptional()
   @IsBoolean()
   digestEnabled?: boolean = true;
+
+  @ApiPropertyOptional({
+    description:
+      'Resume template id to use when approving a suggestion. Null/omitted = backend auto-picks the language-matched default.',
+    example: 'professional-resume',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  cvTemplateId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Cover-letter template id to use when approving a suggestion. Ignored when generateCoverLetter=false.',
+    example: 'professional-cover-letter',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  clTemplateId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Whether to generate an Anschreiben (cover letter) when the user approves a suggestion. False = resume only.',
+    default: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  generateCoverLetter?: boolean = true;
 }
 
 /**
@@ -148,6 +177,9 @@ export class AutoApplyConfigDto {
   @ApiProperty({ type: [String] }) blockedCompanies!: string[];
   @ApiProperty() cronSchedule!: string;
   @ApiProperty() digestEnabled!: boolean;
+  @ApiPropertyOptional() cvTemplateId?: string;
+  @ApiPropertyOptional() clTemplateId?: string;
+  @ApiProperty() generateCoverLetter!: boolean;
   @ApiPropertyOptional() lastRunAt?: string;
   @ApiPropertyOptional() nextRunAt?: string;
   @ApiProperty() createdAt!: string;

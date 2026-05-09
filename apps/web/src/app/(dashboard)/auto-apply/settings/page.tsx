@@ -39,6 +39,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useFeatureGate } from '@/hooks/use-tier-gate';
+import { useCoverLetterTemplates, useResumeTemplates } from '@/hooks/use-templates';
 import { api } from '@/lib/api-client';
 import { toast } from 'sonner';
 import type { LinkedInCountry, LinkedInRemoteFilter } from '@/types';
@@ -78,7 +79,21 @@ interface FormState {
   cronSchedule: string;
   digestEnabled: boolean;
   isActive: boolean;
+  // Generation preferences (used when the user approves a suggestion).
+  // Empty string == "backend auto-pick by language" so a single Select
+  // can model both states without juggling null/undefined.
+  cvTemplateId: string;
+  clTemplateId: string;
+  generateCoverLetter: boolean;
 }
+
+/**
+ * Sentinel value for the template <Select>. Radix's Select can't render
+ * an item with an empty-string value, so we use this synthetic id and
+ * translate it back to `undefined` (= backend auto-pick) before sending
+ * the upsert payload.
+ */
+const AUTO_PICK = '__auto__';
 
 const DEFAULTS: FormState = {
   keywords: '',
@@ -92,6 +107,9 @@ const DEFAULTS: FormState = {
   cronSchedule: '0 9 * * *',
   digestEnabled: true,
   isActive: true,
+  cvTemplateId: '',
+  clTemplateId: '',
+  generateCoverLetter: true,
 };
 
 /**
@@ -111,6 +129,11 @@ export default function AutoApplySettingsPage() {
     enabled: hasAccess,
     staleTime: 60_000,
   });
+
+  // Templates are paid for in Premium, so it's cheap to always pull both
+  // lists alongside the config. Backend filters out unavailable variants.
+  const resumeTemplatesQuery = useResumeTemplates();
+  const coverLetterTemplatesQuery = useCoverLetterTemplates();
 
   const [form, setForm] = useState<FormState>(DEFAULTS);
 
@@ -136,6 +159,9 @@ export default function AutoApplySettingsPage() {
       cronSchedule: cfg.cronSchedule,
       digestEnabled: cfg.digestEnabled,
       isActive: cfg.isActive,
+      cvTemplateId: cfg.cvTemplateId ?? '',
+      clTemplateId: cfg.clTemplateId ?? '',
+      generateCoverLetter: cfg.generateCoverLetter,
     });
   }, [configQuery.data]);
 
@@ -155,6 +181,13 @@ export default function AutoApplySettingsPage() {
         blockedCompanies: parseList(form.blockedCompanies),
         cronSchedule: form.cronSchedule,
         digestEnabled: form.digestEnabled,
+        cvTemplateId: form.cvTemplateId || undefined,
+        // Server ignores clTemplateId when generateCoverLetter=false,
+        // but we still drop it client-side so the persisted config
+        // matches what the user actually sees in the form.
+        clTemplateId:
+          form.generateCoverLetter && form.clTemplateId ? form.clTemplateId : undefined,
+        generateCoverLetter: form.generateCoverLetter,
       }),
     onSuccess: () => {
       toast.success('Auto-Apply Konfiguration gespeichert');
@@ -359,6 +392,96 @@ export default function AutoApplySettingsPage() {
             <p className="text-xs text-muted-foreground">
               Komma-getrennt. Stellen dieser Firmen werden nie vorgeschlagen.
             </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Bewerbung generieren</CardTitle>
+          <CardDescription>
+            Diese Einstellungen werden verwendet, wenn du einen Vorschlag annimmst.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <label className="flex items-start gap-3 cursor-pointer p-3 rounded-md border hover:bg-accent">
+            <Checkbox
+              checked={form.generateCoverLetter}
+              onCheckedChange={(checked) =>
+                setForm({ ...form, generateCoverLetter: checked === true })
+              }
+              className="mt-0.5"
+            />
+            <div className="space-y-1">
+              <p className="text-sm font-medium">Anschreiben mit generieren</p>
+              <p className="text-xs text-muted-foreground">
+                Aus, wenn du das Anschreiben lieber selbst schreiben möchtest. Ohne diese
+                Option wird nur der Lebenslauf erstellt.
+              </p>
+            </div>
+          </label>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="cvTemplate">Lebenslauf-Vorlage</Label>
+              <Select
+                value={form.cvTemplateId || AUTO_PICK}
+                onValueChange={(v) =>
+                  setForm({ ...form, cvTemplateId: v === AUTO_PICK ? '' : v })
+                }
+                disabled={resumeTemplatesQuery.isLoading}
+              >
+                <SelectTrigger id="cvTemplate">
+                  <SelectValue placeholder="Automatisch wählen" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={AUTO_PICK}>
+                    Automatisch (Sprache des Job-Postings)
+                  </SelectItem>
+                  {(resumeTemplatesQuery.data ?? []).map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.name}
+                      {t.colorVariantName ? ` · ${t.colorVariantName}` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Falls die gewählte Vorlage nicht zur Sprache des Job-Postings passt, sucht das
+                Backend automatisch die passende Sprachvariante.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="clTemplate">Anschreiben-Vorlage</Label>
+              <Select
+                value={form.clTemplateId || AUTO_PICK}
+                onValueChange={(v) =>
+                  setForm({ ...form, clTemplateId: v === AUTO_PICK ? '' : v })
+                }
+                disabled={!form.generateCoverLetter || coverLetterTemplatesQuery.isLoading}
+              >
+                <SelectTrigger id="clTemplate">
+                  <SelectValue placeholder="Automatisch wählen" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={AUTO_PICK}>
+                    Automatisch (Sprache des Job-Postings)
+                  </SelectItem>
+                  {(coverLetterTemplatesQuery.data ?? []).map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.name}
+                      {t.colorVariantName ? ` · ${t.colorVariantName}` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {!form.generateCoverLetter && (
+                <p className="text-xs text-muted-foreground">
+                  Anschreiben-Generierung ist deaktiviert.
+                </p>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>

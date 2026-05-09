@@ -65,6 +65,9 @@ export class AutoApplyService {
         blockedCompanies: dto.blockedCompanies ?? [],
         cronSchedule,
         digestEnabled: dto.digestEnabled ?? true,
+        cvTemplateId: dto.cvTemplateId ?? null,
+        clTemplateId: dto.clTemplateId ?? null,
+        generateCoverLetter: dto.generateCoverLetter ?? true,
         nextRunAt,
       },
       update: {
@@ -76,6 +79,11 @@ export class AutoApplyService {
         blockedCompanies: dto.blockedCompanies ?? [],
         cronSchedule,
         digestEnabled: dto.digestEnabled ?? true,
+        // Use ?? so an explicit `null` from the client clears the override
+        // back to "backend auto-pick" without needing a second endpoint.
+        cvTemplateId: dto.cvTemplateId ?? null,
+        clTemplateId: dto.clTemplateId ?? null,
+        generateCoverLetter: dto.generateCoverLetter ?? true,
         nextRunAt,
       },
     });
@@ -146,6 +154,18 @@ export class AutoApplyService {
    * Approve a suggestion → materialise it as a JobPosting + Application,
    * counting it against the monthly autoApply quota.
    *
+   * Routes through `applications.createWithGeneration()` (NOT plain
+   * `create()`) so the user actually gets a finished, ATS-scored
+   * application — the original `create()` only inserts a PENDING row
+   * and skips the LLM/ATS pipeline, which is why every approved
+   * suggestion used to come out with ATS=0%.
+   *
+   * Honors the user's per-config preferences:
+   *   - `cvTemplateId` / `clTemplateId` → passed through to template resolver
+   *     (still language-resolved; null = backend auto-pick)
+   *   - `generateCoverLetter` → false skips the cover-letter half of the
+   *     pipeline so the user gets a resume-only application
+   *
    * Note: the resulting Application's PDF generation goes through the
    * regular pipeline and bumps the standard cover-letter / resume monthly
    * counters too. The autoApply counter is purely a Premium cost-cap on
@@ -170,6 +190,18 @@ export class AutoApplyService {
       throw new ForbiddenException(quota.reason ?? 'Auto-Apply Limit erreicht.');
     }
 
+    // Pull the user's template + cover-letter preferences. Always present
+    // when a suggestion exists, but defend against a manually deleted
+    // config row by falling back to "auto-pick everything".
+    const config = await this.prisma.autoApplyConfig.findUnique({
+      where: { userId },
+      select: {
+        cvTemplateId: true,
+        clTemplateId: true,
+        generateCoverLetter: true,
+      },
+    });
+
     // Materialise as JobPosting if we haven't yet
     let jobPostingId = suggestion.jobPostingId ?? undefined;
     if (!jobPostingId) {
@@ -183,9 +215,13 @@ export class AutoApplyService {
       jobPostingId = jobPosting.id;
     }
 
-    // Generate application via the existing pipeline
-    const application = await this.applications.create(userId, {
+    // Generate application via the FULL pipeline (LLM + ATS + PDF), not
+    // the bare `create()`. This is the fix for the ATS=0% bug.
+    const application = await this.applications.createWithGeneration(userId, {
       jobPostingId,
+      resumeTemplateId: config?.cvTemplateId ?? undefined,
+      coverLetterTemplateId: config?.clTemplateId ?? undefined,
+      generateCoverLetter: config?.generateCoverLetter ?? true,
     });
 
     // Mark suggestion as approved + record usage
@@ -296,6 +332,9 @@ export class AutoApplyService {
     blockedCompanies: string[];
     cronSchedule: string;
     digestEnabled: boolean;
+    cvTemplateId: string | null;
+    clTemplateId: string | null;
+    generateCoverLetter: boolean;
     lastRunAt: Date | null;
     nextRunAt: Date | null;
     createdAt: Date;
@@ -311,6 +350,9 @@ export class AutoApplyService {
       blockedCompanies: c.blockedCompanies,
       cronSchedule: c.cronSchedule,
       digestEnabled: c.digestEnabled,
+      cvTemplateId: c.cvTemplateId ?? undefined,
+      clTemplateId: c.clTemplateId ?? undefined,
+      generateCoverLetter: c.generateCoverLetter,
       lastRunAt: c.lastRunAt?.toISOString(),
       nextRunAt: c.nextRunAt?.toISOString(),
       createdAt: c.createdAt.toISOString(),
