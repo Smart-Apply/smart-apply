@@ -24,7 +24,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  AlertTriangle,
   Briefcase,
   Building2,
   ExternalLink,
@@ -38,31 +37,19 @@ import {
 } from 'lucide-react';
 import type {
   JobSearchSource,
-  JobSearchSourceStatus,
-  JobSourceId,
   LinkedInCountry,
   UnifiedJob,
   UnifiedJobSearchRequest,
 } from '@/types';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Source presentation — colors and German labels keyed by JobSourceId so the
-// UI reads consistently across the picker, status block, and result badges.
+// Job-source providers are intentionally NOT surfaced in the UI — the user
+// sees a single unified result list. The frontend just calls /job-search and
+// trusts the backend to fan out across whichever providers are configured
+// for the user's tier. We still query /job-search/sources internally to know
+// whether the user has any source (search-button enable) and whether to show
+// the Premium upsell, but never render source names.
 // ─────────────────────────────────────────────────────────────────────────────
-
-const SOURCE_LABELS: Record<JobSourceId, string> = {
-  linkedin: 'LinkedIn',
-  arbeitnow: 'Arbeitnow',
-};
-
-/**
- * Tailwind classes for the result-card source badge. Distinct colors so a
- * dense result list visually separates the two sources at a glance.
- */
-const SOURCE_BADGE_CLASSES: Record<JobSourceId, string> = {
-  linkedin: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200',
-  arbeitnow: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200',
-};
 
 const COUNTRY_OPTIONS: { value: LinkedInCountry; label: string }[] = [
   { value: 'de', label: '🇩🇪 Deutschland' },
@@ -109,35 +96,23 @@ export default function JobSearchPage() {
   const [country, setCountry] = useState<LinkedInCountry>('de');
   const [remoteOnly, setRemoteOnly] = useState(false);
   const [perSourceLimit, setPerSourceLimit] = useState<number>(15);
-  // `null` = "all available" (default fan-out). Once the user clicks any chip,
-  // we switch to an explicit set so subsequent toggles behave intuitively.
-  const [selectedSources, setSelectedSources] = useState<JobSourceId[] | null>(null);
 
   const search = useJobSearch();
   const importJob = useImportUnifiedJob();
   const [importingId, setImportingId] = useState<string | null>(null);
 
-  const toggleSource = (id: JobSourceId) => {
-    setSelectedSources((current) => {
-      // First toggle: seed from the full available set so unchecking one
-      // chip doesn't accidentally search nothing.
-      const base =
-        current ?? availableSources.filter((s) => s.available).map((s) => s.id);
-      return base.includes(id) ? base.filter((x) => x !== id) : [...base, id];
-    });
-  };
-
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!hasAnySource) return;
 
-    const sources = selectedSources && selectedSources.length > 0 ? selectedSources : undefined;
+    // No `sources` filter — backend fans out across every provider that's
+    // configured AND available for the user's tier. Hiding the picker means
+    // we don't expose provider identities (LinkedIn/Arbeitnow/...) to users.
     const request: UnifiedJobSearchRequest = {
       keywords: keywords.trim() || undefined,
       location: location.trim() || undefined,
       country,
       remoteOnly: remoteOnly || undefined,
-      sources,
       perSourceLimit,
     };
     search.mutate(request);
@@ -154,7 +129,6 @@ export default function JobSearchPage() {
   };
 
   const results = search.data?.results ?? [];
-  const sourceStatuses = search.data?.sources ?? [];
 
   // Premium upsell only if AT LEAST ONE source requires Premium AND the user
   // has none of those available. Avoids nagging users who are already paying.
@@ -172,8 +146,8 @@ export default function JobSearchPage() {
             Job-Suche
           </h1>
           <p className="text-muted-foreground">
-            Finde passende Stellen quellenübergreifend (LinkedIn + Arbeitnow) und erstelle
-            mit einem Klick eine maßgeschneiderte Bewerbung.
+            Finde passende Stellen aus tausenden offenen Positionen und erstelle mit einem
+            Klick eine maßgeschneiderte Bewerbung.
           </p>
         </div>
         {showPremiumUpsell && (
@@ -191,23 +165,11 @@ export default function JobSearchPage() {
         <CardHeader>
           <CardTitle className="text-lg">Suchfilter</CardTitle>
           <CardDescription>
-            Arbeitnow steht allen Nutzer:innen kostenlos zur Verfügung. LinkedIn ist
-            Premium-Mitgliedern vorbehalten.
+            Premium-Mitglieder profitieren von einer deutlich erweiterten Stellenauswahl.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSearch} className="space-y-6">
-            {/* Source picker */}
-            <SourcePicker
-              available={availableSources}
-              selected={
-                selectedSources ?? availableSources.filter((s) => s.available).map((s) => s.id)
-              }
-              onToggle={toggleSource}
-              isLoading={sourcesQuery.isLoading}
-              disabled={search.isPending}
-            />
-
             {/* Keywords + Location + Country row */}
             <div className="grid gap-4 md:grid-cols-3">
               <div className="space-y-2">
@@ -231,7 +193,7 @@ export default function JobSearchPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="country">Land (LinkedIn)</Label>
+                <Label htmlFor="country">Land</Label>
                 <Select
                   value={country}
                   onValueChange={(v) => setCountry(v as LinkedInCountry)}
@@ -304,10 +266,6 @@ export default function JobSearchPage() {
         </CardContent>
       </Card>
 
-      {/* Source status block — surfaces partial failures so users know
-          when LinkedIn was skipped without making them open the network tab. */}
-      {sourceStatuses.length > 0 && <SourceStatusList statuses={sourceStatuses} />}
-
       {/* Results */}
       {search.isPending && (
         <div className="space-y-4">
@@ -330,7 +288,7 @@ export default function JobSearchPage() {
         <EmptyState
           icon={Briefcase}
           title="Keine Stellen gefunden"
-          description="Versuche andere Stichwörter, einen anderen Standort, oder aktiviere zusätzliche Quellen."
+          description="Versuche andere Stichwörter oder einen anderen Standort."
         />
       )}
 
@@ -362,110 +320,6 @@ export default function JobSearchPage() {
 // ─────────────────────────────────────────────────────────────────────────────
 // Helper components
 // ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Multi-select chip group for picking which providers to query. Disabled
- * sources (Premium gate, missing token, …) render as faded chips with a
- * lock icon so the affordance is obvious but not clickable.
- */
-function SourcePicker({
-  available,
-  selected,
-  onToggle,
-  isLoading,
-  disabled,
-}: {
-  available: JobSearchSource[];
-  selected: JobSourceId[];
-  onToggle: (id: JobSourceId) => void;
-  isLoading: boolean;
-  disabled?: boolean;
-}) {
-  if (isLoading) {
-    return (
-      <div className="space-y-2">
-        <Label>Quellen</Label>
-        <Skeleton className="h-9 w-64" />
-      </div>
-    );
-  }
-
-  if (available.length === 0) {
-    return null;
-  }
-
-  return (
-    <div className="space-y-2">
-      <Label>Quellen</Label>
-      <div className="flex flex-wrap gap-2">
-        {available.map((source) => {
-          const isActive = selected.includes(source.id);
-          const isDisabled = disabled || !source.available;
-          return (
-            <button
-              type="button"
-              key={source.id}
-              disabled={isDisabled}
-              onClick={() => onToggle(source.id)}
-              title={
-                source.available
-                  ? undefined
-                  : source.requiresPremium
-                    ? 'Premium-Tier erforderlich'
-                    : 'Quelle nicht konfiguriert'
-              }
-              className={[
-                'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition',
-                isActive && source.available
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'bg-background text-foreground border-input hover:bg-muted',
-                isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
-              ].join(' ')}
-            >
-              {!source.available && <Lock className="h-3 w-3" />}
-              {SOURCE_LABELS[source.id] ?? source.name}
-              {source.requiresPremium && (
-                <span className="ml-1 text-[10px] uppercase opacity-70">Premium</span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-/**
- * Renders the per-source bookkeeping returned by `/job-search`. We only
- * call attention to skipped/errored sources — successful ones are shown
- * inline as muted counts so the user always sees where results came from.
- */
-function SourceStatusList({ statuses }: { statuses: JobSearchSourceStatus[] }) {
-  const ok = statuses.filter((s) => s.status === 'ok');
-  const skipped = statuses.filter((s) => s.status !== 'ok');
-
-  return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-      {ok.map((s) => (
-        <span key={s.source} className="text-muted-foreground">
-          <span className="font-medium text-foreground">{SOURCE_LABELS[s.source]}</span>:{' '}
-          {s.count} Treffer
-        </span>
-      ))}
-      {skipped.map((s) => (
-        <span
-          key={s.source}
-          className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-400"
-        >
-          <AlertTriangle className="h-3.5 w-3.5" />
-          <span className="font-medium">{SOURCE_LABELS[s.source]}</span>{' '}
-          {s.status === 'skipped' ? 'übersprungen' : 'fehlgeschlagen'}
-          {s.reason ? ` (${s.reason})` : ''}
-        </span>
-      ))}
-    </div>
-  );
-}
 
 function JobResultCard({
   job,
@@ -510,14 +364,6 @@ function JobResultCard({
               {posted && <span className="text-muted-foreground">· {posted}</span>}
             </CardDescription>
           </div>
-          <span
-            className={[
-              'shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
-              SOURCE_BADGE_CLASSES[job.source],
-            ].join(' ')}
-          >
-            {SOURCE_LABELS[job.source]}
-          </span>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
