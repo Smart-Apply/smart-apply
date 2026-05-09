@@ -46,6 +46,10 @@ import type {
   LinkedInJob,
   LinkedInJobSearchFilters,
   LinkedInJobSearchResponse,
+  UnifiedJob,
+  UnifiedJobSearchRequest,
+  UnifiedJobSearchResponse,
+  JobSearchSourcesResponse,
   AnalyticsOverview,
   AutoApplyConfig,
   UpsertAutoApplyConfigPayload,
@@ -704,6 +708,42 @@ export const api = {
      */
     import: (job: LinkedInJob) =>
       apiRequest<JobPosting>('/linkedin-jobs/import', {
+        method: 'POST',
+        body: JSON.stringify({ job }),
+      }),
+  },
+
+  // Unified Job Search (multi-source: LinkedIn + Arbeitnow)
+  // Pluggable backend; the legacy `linkedinJobs` namespace above is kept
+  // alive for any code path that hasn't migrated yet.
+  jobSearch: {
+    /**
+     * List configured providers + per-tier availability so the UI can
+     * grey out sources the current user can't actually use.
+     */
+    sources: () => apiRequest<JobSearchSourcesResponse>('/job-search/sources'),
+
+    /**
+     * Fan-out search across all configured providers. Per-source
+     * try/catch on the backend means partial failures still return
+     * useful results — inspect `response.sources[]` to see which
+     * sources contributed and which were skipped/errored.
+     *
+     * Throttled server-side to 30 requests/hour per user.
+     */
+    search: (request: UnifiedJobSearchRequest) =>
+      apiRequest<UnifiedJobSearchResponse>('/job-search', {
+        method: 'POST',
+        body: JSON.stringify(request),
+      }),
+
+    /**
+     * Persist a search result via its originating provider so the
+     * application wizard can consume it. The backend dispatches on
+     * `job.source` to compose the right `fullText` per source.
+     */
+    import: (job: UnifiedJob) =>
+      apiRequest<JobPosting>('/job-search/import', {
         method: 'POST',
         body: JSON.stringify({ job }),
       }),

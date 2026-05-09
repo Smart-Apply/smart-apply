@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import {
   AlertTriangle,
   CheckCircle2,
@@ -63,7 +63,6 @@ export function EmailTrackingSection({
 }: EmailTrackingSectionProps) {
   const { hasAccess, isLoading: gateLoading } = useFeatureGate('emailParsing');
   const queryClient = useQueryClient();
-  const [postConnectMessage, setPostConnectMessage] = useState<string | null>(null);
 
   const connectionsQuery = useQuery({
     queryKey: ['mailbox-sync', 'connections'],
@@ -82,11 +81,9 @@ export function EmailTrackingSection({
 
     if (status === 'connected') {
       toast.success('Postfach verbunden — Smart Apply erkennt jetzt eingehende E-Mails.');
-      setPostConnectMessage('connected');
     } else if (status === 'error') {
       const reason = params.get('reason') || 'unknown';
       toast.error(`Verbindung fehlgeschlagen (${reason}). Bitte erneut versuchen.`);
-      setPostConnectMessage('error');
     }
 
     // Strip the query params from the URL without reloading.
