@@ -1105,6 +1105,19 @@ export interface AutoApplyConfig {
   /** 5-field cron expression (restricted server-side) */
   cronSchedule: string;
   digestEnabled: boolean;
+  /**
+   * Resume template id used when the user approves a suggestion. When
+   * undefined the backend auto-picks the language-matched default.
+   */
+  cvTemplateId?: string;
+  /** Cover-letter template id; ignored when generateCoverLetter=false. */
+  clTemplateId?: string;
+  /**
+   * Whether to generate an Anschreiben on approval. False = resume-only,
+   * which keeps the cost lower for users who write their cover letters
+   * manually.
+   */
+  generateCoverLetter: boolean;
   lastRunAt?: string;
   nextRunAt?: string;
   createdAt: string;
@@ -1120,6 +1133,9 @@ export interface UpsertAutoApplyConfigPayload {
   blockedCompanies?: string[];
   cronSchedule?: string;
   digestEnabled?: boolean;
+  cvTemplateId?: string;
+  clTemplateId?: string;
+  generateCoverLetter?: boolean;
 }
 
 export interface AutoApplySuggestion {

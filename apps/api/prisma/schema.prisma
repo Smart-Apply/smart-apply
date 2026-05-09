@@ -1004,6 +1004,15 @@ model AutoApplyConfig {
   lastRunAt    DateTime?
   nextRunAt    DateTime?
 
+  // Generation preferences for approved suggestions. When set, the
+  // approve flow passes these to ApplicationsService.createWithGeneration
+  // instead of falling back to the auto-pick-by-language defaults — which
+  // is what made every auto-applied application come out with ATS=0%
+  // (the regular `create()` skips the LLM/ATS pipeline entirely).
+  cvTemplateId        String? // Resume template id (null = auto-pick)
+  clTemplateId        String? // Cover-letter template id (null = auto-pick)
+  generateCoverLetter Boolean @default(true) // false = resume-only
+
   // Daily digest opt-in
   digestEnabled    Boolean   @default(true)
   lastDigestSentAt DateTime?
