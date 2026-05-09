@@ -6,7 +6,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import Image from 'next/image';
 import { api } from '@/lib/api-client';
-import { toast } from 'sonner';
 import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SubmitButton } from '@/components/ui/submit-button';
@@ -39,7 +38,7 @@ export default function ForgotPasswordPage() {
     try {
       await api.auth.forgotPassword(data);
       setIsSubmitted(true);
-    } catch (error) {
+    } catch {
       // Always show success to prevent email enumeration
       setIsSubmitted(true);
     }

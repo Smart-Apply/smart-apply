@@ -22,11 +22,9 @@ import {
   GraduationCap,
   Award,
   Code,
-  Calendar,
   Edit,
   Plus,
   Languages,
-  CheckCircle,
   ExternalLink,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';

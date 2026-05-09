@@ -137,7 +137,16 @@ export default function AutoApplySettingsPage() {
 
   const [form, setForm] = useState<FormState>(DEFAULTS);
 
-  // Hydrate form from existing config
+  // Hydrate form from existing config.
+  //
+  // The new react-hooks plugin (`react-hooks/set-state-in-effect`) flags
+  // calling setState inside an effect as a cascading-render anti-pattern.
+  // The "correct" alternative — derive state, or remount via `key` — would
+  // require splitting this page into a fetcher + an inner form that
+  // initialises state lazily from a prop, which is a much bigger refactor
+  // for what is the canonical "load saved config into editable form"
+  // pattern. We use the same inline-disable escape hatch that
+  // `cookie-banner.tsx` uses for the same reason.
   useEffect(() => {
     const cfg = configQuery.data;
     if (!cfg) return;
@@ -147,6 +156,7 @@ export default function AutoApplySettingsPage() {
       country?: LinkedInCountry;
       remote?: LinkedInRemoteFilter[];
     };
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setForm({
       keywords: filters.keywords ?? '',
       location: filters.location ?? '',

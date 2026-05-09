@@ -1,22 +1,17 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import {
-  CheckCircle2,
-  AlertCircle,
-  TrendingUp,
-  Brain,
-  Users,
-  Briefcase,
-  Building2,
-} from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
 import type { CategoryScores } from '@/types';
 import { cn } from '@/lib/utils';
 
+// The card was simplified to display only the headline overall-match
+// score. The richer props (categoryScores, strengths, weaknesses) are
+// still accepted so callers don't have to be touched, but they're
+// intentionally unused — the design moved the breakdown elsewhere.
 interface MatchScoreCardProps {
   overallScore: number;
-  categoryScores: CategoryScores;
+  categoryScores?: CategoryScores;
   strengths?: string[];
   weaknesses?: string[];
   className?: string;
@@ -29,43 +24,8 @@ const getScoreColor = (score: number): string => {
   return 'text-[#DC2626]';                   // error
 };
 
-const getProgressColor = (score: number): string => {
-  if (score >= 80) return 'bg-[#16A34A]';  // success
-  if (score >= 60) return 'bg-[#EAB308]';  // warning
-  if (score >= 40) return 'bg-[#EAB308]';  // warning
-  return 'bg-[#DC2626]';                   // error
-};
-
-const getScoreLabel = (score: number): string => {
-  if (score >= 80) return 'Ausgezeichnet';
-  if (score >= 60) return 'Gut';
-  if (score >= 40) return 'Ausbaufähig';
-  return 'Niedrig';
-};
-
-const categoryConfig = {
-  core: {
-    label: 'Kernkompetenzen (Hard Skills)',
-    icon: Briefcase,
-    description: 'Fachliche Qualifikationen und Expertise',
-  },
-  experience: {
-    label: 'Erfahrung',
-    icon: Building2,
-    description: 'Berufserfahrung und Seniorität',
-  },
-  industry: {
-    label: 'Branche',
-    icon: TrendingUp,
-    description: 'Branchenwissen und Domänenexpertise',
-  },
-};
-
 export function MatchScoreCard({
   overallScore,
-  categoryScores,
-  strengths = [],
-  weaknesses = [],
   className,
 }: MatchScoreCardProps) {
   return (

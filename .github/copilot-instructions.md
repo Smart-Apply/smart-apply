@@ -91,6 +91,14 @@ Resulting flow: PR → merge to main → staging deploys + Release PR opens/upda
 - Backend: validate DTOs with `class-validator` (`whitelist: true, forbidNonWhitelisted: true` on the controller pipe). Sanitize string inputs from users with the existing `@Sanitize()` decorator.
 - Frontend: App Router only (no Pages Router). Server components by default; mark client with `'use client'`. Forms use `react-hook-form` + Zod. Server state via TanStack Query with the existing `apiClient` wrapper — no raw `fetch()` in components. UI from shadcn/ui (`npx shadcn@latest add <name>`).
 
+### Lint policy
+- **New code MUST land with 0 ESLint errors AND 0 ESLint warnings.** CI's `lint-and-typecheck` job currently fails on errors only, but warnings accumulate into untracked tech debt — historically one reached 74 warnings before a single new error tipped the build red and blocked every PR. Treat warnings as errors for anything you author.
+- Before opening a PR that touches `apps/web` or `apps/api`, run `npm run lint` from the affected workspace and confirm a clean exit. If you add a file, lint that file.
+- Don't introduce unused imports, unused locals, or unused parameters. If a parameter is required by a signature you don't control (route handlers, callback shapes), prefix it with `_` — `eslint.config.mjs` ignores leading-underscore identifiers project-wide.
+- Don't suppress with `eslint-disable` unless the suppression is *behaviour-correct* (e.g. SSE effect that depends on `application?.status` not the whole `application` to avoid stream thrash). Always add a comment on the line above the disable explaining why the rule's auto-fix would break behaviour.
+- If you introduce a deliberately-unused identifier (e.g. a destructured prop kept for API compat), prefix with `_` rather than disabling the rule.
+- The frontend uses the React Compiler. **Never** call `form.watch(...)` from `react-hook-form` inside a component — use `useWatch({ control, name })` instead. The bare `watch()` returns an unstable function ref and trips `react-hooks/incompatible-library`, which silently disables memoisation for the whole component.
+
 ### Test suite status
 - The existing unit tests (`apps/api/test/unit/**`) are **out of sync with the codebase**. CI marks `unit-tests` as `continue-on-error: true` so failures don't block PRs.
 - E2E tests (`apps/api/test/e2e/**`) work but require a real DB — not run in CI.
@@ -107,6 +115,8 @@ Resulting flow: PR → merge to main → staging deploys + Release PR opens/upda
 - Lockfile changes without the matching `package.json` change in the same PR (or vice versa)
 - Adding to `node_modules/` directly, or hand-editing `package-lock.json`
 - Pasting real secrets in PR descriptions, issue comments, or chat
+- Shipping new code that introduces ESLint errors *or* warnings (see Lint policy)
+- `form.watch(...)` inside a component body — use `useWatch({ control, name })`
 
 ## Non-Goals
 - Rich document editing beyond Tiptap StarterKit

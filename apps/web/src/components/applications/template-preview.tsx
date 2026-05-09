@@ -11,6 +11,25 @@ const A4_WIDTH_PX = 794;
 // A4 height in pixels at 96 DPI (297mm ≈ 1123px)
 const A4_HEIGHT_PX = 1123;
 
+// Locale + closing-phrase lookup tables for the cover-letter preview.
+// Hoisted to module scope so the `useMemo` deps array doesn't have to
+// list them — they're stable references across every render anyway.
+const LOCALE_MAP: Record<string, string> = {
+  en: 'en-US',
+  de: 'de-DE',
+  fr: 'fr-FR',
+  es: 'es-ES',
+  it: 'it-IT',
+};
+
+const CLOSING_PHRASE_MAP: Record<string, string> = {
+  en: 'Sincerely,',
+  de: 'Mit freundlichen Grüßen',
+  fr: 'Cordialement,',
+  es: 'Atentamente,',
+  it: 'Cordiali saluti,',
+};
+
 /**
  * Normalize proficiency level to translation key
  * Maps various user input formats to standardized translation keys (e.g., "level.native")
@@ -207,7 +226,7 @@ function registerHandlebarsHelpers() {
         const month = months[date.getMonth()];
         
         return `${month} ${year}`;
-      } catch (error) {
+      } catch {
         return dateString;
       }
     });
@@ -972,23 +991,6 @@ export function CoverLetterTemplatePreview({
   const isLoading = templatesLoading || templateLoading;
 
   // Locale mapping for date formatting
-  const localeMap: Record<string, string> = {
-    en: 'en-US',
-    de: 'de-DE',
-    fr: 'fr-FR',
-    es: 'es-ES',
-    it: 'it-IT',
-  };
-
-  // Closing phrase mapping
-  const closingPhraseMap: Record<string, string> = {
-    en: 'Sincerely,',
-    de: 'Mit freundlichen Grüßen',
-    fr: 'Cordialement,',
-    es: 'Atentamente,',
-    it: 'Cordiali saluti,',
-  };
-
   // Template data for cover letter
   const templateData = useMemo(() => ({
     candidateName,
@@ -1002,8 +1004,8 @@ export function CoverLetterTemplatePreview({
     // This is critical - even with {{{content}}}, Handlebars needs to know this is safe HTML
     content: new Handlebars.SafeString(html || ''),
     language, // Use selected language from prop
-    closingPhrase: closingPhraseMap[language] || closingPhraseMap.en,
-    date: new Date().toLocaleDateString(localeMap[language] || 'en-US', {
+    closingPhrase: CLOSING_PHRASE_MAP[language] || CLOSING_PHRASE_MAP.en,
+    date: new Date().toLocaleDateString(LOCALE_MAP[language] || 'en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -1173,7 +1175,12 @@ export function CoverLetterTemplatePreview({
     } catch (err) {
       console.error('Cover letter template rendering failed:', err);
     }
-  }, [template, templateData]);
+    // `html` flows into the iframe via `templateData.content` (a Handlebars
+    // SafeString built inside the useMemo above). The deps lint can't see
+    // through that wrapper, so we name `html` explicitly to keep the rule
+    // happy without changing behaviour \u2014 templateData itself already
+    // changes whenever html changes.
+  }, [template, templateData, html]);
 
   if (isLoading) {
     return (
