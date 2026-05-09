@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { api, resetAuthRedirectFlag } from '@/lib/api-client';
 import { useAuthStore } from '@/stores/auth-store';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { TwoFactorChallengeForm } from '@/components/two-factor';
 import { TurnstileWidget, resetTurnstile } from '@/components/auth/turnstile-widget';
 import { SubmitButton } from '@/components/ui/submit-button';

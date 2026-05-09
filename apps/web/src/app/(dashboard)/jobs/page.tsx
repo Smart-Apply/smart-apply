@@ -24,7 +24,7 @@ import {
   Eye
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
+import { toastSuccess } from '@/lib/toast';
 import { formatShortDate } from '@/lib/format-date';
 import {
   Dialog,
@@ -48,13 +48,13 @@ export default function JobsPage() {
   const handleSave = async () => {
     // Close the input section after saving
     setShowInput(false);
-    toast.success('Stellenanzeige gespeichert');
+    toastSuccess('Stellenanzeige gespeichert');
   };
 
   const handleManualSave = () => {
     // Close the input section after manual creation
     setShowInput(false);
-    toast.success('Stellenanzeige erstellt');
+    toastSuccess('Stellenanzeige erstellt');
   };
 
   const handleDeleteClick = (id: string, title: string) => {
@@ -67,7 +67,7 @@ export default function JobsPage() {
     await deleteJobPosting.mutateAsync(jobToDelete.id);
     setDeleteDialogOpen(false);
     setJobToDelete(null);
-    toast.success('Stellenanzeige gelöscht');
+    toastSuccess('Stellenanzeige gelöscht');
   };
 
   return (

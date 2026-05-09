@@ -295,7 +295,7 @@ export default function JobSearchPage() {
       {!search.isPending && results.length > 0 && (
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            {results.length} {results.length === 1 ? 'Treffer' : 'Treffer'} gefunden
+            {results.length} Treffer gefunden
           </p>
           <div className="space-y-3">
             {results.map((job) => {

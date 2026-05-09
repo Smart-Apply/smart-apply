@@ -13,7 +13,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useRegenerateBackupCodes, useTwoFactorStatus } from '@/hooks/use-two-factor';
-import { toast } from 'sonner';
+import { toastSuccess } from '@/lib/toast';
 
 interface BackupCodesDialogProps {
   open: boolean;
@@ -43,7 +43,7 @@ export function BackupCodesDialog({ open, onOpenChange }: BackupCodesDialogProps
       const codesText = newCodes.join('\n');
       navigator.clipboard.writeText(codesText);
       setCopied(true);
-      toast.success('Backup-Codes kopiert');
+      toastSuccess('Backup-Codes kopiert');
       setTimeout(() => setCopied(false), 2000);
     }
   };
@@ -60,7 +60,7 @@ export function BackupCodesDialog({ open, onOpenChange }: BackupCodesDialogProps
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success('Backup-Codes heruntergeladen');
+      toastSuccess('Backup-Codes heruntergeladen');
     }
   };
 
