@@ -807,6 +807,8 @@ export interface AnswerResponse {
 export interface InterviewStats {
   totalSessions: number;
   completedSessions: number;
+  /** Sessions that have a score > 0 — used to gate the improvement display. */
+  scoredSessions: number;
   averageScore: number;
   bestScore: number;
   totalQuestionsAnswered: number;

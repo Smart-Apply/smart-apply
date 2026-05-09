@@ -245,10 +245,7 @@ function FunnelCard({ funnel }: { funnel: AnalyticsOverview['funnel'] }) {
 // ─── Timeseries card ─────────────────────────────────────────────────
 
 function TimeseriesCard({ timeseries }: { timeseries: AnalyticsOverview['timeseries30d'] }) {
-  const max = Math.max(
-    ...timeseries.map((d) => d.created + d.applied + d.interview + d.accepted + d.rejected),
-    1,
-  );
+  const max = Math.max(...timeseries.map((d) => d.created), 1);
 
   return (
     <Card>

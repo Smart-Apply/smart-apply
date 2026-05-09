@@ -42,6 +42,7 @@ export type SessionWithQuestions = InterviewSession & {
 export interface InterviewStats {
   totalSessions: number;
   completedSessions: number;
+  scoredSessions: number;
   averageScore: number;
   bestScore: number;
   totalQuestionsAnswered: number;
@@ -402,6 +403,7 @@ export class InterviewsService {
       return {
         totalSessions,
         completedSessions: 0,
+        scoredSessions: 0,
         averageScore: 0,
         bestScore: 0,
         totalQuestionsAnswered: 0,
@@ -472,6 +474,7 @@ export class InterviewsService {
     return {
       totalSessions,
       completedSessions: sessions.length,
+      scoredSessions: scores.length,
       averageScore,
       bestScore,
       totalQuestionsAnswered,

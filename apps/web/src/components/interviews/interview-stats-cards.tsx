@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { MessageSquare, Trophy, TrendingUp, Target } from 'lucide-react';
+import { MessageSquare, Trophy, TrendingUp, TrendingDown, Target } from 'lucide-react';
 import type { InterviewStats } from '@/types';
 
 interface InterviewStatsCardsProps {
@@ -66,16 +66,20 @@ export function InterviewStatsCards({ stats }: InterviewStatsCardsProps) {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-medium">Verbesserung</CardTitle>
-          <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          {stats.scoreImprovement < 0 ? (
+            <TrendingDown className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          )}
         </CardHeader>
         <CardContent>
           <div className={`text-2xl font-bold ${improvementColor}`}>
-            {stats.completedSessions >= 4
+            {stats.scoredSessions >= 4
               ? `${improvementSymbol}${stats.scoreImprovement}`
               : '—'}
           </div>
           <p className="text-xs text-muted-foreground">
-            {stats.completedSessions >= 4
+            {stats.scoredSessions >= 4
               ? 'Punkte seit Beginn'
               : 'Mind. 4 Sessions benötigt'}
           </p>

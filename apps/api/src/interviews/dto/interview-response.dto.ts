@@ -202,6 +202,9 @@ export class InterviewStatsResponseDto {
   @ApiProperty({ description: 'Number of completed sessions' })
   completedSessions: number;
 
+  @ApiProperty({ description: 'Number of completed sessions with a score > 0' })
+  scoredSessions: number;
+
   @ApiProperty({ description: 'Average score across all sessions' })
   averageScore: number;
 
