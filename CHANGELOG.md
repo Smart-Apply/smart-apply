@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.10.0](https://github.com/Smart-Apply/smart-apply/compare/v1.9.0...v1.10.0) (2026-05-09)
+
+
+### Features
+
+* **auto-apply:** user-controlled templates + cover-letter toggle, fix ATS=0% ([#398](https://github.com/Smart-Apply/smart-apply/issues/398)) ([9445c73](https://github.com/Smart-Apply/smart-apply/commit/9445c735d391164f33fbdb0501f80ea3a14ccbc9))
+
+
+### Bug Fixes
+
+* **job-search:** export ApifyClient so JobSearchModule can boot ([#399](https://github.com/Smart-Apply/smart-apply/issues/399)) ([080d132](https://github.com/Smart-Apply/smart-apply/commit/080d132d93be94b905519ec6dfa3ea97e25c4cbc))
+
 ## [1.9.0](https://github.com/Smart-Apply/smart-apply/compare/v1.8.2...v1.9.0) (2026-05-09)
 
 
