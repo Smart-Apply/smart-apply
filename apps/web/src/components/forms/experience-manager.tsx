@@ -1,14 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
-import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -64,7 +62,12 @@ export function ExperienceManager({
     },
   });
 
-  const isCurrentlyWorking = form.watch('current');
+  // Subscribe to the `current` field via `useWatch` rather than `form.watch()`.
+  // React Compiler refuses to memoise components that call the bare `watch()`
+  // because the returned function isn't stable across renders; `useWatch`
+  // exposes a Compiler-friendly subscription that re-renders only when the
+  // watched field actually changes.
+  const isCurrentlyWorking = useWatch({ control: form.control, name: 'current' });
 
   const sortedExperiences = [...experiences].sort((a, b) => {
     const dateA = new Date(a.startDate).getTime() || 0;

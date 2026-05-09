@@ -47,7 +47,11 @@ export function DescriptionEditor({
   value, 
   onChange, 
   disabled, 
-  placeholder = 'Beschreiben Sie Ihre Aufgaben, Verantwortlichkeiten und Erfolge...',
+  // Tiptap's StarterKit doesn't accept a placeholder out of the box —
+  // the prop is kept for API compatibility with callers that pass one
+  // (and so a future `Placeholder` extension can plug in without a
+  // breaking change), but it isn't wired into the editor right now.
+  placeholder: _placeholder = 'Beschreiben Sie Ihre Aufgaben, Verantwortlichkeiten und Erfolge...',
   minHeight = '160px'
 }: DescriptionEditorProps) {
   const editor = useEditor(

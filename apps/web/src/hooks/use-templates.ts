@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
-import type { Template, TemplateType, TemplateWithContent } from '@/types';
+import type { Template, TemplateType } from '@/types';
 
 /**
  * Group templates by design (baseTemplateId or category), returning one per design.

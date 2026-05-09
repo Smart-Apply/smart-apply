@@ -2,7 +2,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
 import { toastSuccess, toastError } from '@/lib/toast';
-import type { JobPosting, PaginatedResponse } from '@/types';
+import type { JobPosting } from '@/types';
 
 /**
  * Hook to fetch all job postings

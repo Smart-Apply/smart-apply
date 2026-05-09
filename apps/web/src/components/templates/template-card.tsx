@@ -30,10 +30,6 @@ export function TemplateCard({
 }: TemplateCardProps) {
   // Determine which template ID to use for preview (selected variant or base template)
   const displayTemplateId = selectedVariantId || template.id;
-  
-  // Find the currently selected variant for display
-  const selectedVariant = colorVariants.find(v => v.id === selectedVariantId) || 
-    (template.accentColor ? { id: template.id, accentColor: template.accentColor, colorVariantName: template.colorVariantName || '' } : null);
 
   return (
     <Card 

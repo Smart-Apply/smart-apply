@@ -27,7 +27,6 @@ import {
   ArrowRight,
   TrendingUp,
   Calendar,
-  MoreHorizontal,
   ChevronRight,
   Zap,
 } from 'lucide-react';

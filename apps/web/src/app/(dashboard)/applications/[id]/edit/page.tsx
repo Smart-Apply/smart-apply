@@ -4,23 +4,16 @@ import { startTransition, useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
-  Briefcase,
-  MapPin,
-  Sparkles,
   FileText,
   Save,
   CheckCircle2,
-  AlertCircle,
   Download,
-  Building2,
   Lock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SubmitButton } from '@/components/ui/submit-button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { CenteredLoader } from '@/components/shared/loading';
 import {
@@ -546,6 +539,15 @@ export default function ApplicationResumeEditorPage() {
         }
       }
     },
+    // `handleResumeSave` and `handleCoverSave` are inline declarations that
+    // reference local component state (parsedResume, coverLetterValue, ...).
+    // The deps below already include the derived `hasResumeChanges` /
+    // `hasCoverChanges` flags, so the callback recreates whenever the
+    // underlying state changes meaningfully \u2014 capturing fresh closures
+    // for both save functions. Adding the functions themselves would
+    // re-attach the document keydown listener on every render and is
+    // exactly what the existing flag-based deps avoid.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       activeTab,
       hasResumeChanges,
@@ -596,9 +598,7 @@ export default function ApplicationResumeEditorPage() {
     );
   }
 
-  const isSaveDisabled = !parsedResume || updateResume.isPending || !hasResumeChanges;
   const coverMutationPending = upsertCoverLetter.isPending;
-  const isCoverSaveDisabled = !coverHasContent || coverMutationPending || !hasCoverChanges;
 
   // Check if data exists in the application (saved data), not just in editor state
   const hasSavedResume = application?.resumeText && application.resumeText.trim().length > 0;

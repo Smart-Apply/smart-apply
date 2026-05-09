@@ -4,7 +4,6 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { useProfile, useUpdateProfile } from '@/hooks/use-profile';
 import { useAuthStore } from '@/stores/auth-store';
 import { Button } from '@/components/ui/button';
@@ -224,7 +223,9 @@ export default function ProfileEditPage() {
       }
     });
 
-    toastSuccess(`${sections.length} Abschnitte erfolgreich importiert`);
+    toastSuccess(
+      `${sections.length} Abschnitte mit insgesamt ${importedCount} Feldern importiert`,
+    );
   }, [form]);
 
   const onSubmit = async (data: ProfileFormValues) => {

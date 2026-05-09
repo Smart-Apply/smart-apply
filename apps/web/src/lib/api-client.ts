@@ -371,7 +371,12 @@ export function resetAuthRedirectFlag(): void {
  * Does NOT set Content-Type header (browser sets it with boundary automatically)
  */
 async function apiRequestFormData<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
-  const { retry = true, maxRetries = 3, ...fetchOptions } = options;
+  // FormData uploads use the simpler retry-on-401-after-refresh path that
+  // every authenticated fetch in this file follows; the `retry`/`maxRetries`
+  // options on RequestOptions are intentionally ignored here so we don't
+  // accidentally re-upload the same multipart body multiple times on a
+  // network blip.
+  const { retry: _retry, maxRetries: _maxRetries, ...fetchOptions } = options;
 
   const makeRequest = async (isRetryAfterRefresh = false): Promise<T> => {
     const headers: Record<string, string> = {

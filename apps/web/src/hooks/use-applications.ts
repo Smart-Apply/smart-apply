@@ -2,7 +2,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { useQuery, useMutation, useQueryClient, type UseQueryOptions } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
 import { toastSuccess, toastError } from '@/lib/toast';
-import type { Application, ResumeData, PaginatedResponse } from '@/types';
+import type { Application, ResumeData } from '@/types';
 
 /**
  * Hook to fetch all applications

@@ -28,7 +28,6 @@ export function CookieBanner() {
       if (!dismissed) setVisible(true);
     } catch {
       // localStorage unavailable (private mode) — show banner anyway
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setVisible(true);
     }
   }, []);

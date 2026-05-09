@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/auth-store';
 import { api, authenticatedFetch } from '@/lib/api-client';
-import { useCreateApplication, useRetryApplication } from '@/hooks/use-applications';
+import { useRetryApplication } from '@/hooks/use-applications';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -27,7 +27,6 @@ import {
   Package,
   Pencil,
 } from 'lucide-react';
-import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import type { ApplicationGenerationStatus } from '@/types';
 import { toast } from 'sonner';
@@ -112,7 +111,6 @@ export default function ApplicationDetailPage() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const user = useAuthStore((state) => state.user);
   const applicationId = params.id as string;
-  const createApplication = useCreateApplication();
   const retryMutation = useRetryApplication();
   
   const [previewFile, setPreviewFile] = useState<{
@@ -204,6 +202,12 @@ export default function ApplicationDetailPage() {
       console.log(`[SSE] Cleanup - closing connection for application ${applicationId}`);
       eventSource.close();
     };
+    // We intentionally depend on `application?.status` (not `application`)
+    // so the SSE connection isn't torn down + reopened on every cache
+    // refetch that returns the same status. Adding `application` would
+    // thrash the stream on every refresh, hit rate limits, and cause
+    // visible flicker.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, applicationId, application?.status, queryClient, refetch]);
 
   // Detect status changes and show toast notifications
@@ -397,23 +401,6 @@ export default function ApplicationDetailPage() {
     } catch (error) {
       console.error('Preview error:', error);
       toast.error('Fehler beim Laden der Vorschau');
-    }
-  };
-
-  const handleGenerateAgain = async () => {
-    if (!application?.jobPostingId) {
-      toast.error('Job-Posting-ID nicht gefunden');
-      return;
-    }
-
-    try {
-      const newApplication = await createApplication.mutateAsync({
-        jobPostingId: application.jobPostingId,
-      });
-      toast.success('Neue Bewerbung wird erstellt...');
-      router.push(`/applications/${newApplication.id}`);
-    } catch {
-      toast.error('Fehler beim Erstellen der neuen Bewerbung');
     }
   };
 

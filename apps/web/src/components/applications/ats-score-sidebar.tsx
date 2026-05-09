@@ -145,12 +145,6 @@ export function ATSScoreSidebar({
   }
 
   const score = analysis.matchAnalysis.overallScore;
-  const topMissing = analysis.missingKeywords
-    .filter((k) => k.category === 'core' || k.category === 'methodology')
-    .slice(0, 8);
-  const otherMissing = analysis.missingKeywords
-    .filter((k) => k.category !== 'core' && k.category !== 'methodology')
-    .slice(0, 4);
 
   return (
     <Card className={cn('', className)}>

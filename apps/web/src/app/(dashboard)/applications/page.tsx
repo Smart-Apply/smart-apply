@@ -7,7 +7,6 @@ import { useDebounce } from '@/hooks/use-debounce';
 import { Button } from '@/components/ui/button';
 import { SubmitButton } from '@/components/ui/submit-button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -49,10 +48,8 @@ import {
   XCircle,
   AlertCircle,
   RefreshCw,
-  Trash2,
   ChevronLeft,
   ChevronRight,
-  ArrowUpDown,
   Briefcase,
   Send,
   Users,
@@ -506,7 +503,7 @@ export default function ApplicationsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedApplications.map((application, index) => {
+                  {paginatedApplications.map((application) => {
                     const statusInfo = getGenerationStatusInfo(application.status);
                     const StatusIcon = statusInfo.icon;
                     const jobTitle = application.title || application.jobPosting?.title || `Bewerbung #${application.id.substring(0, APPLICATION_ID_DISPLAY_LENGTH)}`;

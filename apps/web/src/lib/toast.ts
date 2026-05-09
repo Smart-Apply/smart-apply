@@ -4,7 +4,7 @@
  */
 
 import { toast as sonnerToast } from 'sonner';
-import { getErrorMessage, ApiError } from './errors';
+import { getErrorMessage } from './errors';
 
 /**
  * Toast options for customization

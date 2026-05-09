@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { JobPostingParser } from '@/components/forms/job-posting-parser';
@@ -21,7 +21,6 @@ import {
   MapPin,
   Building2,
   Calendar,
-  ChevronRight,
   Eye
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
