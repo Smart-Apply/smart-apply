@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.0](https://github.com/Smart-Apply/smart-apply/compare/v1.8.2...v1.9.0) (2026-05-09)
+
+
+### Features
+
+* **job-search:** add pluggable multi-source search (LinkedIn + Arbeitnow) ([#395](https://github.com/Smart-Apply/smart-apply/issues/395)) ([a6a010c](https://github.com/Smart-Apply/smart-apply/commit/a6a010cfdb5a28c6e78c0ba0d16576d235a8e30e))
+* **web:** wire job-search page to unified multi-source endpoint ([#396](https://github.com/Smart-Apply/smart-apply/issues/396)) ([81e4c1e](https://github.com/Smart-Apply/smart-apply/commit/81e4c1ed9a42243b4fcfe4d920839cb1ce3dfeb6))
+
 ## [1.8.2](https://github.com/Smart-Apply/smart-apply/compare/v1.8.1...v1.8.2) (2026-05-08)
 
 
