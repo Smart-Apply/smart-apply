@@ -4,7 +4,7 @@
 // every existing user's browser to drop the previous SW's caches on next
 // visit. Anything not matching the current version below is deleted on
 // activation.
-const CACHE_VERSION = 'v4';
+const CACHE_VERSION = 'v5';
 const CACHE_NAME = `smart-apply-${CACHE_VERSION}`;
 const STATIC_CACHE_NAME = `smart-apply-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE_NAME = `smart-apply-dynamic-${CACHE_VERSION}`;
