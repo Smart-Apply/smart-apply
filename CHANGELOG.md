@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.10.2](https://github.com/Smart-Apply/smart-apply/compare/v1.10.1...v1.10.2) (2026-05-09)
+
+
+### Bug Fixes
+
+* **auto-apply:** auto-trigger PDF export after application approval ([#404](https://github.com/Smart-Apply/smart-apply/issues/404)) ([1eb4bb1](https://github.com/Smart-Apply/smart-apply/commit/1eb4bb1a8778c134360982eb41dcc7c70ed5c853))
+
 ## [1.10.1](https://github.com/Smart-Apply/smart-apply/compare/v1.10.0...v1.10.1) (2026-05-09)
 
 
