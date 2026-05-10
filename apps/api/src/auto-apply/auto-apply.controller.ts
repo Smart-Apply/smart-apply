@@ -94,15 +94,27 @@ export class AutoApplyController {
    * Manual "run now" — handy for users wanting to refresh the inbox or
    * for testing. Throttled to 1 call per hour per user so it can't be
    * used to bypass the cron-spread cost-protection.
+   *
+   * Fire-and-forget: the LinkedIn search via Apify can take 60–240s, which
+   * exceeds Fly's edge timeout (~60s) and surfaces to the browser as 408.
+   * We dispatch the work asynchronously and return 202 immediately; the
+   * client polls `/auto-apply/suggestions` to surface new results.
    */
   @Post('config/run-now')
   @HttpCode(HttpStatus.ACCEPTED)
   @Throttle({ default: { limit: 1, ttl: 3_600_000 } })
-  @ApiOperation({ summary: 'Manually trigger one recommendation run (1/hour)' })
-  @ApiResponse({ status: 202, description: 'Run dispatched' })
+  @ApiOperation({ summary: 'Manually trigger one recommendation run (1/hour, runs in background)' })
+  @ApiResponse({ status: 202, description: 'Run dispatched (background)' })
   @ApiResponse({ status: 429, description: 'Too many manual triggers' })
-  async runNow(@CurrentUser('id') userId: string): Promise<{ ok: boolean; suggestionsCreated: number }> {
-    return this.cron.runForUser(userId);
+  runNow(@CurrentUser('id') userId: string): { ok: boolean; dispatched: boolean } {
+    // Intentionally not awaited — see method docblock for why.
+    void this.cron.runForUser(userId).catch((err) => {
+      this.logger.error(
+        `Background run-now failed for user ${userId}: ${(err as Error).message}`,
+        (err as Error).stack,
+      );
+    });
+    return { ok: true, dispatched: true };
   }
 
   // ─── Suggestions ────────────────────────────────────────────────────

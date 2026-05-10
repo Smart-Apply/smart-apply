@@ -8,6 +8,8 @@ import { ApiError, ErrorType, shouldRetry } from './errors';
 import { toastError } from './toast';
 import { useAuthStore } from '@/stores/auth-store';
 import { fetchCsrfToken } from './csrf';
+import { startProactiveTokenRefresh, stopProactiveTokenRefresh } from './api-client';
+import { installChunkErrorHandler } from './chunk-error-handler';
 
 /**
  * Global error handler for React Query
@@ -67,6 +69,33 @@ export function Providers({ children }: { children: React.ReactNode }) {
         console.error('Failed to initialize CSRF token:', error);
       }
     });
+  }, []);
+
+  // Install global handler for stale Next.js chunk URLs after a Cloudflare
+  // Workers deploy. See chunk-error-handler.ts for the rationale.
+  useEffect(() => {
+    installChunkErrorHandler();
+  }, []);
+
+  // Proactively refresh the access-token cookie ~1 minute before its
+  // 15-minute TTL elapses so background API calls never see a 401.
+  // Subscribes to the auth store so the loop stops on logout and
+  // restarts on login (covers OAuth callbacks too).
+  useEffect(() => {
+    if (useAuthStore.getState().isAuthenticated) {
+      startProactiveTokenRefresh();
+    }
+    const unsubscribe = useAuthStore.subscribe((state, prev) => {
+      if (state.isAuthenticated && !prev.isAuthenticated) {
+        startProactiveTokenRefresh();
+      } else if (!state.isAuthenticated && prev.isAuthenticated) {
+        stopProactiveTokenRefresh();
+      }
+    });
+    return () => {
+      unsubscribe();
+      stopProactiveTokenRefresh();
+    };
   }, []);
 
   return (

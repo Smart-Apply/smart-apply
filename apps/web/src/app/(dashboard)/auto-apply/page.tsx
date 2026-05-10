@@ -80,13 +80,22 @@ function InboxView() {
 
   const runNow = useMutation({
     mutationFn: () => api.autoApply.runNow(),
-    onSuccess: (res) => {
-      toast.success(
-        res.suggestionsCreated > 0
-          ? `${res.suggestionsCreated} neue Vorschläge gefunden`
-          : 'Keine neuen Vorschläge — wir versuchen es später erneut.',
-      );
-      queryClient.invalidateQueries({ queryKey: ['auto-apply', 'suggestions'] });
+    onSuccess: () => {
+      // Backend dispatches the LinkedIn scrape in the background (returns 202).
+      // Poll the suggestions list for ~3 minutes so new results surface
+      // without forcing the user to refresh the page.
+      toast.success('Suche läuft im Hintergrund — neue Vorschläge erscheinen in Kürze.');
+
+      let attempts = 0;
+      const maxAttempts = 6; // 6 × 30s ≈ 3 min
+      const poll = (): void => {
+        attempts += 1;
+        queryClient.invalidateQueries({ queryKey: ['auto-apply', 'suggestions'] });
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 30_000);
+        }
+      };
+      setTimeout(poll, 15_000);
     },
     onError: (err) => {
       const msg =
