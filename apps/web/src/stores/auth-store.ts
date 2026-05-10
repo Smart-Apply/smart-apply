@@ -8,6 +8,17 @@ interface User {
   firstName?: string;
   lastName?: string;
   emailVerified?: boolean;
+  /**
+   * OAuth provider used to sign up, e.g. "google" | "microsoft" | null.
+   * Null/undefined means the account was created with email + password.
+   */
+  provider?: string | null;
+  /**
+   * True when the user has a local password set. False for OAuth-only
+   * accounts (Google/Microsoft sign-in users who never set a password).
+   * Drives the UI for "change password" and "delete account" flows.
+   */
+  hasPassword?: boolean;
   createdAt: string;
   updatedAt?: string;
 }

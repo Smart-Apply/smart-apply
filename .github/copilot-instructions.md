@@ -174,7 +174,7 @@ Resulting flow: PR → merge to main → staging deploys + Release PR opens/upda
 - **Deployment:** **Cloudflare Workers** via `@opennextjs/cloudflare` 1.19 + `wrangler` 4.85
 
 ## Backend Modules (`apps/api/src/`)
-- `admin` — allow-listed admin endpoints (gated by `ADMIN_EMAILS` env), e.g. `POST /admin/users/:email/tier`
+- `admin` — allow-listed admin endpoints (gated by `ADMIN_EMAILS` env), e.g. `POST /admin/users/:email/tier`, `DELETE /admin/users/:email`
 - `agents` — Azure AI Foundry agents (URL parsing, etc.)
 - `applications` — generation pipeline (profile + job → LLM → PDF → storage), SSE status stream
 - `auth` — JWT, refresh-token rotation, OAuth (Google/Microsoft/Azure AD), TOTP 2FA, password reset
@@ -269,7 +269,8 @@ All endpoints are prefixed with `/api/v1` and documented at `http://localhost:30
 **GET /api/v1/auth/me**
 - Get current authenticated user details
 - Protected: Requires JWT in HttpOnly cookie
-- Returns: `{ id, email, firstName, lastName, createdAt }`
+- Returns: `{ id, email, firstName, lastName, emailVerified, provider, hasPassword }`
+- `hasPassword=false` indicates an OAuth-only account (Google/Microsoft sign-in user who never set a local password) — the frontend uses this to swap the password-confirm prompt for an email-typed confirmation in the "delete account" / "change password" flows.
 
 **GET /api/v1/auth/logout**
 - Logout user (clear auth cookies, revoke refresh token)
@@ -304,6 +305,10 @@ Gated by `ADMIN_EMAILS` (comma-separated, case-insensitive). Returns 403 when th
   - Body: `{ "tier": "FREE" | "PREMIUM" | "PREMIUM_PLUS", "periodMonths"?: number (1–120, default 12) }`
   - Idempotent; `:email` matched case-insensitively
   - Replaces the old `flyctl ssh` + `node /app/promote-premium.js` workflow
+**DELETE /api/v1/admin/users/:email** — permanently delete a user account (admin override; no password confirmation)
+  - Use case: OAuth-only users (e.g. "Sign in with Google") who never set a password and can't complete the self-service deletion flow on their own — or any support-driven account removal.
+  - Cascades through Prisma `onDelete: Cascade` (Profile, Applications, JobPostings, Sessions, RefreshTokens, OAuthProviders, MailboxConnections). Stored PDFs in R2/disk are NOT deleted here — same trade-off as the user-facing `AuthService.deleteAccount`.
+  - `:email` matched case-insensitively. Returns 404 if the account is already gone.
 
 ### User Preferences (Protected)
 

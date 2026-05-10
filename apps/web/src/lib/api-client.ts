@@ -558,7 +558,7 @@ export const api = {
         body: JSON.stringify(data),
       }),
 
-    deleteAccount: (data: { password: string }) =>
+    deleteAccount: (data: { password?: string }) =>
       apiRequest<{ message: string }>('/auth/account', {
         method: 'DELETE',
         body: JSON.stringify(data),

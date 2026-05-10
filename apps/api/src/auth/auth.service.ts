@@ -448,6 +448,9 @@ export class AuthService {
         // undefined and the verification banner shows forever even
         // after the user successfully verifies.
         emailVerified: true,
+        // Used to compute hasPassword below \u2014 stripped from the
+        // response so the (hashed) value never leaves the server.
+        password: true,
       },
     });
 
@@ -455,7 +458,12 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    return user;
+    // Expose a boolean flag instead of the hash. The frontend uses this
+    // to decide whether the "delete account" / "change password" flows
+    // should require a password (local accounts) or fall back to a
+    // typed-confirmation flow (OAuth-only accounts).
+    const { password: _password, ...safeUser } = user;
+    return { ...safeUser, hasPassword: _password !== null && _password !== undefined };
   }
 
   async updateUserProfile(userId: string, dto: UpdateUserProfileDto, req?: Request) {
@@ -546,8 +554,18 @@ export class AuthService {
       throw new UnauthorizedWithCode(ErrorCode.USER_NOT_FOUND);
     }
 
-    // For local accounts, verify password
+    // For local accounts, verify password. OAuth-only accounts (no
+    // password set) skip this check entirely so they can self-delete
+    // without ever having to set a password.
     if (user.password) {
+      if (!dto.password) {
+        if (req) {
+          this.auditLogger.logSecurityEvent('ACCOUNT_DELETE_FAILED', user.email, req, user.id, {
+            reason: 'Password missing',
+          });
+        }
+        throw new BadRequestWithCode(ErrorCode.PASSWORD_INCORRECT);
+      }
       const valid = await argon2.verify(user.password, dto.password);
       if (!valid) {
         // Log failed account deletion attempt

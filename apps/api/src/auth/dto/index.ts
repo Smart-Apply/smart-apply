@@ -1,4 +1,12 @@
-import { IsEmail, IsString, MinLength, IsOptional, Matches, IsNotEmpty } from 'class-validator';
+import {
+  IsEmail,
+  IsString,
+  MinLength,
+  MaxLength,
+  IsOptional,
+  Matches,
+  IsNotEmpty,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Sanitize } from '../../common/decorators/sanitize.decorator';
 
@@ -6,7 +14,21 @@ import { Sanitize } from '../../common/decorators/sanitize.decorator';
 export * from './two-factor.dto';
 export * from './oauth.dto';
 
-const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[\w@$!%*?&#]{8,}$/;
+// Password policy:
+//   - 8–128 characters (cap protects argon2 from DoS via huge inputs)
+//   - at least one lowercase, one uppercase, one digit
+//   - at least one non-alphanumeric character (any printable symbol/punctuation)
+//   - no whitespace
+//
+// We deliberately DO NOT restrict the special-character set to a small
+// allow-list — password managers (1Password, Bitwarden, browser keychains)
+// generate strong passwords from a much wider symbol pool (e.g. -, +, =, (,
+// ), [, ], {, }, /, \, |, :, ;, ., ,, <, >, ~, ^), and rejecting them
+// silently is what users experience as "my password is too long / broken".
+const PASSWORD_REGEX =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])[!-~]{8,128}$/;
+const PASSWORD_MESSAGE =
+  'Password must be 8–128 characters and include at least one uppercase letter, one lowercase letter, one number and one special character. Whitespace is not allowed.';
 
 export class RegisterDto {
   @ApiProperty({ example: 'user@example.com' })
@@ -16,15 +38,13 @@ export class RegisterDto {
   @ApiProperty({
     example: 'SecurePass123!',
     minLength: 8,
-    description:
-      'Password must contain at least 8 characters, one uppercase, one lowercase, one number and one special character (@$!%*?&#)',
+    maxLength: 128,
+    description: PASSWORD_MESSAGE,
   })
   @IsString()
   @MinLength(8, { message: 'Password must be at least 8 characters long' })
-  @Matches(PASSWORD_REGEX, {
-    message:
-      'Password must contain at least one uppercase letter, one lowercase letter, one number and one special character (@$!%*?&#)',
-  })
+  @MaxLength(128, { message: 'Password must be at most 128 characters long' })
+  @Matches(PASSWORD_REGEX, { message: PASSWORD_MESSAGE })
   password: string;
 
   @ApiProperty({ example: 'John', required: false })
@@ -84,26 +104,26 @@ export class ChangePasswordDto {
   @ApiProperty({
     example: 'NewPass123!',
     minLength: 8,
-    description:
-      'New password must contain at least 8 characters, one uppercase, one lowercase, one number and one special character (@$!%*?&#)',
+    maxLength: 128,
+    description: PASSWORD_MESSAGE,
   })
   @IsString()
   @MinLength(8, { message: 'Password must be at least 8 characters long' })
-  @Matches(PASSWORD_REGEX, {
-    message:
-      'Password must contain at least one uppercase letter, one lowercase letter, one number and one special character (@$!%*?&#)',
-  })
+  @MaxLength(128, { message: 'Password must be at most 128 characters long' })
+  @Matches(PASSWORD_REGEX, { message: PASSWORD_MESSAGE })
   newPassword: string;
 }
 
 export class DeleteAccountDto {
   @ApiProperty({
     example: 'SecurePass123!',
-    description: 'Password confirmation for account deletion',
+    required: false,
+    description:
+      'Password confirmation. Required for password-based accounts; ignored for OAuth-only accounts (e.g. Google/Microsoft sign-in users who never set a password).',
   })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty({ message: 'Password is required to delete account' })
-  password: string;
+  password?: string;
 }
 
 export class ForgotPasswordDto {
@@ -121,14 +141,12 @@ export class ResetPasswordDto {
   @ApiProperty({
     example: 'NewSecurePass123!',
     minLength: 8,
-    description:
-      'New password must contain at least 8 characters, one uppercase, one lowercase, one number and one special character (@$!%*?&#)',
+    maxLength: 128,
+    description: PASSWORD_MESSAGE,
   })
   @IsString()
   @MinLength(8, { message: 'Password must be at least 8 characters long' })
-  @Matches(PASSWORD_REGEX, {
-    message:
-      'Password must contain at least one uppercase letter, one lowercase letter, one number and one special character (@$!%*?&#)',
-  })
+  @MaxLength(128, { message: 'Password must be at most 128 characters long' })
+  @Matches(PASSWORD_REGEX, { message: PASSWORD_MESSAGE })
   password: string;
 }

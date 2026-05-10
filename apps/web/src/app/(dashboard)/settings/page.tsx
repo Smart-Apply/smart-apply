@@ -55,6 +55,18 @@ export default function SettingsPage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [deletePassword, setDeletePassword] = useState('');
+  // For OAuth-only accounts (no local password) we fall back to a typed
+  // confirmation: the user must re-type their email to delete the account.
+  const [deleteEmailConfirm, setDeleteEmailConfirm] = useState('');
+
+  // OAuth-only accounts (e.g. "Sign in with Google") never have a local
+  // password, so the password field would be impossible to satisfy. The
+  // backend already accepts an empty/missing password for these accounts;
+  // the frontend just needs to skip the password prompt.
+  const isOAuthOnlyAccount = user?.hasPassword === false;
+  const canConfirmDelete = isOAuthOnlyAccount
+    ? deleteEmailConfirm.trim().toLowerCase() === (user?.email ?? '').toLowerCase()
+    : deletePassword.length > 0;
 
   // User preferences
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
@@ -131,7 +143,12 @@ export default function SettingsPage() {
   };
 
   const handleDeleteAccount = async () => {
-    if (!deletePassword) {
+    if (isOAuthOnlyAccount) {
+      if (deleteEmailConfirm.trim().toLowerCase() !== (user?.email ?? '').toLowerCase()) {
+        toast.error('Bitte gib deine E-Mail-Adresse zur Bestätigung ein');
+        return;
+      }
+    } else if (!deletePassword) {
       toast.error('Bitte geben Sie Ihr Passwort ein');
       return;
     }
@@ -139,7 +156,11 @@ export default function SettingsPage() {
     setIsDeleting(true);
 
     try {
-      await api.auth.deleteAccount({ password: deletePassword });
+      // OAuth-only accounts: backend ignores the password field, so we
+      // omit it entirely. Local accounts: send the confirmation password.
+      await api.auth.deleteAccount(
+        isOAuthOnlyAccount ? {} : { password: deletePassword },
+      );
       toast.success('Account wurde gelöscht');
       clearAuth();
       router.push('/');
@@ -153,6 +174,7 @@ export default function SettingsPage() {
     } finally {
       setIsDeleting(false);
       setDeletePassword('');
+      setDeleteEmailConfirm('');
     }
   };
 
@@ -276,22 +298,53 @@ export default function SettingsPage() {
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <div className="py-4">
-                    <Label htmlFor="deletePassword">Passwort zur Bestätigung</Label>
-                    <Input
-                      id="deletePassword"
-                      type="password"
-                      value={deletePassword}
-                      onChange={(e) => setDeletePassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="mt-2"
-                    />
+                    {isOAuthOnlyAccount ? (
+                      <>
+                        <Label htmlFor="deleteEmailConfirm">
+                          Gib deine E-Mail-Adresse zur Bestätigung ein
+                        </Label>
+                        <Input
+                          id="deleteEmailConfirm"
+                          type="email"
+                          autoComplete="off"
+                          value={deleteEmailConfirm}
+                          onChange={(e) => setDeleteEmailConfirm(e.target.value)}
+                          placeholder={user?.email ?? ''}
+                          className="mt-2"
+                        />
+                        <p className="mt-2 text-xs text-muted-foreground">
+                          Du hast dich mit einem externen Anbieter angemeldet und kein Passwort
+                          gesetzt. Bitte tippe stattdessen deine E-Mail-Adresse ein, um die
+                          Löschung zu bestätigen.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <Label htmlFor="deletePassword">Passwort zur Bestätigung</Label>
+                        <Input
+                          id="deletePassword"
+                          type="password"
+                          value={deletePassword}
+                          onChange={(e) => setDeletePassword(e.target.value)}
+                          placeholder="••••••••"
+                          className="mt-2"
+                        />
+                      </>
+                    )}
                   </div>
                   <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => setDeletePassword('')}>Abbrechen</AlertDialogCancel>
+                    <AlertDialogCancel
+                      onClick={() => {
+                        setDeletePassword('');
+                        setDeleteEmailConfirm('');
+                      }}
+                    >
+                      Abbrechen
+                    </AlertDialogCancel>
                     <AlertDialogAction
                       onClick={handleDeleteAccount}
                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      disabled={isDeleting || !deletePassword}
+                      disabled={isDeleting || !canConfirmDelete}
                     >
                       {isDeleting ? 'Wird gelöscht...' : 'Account löschen'}
                     </AlertDialogAction>
@@ -310,46 +363,58 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle>Passwort ändern</CardTitle>
               <CardDescription>
-                Aktualisiere dein Passwort regelmäßig für mehr Sicherheit
+                {isOAuthOnlyAccount
+                  ? 'Dein Account ist mit einem externen Anbieter verknüpft. Es ist kein Passwort gesetzt, das du ändern könntest.'
+                  : 'Aktualisiere dein Passwort regelmäßig für mehr Sicherheit'}
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={handleChangePassword} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="currentPassword">Aktuelles Passwort</Label>
-                  <Input
-                    id="currentPassword"
-                    type="password"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder="••••••••"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="newPassword">Neues Passwort</Label>
-                  <Input
-                    id="newPassword"
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="••••••••"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Passwort bestätigen</Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
-                  />
-                </div>
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading ? 'Wird geändert...' : 'Passwort ändern'}
-                </Button>
-              </form>
-            </CardContent>
+            {isOAuthOnlyAccount ? (
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Du hast dich über{' '}
+                  <span className="font-medium capitalize">{user?.provider ?? 'OAuth'}</span>{' '}
+                  angemeldet. Verwalte dein Passwort direkt bei deinem Anbieter.
+                </p>
+              </CardContent>
+            ) : (
+              <CardContent>
+                <form onSubmit={handleChangePassword} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="currentPassword">Aktuelles Passwort</Label>
+                    <Input
+                      id="currentPassword"
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="••••••••"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="newPassword">Neues Passwort</Label>
+                    <Input
+                      id="newPassword"
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="••••••••"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Passwort bestätigen</Label>
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                    />
+                  </div>
+                  <Button type="submit" disabled={isLoading}>
+                    {isLoading ? 'Wird geändert...' : 'Passwort ändern'}
+                  </Button>
+                </form>
+              </CardContent>
+            )}
           </Card>
 
           <TwoFactorStatusCard />

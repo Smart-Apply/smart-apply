@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -123,6 +124,54 @@ export class AdminController {
         currentPeriodStart: updated.currentPeriodStart,
         currentPeriodEnd: updated.currentPeriodEnd,
       },
+    };
+  }
+
+  /**
+   * Permanently delete a user account by email (admin override \u2014 no
+   * password confirmation required).
+   *
+   * Use case: an OAuth-only user (e.g. "Sign in with Google") asks support
+   * to delete their account but cannot complete the self-service flow
+   * because they never set a password. Once the frontend OAuth-aware
+   * delete dialog ships, this endpoint stays as the support escape hatch.
+   *
+   * Cascade: Prisma `onDelete: Cascade` cleans up Profile, Applications,
+   * JobPostings, Sessions, RefreshTokens, UserPreferences, OAuthProviders,
+   * MailboxConnections, etc. Stored PDF files in R2/disk are NOT deleted
+   * here \u2014 same trade-off as `AuthService.deleteAccount`. A separate
+   * cleanup job handles orphaned blobs.
+   *
+   * Idempotent-ish: returns 404 if the user is already gone.
+   *
+   * Example:
+   *   DELETE /api/v1/admin/users/foo@example.com
+   */
+  @Delete('users/:email')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Permanently delete a user account by email (admin only)' })
+  async deleteUser(
+    @Param('email') email: string,
+    @CurrentUser('email') actorEmail: string,
+  ) {
+    const user = await this.prisma.user.findFirst({
+      where: { email: { equals: email, mode: 'insensitive' } },
+      select: { id: true, email: true, provider: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User not found: ${email}`);
+    }
+
+    await this.prisma.user.delete({ where: { id: user.id } });
+
+    this.logger.warn(
+      `Admin ${actorEmail} permanently deleted user ${user.email} (id=${user.id}, provider=${user.provider ?? 'local'})`,
+    );
+
+    return {
+      deleted: true,
+      user: { id: user.id, email: user.email, provider: user.provider },
     };
   }
 }

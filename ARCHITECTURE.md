@@ -327,6 +327,7 @@ All routes are prefixed `/api/v1` and documented at <http://localhost:3000/docs>
 | GET      | `/subscription`                | Plan & usage             |
 | GET      | `/admin/users?email=`          | Admin: search users (allow-listed) |
 | POST     | `/admin/users/:email/tier`     | Admin: set subscription tier (allow-listed) |
+| DELETE   | `/admin/users/:email`          | Admin: permanently delete user (allow-listed) |
 | GET/PUT  | `/user-preferences`            | Settings                 |
 
 ## 🚀 Deployment
