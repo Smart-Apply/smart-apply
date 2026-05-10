@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.12.0](https://github.com/Smart-Apply/smart-apply/compare/v1.11.3...v1.12.0) (2026-05-10)
+
+
+### Features
+
+* **auth:** add admin endpoint to permanently delete user accounts and update related flows for OAuth-only users ([#417](https://github.com/Smart-Apply/smart-apply/issues/417)) ([0923564](https://github.com/Smart-Apply/smart-apply/commit/09235642c6c36abd4821166e521cad98f24b541e))
+
 ## [1.11.3](https://github.com/Smart-Apply/smart-apply/compare/v1.11.2...v1.11.3) (2026-05-10)
 
 
