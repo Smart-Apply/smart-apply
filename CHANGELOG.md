@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.11.1](https://github.com/Smart-Apply/smart-apply/compare/v1.11.0...v1.11.1) (2026-05-10)
+
+
+### Bug Fixes
+
+* **deps:** patch 8 dependabot alerts via npm overrides ([#412](https://github.com/Smart-Apply/smart-apply/issues/412)) ([d83576f](https://github.com/Smart-Apply/smart-apply/commit/d83576fd258fd868f2fd00873f72bf016b58fc08))
+
 ## [1.11.0](https://github.com/Smart-Apply/smart-apply/compare/v1.10.3...v1.11.0) (2026-05-09)
 
 
