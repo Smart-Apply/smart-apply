@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.11.2](https://github.com/Smart-Apply/smart-apply/compare/v1.11.1...v1.11.2) (2026-05-10)
+
+
+### Bug Fixes
+
+* **web:** standardize toast utilities and remove redundant Treffer/retry label logic ([#411](https://github.com/Smart-Apply/smart-apply/issues/411)) ([a380642](https://github.com/Smart-Apply/smart-apply/commit/a3806426784bbe63bfbcb18787baf90a8cd85d21))
+
 ## [1.11.1](https://github.com/Smart-Apply/smart-apply/compare/v1.11.0...v1.11.1) (2026-05-10)
 
 
