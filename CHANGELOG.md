@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.11.3](https://github.com/Smart-Apply/smart-apply/compare/v1.11.2...v1.11.3) (2026-05-10)
+
+
+### Bug Fixes
+
+* **deps:** pin fast-xml-builder to &lt;1.2.0 (broken publish) ([#415](https://github.com/Smart-Apply/smart-apply/issues/415)) ([8c412cd](https://github.com/Smart-Apply/smart-apply/commit/8c412cdba725b30b6ad854c6dfb7c4475b1696d1))
+
 ## [1.11.2](https://github.com/Smart-Apply/smart-apply/compare/v1.11.1...v1.11.2) (2026-05-10)
 
 
