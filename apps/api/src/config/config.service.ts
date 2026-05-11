@@ -201,6 +201,17 @@ export class ConfigService {
     return parseInt(this.nestConfig.get('PUPPETEER_EVICTION_INTERVAL_MS', { infer: true }), 10);
   }
 
+  /**
+   * Phase 1 (rearchitecture): default PDF renderer.
+   * - 'puppeteer' (default): existing Chromium-based path. Supports every DB template.
+   * - 'react-pdf': new @react-pdf/renderer path. Falls back to puppeteer per-call when
+   *   the requested template has no TSX implementation registered in pdf-v2.
+   * See docs/guides/REARCHITECTURE_PLAN.md.
+   */
+  get pdfRendererDefault(): 'puppeteer' | 'react-pdf' {
+    return this.nestConfig.get('PDF_RENDERER_DEFAULT', { infer: true }) || 'puppeteer';
+  }
+
   // OAuth
   get azureAdClientId(): string | undefined {
     return this.nestConfig.get('AZURE_AD_CLIENT_ID', { infer: true });

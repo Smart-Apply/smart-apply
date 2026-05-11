@@ -26,7 +26,7 @@ AI-powered job application assistant — generate tailored, ATS-optimized cover 
 | **Frontend**   | Next.js 16 · React 19 · Tailwind v4 · shadcn/ui · TanStack Query · Zustand  |
 | **Backend**    | NestJS 11 · Prisma 6 (pg adapter) · Neon Postgres (pooled + direct) · Pino · Helmet |
 | **AI**         | Azure AI Foundry · Azure OpenAI · LangChain · LangGraph · Hugging Face      |
-| **PDF**        | Puppeteer 24 · Handlebars · pdf-lib · pdf-parse · mammoth (DOCX)            |
+| **PDF**        | Puppeteer 24 · Handlebars · pdf-lib · pdf-parse · mammoth (DOCX) · `@react-pdf/renderer` (Phase 1 cutover, opt-in via `PDF_RENDERER_DEFAULT=react-pdf`) |
 | **Storage**   | Cloudflare R2 (S3-compatible, EU jurisdiction) · local disk (pluggable)    |
 | **Queue**      | Upstash QStash · in-memory (pluggable)                                     |
 | **Cache**      | Upstash Redis · node-cache                                                  |
@@ -111,7 +111,8 @@ smart-apply/
 │   │   │   ├── job-search/       # Unified multi-source search (LinkedIn + Arbeitnow, pluggable)
 │   │   │   ├── llm/              # LLM provider abstraction
 │   │   │   ├── mailbox-sync/     # Email Tracking (Premium): MS Graph OAuth + classifier
-│   │   │   ├── pdf/              # Puppeteer + Handlebars
+│   │   │   ├── pdf/              # Puppeteer + Handlebars (legacy renderer)
+│   │   │   ├── pdf-v2/           # @react-pdf/renderer (Phase 1, opt-in, falls back to pdf/)
 │   │   │   ├── profile/          # Profile CRUD
 │   │   │   ├── resume-parser/    # PDF/DOCX → Profile
 │   │   │   ├── storage/          # Disk/Blob/S3

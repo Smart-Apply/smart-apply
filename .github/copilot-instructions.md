@@ -192,7 +192,8 @@ Resulting flow: PR → merge to main → staging deploys + Release PR opens/upda
 - `llm` — pluggable providers (`azure-openai` | `azure-ai-foundry` | `mock`) with automatic language detection, opossum circuit breaker
 - `logger` — Pino + Winston audit logger
 - `mailbox-sync` — **Email Tracking (Premium)**: OAuth inbox sync (Microsoft Graph; Gmail planned). Detects company replies in the user's inbox, classifies them with the LLM, and updates the matching `Application.applicationStatus` automatically. Encrypts refresh tokens at rest (AES-256-GCM, `MAILBOX_TOKEN_ENCRYPTION_KEY`). No email bodies are persisted — only metadata + classification.
-- `pdf` — Puppeteer + Handlebars (50 templates), ATS-optimized; browser pool via `generic-pool`
+- `pdf` — Puppeteer + Handlebars (50 templates), ATS-optimized; browser pool via `generic-pool`. **Legacy renderer** — see also `pdf-v2`.
+- `pdf-v2` — **Phase 1 (rearchitecture)**: `@react-pdf/renderer`-based renderer co-existing with `pdf/`. Opt-in via `PDF_RENDERER_DEFAULT=react-pdf` (default `puppeteer`). Falls back to `pdf/` per-call when a template has no TSX implementation registered in [`template-registry.ts`](../apps/api/src/pdf-v2/template-registry.ts). See [REARCHITECTURE_PLAN.md](../docs/guides/REARCHITECTURE_PLAN.md). Snapshot: `npm run --workspace @smart-apply/api snapshot:pdf-renderers`.
 - `prisma` — PrismaService
 - `profile` — CRUD with **differential updates** (Skills, Experiences, Education, Certificates, Projects, Languages)
 - `resume-parser` — PDF/DOCX → Profile bootstrap (pdf-parse + mammoth)
@@ -679,6 +680,11 @@ MS_GRAPH_TENANT=common  # or a specific tenant id
 
 # PDF Generation
 PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+# Phase 1 (rearchitecture): default PDF renderer.
+#   'puppeteer' (default) | 'react-pdf'
+# 'react-pdf' falls back to puppeteer per-call when the requested template has
+# no TSX implementation registered in src/pdf-v2/template-registry.ts.
+PDF_RENDERER_DEFAULT=puppeteer
 ```
 
 ### Frontend (`apps/web/.env`)

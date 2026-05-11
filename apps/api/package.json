@@ -42,6 +42,7 @@
     "templates:regenerate-previews": "dotenv -e .env -- ts-node -r tsconfig-paths/register scripts/generate-template-previews.ts --force",
     "templates:seed-with-previews": "npm run prisma:seed:templates && npm run templates:generate-previews",
     "templates:cleanup": "ts-node -r tsconfig-paths/register scripts/cleanup-legacy-templates.ts",
+    "snapshot:pdf-renderers": "dotenv -e .env -- ts-node -r tsconfig-paths/register scripts/snapshot-pdf-renderers.ts",
     "create-agents": "ts-node -r tsconfig-paths/register scripts/create-agents.ts"
   },
   "dependencies": {
@@ -64,6 +65,7 @@
     "@nestjs/throttler": "^6.5.0",
     "@prisma/adapter-pg": "^7.3.0",
     "@prisma/client": "^6.19.2",
+    "@react-pdf/renderer": "^4.5.1",
     "@sentry/node": "^10.50.0",
     "@sentry/profiling-node": "^10.50.0",
     "@smart-apply/shared": "1.0.0",
@@ -107,6 +109,8 @@
     "prisma": "6.19.3",
     "puppeteer": "^24.36.0",
     "qrcode": "^1.5.4",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
     "reflect-metadata": "^0.2.1",
     "resend": "^6.9.1",
     "rxjs": "^7.8.1",
@@ -134,6 +138,8 @@
     "@types/pdf-parse": "^1.1.5",
     "@types/pg": "^8.11.10",
     "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "@types/speakeasy": "^2.0.10",
     "@types/ua-parser-js": "^0.7.39",
     "@types/validator": "^13.15.9",

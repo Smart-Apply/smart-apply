@@ -4,6 +4,7 @@ import { Browser } from 'puppeteer';
 import { PDFDocument } from 'pdf-lib';
 import { createPool, Pool } from 'generic-pool';
 import { ConfigService } from '../config/config.service';
+import { ReactPdfRendererService } from '../pdf-v2/react-pdf-renderer.service';
 import {
   TemplateRendererService,
   CoverLetterTemplateData,
@@ -45,6 +46,7 @@ export class PdfService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private configService: ConfigService,
     private templateRenderer: TemplateRendererService,
+    private reactPdfRenderer: ReactPdfRendererService,
   ) {}
 
   async onModuleInit() {
@@ -315,6 +317,25 @@ export class PdfService implements OnModuleInit, OnModuleDestroy {
     templateId?: string,
     options: PdfGenerationOptions = {},
   ): Promise<Buffer> {
+    // Phase 1 (rearchitecture): try the react-pdf renderer first when the
+    // template has a TSX implementation registered. Falls through to the
+    // legacy puppeteer path on miss or on any render error.
+    if (this.configService.pdfRendererDefault === 'react-pdf') {
+      try {
+        const buf = await this.reactPdfRenderer.renderCoverLetter(data, templateId, {
+          atsOptimized: options.atsOptimized,
+        });
+        if (buf) {
+          this.logger.log(`Cover letter rendered via react-pdf (${buf.length} bytes)`);
+          return options.metadata ? this.addMetadata(buf, options.metadata) : buf;
+        }
+      } catch (error) {
+        this.logger.warn(
+          `react-pdf cover letter render failed; falling back to puppeteer: ${error.message}`,
+        );
+      }
+    }
+
     try {
       const html = await this.templateRenderer.renderCoverLetter(
         data,
@@ -361,6 +382,23 @@ export class PdfService implements OnModuleInit, OnModuleDestroy {
     templateId?: string,
     options: PdfGenerationOptions = {},
   ): Promise<Buffer> {
+    // Phase 1 (rearchitecture): try react-pdf first; fall back on miss/error.
+    if (this.configService.pdfRendererDefault === 'react-pdf') {
+      try {
+        const buf = await this.reactPdfRenderer.renderResume(data, templateId, {
+          atsOptimized: options.atsOptimized,
+        });
+        if (buf) {
+          this.logger.log(`Resume rendered via react-pdf (${buf.length} bytes)`);
+          return options.metadata ? this.addMetadata(buf, options.metadata) : buf;
+        }
+      } catch (error) {
+        this.logger.warn(
+          `react-pdf resume render failed; falling back to puppeteer: ${error.message}`,
+        );
+      }
+    }
+
     try {
       const html = await this.templateRenderer.renderResume(data, templateId, options.atsOptimized);
 

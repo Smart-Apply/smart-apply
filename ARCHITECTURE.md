@@ -75,7 +75,8 @@ smart-apply/
 │   │   │   ├── llm/               # LLM provider abstraction
 │   │   │   ├── logger/            # Pino + Winston audit
 │   │   │   ├── mailbox-sync/      # Email Tracking (Premium): MS Graph OAuth + classifier
-│   │   │   ├── pdf/               # Puppeteer + Handlebars (50 templates)
+│   │   │   ├── pdf/               # Puppeteer + Handlebars (legacy renderer, 50 templates)
+│   │   │   ├── pdf-v2/            # @react-pdf/renderer (Phase 1 cutover, opt-in)
 │   │   │   ├── prisma/            # PrismaService (pg adapter)
 │   │   │   ├── profile/           # Profile CRUD (differential updates)
 │   │   │   ├── resume-parser/     # PDF/DOCX → Profile bootstrap
@@ -148,8 +149,14 @@ User → Frontend (Next.js)
 │ PDF Service (Puppeteer pool)         │
 │ 1. Render Handlebars template        │
 │ 2. Generate ATS-optimized PDFs       │
-│ 3. Apply pdf-lib post-processing     │
-└──────────────────────────────────────┘
+│ 3. Apply pdf-lib post-processing     ││                                      │
+│ Phase 1: when PDF_RENDERER_DEFAULT=  │
+│ 'react-pdf' AND template is in       │
+│ pdf-v2/template-registry.ts, the     │
+│ Puppeteer path is bypassed and       │
+│ @react-pdf/renderer emits the PDF    │
+│ directly. Misses or render errors    │
+│ transparently fall back here.        │└──────────────────────────────────────┘
         │
         ▼
 ┌──────────────────────────────────────┐
@@ -240,7 +247,7 @@ User 1:1 Subscription
 | Cache       | Upstash Redis · node-cache                           |
 | Storage     | Cloudflare R2 (S3-compatible) · local disk           |
 | LLM         | Azure AI Foundry · Azure OpenAI · mock               |
-| PDF         | Puppeteer 24 + Playwright · Handlebars · pdf-lib · pdf-parse · mammoth (DOCX) |
+| PDF         | Puppeteer 24 + Playwright · Handlebars · pdf-lib · pdf-parse · mammoth (DOCX) · `@react-pdf/renderer` (Phase 1, opt-in via `PDF_RENDERER_DEFAULT=react-pdf`) |
 | Email       | Resend                                               |
 | Logging     | Pino (req logs) + Winston (audit, daily rotation)    |
 | Monitoring  | Sentry (`@sentry/node` + profiling)                  |
