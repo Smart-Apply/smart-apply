@@ -237,4 +237,10 @@ via `/api/config`, the `PUBLIC_API_URL` GitHub Variable trap) lives in
 
 ## 📄 License
 
-MIT
+Smart Apply is source-available under the [Business Source License 1.1](LICENSE).
+
+- ✅ **Free** for non-production use: read the source, run it locally, modify it, contribute.
+- ❌ **Production use** (running it as a service for others, hosted/SaaS, or any commercial deployment) requires a commercial license — contact the Licensor.
+- 🔓 On the **Change Date (2030-05-11)**, this version automatically converts to the **Apache License, Version 2.0**.
+
+See [LICENSE](LICENSE) for the full terms.

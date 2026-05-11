@@ -4,7 +4,7 @@
   "description": "Smart Apply Backend API - NestJS + Prisma + Azure",
   "author": "Smart Apply Team",
   "private": true,
-  "license": "MIT",
+  "license": "BUSL-1.1",
   "scripts": {
     "postinstall": "npx prisma generate --schema=./prisma/schema.prisma && node scripts/sanitize-prisma-client.js || true",
     "build": "nest build && npm run copy:assets",
