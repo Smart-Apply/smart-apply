@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.14.0](https://github.com/Smart-Apply/smart-apply/compare/v1.13.0...v1.14.0) (2026-05-11)
+
+
+### Features
+
+* consolidate launch planning and documentation ([#426](https://github.com/Smart-Apply/smart-apply/issues/426)) ([74d5f01](https://github.com/Smart-Apply/smart-apply/commit/74d5f01e7fa9c0594d48a7a2335b3530b9b2abf1))
+
 ## [1.13.0](https://github.com/Smart-Apply/smart-apply/compare/v1.12.0...v1.13.0) (2026-05-10)
 
 
