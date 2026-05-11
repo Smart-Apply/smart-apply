@@ -20,7 +20,6 @@ Sicherheitsdokumentation
 
 Feature-Dokumentation
 
-- **MVP_FEATURES.md** - MVP Feature Übersicht
 - **FEATURES.md** - Komplette Feature Liste
 - **PDF_GENERATION.md** - PDF-Generierung
 - **ATS_SCORE_WEIGHTING.md** - ATS Score Berechnung
@@ -42,7 +41,8 @@ Technische Implementierungsdetails
 
 Anleitungen
 
-- **MVP_EVALUATION_DEC_2025.md** - Aktueller MVP Status
+- **PUBLIC_LAUNCH_PLAN.md** - Single source of truth for launch readiness
+- **DEVOPS_ROADMAP.md** - Multi-stage env, secrets, releases (shipped state + history)
 - **TEMPLATE_GUIDE.md** - Template System Guide
 - **TESTING_GUIDE.md** - Testing Best Practices
 - **DOMAIN_CLOUDFLARE_SETUP.md** - Cloudflare + Fly.io domain setup (postmortem)
@@ -53,10 +53,10 @@ Anleitungen
 
 ## 🚀 Quick Links
 
-| Kategorie      | Link                                                              | Beschreibung           |
-| -------------- | ----------------------------------------------------------------- | ---------------------- |
-| **MVP Status** | [MVP_EVALUATION_DEC_2025.md](./guides/MVP_EVALUATION_DEC_2025.md) | Aktueller Projektstand |
-| **Sicherheit** | [SECURITY.md](./security/SECURITY.md)                             | Sicherheitsübersicht   |
-| **Templates**  | [TEMPLATE_GUIDE.md](./guides/TEMPLATE_GUIDE.md)                   | Template System        |
-| **Testing**    | [TESTING_GUIDE.md](./guides/TESTING_GUIDE.md)                     | Test Anleitungen       |
-| **Azure**      | [AZURE_AI_FOUNDRY_AGENTS.md](./guides/AZURE_AI_FOUNDRY_AGENTS.md) | AI Foundry agents      |
+| Kategorie      | Link                                                              | Beschreibung                |
+| -------------- | ----------------------------------------------------------------- | --------------------------- |
+| **Launch**     | [PUBLIC_LAUNCH_PLAN.md](./guides/PUBLIC_LAUNCH_PLAN.md)           | Pre-launch readiness checklist |
+| **Sicherheit** | [SECURITY.md](./security/SECURITY.md)                             | Sicherheitsübersicht        |
+| **Templates**  | [TEMPLATE_GUIDE.md](./guides/TEMPLATE_GUIDE.md)                   | Template System             |
+| **Testing**    | [TESTING_GUIDE.md](./guides/TESTING_GUIDE.md)                     | Test Anleitungen            |
+| **Azure**      | [AZURE_AI_FOUNDRY_AGENTS.md](./guides/AZURE_AI_FOUNDRY_AGENTS.md) | AI Foundry agents           |
