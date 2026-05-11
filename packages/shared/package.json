@@ -10,7 +10,7 @@
   },
   "keywords": ["types", "dtos", "shared"],
   "author": "Smart Apply Team",
-  "license": "MIT",
+  "license": "BUSL-1.1",
   "devDependencies": {
     "typescript": "^6.0.3"
   }

@@ -4,7 +4,7 @@
   "description": "Smart Apply MVP - AI-powered job application assistant (Monorepo)",
   "author": "Smart Apply Team",
   "private": true,
-  "license": "MIT",
+  "license": "BUSL-1.1",
   "packageManager": "npm@10.1.0",
   "workspaces": [
     "apps/api",
