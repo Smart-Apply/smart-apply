@@ -575,7 +575,7 @@ PUT /api/v1/profile
 - WebAuthn/passkeys
 
 **Security Roadmap**
-See `MVP_FEATURES.md` for detailed security tasks with priorities and estimates.
+See [docs/guides/PUBLIC_LAUNCH_PLAN.md](../docs/guides/PUBLIC_LAUNCH_PLAN.md) for the active pre-launch checklist.
 
 ## Environment Variables
 

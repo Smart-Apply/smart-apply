@@ -444,7 +444,7 @@ llm_request_duration_seconds{quantile="0.95"} 8.5
 - [N+1 Query Prevention](./N_PLUS_ONE_PREVENTION.md) - Database optimization
 - [Pagination](./PAGINATION.md) - Prevents loading too many records
 - [Security](../security/SECURITY.md) - Rate limiting, CSRF, XSS
-- [MVP Features](../features/MVP_FEATURES.md) - Full feature list with priorities
+- [Feature List](../features/FEATURES.md) - Complete shipped-feature inventory
 
 ## References
 

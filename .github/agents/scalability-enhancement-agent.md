@@ -610,5 +610,5 @@ When stuck:
 - **Project Overview:** `.github/agents/my-agents.md`
 - **Security:** `docs/security/SECURITY.md`
 - **Testing:** `docs/testing/TESTING_STRATEGY.md`
-- **MVP Features:** `docs/features/MVP_FEATURES.md`
+- **Launch readiness:** `docs/guides/PUBLIC_LAUNCH_PLAN.md`
 - **Deployment:** `docs/guides/AZURE_DEPLOYMENT.md`
