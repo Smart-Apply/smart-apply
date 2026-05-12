@@ -23,6 +23,7 @@ import type { Skill, Experience, Education, Certificate, Project, Language, Extr
 import type { ImportableSection } from '@/hooks/use-parse-resume';
 import { toastSuccess } from '@/lib/toast';
 import dynamic from 'next/dynamic';
+import { useSearchParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Dynamic imports for form managers that use Tiptap editor (saves ~200KB)
@@ -51,8 +52,14 @@ const ProjectsManager = dynamic(
   }
 );
 
+const VALID_TABS = ['basic', 'experience', 'education', 'skills', 'projects', 'certificates'] as const;
+
 export default function ProfileEditPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialTab = VALID_TABS.includes(searchParams.get('tab') as any)
+    ? (searchParams.get('tab') as string)
+    : 'basic';
   const { data: profile, isLoading } = useProfile();
   const user = useAuthStore((state) => state.user);
   const updateProfile = useUpdateProfile();
@@ -342,7 +349,7 @@ export default function ProfileEditPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="basic" className="space-y-6">
+      <Tabs defaultValue={initialTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-2 md:grid-cols-6 lg:w-auto h-auto p-1 bg-muted/50 rounded-xl">
           <TabsTrigger value="basic" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm py-2">Basis</TabsTrigger>
           <TabsTrigger value="experience" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm py-2">Erfahrung</TabsTrigger>

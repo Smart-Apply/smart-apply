@@ -19,7 +19,7 @@ import {
   Linkedin,
   Briefcase,
   Plus,
-  Download,
+  Upload,
   X,
   Star,
   Pencil,
@@ -27,12 +27,25 @@ import {
   Code2,
   BarChart3,
   Award,
+  Loader2,
+  FolderKanban,
+  ExternalLink,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { formatDate } from '@/lib/format-date';
 import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { useParseResume } from '@/hooks/use-parse-resume';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { FileUpload } from '@/components/ui/file-upload';
+import type { UpdateProfileDto } from '@/types';
 
 const SKILL_SUGGESTIONS = [
   'JavaScript', 'TypeScript', 'Python', 'Java', 'C#', 'C++', 'Go', 'Rust', 'PHP', 'Ruby',
@@ -501,7 +514,63 @@ export default function ProfilePage() {
   const updateProfile = useUpdateProfile();
   const user = useAuthStore((state) => state.user);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const [tipDismissed, setTipDismissed] = useState(false);
+  const [tipDismissed, setTipDismissed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('profile-tip-dismissed') === 'true';
+    }
+    return false;
+  });
+  const [cvDialogOpen, setCvDialogOpen] = useState(false);
+  const parseResume = useParseResume();
+
+  const cvUploading = parseResume.isPending || updateProfile.isPending;
+
+  const handleCvUpload = useCallback(
+    async (file: File) => {
+      try {
+        const data = await parseResume.mutateAsync(file);
+        const updateData: UpdateProfileDto = {};
+
+        if (data.firstName) updateData.firstName = data.firstName;
+        if (data.lastName) updateData.lastName = data.lastName;
+        if (data.phone) updateData.phone = data.phone;
+        if (data.street) updateData.street = data.street;
+        if (data.postalCode) updateData.postalCode = data.postalCode;
+        if (data.city) updateData.city = data.city;
+        if (data.country) updateData.country = data.country;
+        if (data.linkedinUrl) updateData.linkedinUrl = data.linkedinUrl;
+        if (data.githubUrl) updateData.githubUrl = data.githubUrl;
+        if (data.portfolioUrl) updateData.portfolioUrl = data.portfolioUrl;
+        if (data.summary) updateData.summary = data.summary;
+        if (data.skills && data.skills.length > 0) {
+          updateData.skills = data.skills.map((s) => ({ name: s.name, level: s.level }));
+        }
+        if (data.experiences && data.experiences.length > 0) {
+          updateData.experiences = data.experiences;
+        }
+        if (data.education && data.education.length > 0) {
+          updateData.education = data.education;
+        }
+        if (data.certificates && data.certificates.length > 0) {
+          updateData.certificates = data.certificates;
+        }
+        if (data.projects && data.projects.length > 0) {
+          updateData.projects = data.projects;
+        }
+        if (data.languages && data.languages.length > 0) {
+          updateData.languages = data.languages;
+        }
+
+        await updateProfile.mutateAsync(updateData);
+        toast.success('Lebenslauf erfolgreich importiert!');
+        setCvDialogOpen(false);
+        parseResume.reset();
+      } catch {
+        toast.error('Lebenslauf konnte nicht verarbeitet werden.');
+      }
+    },
+    [parseResume, updateProfile],
+  );
 
   const { data: analytics } = useQuery<AnalyticsOverview>({
     queryKey: ['analytics-overview'],
@@ -567,6 +636,14 @@ export default function ProfilePage() {
     [profile?.experiences, updateProfile],
   );
 
+  const handleRemoveProject = useCallback(
+    (index: number) => {
+      const updated = (profile?.projects ?? []).filter((_, i) => i !== index);
+      updateProfile.mutate({ projects: updated });
+    },
+    [profile?.projects, updateProfile],
+  );
+
   const handleRemoveCertificate = useCallback(
     (index: number) => {
       const updated = (profile?.certificates ?? []).filter((_, i) => i !== index);
@@ -608,20 +685,15 @@ export default function ProfilePage() {
           <span>→</span>
           <span className="font-medium text-foreground">Mein Profil</span>
         </nav>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            onClick={() => router.push('/profile/edit')}
-          >
-            <Download className="h-4 w-4" />
-            CV herunterladen
-          </Button>
-          <Button size="sm" onClick={() => router.push('/profile/edit')}>
-            Speichern
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          onClick={() => setCvDialogOpen(true)}
+        >
+          <Upload className="h-4 w-4" />
+          CV hochladen
+        </Button>
       </div>
 
       {/* ── Tip banner ── */}
@@ -636,11 +708,17 @@ export default function ProfilePage() {
             <kbd className="rounded border border-border px-1.5 py-0.5 font-mono text-xs">
               + hinzufügen
             </kbd>{' '}
-            fügst du Einträge hinzu, mit dem 🗑 löschst du sie. Klicke auf die Punkte einer
-            Fähigkeit, um dein Level zu setzen.
+            fügst du Einträge hinzu, mit{' '}
+            <kbd className="rounded border border-border px-1.5 py-0.5 font-mono text-xs">
+              −
+            </kbd>{' '}
+            löschst du sie.
           </p>
           <button
-            onClick={() => setTipDismissed(true)}
+            onClick={() => {
+              setTipDismissed(true);
+              localStorage.setItem('profile-tip-dismissed', 'true');
+            }}
             className="text-muted-foreground transition-colors hover:text-foreground"
           >
             <X className="h-4 w-4" />
@@ -871,11 +949,92 @@ export default function ProfilePage() {
             )}
 
             <button
-              onClick={() => router.push('/profile/edit')}
+              onClick={() => router.push('/profile/edit?tab=experience')}
               className="mt-5 flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               <Plus className="h-3.5 w-3.5" />
               Berufserfahrung hinzufügen
+            </button>
+          </div>
+
+          {/* ── Projekte ── */}
+          <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+            <div className="mb-5 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FolderKanban className="h-4 w-4 text-muted-foreground" />
+                <h2 className="font-semibold text-foreground">Projekte</h2>
+                {(profile?.projects?.length ?? 0) > 0 && (
+                  <span className="text-sm text-muted-foreground">
+                    {profile!.projects!.length} Projekte
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {(profile?.projects?.length ?? 0) > 0 ? (
+              <div className="space-y-5">
+                {profile!.projects!.map((proj, i) => (
+                  <div key={i} className="group/proj flex gap-4">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#0c1d3f] text-xs font-bold text-white">
+                      <FolderKanban className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-semibold text-foreground">{proj.name}</p>
+                            {proj.url && (
+                              <a
+                                href={proj.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-muted-foreground transition-colors hover:text-primary"
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            )}
+                          </div>
+                          {proj.description && (
+                            <p className="mt-1 text-sm leading-relaxed text-muted-foreground line-clamp-2">
+                              {proj.description}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => handleRemoveProject(i)}
+                          className="shrink-0 rounded-full p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover/proj:opacity-100"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      {proj.technologies && proj.technologies.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {proj.technologies.map((tech, ti) => (
+                            <span
+                              key={ti}
+                              className="rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground"
+                            >
+                              {tech}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="py-4 text-center text-sm text-muted-foreground">
+                Noch keine Projekte eingetragen.
+              </p>
+            )}
+
+            <button
+              onClick={() => router.push('/profile/edit?tab=projects')}
+              className="mt-5 flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Projekt hinzufügen
             </button>
           </div>
 
@@ -936,7 +1095,7 @@ export default function ProfilePage() {
             )}
 
             <button
-              onClick={() => router.push('/profile/edit')}
+              onClick={() => router.push('/profile/edit?tab=certificates')}
               className="mt-5 flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               <Plus className="h-3.5 w-3.5" />
@@ -965,8 +1124,8 @@ export default function ProfilePage() {
             </div>
             <p className="text-sm leading-relaxed text-gray-300">
               {profileStrength === 100
-                ? 'Vollständig — Recruiter können dich über die Job-Suche finden.'
-                : 'Vervollständige dein Profil für bessere Chancen bei Recruitern.'}
+                ? 'Dein Profil ist vollständig.'
+                : 'Ein vollständiges Profil verbessert deine generierten Bewerbungen.'}
             </p>
           </div>
 
@@ -1028,6 +1187,47 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* ── CV Upload Dialog ── */}
+      <Dialog
+        open={cvDialogOpen}
+        onOpenChange={(open) => {
+          if (!cvUploading) {
+            setCvDialogOpen(open);
+            if (!open) parseResume.reset();
+          }
+        }}
+      >
+        <DialogContent showCloseButton={!cvUploading}>
+          <DialogHeader>
+            <DialogTitle>Lebenslauf hochladen</DialogTitle>
+            <DialogDescription>
+              Lade deinen Lebenslauf hoch — wir lesen ihn aus und füllen dein Profil
+              automatisch aus.
+            </DialogDescription>
+          </DialogHeader>
+
+          {cvUploading ? (
+            <div className="flex flex-col items-center gap-3 py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm font-medium text-foreground">
+                {parseResume.isPending
+                  ? 'Lebenslauf wird analysiert…'
+                  : 'Profil wird aktualisiert…'}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Das kann einen Moment dauern.
+              </p>
+            </div>
+          ) : (
+            <FileUpload
+              onFileSelect={handleCvUpload}
+              onFileRemove={() => parseResume.reset()}
+              hint="PDF oder DOCX, max. 10 MB"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -304,6 +304,7 @@ export class LanguageDto {
     description:
       'Proficiency level (NATIVE, FLUENT, ADVANCED, INTERMEDIATE, BASIC). Also accepts legacy values like Muttersprache, Fließend, etc.',
   })
+  @IsOptional()
   @Transform(({ value }) => mapToLanguageProficiency(value))
   level: LanguageProficiency | null;
 }

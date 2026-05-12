@@ -1,30 +1,17 @@
 'use client';
 
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, Calendar, Award, ExternalLink } from 'lucide-react';
+import { Plus, Edit, Trash2, Calendar, Award, ExternalLink, Link as LinkIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Certificate } from '@/types';
 
@@ -33,27 +20,6 @@ interface CertificatesManagerProps {
   onCertificatesChange: (certificates: Certificate[]) => void;
   disabled?: boolean;
 }
-
-// Validation schema for certificate form
-const certificateSchema = z.object({
-  name: z.string().min(1, 'Name ist erforderlich'),
-  issuingOrganization: z.string().min(1, 'Ausstellende Organisation ist erforderlich'),
-  issueDate: z.string().optional(),
-  expirationDate: z.string().optional(),
-  credentialId: z.string().optional(),
-  credentialUrl: z.string().url('Ungültige URL').optional().or(z.literal('')),
-}).refine((data) => {
-  // If both dates are provided, expiration must be after issue date
-  if (data.issueDate && data.expirationDate) {
-    return new Date(data.expirationDate) >= new Date(data.issueDate);
-  }
-  return true;
-}, {
-  message: 'Ablaufdatum muss nach oder gleich dem Ausstellungsdatum sein',
-  path: ['expirationDate'],
-});
-
-type CertificateFormValues = z.infer<typeof certificateSchema>;
 
 export function CertificatesManager({
   certificates,
@@ -64,104 +30,130 @@ export function CertificatesManager({
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [deleteConfirmIndex, setDeleteConfirmIndex] = useState<number | null>(null);
 
-  const form = useForm<CertificateFormValues>({
-    resolver: zodResolver(certificateSchema),
-    mode: 'onChange',
-    defaultValues: {
-      name: '',
-      issuingOrganization: '',
-      issueDate: '',
-      expirationDate: '',
-      credentialId: '',
-      credentialUrl: '',
-    },
-  });
+  /* form state */
+  const [name, setName] = useState('');
+  const [issuer, setIssuer] = useState('');
+  const [issueDate, setIssueDate] = useState('');
+  const [expiryDate, setExpiryDate] = useState('');
+  const [credentialId, setCredentialId] = useState('');
+  const [credentialUrl, setCredentialUrl] = useState('');
+  const [urlError, setUrlError] = useState('');
+
+  const nameRef = useRef<HTMLInputElement>(null);
+
+  const resetForm = () => {
+    setName('');
+    setIssuer('');
+    setIssueDate('');
+    setExpiryDate('');
+    setCredentialId('');
+    setCredentialUrl('');
+    setUrlError('');
+  };
 
   const sortedCertificates = [...certificates].sort((a, b) => {
     if (!a.dateObtained && !b.dateObtained) return 0;
     if (!a.dateObtained) return 1;
     if (!b.dateObtained) return -1;
-
-    const dateA = new Date(a.dateObtained);
-    const dateB = new Date(b.dateObtained);
-    return dateB.getTime() - dateA.getTime();
+    return new Date(b.dateObtained).getTime() - new Date(a.dateObtained).getTime();
   });
 
   const openAddDialog = () => {
     setEditingIndex(null);
-    form.reset({
-      name: '',
-      issuingOrganization: '',
-      issueDate: '',
-      expirationDate: '',
-      credentialId: '',
-      credentialUrl: '',
-    });
+    resetForm();
     setIsDialogOpen(true);
   };
 
   const openEditDialog = (index: number) => {
     const cert = certificates[index];
     setEditingIndex(index);
-    form.reset({
-      name: cert.name,
-      issuingOrganization: cert.issuer,
-      issueDate: cert.dateObtained ? cert.dateObtained.split('T')[0] : '',
-      expirationDate: cert.expiryDate ? cert.expiryDate.split('T')[0] : '',
-      credentialId: cert.credentialId || '',
-      credentialUrl: cert.url || '',
-    });
+    setName(cert.name);
+    setIssuer(cert.issuer);
+    setIssueDate(cert.dateObtained ? cert.dateObtained.split('T')[0] : '');
+    setExpiryDate(cert.expiryDate ? cert.expiryDate.split('T')[0] : '');
+    setCredentialId(cert.credentialId || '');
+    setCredentialUrl(cert.url || '');
+    setUrlError('');
     setIsDialogOpen(true);
   };
 
-  const handleSubmit = (data: CertificateFormValues) => {
-    const newCertificate: Certificate = {
-      name: data.name,
-      issuer: data.issuingOrganization,
-      dateObtained: data.issueDate ? new Date(data.issueDate).toISOString() : undefined,
-      url: data.credentialUrl?.trim() || undefined,
-      expiryDate: data.expirationDate ? new Date(data.expirationDate).toISOString() : null,
-      credentialId: data.credentialId?.trim() || undefined,
+  useEffect(() => {
+    if (isDialogOpen) {
+      const t = setTimeout(() => nameRef.current?.focus(), 120);
+      return () => clearTimeout(t);
+    }
+  }, [isDialogOpen]);
+
+  const canSubmit = name.trim() && issuer.trim();
+
+  const handleSubmit = () => {
+    if (!name.trim()) {
+      toast.error('Bitte gib einen Zertifikatsnamen ein');
+      nameRef.current?.focus();
+      return;
+    }
+    if (!issuer.trim()) {
+      toast.error('Bitte gib die ausstellende Organisation ein');
+      return;
+    }
+    if (credentialUrl.trim()) {
+      try {
+        new URL(
+          credentialUrl.trim().startsWith('http')
+            ? credentialUrl.trim()
+            : `https://${credentialUrl.trim()}`,
+        );
+      } catch {
+        setUrlError('Bitte gib eine gültige URL ein');
+        return;
+      }
+    }
+    if (issueDate && expiryDate && new Date(expiryDate) < new Date(issueDate)) {
+      toast.error('Ablaufdatum muss nach dem Ausstellungsdatum liegen');
+      return;
+    }
+
+    let finalUrl = credentialUrl.trim() || undefined;
+    if (finalUrl && !finalUrl.startsWith('http')) {
+      finalUrl = `https://${finalUrl}`;
+    }
+
+    const newCert: Certificate = {
+      name: name.trim(),
+      issuer: issuer.trim(),
+      dateObtained: issueDate ? new Date(issueDate).toISOString() : undefined,
+      expiryDate: expiryDate ? new Date(expiryDate).toISOString() : null,
+      credentialId: credentialId.trim() || undefined,
+      url: finalUrl,
     };
 
-    let updatedCertificates: Certificate[];
-
+    let updated: Certificate[];
     if (editingIndex !== null) {
-      const existingCertificate = certificates[editingIndex];
-      updatedCertificates = [...certificates];
-      updatedCertificates[editingIndex] = {
-        ...newCertificate,
-        ...(existingCertificate.id && { id: existingCertificate.id }),
-      };
+      const existing = certificates[editingIndex];
+      updated = [...certificates];
+      updated[editingIndex] = { ...newCert, ...(existing.id && { id: existing.id }) };
       toast.success('Zertifikat aktualisiert');
     } else {
-      updatedCertificates = [...certificates, newCertificate];
+      updated = [...certificates, newCert];
       toast.success('Zertifikat hinzugefügt');
     }
 
-    onCertificatesChange(updatedCertificates);
+    onCertificatesChange(updated);
     setIsDialogOpen(false);
-    form.reset();
+    resetForm();
   };
 
   const handleDelete = (index: number) => {
-    const updatedCertificates = certificates.filter((_, i) => i !== index);
-    onCertificatesChange(updatedCertificates);
+    onCertificatesChange(certificates.filter((_, i) => i !== index));
     setDeleteConfirmIndex(null);
     toast.success('Zertifikat entfernt');
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('de-DE', {
-      month: 'short',
-      year: 'numeric',
-    });
-  };
+  const fmtDate = (d: string) =>
+    new Date(d).toLocaleDateString('de-DE', { month: 'short', year: 'numeric' });
 
-  const isExpired = (expiryDate: string | null | undefined) => {
-    if (!expiryDate) return false;
-    return new Date(expiryDate) < new Date();
-  };
+  const isExpired = (d: string | null | undefined) =>
+    d ? new Date(d) < new Date() : false;
 
   return (
     <div className="space-y-6">
@@ -172,13 +164,8 @@ export function CertificatesManager({
             Deine beruflichen Zertifizierungen
           </p>
         </div>
-        <Button
-          type="button"
-          onClick={openAddDialog}
-          disabled={disabled}
-          size="sm"
-        >
-          <Plus className="h-4 w-4 mr-2" />
+        <Button type="button" onClick={openAddDialog} disabled={disabled} size="sm">
+          <Plus className="mr-2 h-4 w-4" />
           Hinzufügen
         </Button>
       </div>
@@ -187,40 +174,48 @@ export function CertificatesManager({
         <div className="space-y-4">
           {sortedCertificates.map((cert, displayIndex) => {
             const originalIndex = certificates.findIndex(
-              c => c.name === cert.name && c.issuer === cert.issuer && c.dateObtained === cert.dateObtained
+              (c) =>
+                c.name === cert.name &&
+                c.issuer === cert.issuer &&
+                c.dateObtained === cert.dateObtained,
             );
-
             const expired = isExpired(cert.expiryDate);
 
             return (
-              <Card key={displayIndex} className="border-border/50 shadow-sm hover:shadow-md transition-all">
+              <Card
+                key={displayIndex}
+                className="border-border/50 shadow-sm transition-all hover:shadow-md"
+              >
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="flex items-start gap-3">
-                        <div className="mt-1 h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <div className="mt-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10">
                           <Award className="h-4 w-4 text-primary" />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-foreground truncate">{cert.name}</h4>
-                          <p className="text-sm text-muted-foreground truncate">{cert.issuer}</p>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="truncate font-semibold text-foreground">
+                            {cert.name}
+                          </h4>
+                          <p className="truncate text-sm text-muted-foreground">
+                            {cert.issuer}
+                          </p>
 
                           {cert.dateObtained && (
-                            <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                            <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
                               <Calendar className="h-3 w-3" />
-                              <span>
-                                Ausgestellt: {formatDate(cert.dateObtained)}
-                              </span>
+                              <span>Ausgestellt: {fmtDate(cert.dateObtained)}</span>
                             </div>
                           )}
 
                           {cert.expiryDate && (
-                            <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                              <span>
-                                Läuft ab: {formatDate(cert.expiryDate)}
-                              </span>
+                            <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                              <span>Läuft ab: {fmtDate(cert.expiryDate)}</span>
                               {expired && (
-                                <Badge variant="destructive" className="text-[10px] py-0 px-1.5 h-4">
+                                <Badge
+                                  variant="destructive"
+                                  className="h-4 px-1.5 py-0 text-[10px]"
+                                >
                                   Abgelaufen
                                 </Badge>
                               )}
@@ -228,7 +223,7 @@ export function CertificatesManager({
                           )}
 
                           {cert.credentialId && (
-                            <p className="mt-1 text-xs text-muted-foreground font-mono">
+                            <p className="mt-1 font-mono text-xs text-muted-foreground">
                               ID: {cert.credentialId}
                             </p>
                           )}
@@ -238,7 +233,7 @@ export function CertificatesManager({
                               href={cert.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 mt-2 text-xs text-primary hover:text-primary/80 hover:underline"
+                              className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:text-primary/80 hover:underline"
                             >
                               <ExternalLink className="h-3 w-3" />
                               Zertifikat anzeigen
@@ -277,13 +272,14 @@ export function CertificatesManager({
           })}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-10 text-center rounded-xl border border-dashed border-border bg-muted/20">
-          <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-4">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 py-10 text-center">
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
             <Award className="h-6 w-6 text-muted-foreground" />
           </div>
           <h3 className="font-medium text-foreground">Keine Zertifikate</h3>
-          <p className="text-sm text-muted-foreground mt-1 max-w-xs">
-            Füge deine beruflichen Zertifizierungen hinzu, um deine Qualifikationen zu belegen.
+          <p className="mt-1 max-w-xs text-sm text-muted-foreground">
+            Füge deine beruflichen Zertifizierungen hinzu, um deine Qualifikationen zu
+            belegen.
           </p>
           <Button
             type="button"
@@ -292,166 +288,153 @@ export function CertificatesManager({
             disabled={disabled}
             className="mt-4"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="mr-2 h-4 w-4" />
             Erstes Zertifikat hinzufügen
           </Button>
         </div>
       )}
 
+      {/* ── Add / Edit Dialog ── */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-h-[90vh] gap-0 overflow-y-auto p-0 sm:max-w-lg">
+          <DialogHeader className="px-6 pt-6 pb-2">
             <DialogTitle>
-              {editingIndex !== null ? 'Zertifikat bearbeiten' : 'Zertifikat hinzufügen'}
+              {editingIndex !== null ? 'Zertifikat bearbeiten' : 'Neues Zertifikat'}
             </DialogTitle>
-            <DialogDescription>
-              Füge Details zu deiner Zertifizierung hinzu
-            </DialogDescription>
           </DialogHeader>
 
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Zertifikatsname *</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="z.B. AWS Certified Solutions Architect"
-                        {...field}
-                        value={field.value || ''}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+          <div className="space-y-5 px-6 pb-6 pt-2">
+            {/* Name */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground">
+                Zertifikatsname <span className="text-destructive">*</span>
+              </label>
+              <Input
+                ref={nameRef}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="z.B. AWS Solutions Architect"
+                onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
               />
+            </div>
 
-              <FormField
-                control={form.control}
-                name="issuingOrganization"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Ausstellende Organisation *</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="z.B. Amazon Web Services"
-                        {...field}
-                        value={field.value || ''}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+            {/* Issuer */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground">
+                Ausstellende Organisation <span className="text-destructive">*</span>
+              </label>
+              <Input
+                value={issuer}
+                onChange={(e) => setIssuer(e.target.value)}
+                placeholder="z.B. Amazon Web Services"
+                onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
               />
+            </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="issueDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Ausstellungsdatum</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="date"
-                          {...field}
-                          value={field.value || ''}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="expirationDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Ablaufdatum</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="date"
-                          placeholder="Leer lassen, wenn kein Ablauf"
-                          {...field}
-                          value={field.value || ''}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+            {/* Dates */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">
+                  Ausgestellt am{' '}
+                  <span className="font-normal text-muted-foreground">– optional</span>
+                </label>
+                <Input
+                  type="date"
+                  value={issueDate}
+                  onChange={(e) => setIssueDate(e.target.value)}
                 />
               </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">
+                  Läuft ab am{' '}
+                  <span className="font-normal text-muted-foreground">– optional</span>
+                </label>
+                <Input
+                  type="date"
+                  value={expiryDate}
+                  onChange={(e) => setExpiryDate(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Leer = kein Ablaufdatum
+                </p>
+              </div>
+            </div>
 
-              <FormField
-                control={form.control}
-                name="credentialId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Credential ID</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="z.B. ABC-123-456"
-                        {...field}
-                        value={field.value || ''}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+            {/* Credential ID */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground">
+                Credential-ID{' '}
+                <span className="font-normal text-muted-foreground">– optional</span>
+              </label>
+              <Input
+                value={credentialId}
+                onChange={(e) => setCredentialId(e.target.value)}
+                placeholder="z.B. ABC-123-456"
+                onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
               />
+            </div>
 
-              <FormField
-                control={form.control}
-                name="credentialUrl"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Credential URL</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="url"
-                        placeholder="https://example.com/verify/certificate"
-                        {...field}
-                        value={field.value || ''}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            {/* URL */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground">
+                Link{' '}
+                <span className="font-normal text-muted-foreground">– optional</span>
+              </label>
+              <div className="relative">
+                <LinkIcon className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={credentialUrl}
+                  onChange={(e) => {
+                    setCredentialUrl(e.target.value);
+                    setUrlError('');
+                  }}
+                  placeholder="example.com/verify/certificate"
+                  className="pl-9"
+                  onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
+                />
+              </div>
+              {urlError && <p className="text-xs text-destructive">{urlError}</p>}
+            </div>
 
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Abbrechen
-                </Button>
-                <Button type="submit">
-                  {editingIndex !== null ? 'Speichern' : 'Hinzufügen'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-2 border-t border-border pt-4">
+              <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)}>
+                Abbrechen
+              </Button>
+              <Button type="button" onClick={handleSubmit} disabled={!canSubmit}>
+                {editingIndex !== null ? 'Speichern' : 'Hinzufügen'}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={deleteConfirmIndex !== null} onOpenChange={(open) => !open && setDeleteConfirmIndex(null)}>
+      {/* ── Delete confirm dialog ── */}
+      <Dialog
+        open={deleteConfirmIndex !== null}
+        onOpenChange={(open) => !open && setDeleteConfirmIndex(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Zertifikat löschen</DialogTitle>
-            <DialogDescription>
-              Möchtest du dieses Zertifikat wirklich löschen?
-            </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
+          <p className="text-sm text-muted-foreground">
+            Möchtest du dieses Zertifikat wirklich löschen? Das kann nicht rückgängig gemacht
+            werden.
+          </p>
+          <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setDeleteConfirmIndex(null)}>
               Abbrechen
             </Button>
-            <Button variant="destructive" onClick={() => deleteConfirmIndex !== null && handleDelete(deleteConfirmIndex)}>
+            <Button
+              variant="destructive"
+              onClick={() =>
+                deleteConfirmIndex !== null && handleDelete(deleteConfirmIndex)
+              }
+            >
               Löschen
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

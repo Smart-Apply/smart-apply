@@ -1,29 +1,15 @@
 'use client';
 
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { RichTextEditor } from '@/components/ui/rich-text-editor';
-import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Edit, Trash2, Calendar, GraduationCap } from 'lucide-react';
@@ -36,38 +22,6 @@ interface EducationManagerProps {
   disabled?: boolean;
 }
 
-// Validation schema for education form
-const educationSchema = z.object({
-  institution: z.string().min(1, 'Institution ist erforderlich'),
-  degree: z.string().min(1, 'Abschluss ist erforderlich'),
-  fieldOfStudy: z.string().optional(),
-  startYear: z.number().min(1900, 'Ungültiges Jahr').max(new Date().getFullYear() + 10, 'Ungültiges Jahr').optional(),
-  endYear: z.number().min(1900, 'Ungültiges Jahr').max(new Date().getFullYear() + 10, 'Ungültiges Jahr').optional().nullable(),
-  gpa: z.string().optional(),
-  description: z.string().optional(),
-}).refine((data) => {
-  // If both years are provided, endYear must be >= startYear
-  if (data.startYear && data.endYear) {
-    return data.endYear >= data.startYear;
-  }
-  return true;
-}, {
-  message: 'Endjahr muss nach oder gleich dem Startjahr sein',
-  path: ['endYear'],
-});
-
-type EducationFormValues = z.infer<typeof educationSchema>;
-
-/**
- * EducationManager Component
- * 
- * Manages education entries with add, edit, and delete functionality.
- * - Display list of existing education (sorted by start year, most recent first)
- * - Add new education via dialog/modal
- * - Edit existing entries
- * - Delete entries with confirmation
- * - Optional end year for ongoing education
- */
 export function EducationManager({
   education,
   onEducationChange,
@@ -77,173 +31,191 @@ export function EducationManager({
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [deleteConfirmIndex, setDeleteConfirmIndex] = useState<number | null>(null);
 
-  const form = useForm<EducationFormValues>({
-    resolver: zodResolver(educationSchema),
-    mode: 'onChange',
-    defaultValues: {
-      institution: '',
-      degree: '',
-      fieldOfStudy: '',
-      startYear: undefined,
-      endYear: undefined,
-      gpa: '',
-      description: '',
-    },
-  });
+  /* form state */
+  const [institution, setInstitution] = useState('');
+  const [degree, setDegree] = useState('');
+  const [fieldOfStudy, setFieldOfStudy] = useState('');
+  const [startYear, setStartYear] = useState('');
+  const [endYear, setEndYear] = useState('');
+  const [gpa, setGpa] = useState('');
+  const [description, setDescription] = useState('');
 
-  // Sort education by start year (most recent first)
-  const sortedEducation = [...education].sort((a, b) => {
-    const yearA = a.startYear || 0;
-    const yearB = b.startYear || 0;
-    return yearB - yearA;
-  });
+  const institutionRef = useRef<HTMLInputElement>(null);
+
+  const resetForm = () => {
+    setInstitution('');
+    setDegree('');
+    setFieldOfStudy('');
+    setStartYear('');
+    setEndYear('');
+    setGpa('');
+    setDescription('');
+  };
+
+  const sortedEducation = [...education].sort((a, b) => (b.startYear || 0) - (a.startYear || 0));
 
   const openAddDialog = () => {
     setEditingIndex(null);
-    form.reset({
-      institution: '',
-      degree: '',
-      fieldOfStudy: '',
-      startYear: undefined,
-      endYear: undefined,
-      gpa: '',
-      description: '',
-    });
+    resetForm();
     setIsDialogOpen(true);
   };
 
   const openEditDialog = (index: number) => {
     const edu = education[index];
     setEditingIndex(index);
-    form.reset({
-      institution: edu.institution,
-      degree: edu.degree,
-      fieldOfStudy: edu.fieldOfStudy || '',
-      startYear: edu.startYear || undefined,
-      endYear: edu.endYear || undefined,
-      gpa: edu.gpa || '',
-      description: edu.description || '',
-    });
+    setInstitution(edu.institution);
+    setDegree(edu.degree);
+    setFieldOfStudy(edu.fieldOfStudy || '');
+    setStartYear(edu.startYear ? String(edu.startYear) : '');
+    setEndYear(edu.endYear ? String(edu.endYear) : '');
+    setGpa(edu.gpa || '');
+    setDescription(edu.description || '');
     setIsDialogOpen(true);
   };
 
-  const handleSubmit = (data: EducationFormValues) => {
-    const newEducation: Education = {
-      institution: data.institution,
-      degree: data.degree,
-      fieldOfStudy: data.fieldOfStudy?.trim() || undefined,
-      startYear: data.startYear || undefined,
-      endYear: data.endYear || null,
-      gpa: data.gpa?.trim() || undefined,
-      description: data.description?.trim() || undefined,
+  useEffect(() => {
+    if (isDialogOpen) {
+      const t = setTimeout(() => institutionRef.current?.focus(), 120);
+      return () => clearTimeout(t);
+    }
+  }, [isDialogOpen]);
+
+  const canSubmit = institution.trim() && degree.trim();
+
+  const handleSubmit = () => {
+    if (!institution.trim()) {
+      toast.error('Bitte gib eine Institution ein');
+      institutionRef.current?.focus();
+      return;
+    }
+    if (!degree.trim()) {
+      toast.error('Bitte gib einen Abschluss ein');
+      return;
+    }
+    const sy = startYear ? parseInt(startYear, 10) : undefined;
+    const ey = endYear ? parseInt(endYear, 10) : null;
+    if (sy && ey && ey < sy) {
+      toast.error('Endjahr muss nach dem Startjahr liegen');
+      return;
+    }
+
+    const newEdu: Education = {
+      institution: institution.trim(),
+      degree: degree.trim(),
+      fieldOfStudy: fieldOfStudy.trim() || undefined,
+      startYear: sy,
+      endYear: ey,
+      gpa: gpa.trim() || undefined,
+      description: description.trim() || undefined,
     };
 
-    let updatedEducation: Education[];
-
+    let updated: Education[];
     if (editingIndex !== null) {
-      // Update existing education - PRESERVE THE ID!
-      const existingEducation = education[editingIndex];
-      updatedEducation = [...education];
-      updatedEducation[editingIndex] = {
-        ...newEducation,
-        ...(existingEducation.id && { id: existingEducation.id }), // Keep existing ID
-      };
+      const existing = education[editingIndex];
+      updated = [...education];
+      updated[editingIndex] = { ...newEdu, ...(existing.id && { id: existing.id }) };
       toast.success('Bildung aktualisiert');
     } else {
-      // Add new education (no ID yet - backend will assign one)
-      updatedEducation = [...education, newEducation];
+      updated = [...education, newEdu];
       toast.success('Bildung hinzugefügt');
     }
 
-    onEducationChange(updatedEducation);
+    onEducationChange(updated);
     setIsDialogOpen(false);
-    form.reset();
+    resetForm();
   };
 
   const handleDelete = (index: number) => {
-    const updatedEducation = education.filter((_, i) => i !== index);
-    onEducationChange(updatedEducation);
+    onEducationChange(education.filter((_, i) => i !== index));
     setDeleteConfirmIndex(null);
     toast.success('Bildung entfernt');
   };
 
   return (
-    <div className="space-y-4">
-      <div>
-        <Label className="text-base">Bildung</Label>
-        <p className="text-sm text-gray-500 mb-4">
-          Füge deine akademische Ausbildung hinzu
-        </p>
-
-        <Button
-          type="button"
-          onClick={openAddDialog}
-          disabled={disabled}
-          variant="outline"
-          className="w-full sm:w-auto"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Bildung hinzufügen
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-medium">Bildung</h3>
+          <p className="text-sm text-muted-foreground">Deine akademische Ausbildung</p>
+        </div>
+        <Button type="button" onClick={openAddDialog} disabled={disabled} size="sm">
+          <Plus className="mr-2 h-4 w-4" />
+          Hinzufügen
         </Button>
       </div>
 
-      {/* Education List */}
       {sortedEducation.length > 0 ? (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {sortedEducation.map((edu, displayIndex) => {
-            // Find the original index for editing/deleting
             const originalIndex = education.findIndex(
-              e => e.degree === edu.degree && e.institution === edu.institution && e.startYear === edu.startYear
+              (e) =>
+                e.degree === edu.degree &&
+                e.institution === edu.institution &&
+                e.startYear === edu.startYear,
             );
-            
+
             return (
-              <Card key={displayIndex} className="border-gray-200">
-                <CardContent className="p-4">
+              <Card
+                key={displayIndex}
+                className="border-border/50 shadow-sm transition-all hover:shadow-md"
+              >
+                <CardContent className="p-5">
                   <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start gap-2">
-                        <GraduationCap className="h-5 w-5 text-gray-500 mt-0.5 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-gray-900 truncate">{edu.institution}</h3>
-                          <p className="text-sm text-gray-700 truncate">{edu.degree}</p>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start gap-3">
+                        <div className="mt-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                          <GraduationCap className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="truncate font-semibold text-foreground">
+                            {edu.institution}
+                          </h4>
+                          <p className="truncate text-sm text-foreground/80">{edu.degree}</p>
                           {edu.fieldOfStudy && (
-                            <p className="text-sm text-gray-600 truncate">{edu.fieldOfStudy}</p>
+                            <p className="truncate text-sm text-muted-foreground">
+                              {edu.fieldOfStudy}
+                            </p>
                           )}
-                          <div className="flex items-center gap-1 mt-1 text-sm text-gray-500">
-                            <Calendar className="h-3 w-3 flex-shrink-0" />
+                          <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                            <Calendar className="h-3 w-3" />
                             <span>
-                              {edu.startYear || 'N/A'} -{' '}
-                              {edu.endYear ? edu.endYear : (
-                                <Badge variant="secondary" className="text-xs py-0 px-1.5">
+                              {edu.startYear || '?'} –{' '}
+                              {edu.endYear ? (
+                                edu.endYear
+                              ) : (
+                                <Badge
+                                  variant="secondary"
+                                  className="h-5 px-1.5 py-0 text-[10px]"
+                                >
                                   Heute
                                 </Badge>
                               )}
                             </span>
                           </div>
                           {edu.gpa && (
-                            <p className="mt-1 text-sm text-gray-600">GPA: {edu.gpa}</p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Note: {edu.gpa}
+                            </p>
                           )}
                           {edu.description && (
-                            <div 
-                              className="mt-3 text-sm text-muted-foreground line-clamp-2 prose prose-sm max-w-none"
-                              dangerouslySetInnerHTML={{ __html: edu.description }}
-                            />
+                            <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+                              {edu.description.replace(/<[^>]*>/g, '')}
+                            </p>
                           )}
                         </div>
                       </div>
                     </div>
-                    
-                    <div className="flex items-center gap-1 flex-shrink-0">
+
+                    <div className="flex items-center gap-1">
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
                         onClick={() => openEditDialog(originalIndex)}
                         disabled={disabled}
-                        className="h-8 w-8"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
                       >
                         <Edit className="h-4 w-4" />
-                        <span className="sr-only">Bearbeiten</span>
                       </Button>
                       <Button
                         type="button"
@@ -251,10 +223,9 @@ export function EducationManager({
                         size="icon"
                         onClick={() => setDeleteConfirmIndex(originalIndex)}
                         disabled={disabled}
-                        className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
                       >
                         <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Löschen</span>
                       </Button>
                     </div>
                   </div>
@@ -264,194 +235,154 @@ export function EducationManager({
           })}
         </div>
       ) : (
-        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-          <p className="text-sm text-blue-800">
-            Noch keine Bildung hinzugefügt. Beginne mit dem Hinzufügen deiner akademischen Ausbildung.
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 py-10 text-center">
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+            <GraduationCap className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <h3 className="font-medium text-foreground">Keine Bildung</h3>
+          <p className="mt-1 max-w-xs text-sm text-muted-foreground">
+            Füge deine akademische Ausbildung hinzu, um dein Profil zu vervollständigen.
           </p>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={openAddDialog}
+            disabled={disabled}
+            className="mt-4"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Erste Bildung hinzufügen
+          </Button>
         </div>
       )}
 
-      {/* Add/Edit Dialog */}
+      {/* ── Add / Edit Dialog ── */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-h-[90vh] gap-0 overflow-y-auto p-0 sm:max-w-lg">
+          <DialogHeader className="px-6 pt-6 pb-2">
             <DialogTitle>
-              {editingIndex !== null ? 'Bildung bearbeiten' : 'Bildung hinzufügen'}
+              {editingIndex !== null ? 'Bildung bearbeiten' : 'Neue Bildung'}
             </DialogTitle>
-            <DialogDescription>
-              Füge Details zu deiner akademischen Ausbildung hinzu
-            </DialogDescription>
           </DialogHeader>
 
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-              {/* Institution */}
-              <FormField<EducationFormValues>
-                control={form.control}
-                name="institution"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Institution *</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="z.B. Technische Universität München"
-                        {...field}
-                        value={field.value || ''}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+          <div className="space-y-5 px-6 pb-6 pt-2">
+            {/* Institution */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground">
+                Institution <span className="text-destructive">*</span>
+              </label>
+              <Input
+                ref={institutionRef}
+                value={institution}
+                onChange={(e) => setInstitution(e.target.value)}
+                placeholder="z.B. Technische Universität München"
+                onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
               />
+            </div>
 
-              {/* Degree */}
-              <FormField<EducationFormValues>
-                control={form.control}
-                name="degree"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Abschluss *</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="z.B. Bachelor of Science, Master of Arts"
-                        {...field}
-                        value={field.value || ''}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+            {/* Degree */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground">
+                Abschluss <span className="text-destructive">*</span>
+              </label>
+              <Input
+                value={degree}
+                onChange={(e) => setDegree(e.target.value)}
+                placeholder="z.B. Bachelor of Science"
+                onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
               />
+            </div>
 
-              {/* Field of Study */}
-              <FormField<EducationFormValues>
-                control={form.control}
-                name="fieldOfStudy"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Studiengang</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="z.B. Informatik, Betriebswirtschaftslehre"
-                        {...field}
-                        value={field.value || ''}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+            {/* Field of study */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground">
+                Studiengang{' '}
+                <span className="font-normal text-muted-foreground">– optional</span>
+              </label>
+              <Input
+                value={fieldOfStudy}
+                onChange={(e) => setFieldOfStudy(e.target.value)}
+                placeholder="z.B. Informatik, BWL"
+                onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
               />
+            </div>
 
-              {/* Year Range */}
-              <div className="grid gap-4 sm:grid-cols-2">
-                <FormField<EducationFormValues>
-                  control={form.control}
-                  name="startYear"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Startjahr</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          placeholder="z.B. 2020"
-                          min="1900"
-                          max={new Date().getFullYear() + 10}
-                          {...field}
-                          value={field.value || ''}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            field.onChange(value ? parseInt(value, 10) : undefined);
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField<EducationFormValues>
-                  control={form.control}
-                  name="endYear"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Endjahr</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          placeholder="z.B. 2024 (leer für laufend)"
-                          min="1900"
-                          max={new Date().getFullYear() + 10}
-                          {...field}
-                          value={field.value || ''}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            field.onChange(value ? parseInt(value, 10) : null);
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+            {/* Years */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">
+                  Von{' '}
+                  <span className="font-normal text-muted-foreground">– optional</span>
+                </label>
+                <Input
+                  type="number"
+                  value={startYear}
+                  onChange={(e) => setStartYear(e.target.value)}
+                  placeholder="z.B. 2020"
+                  min="1900"
+                  max={new Date().getFullYear() + 10}
                 />
               </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">
+                  Bis{' '}
+                  <span className="font-normal text-muted-foreground">– optional</span>
+                </label>
+                <Input
+                  type="number"
+                  value={endYear}
+                  onChange={(e) => setEndYear(e.target.value)}
+                  placeholder="z.B. 2024"
+                  min="1900"
+                  max={new Date().getFullYear() + 10}
+                />
+                <p className="text-xs text-muted-foreground">Leer = noch laufend</p>
+              </div>
+            </div>
 
-              {/* GPA */}
-              <FormField<EducationFormValues>
-                control={form.control}
-                name="gpa"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>GPA / Note</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="z.B. 1.5, 3.8/4.0"
-                        {...field}
-                        value={field.value || ''}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+            {/* GPA */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground">
+                Note{' '}
+                <span className="font-normal text-muted-foreground">– optional</span>
+              </label>
+              <Input
+                value={gpa}
+                onChange={(e) => setGpa(e.target.value)}
+                placeholder="z.B. 1.5"
+                onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
               />
+            </div>
 
-              {/* Description */}
-              <FormField<EducationFormValues>
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Beschreibung</FormLabel>
-                    <FormControl>
-                      <RichTextEditor
-                        value={(field.value as string) || ''}
-                        onChange={field.onChange}
-                        placeholder="Relevante Kurse, Projekte oder Auszeichnungen..."
-                        minHeight="120px"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )
-              }/>
+            {/* Description */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground">
+                Beschreibung{' '}
+                <span className="font-normal text-muted-foreground">– optional</span>
+              </label>
+              <Textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Relevante Kurse, Projekte oder Auszeichnungen …"
+                rows={3}
+                className="resize-none"
+              />
+            </div>
 
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsDialogOpen(false)}
-                >
-                  Abbrechen
-                </Button>
-                <Button type="submit">
-                  {editingIndex !== null ? 'Aktualisieren' : 'Hinzufügen'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-2 border-t border-border pt-4">
+              <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)}>
+                Abbrechen
+              </Button>
+              <Button type="button" onClick={handleSubmit} disabled={!canSubmit}>
+                {editingIndex !== null ? 'Speichern' : 'Hinzufügen'}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* ── Delete confirm dialog ── */}
       <Dialog
         open={deleteConfirmIndex !== null}
         onOpenChange={(open) => !open && setDeleteConfirmIndex(null)}
@@ -459,26 +390,24 @@ export function EducationManager({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Bildung löschen</DialogTitle>
-            <DialogDescription>
-              Bist du sicher, dass du diesen Bildungseintrag löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.
-            </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setDeleteConfirmIndex(null)}
-            >
+          <p className="text-sm text-muted-foreground">
+            Möchtest du diesen Eintrag wirklich löschen? Das kann nicht rückgängig gemacht
+            werden.
+          </p>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setDeleteConfirmIndex(null)}>
               Abbrechen
             </Button>
             <Button
-              type="button"
               variant="destructive"
-              onClick={() => deleteConfirmIndex !== null && handleDelete(deleteConfirmIndex)}
+              onClick={() =>
+                deleteConfirmIndex !== null && handleDelete(deleteConfirmIndex)
+              }
             >
               Löschen
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

@@ -1,37 +1,21 @@
 'use client';
 
-import { useState } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Edit, Trash2, Calendar, Briefcase } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Experience } from '@/types';
-import {
-  experienceSchema,
-  type ExperienceFormValues,
-} from '@/lib/validation/schemas';
 
 interface ExperienceManagerProps {
   experiences: Experience[];
@@ -48,123 +32,122 @@ export function ExperienceManager({
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [deleteConfirmIndex, setDeleteConfirmIndex] = useState<number | null>(null);
 
-  const form = useForm<ExperienceFormValues>({
-    resolver: zodResolver(experienceSchema),
-    mode: 'onChange',
-    defaultValues: {
-      title: '',
-      company: '',
-      location: '',
-      startDate: '',
-      endDate: '',
-      current: false,
-      description: '',
-    },
-  });
+  /* form state */
+  const [title, setTitle] = useState('');
+  const [company, setCompany] = useState('');
+  const [location, setLocation] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [current, setCurrent] = useState(false);
+  const [description, setDescription] = useState('');
 
-  // Subscribe to the `current` field via `useWatch` rather than `form.watch()`.
-  // React Compiler refuses to memoise components that call the bare `watch()`
-  // because the returned function isn't stable across renders; `useWatch`
-  // exposes a Compiler-friendly subscription that re-renders only when the
-  // watched field actually changes.
-  const isCurrentlyWorking = useWatch({ control: form.control, name: 'current' });
+  const titleRef = useRef<HTMLInputElement>(null);
 
-  const sortedExperiences = [...experiences].sort((a, b) => {
-    const dateA = new Date(a.startDate).getTime() || 0;
-    const dateB = new Date(b.startDate).getTime() || 0;
-    return dateB - dateA;
-  });
+  const resetForm = () => {
+    setTitle('');
+    setCompany('');
+    setLocation('');
+    setStartDate('');
+    setEndDate('');
+    setCurrent(false);
+    setDescription('');
+  };
+
+  const sortedExperiences = [...experiences].sort(
+    (a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime(),
+  );
 
   const openAddDialog = () => {
     setEditingIndex(null);
-    form.reset({
-      title: '',
-      company: '',
-      location: '',
-      startDate: '',
-      endDate: '',
-      current: false,
-      description: '',
-    });
+    resetForm();
     setIsDialogOpen(true);
   };
 
   const openEditDialog = (index: number) => {
-    const experience = experiences[index];
+    const exp = experiences[index];
     setEditingIndex(index);
-    form.reset({
-      title: experience.title,
-      company: experience.company,
-      location: experience.location || '',
-      startDate: experience.startDate.split('T')[0],
-      endDate: experience.endDate ? experience.endDate.split('T')[0] : '',
-      current: !experience.endDate,
-      description: experience.description || '',
-    });
+    setTitle(exp.title);
+    setCompany(exp.company);
+    setLocation(exp.location || '');
+    setStartDate(exp.startDate.split('T')[0]);
+    setEndDate(exp.endDate ? exp.endDate.split('T')[0] : '');
+    setCurrent(!exp.endDate);
+    setDescription(exp.description || '');
     setIsDialogOpen(true);
   };
 
-  const handleSubmit = (data: ExperienceFormValues) => {
-    const newExperience: Experience = {
-      title: data.title,
-      company: data.company,
-      location: data.location?.trim() || undefined,
-      startDate: new Date(data.startDate).toISOString(),
-      endDate: data.current || !data.endDate ? null : new Date(data.endDate).toISOString(),
-      description: data.description?.trim() || null,
-      current: data.current,
+  useEffect(() => {
+    if (isDialogOpen) {
+      const t = setTimeout(() => titleRef.current?.focus(), 120);
+      return () => clearTimeout(t);
+    }
+  }, [isDialogOpen]);
+
+  const canSubmit = title.trim() && company.trim() && startDate;
+
+  const handleSubmit = () => {
+    if (!title.trim()) {
+      toast.error('Bitte gib einen Jobtitel ein');
+      titleRef.current?.focus();
+      return;
+    }
+    if (!company.trim()) {
+      toast.error('Bitte gib eine Firma ein');
+      return;
+    }
+    if (!startDate) {
+      toast.error('Bitte gib ein Startdatum ein');
+      return;
+    }
+    if (!current && endDate && new Date(endDate) < new Date(startDate)) {
+      toast.error('Enddatum muss nach dem Startdatum liegen');
+      return;
+    }
+
+    const newExp: Experience = {
+      title: title.trim(),
+      company: company.trim(),
+      location: location.trim() || undefined,
+      startDate: new Date(startDate).toISOString(),
+      endDate: current || !endDate ? null : new Date(endDate).toISOString(),
+      description: description.trim() || null,
+      current,
     };
 
-    let updatedExperiences: Experience[];
-
+    let updated: Experience[];
     if (editingIndex !== null) {
-      const existingExperience = experiences[editingIndex];
-      updatedExperiences = [...experiences];
-      updatedExperiences[editingIndex] = {
-        ...newExperience,
-        ...(existingExperience.id && { id: existingExperience.id }),
-      };
+      const existing = experiences[editingIndex];
+      updated = [...experiences];
+      updated[editingIndex] = { ...newExp, ...(existing.id && { id: existing.id }) };
       toast.success('Erfahrung aktualisiert');
     } else {
-      updatedExperiences = [...experiences, newExperience];
+      updated = [...experiences, newExp];
       toast.success('Erfahrung hinzugefügt');
     }
 
-    onExperiencesChange(updatedExperiences);
+    onExperiencesChange(updated);
     setIsDialogOpen(false);
-    form.reset();
+    resetForm();
   };
 
   const handleDelete = (index: number) => {
-    const updatedExperiences = experiences.filter((_, i) => i !== index);
-    onExperiencesChange(updatedExperiences);
+    onExperiencesChange(experiences.filter((_, i) => i !== index));
     setDeleteConfirmIndex(null);
     toast.success('Erfahrung entfernt');
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('de-DE', {
-      month: 'short',
-      year: 'numeric',
-    });
-  };
+  const fmtDate = (d: string) =>
+    new Date(d).toLocaleDateString('de-DE', { month: 'short', year: 'numeric' });
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-medium">Berufserfahrung</h3>
-          <p className="text-sm text-muted-foreground">
-            Deine bisherigen Arbeitsstellen
-          </p>
+          <p className="text-sm text-muted-foreground">Deine bisherigen Arbeitsstellen</p>
         </div>
-        <Button
-          type="button"
-          onClick={openAddDialog}
-          disabled={disabled}
-          size="sm"
-        >
-          <Plus className="h-4 w-4 mr-2" />
+        <Button type="button" onClick={openAddDialog} disabled={disabled} size="sm">
+          <Plus className="mr-2 h-4 w-4" />
           Hinzufügen
         </Button>
       </div>
@@ -173,22 +156,32 @@ export function ExperienceManager({
         <div className="space-y-4">
           {sortedExperiences.map((exp, displayIndex) => {
             const originalIndex = experiences.findIndex(
-              e => e.title === exp.title && e.company === exp.company && e.startDate === exp.startDate
+              (e) =>
+                e.title === exp.title &&
+                e.company === exp.company &&
+                e.startDate === exp.startDate,
             );
 
             return (
-              <Card key={displayIndex} className="border-border/50 shadow-sm hover:shadow-md transition-all">
+              <Card
+                key={displayIndex}
+                className="border-border/50 shadow-sm transition-all hover:shadow-md"
+              >
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="flex items-start gap-3">
-                        <div className="mt-1 h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <div className="mt-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10">
                           <Briefcase className="h-4 w-4 text-primary" />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-foreground truncate">{exp.title}</h4>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground mt-0.5">
-                            <span className="font-medium text-foreground/80">{exp.company}</span>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="truncate font-semibold text-foreground">
+                            {exp.title}
+                          </h4>
+                          <div className="mt-0.5 flex items-center gap-2 text-sm text-muted-foreground">
+                            <span className="font-medium text-foreground/80">
+                              {exp.company}
+                            </span>
                             {exp.location && (
                               <>
                                 <span>•</span>
@@ -197,12 +190,17 @@ export function ExperienceManager({
                             )}
                           </div>
 
-                          <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                          <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
                             <Calendar className="h-3 w-3" />
                             <span>
-                              {formatDate(exp.startDate)} -{' '}
-                              {exp.endDate ? formatDate(exp.endDate) : (
-                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5">
+                              {fmtDate(exp.startDate)} –{' '}
+                              {exp.endDate ? (
+                                fmtDate(exp.endDate)
+                              ) : (
+                                <Badge
+                                  variant="secondary"
+                                  className="h-5 px-1.5 py-0 text-[10px]"
+                                >
                                   Aktuell
                                 </Badge>
                               )}
@@ -210,10 +208,9 @@ export function ExperienceManager({
                           </div>
 
                           {exp.description && (
-                            <div 
-                              className="mt-3 text-sm text-muted-foreground line-clamp-2 prose prose-sm max-w-none"
-                              dangerouslySetInnerHTML={{ __html: exp.description }}
-                            />
+                            <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+                              {exp.description.replace(/<[^>]*>/g, '')}
+                            </p>
                           )}
                         </div>
                       </div>
@@ -248,12 +245,12 @@ export function ExperienceManager({
           })}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-10 text-center rounded-xl border border-dashed border-border bg-muted/20">
-          <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-4">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 py-10 text-center">
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
             <Briefcase className="h-6 w-6 text-muted-foreground" />
           </div>
           <h3 className="font-medium text-foreground">Keine Berufserfahrung</h3>
-          <p className="text-sm text-muted-foreground mt-1 max-w-xs">
+          <p className="mt-1 max-w-xs text-sm text-muted-foreground">
             Füge deine bisherigen Arbeitsstellen hinzu, um dein Profil zu vervollständigen.
           </p>
           <Button
@@ -263,167 +260,155 @@ export function ExperienceManager({
             disabled={disabled}
             className="mt-4"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="mr-2 h-4 w-4" />
             Erste Erfahrung hinzufügen
           </Button>
         </div>
       )}
 
+      {/* ── Add / Edit Dialog ── */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-h-[90vh] gap-0 overflow-y-auto p-0 sm:max-w-lg">
+          <DialogHeader className="px-6 pt-6 pb-2">
             <DialogTitle>
-              {editingIndex !== null ? 'Erfahrung bearbeiten' : 'Erfahrung hinzufügen'}
+              {editingIndex !== null ? 'Erfahrung bearbeiten' : 'Neue Erfahrung'}
             </DialogTitle>
-            <DialogDescription>
-              Füge Details zu deiner beruflichen Erfahrung hinzu
-            </DialogDescription>
           </DialogHeader>
 
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-                <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Jobtitel *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="z.B. Projektmanager, Krankenpfleger, Vertriebsleiter" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />              <div className="grid gap-4 sm:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="company"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Firma *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="z.B. Unternehmen GmbH, Klinikum Musterstadt" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="location"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Standort</FormLabel>
-                      <FormControl>
-                        <Input placeholder="z.B. Berlin, Deutschland" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+          <div className="space-y-5 px-6 pb-6 pt-2">
+            {/* Title */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground">
+                Jobtitel <span className="text-destructive">*</span>
+              </label>
+              <Input
+                ref={titleRef}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="z.B. Projektmanager, Softwareentwickler"
+                onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
+              />
+            </div>
+
+            {/* Company + Location */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">
+                  Firma <span className="text-destructive">*</span>
+                </label>
+                <Input
+                  value={company}
+                  onChange={(e) => setCompany(e.target.value)}
+                  placeholder="z.B. Muster GmbH"
+                  onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
                 />
               </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="startDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Startdatum *</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="endDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Enddatum</FormLabel>
-                      <FormControl>
-                        <Input type="date" disabled={isCurrentlyWorking} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">
+                  Standort{' '}
+                  <span className="font-normal text-muted-foreground">– optional</span>
+                </label>
+                <Input
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="z.B. Berlin"
+                  onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
                 />
               </div>
+            </div>
 
-              <FormField
-                control={form.control}
-                name="current"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={(checked) => {
-                          field.onChange(checked);
-                          if (checked) form.setValue('endDate', '');
-                        }}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>Ich arbeite derzeit hier</FormLabel>
-                    </div>
-                  </FormItem>
-                )}
+            {/* Dates */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">
+                  Von <span className="text-destructive">*</span>
+                </label>
+                <Input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">Bis</label>
+                <Input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  disabled={current}
+                />
+              </div>
+            </div>
+
+            {/* Current checkbox */}
+            <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-border px-4 py-3">
+              <Checkbox
+                checked={current}
+                onCheckedChange={(checked) => {
+                  setCurrent(!!checked);
+                  if (checked) setEndDate('');
+                }}
               />
+              <span className="text-sm text-foreground">Ich arbeite derzeit hier</span>
+            </label>
 
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Beschreibung (optional)</FormLabel>
-                    <FormControl>
-                      <RichTextEditor
-                        value={field.value || ''}
-                        onChange={field.onChange}
-                        placeholder="Beschreibe deine Hauptverantwortlichkeiten und Erfolge..."
-                        minHeight="120px"
-                      />
-                    </FormControl>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      💡 <strong>Tipp:</strong> Diese Beschreibung erscheint im Lebenslauf. Passe die Sprache an deine Zielstellen an (Deutsch für deutsche Jobs, Englisch für internationale Jobs).
-                    </p>
-                    <FormMessage />
-                  </FormItem>
-                )}
+            {/* Description */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground">
+                Beschreibung{' '}
+                <span className="font-normal text-muted-foreground">– optional</span>
+              </label>
+              <Textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Deine Hauptaufgaben und Erfolge …"
+                rows={3}
+                className="resize-none"
               />
+              <p className="text-xs text-muted-foreground">
+                Diese Beschreibung erscheint in generierten Lebensläufen.
+              </p>
+            </div>
 
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Abbrechen
-                </Button>
-                <Button type="submit">
-                  {editingIndex !== null ? 'Speichern' : 'Hinzufügen'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-2 border-t border-border pt-4">
+              <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)}>
+                Abbrechen
+              </Button>
+              <Button type="button" onClick={handleSubmit} disabled={!canSubmit}>
+                {editingIndex !== null ? 'Speichern' : 'Hinzufügen'}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={deleteConfirmIndex !== null} onOpenChange={(open) => !open && setDeleteConfirmIndex(null)}>
+      {/* ── Delete confirm dialog ── */}
+      <Dialog
+        open={deleteConfirmIndex !== null}
+        onOpenChange={(open) => !open && setDeleteConfirmIndex(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Erfahrung löschen</DialogTitle>
-            <DialogDescription>
-              Möchtest du diesen Eintrag wirklich löschen?
-            </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
+          <p className="text-sm text-muted-foreground">
+            Möchtest du diesen Eintrag wirklich löschen? Das kann nicht rückgängig gemacht
+            werden.
+          </p>
+          <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setDeleteConfirmIndex(null)}>
               Abbrechen
             </Button>
-            <Button variant="destructive" onClick={() => deleteConfirmIndex !== null && handleDelete(deleteConfirmIndex)}>
+            <Button
+              variant="destructive"
+              onClick={() =>
+                deleteConfirmIndex !== null && handleDelete(deleteConfirmIndex)
+              }
+            >
               Löschen
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

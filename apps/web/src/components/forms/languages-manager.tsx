@@ -1,10 +1,8 @@
 'use client';
 
-import { useState, KeyboardEvent } from 'react';
-import { Badge } from '@/components/ui/badge';
+import { useState, useRef, KeyboardEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -12,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { X, Plus, Languages } from 'lucide-react';
+import { Plus, X, Languages } from 'lucide-react';
 import { toast } from 'sonner';
 import { getLanguageLevelLabel } from '@/lib/translations';
 import type { Language } from '@/types';
@@ -23,7 +21,6 @@ interface LanguagesManagerProps {
   disabled?: boolean;
 }
 
-// Enum values match backend LanguageProficiency enum
 const LANGUAGE_LEVELS = [
   { value: 'NATIVE', label: 'Muttersprache' },
   { value: 'FLUENT', label: 'Fließend (C2)' },
@@ -32,56 +29,36 @@ const LANGUAGE_LEVELS = [
   { value: 'BASIC', label: 'Grundkenntnisse (A1/A2)' },
 ];
 
-/**
- * LanguagesManager Component
- * 
- * Reusable component for managing languages (add, remove).
- * - Display existing languages as badges with level
- * - Add language with name and proficiency level
- * - Remove language on badge close button
- * - Validate language name (non-empty, unique)
- */
 export function LanguagesManager({
   languages,
   onLanguagesChange,
-  disabled = false
+  disabled = false,
 }: LanguagesManagerProps) {
+  const [showInput, setShowInput] = useState(false);
   const [languageName, setLanguageName] = useState('');
-  const [languageLevel, setLanguageLevel] = useState('FLUENT'); // Default to FLUENT enum value
+  const [languageLevel, setLanguageLevel] = useState('FLUENT');
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const addLanguage = () => {
     const name = languageName.trim();
+    if (!name) return;
 
-    // Validate: non-empty
-    if (!name) {
-      toast.error('Sprachname darf nicht leer sein');
-      return;
-    }
-
-    // Validate: unique (case-insensitive)
-    const isDuplicate = languages.some(
-      (lang) => lang.name.toLowerCase() === name.toLowerCase()
-    );
-
-    if (isDuplicate) {
+    if (languages.some((l) => l.name.toLowerCase() === name.toLowerCase())) {
       toast.error('Diese Sprache existiert bereits');
       return;
     }
 
-    // Add new language
-    const newLanguage: Language = { name, level: languageLevel };
-    const updatedLanguages = [...languages, newLanguage].sort((a, b) =>
-      a.name.localeCompare(b.name)
+    const updated = [...languages, { name, level: languageLevel }].sort((a, b) =>
+      a.name.localeCompare(b.name),
     );
-
-    onLanguagesChange(updatedLanguages);
+    onLanguagesChange(updated);
     setLanguageName('');
+    inputRef.current?.focus();
     toast.success(`Sprache "${name}" hinzugefügt`);
   };
 
   const removeLanguage = (langName: string) => {
-    const updatedLanguages = languages.filter((lang) => lang.name !== langName);
-    onLanguagesChange(updatedLanguages);
+    onLanguagesChange(languages.filter((l) => l.name !== langName));
     toast.success(`Sprache "${langName}" entfernt`);
   };
 
@@ -89,64 +66,55 @@ export function LanguagesManager({
     if (e.key === 'Enter') {
       e.preventDefault();
       addLanguage();
-    }
-  };
-
-  const getLevelBadgeColor = (level?: string) => {
-    // Normalize to handle both enum values and legacy strings
-    const normalized = level?.toUpperCase();
-    switch (normalized) {
-      case 'NATIVE':
-      case 'MUTTERSPRACHE':
-        return 'bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-200';
-      case 'FLUENT':
-      case 'FLIESSEND':
-      case 'FLIESSEND (C2)':
-      case 'VERHANDLUNGSSICHER':
-        return 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200';
-      case 'ADVANCED':
-      case 'INTERMEDIATE':
-      case 'FORTGESCHRITTEN':
-      case 'GUTE KENNTNISSE':
-        return 'bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-200';
-      default:
-        return 'bg-slate-100 text-slate-800 border-slate-200 hover:bg-slate-200';
+    } else if (e.key === 'Escape') {
+      setShowInput(false);
+      setLanguageName('');
     }
   };
 
   return (
-    <div className="space-y-4">
-      <div>
-        <Label htmlFor="language-input" className="flex items-center gap-2 text-base">
-          Sprachen
-        </Label>
-        <p className="text-sm text-muted-foreground mb-4">
-          Füge deine Sprachkenntnisse hinzu
-        </p>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-medium">Sprachen</h3>
+          <p className="text-sm text-muted-foreground">Deine Sprachkenntnisse</p>
+        </div>
+        {!showInput && (
+          <Button
+            type="button"
+            onClick={() => {
+              setShowInput(true);
+              setTimeout(() => inputRef.current?.focus(), 80);
+            }}
+            disabled={disabled}
+            size="sm"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Hinzufügen
+          </Button>
+        )}
+      </div>
 
+      {/* Input */}
+      {showInput && (
         <div className="flex gap-2">
           <Input
-            id="language-input"
-            type="text"
-            placeholder="z.B. Deutsch, Englisch, Französisch..."
+            ref={inputRef}
             value={languageName}
             onChange={(e) => setLanguageName(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={disabled}
+            placeholder="z.B. Deutsch, Englisch …"
             className="flex-1"
           />
-          <Select
-            value={languageLevel}
-            onValueChange={setLanguageLevel}
-            disabled={disabled}
-          >
-            <SelectTrigger className="w-[180px]">
+          <Select value={languageLevel} onValueChange={setLanguageLevel} disabled={disabled}>
+            <SelectTrigger className="w-[170px]">
               <SelectValue placeholder="Niveau" />
             </SelectTrigger>
             <SelectContent>
-              {LANGUAGE_LEVELS.map((level) => (
-                <SelectItem key={level.value} value={level.value}>
-                  {level.label}
+              {LANGUAGE_LEVELS.map((l) => (
+                <SelectItem key={l.value} value={l.value}>
+                  {l.label}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -155,52 +123,80 @@ export function LanguagesManager({
             type="button"
             onClick={addLanguage}
             disabled={disabled || !languageName.trim()}
-            size="default"
+            size="sm"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="mr-1.5 h-3.5 w-3.5" />
             Hinzufügen
           </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setShowInput(false);
+              setLanguageName('');
+            }}
+          >
+            Fertig
+          </Button>
         </div>
-      </div>
+      )}
 
-      {/* Languages Display */}
+      {/* Languages */}
       {languages.length > 0 ? (
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-foreground">
+        <div>
+          <p className="mb-3 text-sm font-medium text-foreground">
             Deine Sprachen ({languages.length})
           </p>
           <div className="flex flex-wrap gap-2">
             {languages.map((lang, index) => (
-              <Badge
+              <span
                 key={`${lang.name}-${index}`}
-                variant="outline"
-                className={`text-sm pl-3 pr-2 py-1.5 gap-1.5 transition-colors ${getLevelBadgeColor(lang.level)}`}
+                className="group relative inline-flex items-center rounded-md border border-primary bg-primary/10 py-1.5 pl-3 pr-7 text-xs font-medium text-primary transition-all duration-300 ease-in-out hover:bg-primary hover:text-primary-foreground"
               >
-                <span className="font-medium">{lang.name}</span>
+                {lang.name}
                 {lang.level && (
-                  <span className="text-xs opacity-80">• {getLanguageLevelLabel(lang.level)}</span>
+                  <span className="ml-1.5 opacity-70 group-hover:opacity-90">
+                    · {getLanguageLevelLabel(lang.level)}
+                  </span>
                 )}
                 <button
                   type="button"
                   onClick={() => removeLanguage(lang.name)}
                   disabled={disabled}
-                  className="ml-1 rounded-full hover:bg-black/10 p-0.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  aria-label={`Remove ${lang.name}`}
+                  className="absolute right-1.5 shrink-0 rounded-full p-0.5 opacity-0 transition-all duration-300 ease-in-out group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label={`${lang.name} entfernen`}
                 >
                   <X className="h-3 w-3" />
                 </button>
-              </Badge>
+              </span>
             ))}
           </div>
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-8 text-center rounded-xl border border-dashed border-border bg-muted/20">
-          <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-3">
-            <Languages className="h-5 w-5 text-muted-foreground" />
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 py-10 text-center">
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+            <Languages className="h-6 w-6 text-muted-foreground" />
           </div>
-          <p className="text-sm text-muted-foreground max-w-xs">
-            Noch keine Sprachen hinzugefügt. Beginne mit dem Hinzufügen deiner Sprachkenntnisse oben.
+          <h3 className="font-medium text-foreground">Keine Sprachen</h3>
+          <p className="mt-1 max-w-xs text-sm text-muted-foreground">
+            Füge deine Sprachkenntnisse hinzu, um dein Profil zu vervollständigen.
           </p>
+          {!showInput && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setShowInput(true);
+                setTimeout(() => inputRef.current?.focus(), 80);
+              }}
+              disabled={disabled}
+              className="mt-4"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Erste Sprache hinzufügen
+            </Button>
+          )}
         </div>
       )}
     </div>
