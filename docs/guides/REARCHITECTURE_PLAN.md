@@ -1,8 +1,8 @@
 # Smart Apply — Rearchitecture Plan
 
-> **Status:** Draft · **Owner:** Arian · **Created:** 2026-05-11
+> **Status:** Closed out · **Owner:** Arian · **Created:** 2026-05-11 · **Closed:** 2026-05-14
 >
-> Phased plan to retire the highest-cost / highest-risk parts of the current stack without a big-bang rewrite. Same playbook as the DevOps overhaul: each phase is independently shippable, independently revertable, and produces a measurable win before the next one starts.
+> Phased plan to retire the highest-cost / highest-risk parts of the current stack without a big-bang rewrite. Phase 1 + 2 shipped (v2.0.0 + v3.0.0). Phases 3 + 4 explicitly skipped — see [decision log](#decision-log). Phase 5 stays opportunistic. Kept here as a record; new architectural pivots get their own plan.
 
 ---
 
@@ -37,12 +37,12 @@
 | # | Change | Effort | Risk | Win | Status |
 |---|---|---|---|---|---|
 | 1 | Puppeteer → `@react-pdf/renderer` | 2–3 wk | Medium (visual diffs) | -70% API RAM, -300 MB image | **✅ Done (v1.16)** — 3 designs ported (`classic-ats`, `harvard-classic`, `elegant-sidebar`), puppeteer + handlebars + pdf-lib + generic-pool removed; PNG previews now via `pdfjs-dist` + `@napi-rs/canvas` |
-| 2 | Lock prod to real providers (`r2` / `qstash`) | 1 day | Low | Removes a footgun | **✅ Done (v2.1)** — boot fails when `NODE_ENV=production` and `STORAGE_DRIVER!='r2'` or `JOBS_DRIVER!='qstash'` (enforced via Zod `.superRefine()` in [`env.schema.ts`](../../apps/api/src/config/env.schema.ts)) |
-| 3 | passport stack → better-auth | 3–4 wk | High (logs users out) | -2000 LoC, +WebAuthn | Not started |
-| 4 | Prisma → Drizzle | 2–3 wk | Medium (query semantics) | No codegen, faster cold start | Not started |
-| 5 | npm → pnpm, Jest → Vitest, OpenRouter | Opportunistic | Low | Quality of life | Not started |
+| 2 | Lock prod to real providers (`r2` / `qstash`) | 1 day | Low | Removes a footgun | **✅ Done (v3.0.0)** — boot fails when `NODE_ENV=production` and `STORAGE_DRIVER!='r2'` or `JOBS_DRIVER!='qstash'` (enforced via Zod `.superRefine()` in [`env.schema.ts`](../../apps/api/src/config/env.schema.ts)) |
+| 3 | passport stack → better-auth | 3–4 wk | High (logs users out) | -2000 LoC, +WebAuthn | **⛔ Skipped** — see [decision log 2026-05-14](#decision-log) |
+| 4 | Prisma → Drizzle | 2–3 wk | Medium (query semantics) | No codegen, faster cold start | **⛔ Skipped** — see [decision log 2026-05-14](#decision-log) |
+| 5 | npm → pnpm, Jest → Vitest, OpenRouter | Opportunistic | Low | Quality of life | Opportunistic only — do as you happen to touch the affected areas, no dedicated sprint |
 
-**Recommended commit:** Phase 1 + Phase 2 only. Re-evaluate 3–5 in 2–3 months once user-growth data is in.
+**Status:** Phase 1 + 2 shipped. Phases 3 + 4 explicitly skipped. Phase 5 is purely opportunistic.
 
 ---
 
@@ -122,7 +122,7 @@
 
 ## Phase 3 — passport stack → better-auth
 
-> **Do not start until Phase 1 is in prod and stable for 30 days.**
+> **⛔ Skipped (2026-05-14).** Revisit only if (a) a real CVE drops in passport-jwt that's painful to patch, (b) a customer demands WebAuthn / passkeys, or (c) we find ourselves touching auth code monthly. See [decision log](#decision-log) for the full rationale.
 
 ### Why
 - ~2000 LoC of hand-rolled auth (passport-jwt + refresh rotation + 2FA + OAuth + sessions) that better-auth ships out of the box, battle-tested.
@@ -167,7 +167,7 @@
 
 ## Phase 4 — Prisma → Drizzle
 
-> **Do not start until Phase 3 is stable, OR skip Phase 3 entirely and run Phase 4 in its place.**
+> **⛔ Skipped (2026-05-14).** Prisma works, the codegen step costs ~10s in CI, the cold-start gain is theoretical for an always-on Fly machine. Revisit only if (a) we move read-heavy endpoints to Cloudflare Workers (where Prisma's edge story still bites) or (b) the Prisma engine binary becomes a meaningful share of the Docker image again. See [decision log](#decision-log).
 
 ### Why
 - No codegen step (`prisma generate` removed from CI + Docker build).
@@ -245,11 +245,16 @@ Per [.github/copilot-instructions.md](../../.github/copilot-instructions.md) "Do
 | 2026-05-11 | Recommend Phase 1 + 2 only for now | Highest ROI, lowest risk, ~3 weeks. Phases 3–5 deferred until user-growth data justifies the maintenance churn. |
 | 2026-05-11 | Co-existence over cutover for every phase | DevOps overhaul worked the same way (parallel workflow files, then deletion). Same playbook here. |
 | 2026-05-11 | No phase during public-launch push | Stabilize first. See [PUBLIC_LAUNCH_PLAN.md](./PUBLIC_LAUNCH_PLAN.md). |
+| 2026-05-14 | Phase 1 shipped (v1.16 → v2.0.0) | Puppeteer + handlebars + pdf-lib + generic-pool removed. PNG previews via `pdfjs-dist` + `@napi-rs/canvas`. 3 designs ported (`classic-ats`, `harvard-classic`, `elegant-sidebar`), all 5 colour variants resolve via single factory + DB `accentColor`. |
+| 2026-05-14 | Phase 2 shipped (v3.0.0) | Zod `.superRefine()` rejects `STORAGE_DRIVER!='r2'` or `JOBS_DRIVER!='qstash'` at boot when `NODE_ENV=production`. Major bump because misconfigured prod deployments now fail to boot instead of silently losing data. |
+| 2026-05-14 | **Skip Phase 3 (better-auth) indefinitely** | Current passport stack is working (9.5/10 security score per copilot-instructions, refresh rotation + 2FA + 3 OAuth providers + audit logging + session mgmt all shipped). Phase 3 is the highest-risk phase — logs users out on rollback, manual recovery, narrow rollback window. -2000 LoC + free WebAuthn are real wins, but no users are asking for passkeys and we haven't been touching auth weekly. better-auth is MIT/self-hostable (no SaaS cost), so the question is purely effort-vs-payoff and the payoff isn't there pre-launch. Revisit only if a CVE drops in passport-jwt, a customer demands passkeys, or auth code starts changing monthly. |
+| 2026-05-14 | **Skip Phase 4 (Drizzle) indefinitely** | Prisma works. `prisma generate` adds ~10s to CI, the cold-start gain is theoretical for an always-on Fly machine, and the Prisma engine binary is no longer a top-3 contributor to image size after Phase 1's puppeteer removal. Revisit only if we move read-heavy endpoints to Cloudflare Workers (where Prisma's edge story still bites). |
+| 2026-05-14 | Phase 5 stays opportunistic only | No dedicated sprint. pnpm / Vitest / OpenRouter only when someone happens to be in those areas. |
 
 ---
 
 ## Open questions
 
-- Phase 1: Do we keep template authoring in CSS (via `@react-pdf/stylesheet`) or move to the `StyleSheet.create()` API? CSS-flavoured is closer to today; programmatic is more typed.
-- Phase 3: Self-hosted better-auth or Clerk/WorkOS? Self-hosted keeps EU residency trivial; SaaS removes more code. Default: self-hosted.
-- Phase 4: Do we keep Prisma CLI for migrations or move fully to Drizzle Kit? Default: keep Prisma CLI through Phase 4, drop in a follow-up.
+- Phase 1: Do we keep template authoring in CSS (via `@react-pdf/stylesheet`) or move to the `StyleSheet.create()` API? CSS-flavoured is closer to today; programmatic is more typed. — *Resolved in Phase 1 implementation: `StyleSheet.create()` per template factory.*
+- ~~Phase 3: Self-hosted better-auth or Clerk/WorkOS?~~ Moot — phase skipped.
+- ~~Phase 4: Keep Prisma CLI for migrations or move fully to Drizzle Kit?~~ Moot — phase skipped.
