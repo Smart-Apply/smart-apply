@@ -140,8 +140,8 @@ Resulting flow: PR → merge to main → staging deploys + Release PR opens/upda
 - **Auth:** passport-jwt, passport-google-oauth20, passport-microsoft, passport-azure-ad, argon2id, **otplib + qrcode + speakeasy** (TOTP 2FA)
 - **Refresh tokens:** dual-token rotation, device tracking, max 5/user
 - **Sessions:** multi-device, IP/UA, remote logout, cron cleanup
-- **Storage (pluggable via `STORAGE_DRIVER`):** `disk` | `r2` (`@aws-sdk/client-s3`)
-- **Queue (pluggable via `JOBS_DRIVER`):** `in-memory` | `qstash` (`@upstash/qstash`)
+- **Storage (pluggable via `STORAGE_DRIVER`):** `disk` | `r2` (`@aws-sdk/client-s3`). Boot refuses to start when `NODE_ENV=production` and the driver isn't `r2`.
+- **Queue (pluggable via `JOBS_DRIVER`):** `in-memory` | `qstash` (`@upstash/qstash`). Boot refuses to start when `NODE_ENV=production` and the driver isn't `qstash`.
 - **Cache:** Upstash Redis (`@upstash/redis`) + `node-cache`
 - **LLM (pluggable via `LLM_PROVIDER`):** `azure-openai` | `azure-ai-foundry` | `mock`
   - Direct Azure OpenAI HTTP calls (`@nestjs/axios`)
@@ -612,7 +612,7 @@ RATE_LIMIT_AUTH_MAX=5        # Auth endpoints (STRICT)
 ENABLE_CSRF=false
 
 # Storage (pluggable)
-STORAGE_DRIVER=disk          # disk | r2
+STORAGE_DRIVER=disk          # disk | r2 — NODE_ENV=production rejects 'disk'
 
 # Cloudflare R2 (S3-compatible) — required when STORAGE_DRIVER=r2
 # Use an EU-jurisdiction bucket + EU-scoped token for GDPR data residency.
@@ -623,7 +623,7 @@ R2_BUCKET=smart-apply-prod
 R2_ENDPOINT=https://<account-id>.eu.r2.cloudflarestorage.com
 
 # Queue (pluggable)
-JOBS_DRIVER=in-memory      # in-memory | qstash
+JOBS_DRIVER=in-memory      # in-memory | qstash — NODE_ENV=production rejects 'in-memory'
 QSTASH_TOKEN=<upstash-qstash-token>
 QSTASH_CURRENT_SIGNING_KEY=<key>
 QSTASH_NEXT_SIGNING_KEY=<key>

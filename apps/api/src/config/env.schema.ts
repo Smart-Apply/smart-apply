@@ -247,6 +247,28 @@ const envSchema = z.object({
   // at 4230 minutes (~70.5 h). We renew on a daily cron with a comfortable
   // safety margin. Override only for testing.
   MAILBOX_SUBSCRIPTION_RENEWAL_MARGIN_MINUTES: z.string().default('360'), // 6h
+}).superRefine((env, ctx) => {
+  // Prod hardening: the `disk` and `in-memory` drivers exist for local dev
+  // only — they silently lose data when the Fly machine restarts. Refuse
+  // to boot if a production build is configured to use them. Override
+  // (e.g. for a one-off forensic image) by setting NODE_ENV=development.
+  if (env.NODE_ENV !== 'production') return;
+
+  if (env.STORAGE_DRIVER !== 'r2') {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['STORAGE_DRIVER'],
+      message: `STORAGE_DRIVER must be 'r2' when NODE_ENV=production (got '${env.STORAGE_DRIVER}'). The 'disk' driver writes to ephemeral Fly volumes and loses files on redeploy.`,
+    });
+  }
+
+  if (env.JOBS_DRIVER !== 'qstash') {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['JOBS_DRIVER'],
+      message: `JOBS_DRIVER must be 'qstash' when NODE_ENV=production (got '${env.JOBS_DRIVER}'). The 'in-memory' driver drops queued jobs on machine restart.`,
+    });
+  }
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;
