@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import type {
   CoverLetterTemplateData,
   ResumeTemplateData,
-} from '../pdf/template-renderer.service';
+} from './template-data';
 import { loadReactPdf, type ReactPdfNamespace } from './react-pdf-loader';
 import { resolveReactPdfTemplate } from './template-registry';
 import type { ReactPdfTemplateMeta } from './types';
@@ -23,9 +23,9 @@ interface DbTemplateMeta {
  * Renders PDFs using @react-pdf/renderer for templates that have a TSX
  * implementation registered in template-registry.ts.
  *
- * Co-exists with the legacy puppeteer-based PdfService — see PdfService for
- * the per-call selector logic. Returns `undefined` when the requested template
- * has no react-pdf implementation, signalling the caller to fall back.
+ * Returns `undefined` when the requested template has no react-pdf
+ * implementation; `PdfService` then throws since there is no fallback
+ * renderer (puppeteer was removed in v1.16).
  */
 @Injectable()
 export class ReactPdfRendererService {

@@ -1,9 +1,9 @@
-import { Injectable, NotFoundException, Logger, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import NodeCache from 'node-cache';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { ConfigService } from '../config/config.service';
-import { PdfService } from '../pdf/pdf.service';
+import { PreviewRendererService } from '../pdf-v2/preview-renderer.service';
 import { TemplateType } from '../generated/prisma/client';
 import { TemplateResponseDto, TemplateWithContentResponseDto } from './dto/template-response.dto';
 import { CreateTemplateDto } from './dto/create-template.dto';
@@ -23,8 +23,7 @@ export class TemplatesService {
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
     private readonly config: ConfigService,
-    @Inject(forwardRef(() => PdfService))
-    private readonly pdfService: PdfService,
+    private readonly previewRenderer: PreviewRendererService,
   ) {
     // Initialize cache with TTL from config (default: 3600s from env.schema.ts)
     this.cache = new NodeCache({
@@ -420,7 +419,9 @@ export class TemplatesService {
   }
 
   /**
-   * Generate preview image for a template (with caching)
+   * Generate a PNG preview for a template (with caching). On cache miss
+   * the image is rendered via `PreviewRendererService` (react-pdf →
+   * pdfjs-dist → @napi-rs/canvas) and persisted to storage.
    */
   async generatePreview(id: string): Promise<Buffer> {
     const template = await this.findOne(id);
@@ -431,16 +432,13 @@ export class TemplatesService {
         const cachedPreview = await this.storage.getFile(template.previewImageKey);
         this.logger.debug(`Using cached preview for template: ${id}`);
         return cachedPreview;
-      } catch (error) {
+      } catch {
         this.logger.warn(`Cached preview not found for template ${id}, regenerating...`);
       }
     }
 
-    // Generate new preview
     this.logger.log(`Generating preview for template: ${id}`);
-    const sampleData = this.getSampleDataForTemplate(template.type);
-    const html = this.wrapTemplateWithStyles(template.htmlTemplate, template.cssStyles, sampleData);
-    const imageBuffer = await this.generatePreviewImage(html);
+    const imageBuffer = await this.previewRenderer.renderPreviewPng(id);
 
     // Store preview in storage
     const previewKey = `templates/${id}/preview.png`;
@@ -454,113 +452,5 @@ export class TemplatesService {
 
     this.logger.log(`Preview generated and cached for template: ${id}`);
     return imageBuffer;
-  }
-
-  /**
-   * Get sample data for template preview
-   */
-  private getSampleDataForTemplate(type: TemplateType): Record<string, any> {
-    if (type === TemplateType.COVER_LETTER || type === TemplateType.BOTH) {
-      return {
-        candidateName: 'Max Mustermann',
-        email: 'max.mustermann@example.com',
-        phone: '+49 123 456789',
-        location: 'Berlin, Deutschland',
-        linkedin: 'linkedin.com/in/maxmustermann',
-        date: new Date().toLocaleDateString('de-DE', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        }),
-        companyName: 'Beispiel GmbH',
-        recipientName: 'Frau Schmidt',
-        content: `<p>Hiermit bewerbe ich mich für die Position als Softwareentwickler in Ihrem Unternehmen.</p>
-        <p>Mit meiner mehrjährigen Erfahrung in der Softwareentwicklung und meiner Leidenschaft für innovative Technologien bin ich überzeugt, einen wertvollen Beitrag zu Ihrem Team leisten zu können.</p>
-        <p>Ich freue mich darauf, von Ihnen zu hören und mehr über diese spannende Gelegenheit zu erfahren.</p>`,
-        closingPhrase: 'Mit freundlichen Grüßen',
-      };
-    } else {
-      return {
-        candidateName: 'Max Mustermann',
-        email: 'max.mustermann@example.com',
-        phone: '+49 123 456789',
-        location: 'Berlin, Deutschland',
-        linkedin: 'linkedin.com/in/maxmustermann',
-        github: 'github.com/maxmustermann',
-        summary: 'Erfahrener Softwareentwickler mit 5+ Jahren Erfahrung in Full-Stack-Entwicklung.',
-        skillCategories: [
-          {
-            type: 'Programmiersprachen',
-            skills: ['JavaScript', 'TypeScript', 'Python', 'Java'],
-          },
-          {
-            type: 'Frameworks',
-            skills: ['React', 'Node.js', 'NestJS', 'Next.js'],
-          },
-        ],
-        experiences: [
-          {
-            title: 'Senior Software Engineer',
-            company: 'Tech Corp',
-            location: 'Berlin',
-            dateRange: '2020 - Heute',
-            achievements: [
-              'Entwicklung einer microservice-basierten Plattform',
-              'Führung eines Teams von 5 Entwicklern',
-            ],
-          },
-        ],
-        education: [
-          {
-            degree: 'Bachelor of Science',
-            institution: 'Technische Universität Berlin',
-            year: '2018',
-            fieldOfStudy: 'Informatik',
-          },
-        ],
-      };
-    }
-  }
-
-  /**
-   * Wrap template with styles and compile with Handlebars
-   */
-  private wrapTemplateWithStyles(
-    htmlTemplate: string,
-    cssStyles: string,
-    data: Record<string, any>,
-  ): string {
-    const Handlebars = require('handlebars');
-    const template = Handlebars.compile(htmlTemplate);
-    const content = template(data);
-
-    return `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="UTF-8">
-          <style>
-            html, body {
-              background-color: #ffffff !important;
-              margin: 0;
-              padding: 0;
-            }
-            ${cssStyles}
-          </style>
-        </head>
-        <body>${content}</body>
-      </html>
-    `;
-  }
-
-  /**
-   * Generate PNG preview image from HTML using PDF service browser pool
-   */
-  private async generatePreviewImage(html: string): Promise<Buffer> {
-    return this.pdfService.generateScreenshot(html, {
-      width: 595, // A4 width at 72 DPI
-      height: 842, // A4 height at 72 DPI
-      fullPage: false,
-    });
   }
 }

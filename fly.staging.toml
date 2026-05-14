@@ -37,11 +37,6 @@ primary_region = 'fra'
   LOG_LEVEL = 'info'
   NODE_ENV = 'production'
   PORT = '3000'
-  PUPPETEER_EXECUTABLE_PATH = '/usr/bin/chromium-browser'
-  PUPPETEER_IDLE_TIMEOUT_MS = '60000'
-  PUPPETEER_MAX_BROWSERS = '1'             # halved vs prod (less traffic)
-  PUPPETEER_MIN_BROWSERS = '0'
-  PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = 'true'
   STORAGE_DRIVER = 'r2'
   # Single staging machine → no need for distributed throttling. Saves the
   # Upstash Redis free-tier slot for prod, which actually runs >1 machine.
@@ -74,7 +69,6 @@ primary_region = 'fra'
     path = '/api/v1/health'
 
 # VM size: shared-cpu-1x · 1 GB RAM. Half of prod's 2x/2GB because:
-#   • PUPPETEER_MAX_BROWSERS=1 (vs 2 on prod) — half the browser pool memory
 #   • Single-instance — no concurrent agent URL parses competing for RAM
 #   • Acceptable to OOM under heavy synthetic load — that's what staging is for
 [[vm]]

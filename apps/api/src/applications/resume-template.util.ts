@@ -12,7 +12,7 @@ import type {
 import type {
   ResumeTemplateData,
   SkillCategory as ResumeSkillCategory,
-} from '../pdf/template-renderer.service';
+} from '../pdf-v2/template-data';
 
 export type ProfileWithRelations = Profile & {
   user: User;

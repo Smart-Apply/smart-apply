@@ -4,7 +4,7 @@ import { PdfService } from '../../pdf/pdf.service';
 import { StorageService } from '../../storage/storage.service';
 import { TemplatesService } from '../../templates/templates.service';
 import { Job } from '../interfaces/queue.interface';
-import type { ResumeTemplateData } from '../../pdf/template-renderer.service';
+import type { ResumeTemplateData } from '../../pdf-v2/template-data';
 
 export interface ApplicationJobData {
   applicationId: string;
