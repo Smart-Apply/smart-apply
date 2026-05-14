@@ -48,19 +48,23 @@ function KeywordChip({ keyword }: KeywordChipProps) {
   return (
     <Badge
       variant="outline"
+      title={keyword.keyword}
       className={cn(
-        'text-xs py-0.5 px-1.5',
+        // Override Badge defaults (whitespace-nowrap, overflow-hidden, shrink-0)
+        // so long keywords wrap onto multiple lines instead of being clipped
+        // or overflowing into adjacent grid cells.
+        'inline-flex items-start gap-1 max-w-full whitespace-normal break-words text-left text-xs leading-tight py-1 px-2 h-auto rounded-md',
         keyword.found
           ? 'border-[#16A34A] bg-[#D1FADF] text-[#16A34A]'
-          : 'border-[#DC2626] bg-[#FEE2E2] text-[#DC2626]'
+          : 'border-[#DC2626] bg-[#FEE2E2] text-[#DC2626]',
       )}
     >
       {keyword.found ? (
-        <CheckCircle2 className="h-2.5 w-2.5 mr-0.5" />
+        <CheckCircle2 className="h-3 w-3 mt-px shrink-0" />
       ) : (
-        <XCircle className="h-2.5 w-2.5 mr-0.5" />
+        <XCircle className="h-3 w-3 mt-px shrink-0" />
       )}
-      {keyword.keyword}
+      <span className="min-w-0">{keyword.keyword}</span>
     </Badge>
   );
 }
@@ -195,7 +199,7 @@ export function ATSScoreSidebar({
                 <CheckCircle2 className="h-4 w-4 text-green-500" />
                 <span className="text-sm font-medium">Gefundene Keywords ({analysis.matchedKeywords.length})</span>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+              <div className="flex flex-wrap gap-2">
                 {analysis.matchedKeywords.map((kw, idx) => (
                   <KeywordChip key={`matched-${kw.keyword}-${idx}`} keyword={kw} />
                 ))}
@@ -210,7 +214,7 @@ export function ATSScoreSidebar({
                 <XCircle className="h-4 w-4 text-red-500" />
                 <span className="text-sm font-medium">Fehlende Keywords ({analysis.missingKeywords.length})</span>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+              <div className="flex flex-wrap gap-2">
                 {analysis.missingKeywords.map((kw, idx) => (
                   <KeywordChip key={`missing-${kw.keyword}-${idx}`} keyword={kw} />
                 ))}

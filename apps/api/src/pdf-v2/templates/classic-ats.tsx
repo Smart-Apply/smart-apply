@@ -106,13 +106,17 @@ const buildStyles = (rp: ReactPdfNamespace, accent: string) =>
     },
 
     // ── Candidate name — different size for resume vs CL (3xl vs 2xl) ──
+    // Explicit lineHeight is required: react-pdf does not reliably inherit
+    // the page-level lineHeight onto bold/uppercased Text, so without it the
+    // line box collapses and the next sibling overlaps the descenders.
     candidateName: {
       fontSize: FS.xxxl,
       fontFamily: 'Helvetica-Bold',
       letterSpacing: px(0.5),
       textTransform: 'uppercase',
       color: accent,
-      marginBottom: SP.xs,
+      lineHeight: 1.15,
+      marginBottom: SP.sm,
     },
     candidateNameCoverLetter: {
       fontSize: FS.xxl,
@@ -120,18 +124,28 @@ const buildStyles = (rp: ReactPdfNamespace, accent: string) =>
       letterSpacing: px(0.5),
       textTransform: 'uppercase',
       color: accent,
-      marginBottom: SP.xs,
+      lineHeight: 1.15,
+      marginBottom: SP.sm,
     },
 
     jobTitle: {
       fontSize: FS.md,
       color: COLORS.textMuted,
+      lineHeight: 1.3,
       marginBottom: SP.sm,
     },
     contactInfo: {
       fontSize: FS.sm,
       color: COLORS.textSecondary,
       textAlign: 'center',
+      lineHeight: 1.4,
+    },
+    // Separator pseudo-element in CSS gets `color: var(--text-muted)` and the
+    // surrounding `gap: var(--spacing-sm)` produces ~3pt of whitespace on each
+    // side of the pipe. We approximate with non-breaking thin spaces around
+    // the glyph so the separator visually breathes the same way.
+    contactSeparator: {
+      color: COLORS.textMuted,
     },
     contactLink: {
       color: COLORS.textSecondary,
@@ -298,17 +312,23 @@ function ContactInfoFactory(rp: ReactPdfNamespace) {
     parts,
     style,
     linkStyle,
+    separatorStyle,
   }: {
     parts: ContactPart[];
     style: unknown;
     linkStyle: unknown;
+    separatorStyle: unknown;
   }): ReactElement | null {
     const filtered = parts.filter((p) => p.label);
     if (filtered.length === 0) return null;
     const children: ReactElement[] = [];
     filtered.forEach((p, idx) => {
       if (idx > 0) {
-        children.push(createElement(Text, { key: `sep-${idx}` }, ' | '));
+        // Use figure spaces (U+2007) on each side of the pipe to mimic the
+        // `gap: var(--spacing-sm)` flexbox spacing in the source CSS.
+        children.push(
+          createElement(Text, { key: `sep-${idx}`, style: separatorStyle }, '\u2007 | \u2007'),
+        );
       }
       if (p.href) {
         children.push(
@@ -374,6 +394,7 @@ export const ClassicAtsFactory: ReactPdfTemplateFactory = {
               parts: contactParts,
               style: styles.contactInfo,
               linkStyle: styles.contactLink,
+              separatorStyle: styles.contactSeparator,
             }),
           ),
           // Summary
@@ -624,6 +645,7 @@ export const ClassicAtsFactory: ReactPdfTemplateFactory = {
               parts: contactParts,
               style: styles.contactInfo,
               linkStyle: styles.contactLink,
+              separatorStyle: styles.contactSeparator,
             }),
           ),
           data.date && createElement(Text, { style: styles.coverLetterDate }, data.date),
