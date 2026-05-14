@@ -36,7 +36,7 @@
 
 | # | Change | Effort | Risk | Win | Status |
 |---|---|---|---|---|---|
-| 1 | Puppeteer → `@react-pdf/renderer` | 2–3 wk | Medium (visual diffs) | -70% API RAM, -300 MB image | **In progress** — scaffold + classic-ats ported, opt-in via `PDF_RENDERER_DEFAULT=react-pdf` |
+| 1 | Puppeteer → `@react-pdf/renderer` | 2–3 wk | Medium (visual diffs) | -70% API RAM, -300 MB image | **✅ Done (v1.16)** — 3 designs ported (`classic-ats`, `harvard-classic`, `elegant-sidebar`), puppeteer + handlebars + pdf-lib + generic-pool removed; PNG previews now via `pdfjs-dist` + `@napi-rs/canvas` |
 | 2 | Lock prod to real providers (`r2` / `qstash`) | 1 day | Low | Removes a footgun | Not started |
 | 3 | passport stack → better-auth | 3–4 wk | High (logs users out) | -2000 LoC, +WebAuthn | Not started |
 | 4 | Prisma → Drizzle | 2–3 wk | Medium (query semantics) | No codegen, faster cold start | Not started |

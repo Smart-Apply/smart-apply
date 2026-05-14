@@ -2,7 +2,7 @@ import type { ComponentType, ReactElement } from 'react';
 import type {
   CoverLetterTemplateData,
   ResumeTemplateData,
-} from '../pdf/template-renderer.service';
+} from './template-data';
 import type { ReactPdfNamespace } from './react-pdf-loader';
 
 /**

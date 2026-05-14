@@ -181,36 +181,9 @@ export class ConfigService {
   }
 
   // PDF
-  get puppeteerExecutablePath(): string | undefined {
-    return this.nestConfig.get('PUPPETEER_EXECUTABLE_PATH', { infer: true });
-  }
-
-  get puppeteerMaxBrowsers(): number {
-    return parseInt(this.nestConfig.get('PUPPETEER_MAX_BROWSERS', { infer: true }), 10);
-  }
-
-  get puppeteerMinBrowsers(): number {
-    return parseInt(this.nestConfig.get('PUPPETEER_MIN_BROWSERS', { infer: true }), 10);
-  }
-
-  get puppeteerIdleTimeoutMs(): number {
-    return parseInt(this.nestConfig.get('PUPPETEER_IDLE_TIMEOUT_MS', { infer: true }), 10);
-  }
-
-  get puppeteerEvictionIntervalMs(): number {
-    return parseInt(this.nestConfig.get('PUPPETEER_EVICTION_INTERVAL_MS', { infer: true }), 10);
-  }
-
-  /**
-   * Phase 1 (rearchitecture): default PDF renderer.
-   * - 'puppeteer' (default): existing Chromium-based path. Supports every DB template.
-   * - 'react-pdf': new @react-pdf/renderer path. Falls back to puppeteer per-call when
-   *   the requested template has no TSX implementation registered in pdf-v2.
-   * See docs/guides/REARCHITECTURE_PLAN.md.
-   */
-  get pdfRendererDefault(): 'puppeteer' | 'react-pdf' {
-    return this.nestConfig.get('PDF_RENDERER_DEFAULT', { infer: true }) || 'puppeteer';
-  }
+  // (No tuning surface — react-pdf renders synchronously on the request thread
+  // and pdf-v2/preview-renderer.service.ts loads pdfjs-dist + @napi-rs/canvas
+  // lazily on first preview request.)
 
   // OAuth
   get azureAdClientId(): string | undefined {

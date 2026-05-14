@@ -6,10 +6,6 @@ FROM node:26-alpine AS deps
 
 WORKDIR /app
 
-# Tell Puppeteer to skip downloading Chrome (we use system Chromium)
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PUPPETEER_SKIP_DOWNLOAD=true
-
 # Install build dependencies
 RUN apk add --no-cache openssl python3 make g++
 
@@ -41,10 +37,6 @@ RUN --mount=type=cache,target=/root/.npm \
 FROM node:26-alpine AS builder
 
 WORKDIR /app
-
-# Tell Puppeteer to skip downloading Chrome (we use system Chromium)
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PUPPETEER_SKIP_DOWNLOAD=true
 
 # Install build dependencies
 RUN apk add --no-cache openssl python3 make g++
@@ -129,9 +121,7 @@ RUN apk add --no-cache \
     dumb-init && \
     rm -rf /var/cache/apk/*
 
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser \
-    NODE_ENV=production \
+ENV NODE_ENV=production \
     NPM_CONFIG_LOGLEVEL=error
 
 WORKDIR /app

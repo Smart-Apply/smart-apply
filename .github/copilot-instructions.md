@@ -4,7 +4,7 @@
 Deliver a production-grade, multi-provider application with:
 1) **Frontend (Next.js 16 + React 19)**: Auth (email/password + OAuth + 2FA), profile management, job-posting ingestion, application dashboard with PDF preview/editing, deployed to **Cloudflare Workers** via OpenNext.
 2) **Backend API (NestJS 11)**: Candidate profile (skills, experiences, education, certificates, projects, languages), ingests job postings (text/URL/file → normalized), generates tailored cover letter + resume on Azure OpenAI / mock.
-3) **PDF Generation**: Puppeteer + Handlebars (50 templates, ATS-optimized), stored via pluggable storage (Cloudflare R2 / disk) and retrieved via signed URLs.
+3) **PDF Generation**: `@react-pdf/renderer` (TSX templates, 50 variants, ATS-optimized), stored via pluggable storage (Cloudflare R2 / disk) and retrieved via signed URLs.
 
 ## Agent Instructions
 For specific tasks, refer to these specialized instruction files:
@@ -147,11 +147,11 @@ Resulting flow: PR → merge to main → staging deploys + Release PR opens/upda
   - Direct Azure OpenAI HTTP calls (`@nestjs/axios`)
   - Azure AI Foundry agents (`@azure/ai-agents`) for ATS keyword extraction, CV/CL writing
   - **opossum** circuit breaker around LLM calls
-- **PDF:** Two renderers in parallel during Phase 1 of the rearchitecture:
-  - `@react-pdf/renderer` 4.5 (TSX templates under `src/pdf-v2/templates/*`) — **default target**. ESM-only; loaded lazily via `react-pdf-loader.ts` because the api package is CommonJS.
-  - Legacy: Puppeteer 24 + Playwright 1.56 + Handlebars (under `src/pdf/templates/*`); browser instance pool via `generic-pool`. Used as fallback when a template has no TSX implementation registered.
-  - Shared: pdf-lib + pdf-parse + mammoth (DOCX) for resume parsing.
-  - Selector: `PDF_RENDERER_DEFAULT=react-pdf\|puppeteer`. Currently registered TSX designs: `classic-ats`, `harvard-classic`, `elegant-sidebar` (all 5 color variants resolve via single factory + DB `accentColor`).
+- **PDF:**
+  - `@react-pdf/renderer` 4.5 (TSX templates under `src/pdf-v2/templates/*`) — the **sole** PDF renderer. ESM-only; loaded lazily via `react-pdf-loader.ts` because the api package is CommonJS. Puppeteer + Handlebars were removed in v1.16.
+  - Template **PNG previews** via `pdfjs-dist` 4.10 + `@napi-rs/canvas` 0.1 in `pdf-v2/preview-renderer.service.ts` — renders sample data through react-pdf, then rasterises page 1 with pdfjs onto a napi-rs canvas. No browser, no Chromium dependency.
+  - Resume parsing intake: `pdf-parse` (PDF text) + `mammoth` (DOCX text).
+  - Currently registered TSX designs: `classic-ats`, `harvard-classic`, `elegant-sidebar` (all 5 color variants resolve via single factory + DB `accentColor`). Templates without a registered factory cause `PdfService` to throw — there is no fallback path.
 - **Email:** Resend (`resend`) for transactional mail
 - **Logging:** Pino (request logs) + Winston with daily rotation (audit, 90-day retention)
 - **Monitoring:** Sentry (`@sentry/node` + `@sentry/profiling-node`)
@@ -196,8 +196,8 @@ Resulting flow: PR → merge to main → staging deploys + Release PR opens/upda
 - `llm` — pluggable providers (`azure-openai` | `azure-ai-foundry` | `mock`) with automatic language detection, opossum circuit breaker
 - `logger` — Pino + Winston audit logger
 - `mailbox-sync` — **Email Tracking (Premium)**: OAuth inbox sync (Microsoft Graph; Gmail planned). Detects company replies in the user's inbox, classifies them with the LLM, and updates the matching `Application.applicationStatus` automatically. Encrypts refresh tokens at rest (AES-256-GCM, `MAILBOX_TOKEN_ENCRYPTION_KEY`). No email bodies are persisted — only metadata + classification.
-- `pdf` — Puppeteer + Handlebars (50 templates), ATS-optimized; browser pool via `generic-pool`. **Legacy renderer** — see also `pdf-v2`.
-- `pdf-v2` — **Phase 1 (rearchitecture)**: `@react-pdf/renderer`-based renderer co-existing with `pdf/`. Selector via `PDF_RENDERER_DEFAULT=react-pdf|puppeteer`. Falls back to `pdf/` per-call when a template has no TSX implementation registered in [`template-registry.ts`](../apps/api/src/pdf-v2/template-registry.ts). Currently 3 designs ported: `classic-ats`, `harvard-classic`, `elegant-sidebar` (one factory handles all 5 color variants by deriving the palette from a single DB `accentColor` via [`color-utils.ts`](../apps/api/src/pdf-v2/color-utils.ts)). See [REARCHITECTURE_PLAN.md](../docs/guides/REARCHITECTURE_PLAN.md) and [`.github/skills/pdf-react-pdf-template.md`](./skills/pdf-react-pdf-template.md) for the porting recipe. Validation: full DB-bound snapshot via `npm run --workspace @smart-apply/api snapshot:pdf-renderers`; lightweight standalone via `npx ts-node -r tsconfig-paths/register scripts/validate-react-pdf-templates.ts`.
+- `pdf` — thin façade over `pdf-v2/ReactPdfRendererService`. Kept so external callers (`application.processor.ts`, tests) preserve the `PdfService` API surface. Throws when a template has no react-pdf factory registered.
+- `pdf-v2` — the active PDF subsystem. Owns `ReactPdfRendererService` (TSX → PDF buffer), `PreviewRendererService` (PDF → PNG via `pdfjs-dist` + `@napi-rs/canvas`), the template registry, and the shared template-data types. See [`.github/skills/pdf-react-pdf-template.md`](./skills/pdf-react-pdf-template.md) for the porting recipe. Quick standalone check: `npx ts-node -r tsconfig-paths/register scripts/validate-react-pdf-templates.ts`.
 - `prisma` — PrismaService
 - `profile` — CRUD with **differential updates** (Skills, Experiences, Education, Certificates, Projects, Languages)
 - `resume-parser` — PDF/DOCX → Profile bootstrap (pdf-parse + mammoth)
@@ -407,7 +407,7 @@ Example: To add a skill, include it in `skills` array without `id`. To update, i
   1. Load profile + job posting
   2. Render LLM prompts with data
   3. Call Azure OpenAI (or mock provider)
-  4. Generate PDFs with Puppeteer
+  4. Generate PDFs with @react-pdf/renderer
   5. Upload to Azure Blob Storage
   6. Update status to READY
 
@@ -492,7 +492,7 @@ PUT /api/v1/profile
 2. Detect language (DE/EN), select template (lang × design), extract ATS keywords
 3. Render prompt templates (`prompts/cover-letter.md`, `prompts/resume.md`)
 4. Call LLM via provider abstraction wrapped in **opossum** circuit breaker → Markdown/HTML
-5. HTML → PDF via Puppeteer **browser pool** (`generic-pool`); pdf-lib post-processing
+5. TSX → PDF via `@react-pdf/renderer` (no browser, no post-processing)
 6. Upload PDFs via storage provider (Blob/S3/disk); persist keys + signed URLs
 7. Status: `PENDING → GENERATING → READY | FAILED` (pushed to client via **SSE**)
 8. Background work via pluggable queue (`qstash` | `in-memory`)
@@ -683,12 +683,9 @@ MS_GRAPH_TENANT=common  # or a specific tenant id
 # MAILBOX_SUBSCRIPTION_RENEWAL_MARGIN_MINUTES=360  # default 6h margin
 
 # PDF Generation
-PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
-# Phase 1 (rearchitecture): default PDF renderer.
-#   'puppeteer' (default) | 'react-pdf'
-# 'react-pdf' falls back to puppeteer per-call when the requested template has
-# no TSX implementation registered in src/pdf-v2/template-registry.ts.
-PDF_RENDERER_DEFAULT=puppeteer
+# react-pdf has no env config of its own. PNG previews use pdfjs-dist +
+# @napi-rs/canvas (no Chromium). Note: agent-url.parser.ts (Playwright)
+# still needs CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser in Docker.
 ```
 
 ### Frontend (`apps/web/.env`)

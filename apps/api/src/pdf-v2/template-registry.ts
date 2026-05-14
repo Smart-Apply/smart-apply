@@ -14,8 +14,9 @@ import type { RegisteredReactPdfTemplate } from './types';
  *      → "classic-ats", "Elegant Sidebar (Original Brown)" → "elegant-sidebar"
  *   4. Template.category kebab-cased (fallback heuristic)
  *
- * Templates not present here transparently fall back to the legacy puppeteer
- * renderer per-call. This is what makes Phase 1 incrementally rolloutable.
+ * Templates not present here cause `PdfService` to throw — every active
+ * template MUST have a react-pdf implementation registered now that the
+ * legacy puppeteer path has been removed (v1.16).
  */
 const REGISTRY: RegisteredReactPdfTemplate[] = [
   { key: 'classic-ats', factory: ClassicAtsFactory },

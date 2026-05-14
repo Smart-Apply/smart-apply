@@ -259,9 +259,7 @@ export class AgentUrlParser {
     this.logger.debug('Launching browser...');
 
     const executablePath =
-      process.env.CHROMIUM_EXECUTABLE_PATH ||
-      process.env.PUPPETEER_EXECUTABLE_PATH ||
-      '/usr/bin/chromium-browser';
+      process.env.CHROMIUM_EXECUTABLE_PATH || '/usr/bin/chromium-browser';
 
     this.browser = await chromium.launch({
       headless: true,

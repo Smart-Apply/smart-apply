@@ -52,11 +52,6 @@ primary_region = 'fra'
   LOG_LEVEL = 'info'
   NODE_ENV = 'production'
   PORT = '3000'
-  PUPPETEER_EXECUTABLE_PATH = '/usr/bin/chromium-browser'
-  PUPPETEER_IDLE_TIMEOUT_MS = '60000'
-  PUPPETEER_MAX_BROWSERS = '2'
-  PUPPETEER_MIN_BROWSERS = '0'
-  PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = 'true'
   STORAGE_DRIVER = 'r2'
   THROTTLER_STORAGE = 'upstash'
 
@@ -88,11 +83,10 @@ primary_region = 'fra'
     path = '/api/v1/health'
 
 # VM size: shared-cpu-2x · 2 GB RAM. Required because each app process can
-# hold a Puppeteer browser pool (max 2 browsers) PLUS launch a Playwright
-# Chromium for the agent URL parser. On the previous shared-cpu-1x / 1 GB
-# combo a single LinkedIn parse reliably OOM-killed the worker (kernel
-# SIGKILL → Fly edge returns 502 with no CORS headers, surfacing as a
-# "CORS error" in browsers).
+# launch a Playwright Chromium for the agent URL parser. On the previous
+# shared-cpu-1x / 1 GB combo a single LinkedIn parse reliably OOM-killed the
+# worker (kernel SIGKILL → Fly edge returns 502 with no CORS headers,
+# surfacing as a "CORS error" in browsers).
 [[vm]]
   size = 'shared-cpu-2x'
   memory = '2gb'

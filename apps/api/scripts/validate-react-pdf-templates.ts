@@ -22,7 +22,7 @@ import type { ReactPdfTemplateFactory, ReactPdfTemplateMeta } from '../src/pdf-v
 import type {
   CoverLetterTemplateData,
   ResumeTemplateData,
-} from '../src/pdf/template-renderer.service';
+} from '../src/pdf-v2/template-data';
 
 const SAMPLE_RESUME: ResumeTemplateData = {
   candidateName: 'Jane Doe',
