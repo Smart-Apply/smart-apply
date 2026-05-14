@@ -1,6 +1,6 @@
 {
   "name": "smart-apply",
-  "version": "1.15.0",
+  "version": "2.0.0",
   "description": "Smart Apply MVP - AI-powered job application assistant (Monorepo)",
   "author": "Smart Apply Team",
   "private": true,

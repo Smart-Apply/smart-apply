@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0](https://github.com/Smart-Apply/smart-apply/compare/v1.15.0...v2.0.0) (2026-05-14)
+
+
+### ⚠ BREAKING CHANGES
+
+* **pdf:** PDF_RENDERER_DEFAULT, PUPPETEER_EXECUTABLE_PATH, PUPPETEER_MAX_BROWSERS, PUPPETEER_MIN_BROWSERS, PUPPETEER_IDLE_TIMEOUT_MS and PUPPETEER_EVICTION_INTERVAL_MS env vars are no longer read. Templates without a registered react-pdf factory now throw at render time instead of silently falling back to puppeteer.
+
+### Features
+
+* **pdf:** remove puppeteer pipeline; render previews via react-pdf + pdfjs ([#430](https://github.com/Smart-Apply/smart-apply/issues/430)) ([de68153](https://github.com/Smart-Apply/smart-apply/commit/de68153c17391fb67a32d86f88125e37094b11a7))
+
 ## [1.15.0](https://github.com/Smart-Apply/smart-apply/compare/v1.14.0...v1.15.0) (2026-05-14)
 
 
