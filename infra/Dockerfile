@@ -164,7 +164,6 @@ COPY --from=builder /app/apps/api/prisma/schema.prisma ./apps/api/prisma/schema.
 COPY --from=builder /app/apps/api/prisma/migrations ./apps/api/prisma/migrations
 COPY --from=builder /app/apps/api/prisma/dist ./apps/api/prisma/dist
 COPY --from=builder /app/apps/api/prompts ./prompts
-COPY --from=builder /app/apps/api/src/pdf/templates ./apps/api/src/pdf/templates
 # Email templates (Handlebars .hbs files) — EmailService loads them via
 # path.join(__dirname, 'templates') at runtime, where __dirname resolves
 # to /app/dist/apps/api/email/, so they must land there.
