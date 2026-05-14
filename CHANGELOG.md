@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.0](https://github.com/Smart-Apply/smart-apply/compare/v2.0.1...v3.0.0) (2026-05-14)
+
+
+### ⚠ BREAKING CHANGES
+
+* **config:** any prod deployment still configured with STORAGE_DRIVER=disk or JOBS_DRIVER=in-memory will now fail to boot with a clear error message instead of silently losing data.
+
+### Features
+
+* **config:** refuse to boot prod with disk storage or in-memory queue ([#432](https://github.com/Smart-Apply/smart-apply/issues/432)) ([cc19b5c](https://github.com/Smart-Apply/smart-apply/commit/cc19b5cfa29aee5294ad3246b2e08fd2f3f07804))
+
 ## [2.0.1](https://github.com/Smart-Apply/smart-apply/compare/v2.0.0...v2.0.1) (2026-05-14)
 
 
