@@ -7,6 +7,13 @@
 type Lang = string;
 
 const LABELS: Record<string, Record<string, string>> = {
+  contact: {
+    en: 'Contact',
+    de: 'Kontakt',
+    fr: 'Contact',
+    es: 'Contacto',
+    it: 'Contatto',
+  },
   'resume.summary': {
     en: 'Professional Summary',
     de: 'Profil',

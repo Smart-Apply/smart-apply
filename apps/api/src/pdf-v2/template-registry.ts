@@ -1,4 +1,6 @@
 import { ClassicAtsFactory } from './templates/classic-ats';
+import { ElegantSidebarFactory } from './templates/elegant-sidebar';
+import { HarvardClassicFactory } from './templates/harvard-classic';
 import type { RegisteredReactPdfTemplate } from './types';
 
 /**
@@ -17,6 +19,8 @@ import type { RegisteredReactPdfTemplate } from './types';
  */
 const REGISTRY: RegisteredReactPdfTemplate[] = [
   { key: 'classic-ats', factory: ClassicAtsFactory },
+  { key: 'harvard-classic', factory: HarvardClassicFactory },
+  { key: 'elegant-sidebar', factory: ElegantSidebarFactory },
 ];
 
 const REGISTRY_BY_KEY = new Map(REGISTRY.map((t) => [t.key, t]));
