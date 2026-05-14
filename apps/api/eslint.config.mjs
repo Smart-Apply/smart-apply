@@ -22,7 +22,7 @@ export default defineConfig([
 
   // TypeScript source files.
   {
-    files: ['src/**/*.ts', 'test/**/*.ts'],
+    files: ['src/**/*.{ts,tsx}', 'test/**/*.{ts,tsx}'],
     languageOptions: {
       parser: tsparser,
       parserOptions: {

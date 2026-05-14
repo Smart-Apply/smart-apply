@@ -504,11 +504,18 @@ export default function ApplicationsPage() {
                 const timeAgo = formatDateSmart(application.createdAt);
 
                 return (
-                  <button
+                  <div
                     key={application.id}
-                    type="button"
+                    role="button"
+                    tabIndex={0}
                     onClick={() => router.push(`/applications/${application.id}`)}
-                    className="w-full text-left rounded-xl border border-border/50 bg-card p-4 shadow-sm transition-colors active:bg-muted/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        router.push(`/applications/${application.id}`);
+                      }
+                    }}
+                    className="w-full text-left rounded-xl border border-border/50 bg-card p-4 shadow-sm transition-colors active:bg-muted/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
@@ -601,7 +608,7 @@ export default function ApplicationsPage() {
                     <div className="mt-3 border-t border-border/40 pt-3" onClick={(e) => e.stopPropagation()}>
                       <ATSScoreCell applicationId={application.id} status={application.status} />
                     </div>
-                  </button>
+                  </div>
                 );
               })}
             </div>

@@ -4,6 +4,7 @@ import {
   TemplateRendererService,
   CoverLetterTemplateData,
 } from '../../template-renderer.service';
+import { ReactPdfRendererService } from '../../../pdf-v2/react-pdf-renderer.service';
 import { ConfigService } from '@/config/config.service';
 import { MockHelper } from '../../../../test/helpers/mock.helper';
 
@@ -44,6 +45,16 @@ describe('PdfService.generateCoverLetterPDF (Unit)', () => {
               .fn()
               .mockResolvedValue('<html><body>Cover Letter</body></html>'),
             renderResume: jest.fn().mockResolvedValue('<html><body>Resume</body></html>'),
+          },
+        },
+        {
+          provide: ReactPdfRendererService,
+          useValue: {
+            // Always say "no, fall back to puppeteer" so existing assertions
+            // against the puppeteer pipeline keep working.
+            supports: jest.fn().mockResolvedValue(false),
+            renderResume: jest.fn().mockResolvedValue(undefined),
+            renderCoverLetter: jest.fn().mockResolvedValue(undefined),
           },
         },
       ],

@@ -10,7 +10,7 @@ AI-powered job application assistant — generate tailored, ATS-optimized cover 
 - **Smart job ingestion** — Paste text, URL, or upload (PDF/DOCX); URL parsing via Azure AI Foundry agents (Indeed, LinkedIn, Glassdoor)
 - **AI generation** — Azure OpenAI (GPT-4o) with LangChain/LangGraph orchestration; pluggable providers (Azure OpenAI, Hugging Face, mock)
 - **Multi-language** — Automatic language detection (DE/EN) for prompts and templates
-- **ATS-optimized PDFs** — 50 templates (5 designs × 5 languages × 2 types), Puppeteer + Handlebars
+- **ATS-optimized PDFs** — 50 templates (5 designs × 5 languages × 2 types). Two renderers in parallel: legacy Puppeteer + Handlebars, and the new `@react-pdf/renderer` pipeline (3 designs ported: `classic-ats`, `harvard-classic`, `elegant-sidebar`). Switch the default per env via `PDF_RENDERER_DEFAULT`.
 - **Resume parser** — Upload an existing resume to bootstrap your profile
 - **Real-time updates** — SSE for live application pipeline status
 - **Mock interviews** — AI-generated interview questions per job
@@ -26,7 +26,7 @@ AI-powered job application assistant — generate tailored, ATS-optimized cover 
 | **Frontend**   | Next.js 16 · React 19 · Tailwind v4 · shadcn/ui · TanStack Query · Zustand  |
 | **Backend**    | NestJS 11 · Prisma 6 (pg adapter) · Neon Postgres (pooled + direct) · Pino · Helmet |
 | **AI**         | Azure AI Foundry · Azure OpenAI · LangChain · LangGraph · Hugging Face      |
-| **PDF**        | Puppeteer 24 · Handlebars · pdf-lib · pdf-parse · mammoth (DOCX)            |
+| **PDF**        | `@react-pdf/renderer` 4.5 (TSX templates, **default target**) · Puppeteer 24 + Handlebars (legacy fallback for un-ported designs) · pdf-lib · pdf-parse · mammoth (DOCX). Selector: `PDF_RENDERER_DEFAULT=react-pdf\|puppeteer`. |
 | **Storage**   | Cloudflare R2 (S3-compatible, EU jurisdiction) · local disk (pluggable)    |
 | **Queue**      | Upstash QStash · in-memory (pluggable)                                     |
 | **Cache**      | Upstash Redis · node-cache                                                  |
@@ -111,7 +111,8 @@ smart-apply/
 │   │   │   ├── job-search/       # Unified multi-source search (LinkedIn + Arbeitnow, pluggable)
 │   │   │   ├── llm/              # LLM provider abstraction
 │   │   │   ├── mailbox-sync/     # Email Tracking (Premium): MS Graph OAuth + classifier
-│   │   │   ├── pdf/              # Puppeteer + Handlebars
+│   │   │   ├── pdf/              # Puppeteer + Handlebars (legacy renderer, fallback)
+│   │   │   ├── pdf-v2/           # @react-pdf/renderer (TSX templates, default target; falls back to pdf/ for unported designs)
 │   │   │   ├── profile/          # Profile CRUD
 │   │   │   ├── resume-parser/    # PDF/DOCX → Profile
 │   │   │   ├── storage/          # Disk/Blob/S3

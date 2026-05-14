@@ -95,6 +95,11 @@ const envSchema = z.object({
   PUPPETEER_MIN_BROWSERS: z.string().default('1'), // Minimum browser instances to keep alive
   PUPPETEER_IDLE_TIMEOUT_MS: z.string().default('300000'), // Close idle browsers after 5 minutes
   PUPPETEER_EVICTION_INTERVAL_MS: z.string().default('60000'), // Check for idle browsers every 60s
+  // Phase 1 (rearchitecture): Default PDF renderer. 'puppeteer' = legacy Chromium-based path
+  // (current default, supports all DB templates). 'react-pdf' = new @react-pdf/renderer path
+  // (requires a TSX implementation registered in pdf-v2/template-registry; falls back to
+  // puppeteer per-call if a template is not yet ported). See docs/guides/REARCHITECTURE_PLAN.md.
+  PDF_RENDERER_DEFAULT: z.enum(['puppeteer', 'react-pdf']).default('puppeteer'),
 
   // File Upload
   MAX_FILE_SIZE_MB: z.string().default('10'),
