@@ -147,7 +147,11 @@ Resulting flow: PR → merge to main → staging deploys + Release PR opens/upda
   - Direct Azure OpenAI HTTP calls (`@nestjs/axios`)
   - Azure AI Foundry agents (`@azure/ai-agents`) for ATS keyword extraction, CV/CL writing
   - **opossum** circuit breaker around LLM calls
-- **PDF:** Puppeteer 24 + Playwright 1.56 + Handlebars + pdf-lib + pdf-parse + mammoth (DOCX); browser instance pool via `generic-pool`
+- **PDF:** Two renderers in parallel during Phase 1 of the rearchitecture:
+  - `@react-pdf/renderer` 4.5 (TSX templates under `src/pdf-v2/templates/*`) — **default target**. ESM-only; loaded lazily via `react-pdf-loader.ts` because the api package is CommonJS.
+  - Legacy: Puppeteer 24 + Playwright 1.56 + Handlebars (under `src/pdf/templates/*`); browser instance pool via `generic-pool`. Used as fallback when a template has no TSX implementation registered.
+  - Shared: pdf-lib + pdf-parse + mammoth (DOCX) for resume parsing.
+  - Selector: `PDF_RENDERER_DEFAULT=react-pdf\|puppeteer`. Currently registered TSX designs: `classic-ats`, `harvard-classic`, `elegant-sidebar` (all 5 color variants resolve via single factory + DB `accentColor`).
 - **Email:** Resend (`resend`) for transactional mail
 - **Logging:** Pino (request logs) + Winston with daily rotation (audit, 90-day retention)
 - **Monitoring:** Sentry (`@sentry/node` + `@sentry/profiling-node`)
@@ -193,7 +197,7 @@ Resulting flow: PR → merge to main → staging deploys + Release PR opens/upda
 - `logger` — Pino + Winston audit logger
 - `mailbox-sync` — **Email Tracking (Premium)**: OAuth inbox sync (Microsoft Graph; Gmail planned). Detects company replies in the user's inbox, classifies them with the LLM, and updates the matching `Application.applicationStatus` automatically. Encrypts refresh tokens at rest (AES-256-GCM, `MAILBOX_TOKEN_ENCRYPTION_KEY`). No email bodies are persisted — only metadata + classification.
 - `pdf` — Puppeteer + Handlebars (50 templates), ATS-optimized; browser pool via `generic-pool`. **Legacy renderer** — see also `pdf-v2`.
-- `pdf-v2` — **Phase 1 (rearchitecture)**: `@react-pdf/renderer`-based renderer co-existing with `pdf/`. Opt-in via `PDF_RENDERER_DEFAULT=react-pdf` (default `puppeteer`). Falls back to `pdf/` per-call when a template has no TSX implementation registered in [`template-registry.ts`](../apps/api/src/pdf-v2/template-registry.ts). See [REARCHITECTURE_PLAN.md](../docs/guides/REARCHITECTURE_PLAN.md). Snapshot: `npm run --workspace @smart-apply/api snapshot:pdf-renderers`.
+- `pdf-v2` — **Phase 1 (rearchitecture)**: `@react-pdf/renderer`-based renderer co-existing with `pdf/`. Selector via `PDF_RENDERER_DEFAULT=react-pdf|puppeteer`. Falls back to `pdf/` per-call when a template has no TSX implementation registered in [`template-registry.ts`](../apps/api/src/pdf-v2/template-registry.ts). Currently 3 designs ported: `classic-ats`, `harvard-classic`, `elegant-sidebar` (one factory handles all 5 color variants by deriving the palette from a single DB `accentColor` via [`color-utils.ts`](../apps/api/src/pdf-v2/color-utils.ts)). See [REARCHITECTURE_PLAN.md](../docs/guides/REARCHITECTURE_PLAN.md) and [`.github/skills/pdf-react-pdf-template.md`](./skills/pdf-react-pdf-template.md) for the porting recipe. Validation: full DB-bound snapshot via `npm run --workspace @smart-apply/api snapshot:pdf-renderers`; lightweight standalone via `npx ts-node -r tsconfig-paths/register scripts/validate-react-pdf-templates.ts`.
 - `prisma` — PrismaService
 - `profile` — CRUD with **differential updates** (Skills, Experiences, Education, Certificates, Projects, Languages)
 - `resume-parser` — PDF/DOCX → Profile bootstrap (pdf-parse + mammoth)
