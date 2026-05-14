@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.15.0](https://github.com/Smart-Apply/smart-apply/compare/v1.14.0...v1.15.0) (2026-05-14)
+
+
+### Features
+
+* **pdf-v2:** introduce @react-pdf/renderer pipeline (Phase 1) ([#428](https://github.com/Smart-Apply/smart-apply/issues/428)) ([3b9e55b](https://github.com/Smart-Apply/smart-apply/commit/3b9e55b1fe7cb78d2b6a228d31913c97688c44ab))
+
 ## [1.14.0](https://github.com/Smart-Apply/smart-apply/compare/v1.13.0...v1.14.0) (2026-05-11)
 
 
