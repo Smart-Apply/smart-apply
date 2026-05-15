@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.3](https://github.com/Smart-Apply/smart-apply/compare/v3.0.2...v3.0.3) (2026-05-15)
+
+
+### Performance Improvements
+
+* **api:** lean select on dashboard list endpoints to cut Neon egress ([#442](https://github.com/Smart-Apply/smart-apply/issues/442)) ([9eb57ce](https://github.com/Smart-Apply/smart-apply/commit/9eb57ce892da78ec8b7923101add515beeba8179))
+
 ## [3.0.2](https://github.com/Smart-Apply/smart-apply/compare/v3.0.1...v3.0.2) (2026-05-15)
 
 
