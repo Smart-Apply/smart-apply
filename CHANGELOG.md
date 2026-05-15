@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.2](https://github.com/Smart-Apply/smart-apply/compare/v3.0.1...v3.0.2) (2026-05-15)
+
+
+### Bug Fixes
+
+* **api:** reduce Neon egress from SSE polling and idle crons ([#440](https://github.com/Smart-Apply/smart-apply/issues/440)) ([44cea74](https://github.com/Smart-Apply/smart-apply/commit/44cea74a68ca0312c798f2ab1a8e8da113c1f54f))
+
 ## [3.0.1](https://github.com/Smart-Apply/smart-apply/compare/v3.0.0...v3.0.1) (2026-05-15)
 
 
