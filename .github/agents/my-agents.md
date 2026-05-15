@@ -20,7 +20,7 @@ The application follows Azure-first architecture patterns with multi-provider ab
 - **OAuth:** passport-google-oauth20, passport-microsoft
 - **Cloud:** Azure (Container Apps, PostgreSQL Flexible Server, Blob Storage, Service Bus, OpenAI)
 - **PDF Generation:** Puppeteer/Chromium
-- **Testing:** Jest + supertest (E2E)
+- **Testing:** Vitest 2.1 + supertest (E2E)
 - **Documentation:** Swagger/OpenAPI (Port 3000)
 
 ### Frontend (apps/web)

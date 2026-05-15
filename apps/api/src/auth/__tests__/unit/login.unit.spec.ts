@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
+import type { Mock } from 'vitest';
 import { AuthService } from '../../auth.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import { ConfigService } from '@/config/config.service';
@@ -12,7 +13,7 @@ import { SubscriptionService } from '@/subscription/subscription.service';
 import { UnauthorizedWithCode } from '@/common/exceptions/coded-http.exception';
 import { MockHelper } from '../../../../test/helpers/mock.helper';
 
-jest.mock('argon2');
+vi.mock('argon2');
 
 describe('AuthService.login (Unit)', () => {
   let service: AuthService;
@@ -39,25 +40,25 @@ describe('AuthService.login (Unit)', () => {
         {
           provide: JwtService,
           useValue: {
-            sign: jest.fn().mockReturnValue('mock-jwt-token'),
-            verify: jest.fn().mockReturnValue({ sub: mockUser.id }),
+            sign: vi.fn().mockReturnValue('mock-jwt-token'),
+            verify: vi.fn().mockReturnValue({ sub: mockUser.id }),
           },
         },
         { provide: ConfigService, useValue: MockHelper.createMockConfigService() },
         {
           provide: AuditLoggerService,
-          useValue: { logLoginAttempt: jest.fn(), logRegistration: jest.fn() },
+          useValue: { logLoginAttempt: vi.fn(), logRegistration: vi.fn() },
         },
         { provide: SessionService, useValue: MockHelper.createMockSessionService() },
         {
           provide: SubscriptionService,
-          useValue: { getOrCreateSubscription: jest.fn().mockResolvedValue({}) },
+          useValue: { getOrCreateSubscription: vi.fn().mockResolvedValue({}) },
         },
         {
           provide: TwoFactorService,
-          useValue: { isTrustedDevice: jest.fn().mockResolvedValue(false) },
+          useValue: { isTrustedDevice: vi.fn().mockResolvedValue(false) },
         },
-        { provide: EmailService, useValue: { sendVerificationEmail: jest.fn() } },
+        { provide: EmailService, useValue: { sendVerificationEmail: vi.fn() } },
       ],
     }).compile();
 
@@ -65,14 +66,14 @@ describe('AuthService.login (Unit)', () => {
     prisma = module.get<PrismaService>(PrismaService);
     jwtService = module.get<JwtService>(JwtService);
 
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should successfully login with valid credentials', async () => {
-    prisma.user.findUnique = jest.fn().mockResolvedValue(mockUser);
-    (argon2.verify as jest.Mock).mockResolvedValue(true);
-    (argon2.hash as jest.Mock).mockResolvedValue('hashed-refresh-token');
-    jwtService.sign = jest
+    prisma.user.findUnique = vi.fn().mockResolvedValue(mockUser);
+    (argon2.verify as Mock).mockResolvedValue(true);
+    (argon2.hash as Mock).mockResolvedValue('hashed-refresh-token');
+    jwtService.sign = vi
       .fn()
       .mockReturnValueOnce('access-token')
       .mockReturnValueOnce('refresh-token');
@@ -90,7 +91,7 @@ describe('AuthService.login (Unit)', () => {
   });
 
   it('should throw UnauthorizedWithCode for non-existent user', async () => {
-    prisma.user.findUnique = jest.fn().mockResolvedValue(null);
+    prisma.user.findUnique = vi.fn().mockResolvedValue(null);
 
     await expect(
       service.login({ email: 'nope@x.com', password: 'pw' }, 'ua', '127.0.0.1'),
@@ -98,8 +99,8 @@ describe('AuthService.login (Unit)', () => {
   });
 
   it('should throw UnauthorizedWithCode for invalid password', async () => {
-    prisma.user.findUnique = jest.fn().mockResolvedValue(mockUser);
-    (argon2.verify as jest.Mock).mockResolvedValue(false);
+    prisma.user.findUnique = vi.fn().mockResolvedValue(mockUser);
+    (argon2.verify as Mock).mockResolvedValue(false);
 
     await expect(
       service.login({ email: mockUser.email, password: 'wrong' }, 'ua', '127.0.0.1'),

@@ -4,13 +4,14 @@ import request from 'supertest';
 import cookieParser from 'cookie-parser';
 import * as fs from 'fs';
 import * as path from 'path';
+import type { MockInstance } from 'vitest';
 import { AppModule } from '../../../src/app.module';
 import { AuditLoggerService } from '../../../src/common/audit-logger';
 
 describe('Audit Logging (e2e)', () => {
   let app: INestApplication;
   let auditLoggerService: AuditLoggerService;
-  let logSpy: jest.SpyInstance;
+  let logSpy: MockInstance;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -21,7 +22,7 @@ describe('Audit Logging (e2e)', () => {
     auditLoggerService = app.get<AuditLoggerService>(AuditLoggerService);
 
     // Spy on the log method to capture audit events
-    logSpy = jest.spyOn(auditLoggerService, 'log');
+    logSpy = vi.spyOn(auditLoggerService, 'log');
 
     app.use(cookieParser());
     app.setGlobalPrefix('api/v1');

@@ -40,7 +40,7 @@
 | 2 | Lock prod to real providers (`r2` / `qstash`) | 1 day | Low | Removes a footgun | **✅ Done (v3.0.0)** — boot fails when `NODE_ENV=production` and `STORAGE_DRIVER!='r2'` or `JOBS_DRIVER!='qstash'` (enforced via Zod `.superRefine()` in [`env.schema.ts`](../../apps/api/src/config/env.schema.ts)) |
 | 3 | passport stack → better-auth | 3–4 wk | High (logs users out) | -2000 LoC, +WebAuthn | **⛔ Skipped** — see [decision log 2026-05-14](#decision-log) |
 | 4 | Prisma → Drizzle | 2–3 wk | Medium (query semantics) | No codegen, faster cold start | **⛔ Skipped** — see [decision log 2026-05-14](#decision-log) |
-| 5 | npm → pnpm, Jest → Vitest, OpenRouter | Opportunistic | Low | Quality of life | Opportunistic only — do as you happen to touch the affected areas, no dedicated sprint |
+| 5 | npm → pnpm, **Jest → Vitest** ✅, OpenRouter | Opportunistic | Low | Quality of life | Vitest done (May 2026); pnpm + OpenRouter still opportunistic |
 
 **Status:** Phase 1 + 2 shipped. Phases 3 + 4 explicitly skipped. Phase 5 is purely opportunistic.
 
@@ -213,10 +213,12 @@ No big PRs. Do these as you happen to touch the affected areas.
 - One-time cost: regenerate lockfile, update [ci.yml](../../.github/workflows/ci.yml), update [infra/Dockerfile](../../infra/Dockerfile).
 - Do during a quiet week. Single PR.
 
-### Jest → Vitest
-- ~5× faster, native ESM, same API.
-- Per-file migration: change import, run, fix.
-- Existing unit tests are already marked non-blocking, so churn is low risk.
+### Jest → Vitest (✅ Done — May 2026)
+- ~5× faster, native ESM, same API surface (`describe`/`it`/`expect`).
+- Migrated `apps/api` in [`chore/vitest-migration`](https://github.com/Smart-Apply/smart-apply): single `vitest.config.mts` replaces three Jest configs, `unplugin-swc` + `.swcrc` handle decorator metadata, `vite-tsconfig-paths` handles the `@/*` alias.
+- Mechanical churn: `jest.X` → `vi.X` across 25 spec files + `mock.helper.ts`. `jest.Mock` type cast → `import type { Mock } from 'vitest'`.
+- Existing test debt was preserved as-is (the `TemplatesService` DI mismatch in `summary-translation.integration.spec.ts` was a pre-existing failure under Jest too).
+- CI's `unit-tests` job still runs through `npm run test:unit` — script entrypoint is unchanged.
 
 ### Azure OpenAI → OpenRouter
 - Only if we want to A/B models per request.
@@ -250,6 +252,7 @@ Per [.github/copilot-instructions.md](../../.github/copilot-instructions.md) "Do
 | 2026-05-14 | **Skip Phase 3 (better-auth) indefinitely** | Current passport stack is working (9.5/10 security score per copilot-instructions, refresh rotation + 2FA + 3 OAuth providers + audit logging + session mgmt all shipped). Phase 3 is the highest-risk phase — logs users out on rollback, manual recovery, narrow rollback window. -2000 LoC + free WebAuthn are real wins, but no users are asking for passkeys and we haven't been touching auth weekly. better-auth is MIT/self-hostable (no SaaS cost), so the question is purely effort-vs-payoff and the payoff isn't there pre-launch. Revisit only if a CVE drops in passport-jwt, a customer demands passkeys, or auth code starts changing monthly. |
 | 2026-05-14 | **Skip Phase 4 (Drizzle) indefinitely** | Prisma works. `prisma generate` adds ~10s to CI, the cold-start gain is theoretical for an always-on Fly machine, and the Prisma engine binary is no longer a top-3 contributor to image size after Phase 1's puppeteer removal. Revisit only if we move read-heavy endpoints to Cloudflare Workers (where Prisma's edge story still bites). |
 | 2026-05-14 | Phase 5 stays opportunistic only | No dedicated sprint. pnpm / Vitest / OpenRouter only when someone happens to be in those areas. |
+| 2026-05-16 | Phase 5 partial: **Vitest done** | `apps/api` migrated from Jest 29 + ts-jest to Vitest 2.1 + unplugin-swc. Three Jest configs collapsed into one `vitest.config.mts`, `vite-tsconfig-paths` resolves `@/*`, `globals: true` keeps the legacy describe/it/expect API. Ran one branch (`chore/vitest-migration`) per [CONTRIBUTING.md](../../CONTRIBUTING.md) trunk-based rules. pnpm + OpenRouter still pending. |
 
 ---
 

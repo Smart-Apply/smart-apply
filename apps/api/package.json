@@ -13,18 +13,18 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node ../../dist/apps/api/main",
     "lint": "eslint \"{src,test}/**/*.ts\" --fix",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:cov": "jest --coverage",
-    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register ../../node_modules/.bin/jest --runInBand",
-    "test:unit": "jest --config ./test/jest-unit.json --forceExit",
-    "test:unit:watch": "jest --config ./test/jest-unit.json --watch",
-    "test:unit:cov": "jest --config ./test/jest-unit.json --coverage",
-    "test:integration": "NODE_ENV=test jest --config ./test/jest-integration.json --runInBand",
-    "test:integration:watch": "NODE_ENV=test jest --config ./test/jest-integration.json --watch --runInBand",
-    "test:integration:cov": "NODE_ENV=test jest --config ./test/jest-integration.json --coverage --runInBand",
-    "test:e2e": "NODE_ENV=test jest --config ./test/jest-e2e.json --runInBand --forceExit",
-    "test:e2e:watch": "NODE_ENV=test jest --config ./test/jest-e2e.json --watch --runInBand",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:cov": "vitest run --coverage",
+    "test:debug": "node --inspect-brk ../../node_modules/.bin/vitest run --pool=forks --poolOptions.forks.singleFork=true",
+    "test:unit": "vitest run unit.spec",
+    "test:unit:watch": "vitest unit.spec",
+    "test:unit:cov": "vitest run --coverage unit.spec",
+    "test:integration": "NODE_ENV=test vitest run integration.spec",
+    "test:integration:watch": "NODE_ENV=test vitest integration.spec",
+    "test:integration:cov": "NODE_ENV=test vitest run --coverage integration.spec",
+    "test:e2e": "NODE_ENV=test vitest run e2e-spec",
+    "test:e2e:watch": "NODE_ENV=test vitest e2e-spec",
     "test:all": "npm run test:unit && npm run test:integration && npm run test:e2e",
     "test:all:cov": "npm run test:unit:cov && npm run test:integration:cov && npm run test:e2e",
     "test:setup": "../../scripts/setup-tests.sh",
@@ -144,25 +144,5 @@
   },
   "prisma": {
     "seed": "node prisma/dist/seed-all.js"
-  },
-  "jest": {
-    "moduleFileExtensions": [
-      "js",
-      "json",
-      "ts"
-    ],
-    "rootDir": "src",
-    "testRegex": ".*\\.spec\\.ts$",
-    "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
-    },
-    "collectCoverageFrom": [
-      "**/*.(t|j)s"
-    ],
-    "coverageDirectory": "../coverage",
-    "testEnvironment": "node",
-    "moduleNameMapper": {
-      "^@/(.*)$": "<rootDir>/$1"
-    }
   }
 }

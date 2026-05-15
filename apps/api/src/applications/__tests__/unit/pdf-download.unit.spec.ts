@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
+import type { Mock } from 'vitest';
 import { ApplicationsService } from '../../applications.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import { JobsService } from '@/jobs/jobs.service';
@@ -15,7 +16,7 @@ import { MockHelper } from '../../../../test/helpers/mock.helper';
 describe('ApplicationsService.getFileStream — PDF download (Unit)', () => {
   let service: ApplicationsService;
   let prisma: PrismaService;
-  let storageService: { getFile: jest.Mock };
+  let storageService: { getFile: Mock };
 
   const userId = 'user-id-123';
   const applicationId = 'app-id-789';
@@ -23,32 +24,32 @@ describe('ApplicationsService.getFileStream — PDF download (Unit)', () => {
 
   beforeEach(async () => {
     const mockPrisma = MockHelper.createMockPrismaService();
-    mockPrisma.application.findFirst = jest.fn();
+    mockPrisma.application.findFirst = vi.fn();
 
-    storageService = { getFile: jest.fn().mockResolvedValue(fakePdf) };
+    storageService = { getFile: vi.fn().mockResolvedValue(fakePdf) };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ApplicationsService,
         { provide: PrismaService, useValue: mockPrisma },
-        { provide: JobsService, useValue: { enqueue: jest.fn() } },
+        { provide: JobsService, useValue: { enqueue: vi.fn() } },
         { provide: StorageService, useValue: storageService },
         { provide: LLMService, useValue: {} },
         { provide: TitleGeneratorService, useValue: {} },
         { provide: KeywordsService, useValue: {} },
         { provide: TemplatesService, useValue: {} },
-        { provide: SubscriptionService, useValue: { incrementUsage: jest.fn() } },
+        { provide: SubscriptionService, useValue: { incrementUsage: vi.fn() } },
       ],
     }).compile();
 
     service = module.get<ApplicationsService>(ApplicationsService);
     prisma = module.get<PrismaService>(PrismaService);
 
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should return the cover-letter PDF buffer for a READY application', async () => {
-    prisma.application.findFirst = jest.fn().mockResolvedValue({
+    prisma.application.findFirst = vi.fn().mockResolvedValue({
       id: applicationId,
       userId,
       status: 'READY',
@@ -64,7 +65,7 @@ describe('ApplicationsService.getFileStream — PDF download (Unit)', () => {
   });
 
   it('should return the resume PDF buffer for a READY application', async () => {
-    prisma.application.findFirst = jest.fn().mockResolvedValue({
+    prisma.application.findFirst = vi.fn().mockResolvedValue({
       id: applicationId,
       userId,
       status: 'READY',
@@ -79,7 +80,7 @@ describe('ApplicationsService.getFileStream — PDF download (Unit)', () => {
   });
 
   it('should throw NotFoundWithCode when application does not belong to the user', async () => {
-    prisma.application.findFirst = jest.fn().mockResolvedValue(null);
+    prisma.application.findFirst = vi.fn().mockResolvedValue(null);
 
     await expect(
       service.getFileStream(userId, applicationId, 'resume'),
@@ -88,7 +89,7 @@ describe('ApplicationsService.getFileStream — PDF download (Unit)', () => {
   });
 
   it('should throw BadRequestException when application is not READY', async () => {
-    prisma.application.findFirst = jest.fn().mockResolvedValue({
+    prisma.application.findFirst = vi.fn().mockResolvedValue({
       id: applicationId,
       userId,
       status: 'GENERATING',

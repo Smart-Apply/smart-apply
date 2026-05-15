@@ -1,135 +1,121 @@
 # Test-Struktur
 
-Organisierte Test-Suite für Smart Apply Backend API.
+Organisierte Test-Suite für Smart Apply Backend API. Migriert von Jest auf
+**Vitest 2.1** (Mai 2026, Phase 5 des [Rearchitecture Plan](../../docs/guides/REARCHITECTURE_PLAN.md)).
 
 ## 📁 Ordnerstruktur
 
 ```
-test/
-├── e2e/                          # End-to-End Tests
-│   ├── auth/                     # Authentication & Authorization
-│   │   ├── auth.e2e-spec.ts
-│   │   ├── auth-refresh.e2e-spec.ts
-│   │   └── sessions.e2e-spec.ts
-│   ├── features/                 # Feature Tests
-│   │   ├── applications.e2e-spec.ts
-│   │   ├── job-postings.e2e-spec.ts
-│   │   ├── profile.e2e-spec.ts
-│   │   └── uploads.e2e-spec.ts
-│   └── security/                 # Security Tests
-│       ├── audit-logging.e2e-spec.ts
-│       ├── cors.e2e-spec.ts
-│       ├── csp-headers.e2e-spec.ts
-│       ├── csrf.e2e-spec.ts
-│       ├── rate-limit.e2e-spec.ts
-│       └── xss-sanitization.e2e-spec.ts
-├── unit/                         # Unit Tests
-│   └── providers/                # Provider Tests
-│       └── huggingface-llm.provider.spec.ts
-├── fixtures/                     # Test Fixtures
-│   ├── large-file.pdf
-│   ├── sample-job-posting.txt
-│   ├── test-resume.docx
-│   └── test-resume.pdf
-├── jest-e2e.json                 # Jest Configuration
-└── setup.ts                      # Test Setup
+apps/api/
+├── vitest.config.mts                # Vitest Config (alle Suites)
+├── .swcrc                           # SWC Config (Decorator Metadata)
+├── src/
+│   ├── auth/__tests__/unit/         # Unit Tests (.unit.spec.ts)
+│   └── applications/__tests__/      # Unit + Integration Tests
+└── test/
+    ├── e2e/                         # End-to-End Tests
+    │   ├── auth/
+    │   ├── features/
+    │   ├── health/
+    │   ├── performance/
+    │   └── security/
+    ├── fixtures/
+    ├── helpers/
+    │   ├── auth.helper.ts
+    │   ├── mock.helper.ts
+    │   └── test-db.helper.ts
+    └── setup.ts                     # Vitest Setup (env vars)
 ```
 
 ## 🧪 Test-Kategorien
 
-### E2E Tests (`e2e/`)
+Suites werden über das Datei-Suffix gewählt:
 
+| Suffix                  | Suite       | Speed | DB nötig? |
+|-------------------------|-------------|-------|-----------|
+| `*.unit.spec.ts`        | unit        | ms    | nein      |
+| `*.integration.spec.ts` | integration | ms–s  | gemockt   |
+| `*.e2e-spec.ts`         | e2e         | s     | ja        |
+
+### E2E Tests (`test/e2e/`)
 End-to-End Tests für API-Endpunkte mit echter Datenbank und vollem Request-Lifecycle.
 
-#### Auth (`e2e/auth/`)
-- **auth.e2e-spec.ts**: Login, Register, Logout, /me Endpoint
-- **auth-refresh.e2e-spec.ts**: Refresh Token Strategy, Rotation, Max Tokens
-- **sessions.e2e-spec.ts**: Session Management, Device Tracking, Multi-Device Logout
+- **auth/** — Login, Register, Refresh-Token Rotation, Sessions, Settings
+- **features/** — Profile CRUD, Job Postings, Applications, Uploads, Pagination, Subscription
+- **health/** — `/health` Terminus checks
+- **performance/** — Compression, N+1 query prevention
+- **security/** — Audit Logging, CORS, CSP, CSRF, Rate Limiting, XSS Sanitization
 
-#### Features (`e2e/features/`)
-- **applications.e2e-spec.ts**: Application Pipeline, PDF Generation, Status Updates
-- **job-postings.e2e-spec.ts**: Job Parsing, URL Extraction, Storage
-- **profile.e2e-spec.ts**: Profile CRUD, Skills, Experiences, Education, etc.
-- **uploads.e2e-spec.ts**: File Upload, Validation, Storage
-
-#### Security (`e2e/security/`)
-- **audit-logging.e2e-spec.ts**: Security Event Logging, Failed Logins, Rate Limits
-- **cors.e2e-spec.ts**: CORS Headers, Origin Validation
-- **csp-headers.e2e-spec.ts**: Content Security Policy Headers
-- **csrf.e2e-spec.ts**: CSRF Protection, Token Validation
-- **rate-limit.e2e-spec.ts**: Rate Limiting, Throttling
-- **xss-sanitization.e2e-spec.ts**: Input Sanitization, XSS Protection
-
-### Unit Tests (`unit/`)
-
-Unit Tests für isolierte Komponenten, Services und Provider.
-
-#### Providers (`unit/providers/`)
-- **huggingface-llm.provider.spec.ts**: Hugging Face LLM Provider Logic
+### Unit & Integration Tests (`src/**/__tests__/`)
+Unit Tests leben **neben dem Modul** in einem `__tests__/unit/` Unterordner. Integration Tests
+(NestJS DI Container, gemockte Provider) leben in `__tests__/integration/`.
 
 ## 🚀 Tests ausführen
 
-### Alle Tests
 ```bash
-npm run test:e2e
-```
+# Alle Suites
+npm test                              # vitest run (alle Patterns)
 
-### Spezifische Kategorie
-```bash
-# Auth Tests
-npx jest --config ./test/jest-e2e.json e2e/auth
+# Einzelne Suite (Vitest filtert per Substring auf den Pfad)
+npm run test:unit                     # vitest run unit.spec
+npm run test:integration              # vitest run integration.spec
+npm run test:e2e                      # vitest run e2e-spec
 
-# Security Tests
-npx jest --config ./test/jest-e2e.json e2e/security
+# Watch
+npm run test:unit:watch
+npm run test:integration:watch
+npm run test:e2e:watch
 
-# Feature Tests
-npx jest --config ./test/jest-e2e.json e2e/features
-
-# Unit Tests
-npx jest --config ./test/jest-e2e.json unit
-```
-
-### Einzelner Test
-```bash
-npx jest --config ./test/jest-e2e.json e2e/auth/auth.e2e-spec.ts
-```
-
-### Mit Coverage
-```bash
+# Coverage (v8 provider, HTML + lcov in coverage/)
 npm run test:cov
-```
+npm run test:unit:cov
+npm run test:integration:cov
 
-### Watch Mode
-```bash
-npx jest --config ./test/jest-e2e.json --watch
+# Einzelne Datei (positional Argument = Substring-Filter)
+npx vitest run pdf-download           # matcht src/.../pdf-download.unit.spec.ts
+npx vitest run auth/auth.e2e          # matcht test/e2e/auth/auth.e2e-spec.ts
 ```
 
 ## 📝 Test-Conventions
 
 ### Naming
-- **E2E Tests**: `*.e2e-spec.ts` - Testen vollständige API-Flows
-- **Unit Tests**: `*.spec.ts` - Testen isolierte Funktionen/Services
-- **Describe Blocks**: Feature oder Endpoint-basiert
+- **Unit Tests**: `*.unit.spec.ts` — isolierte Services/Funktionen, alles gemockt
+- **Integration Tests**: `*.integration.spec.ts` — NestJS DI mit gemockten Providern
+- **E2E Tests**: `*.e2e-spec.ts` — vollständige API-Flows gegen echte DB
+- **Describe Blocks**: Feature- oder Endpoint-basiert
 - **Test Cases**: Sollten mit "should" beginnen
+
+### Vitest Globals
+Mit `globals: true` in der Config sind `describe`, `it`, `expect`, `beforeAll`,
+`beforeEach`, `afterAll`, `afterEach` und `vi` ohne Import verfügbar. Für Typen
+(z.B. `Mock`, `MockInstance`) wird ein expliziter Import gebraucht:
+
+```typescript
+import type { Mock, MockInstance } from 'vitest';
+```
+
+`test/vitest-env.d.ts` enthält `/// <reference types="vitest/globals" />`,
+damit der TS Compiler die Globals kennt — und der Rest der `@types/*`
+Auto-Inclusion (`@types/multer`, `@types/express` etc.) bleibt unangetastet.
 
 ### Struktur
 ```typescript
 describe('FeatureName (E2E)', () => {
   let app: INestApplication;
-  
+
   beforeAll(async () => {
     // Setup
   });
-  
+
   afterAll(async () => {
     // Cleanup
   });
-  
+
   describe('POST /endpoint', () => {
     it('should handle success case', async () => {
       // Test
     });
-    
+
     it('should handle error case', async () => {
       // Test
     });
@@ -138,69 +124,86 @@ describe('FeatureName (E2E)', () => {
 ```
 
 ### Best Practices
-1. **Isolierte Tests**: Jeder Test sollte unabhängig laufen können
-2. **Cleanup**: Datenbank nach jedem Test aufräumen
-3. **Fixtures**: Verwende Test-Fixtures aus `fixtures/` Ordner
-4. **Mocking**: Mock externe Services (LLM, Storage) in Unit Tests
-5. **Assertions**: Verwende spezifische Assertions (`expect().toBe()`, nicht nur `toBeTruthy()`)
+1. **Isolierte Tests** — jeder Test soll unabhängig laufen können
+2. **Cleanup** — Datenbank nach jedem Test aufräumen (E2E)
+3. **Fixtures** — Verwende Test-Fixtures aus `fixtures/`
+4. **Mocking** — `vi.fn()`, `vi.spyOn()`, `vi.mock('module-name')`
+5. **Assertions** — spezifische Assertions (`expect().toBe()`, nicht nur `toBeTruthy()`)
 
 ## 🔧 Konfiguration
 
-### jest-e2e.json
-- **testMatch**: `**/e2e/**/*.e2e-spec.ts`, `**/unit/**/*.spec.ts`
-- **rootDir**: `test/`
-- **setupFiles**: `setup.ts` (Environment, DB Connection)
+### `vitest.config.mts`
+Eine Config für alle Suites. Wichtige Punkte:
+- `unplugin-swc` transpiliert TS und emittiert `design:*` Decorator-Metadaten
+  (das braucht NestJS DI; esbuild kann das nicht).
+- `vite-tsconfig-paths` löst den `@/*` Alias aus `tsconfig.json` auf.
+- `pool: 'forks'` + `singleFork: true` — sequentielle Ausführung, weil
+  Integration/E2E DB-Zugriff serialisiert annimmt.
+- `globals: true` — Jest-kompatible globale APIs.
 
-### setup.ts
-Enthält globale Test-Setup-Logik:
-- Environment Variables
-- Database Connection
-- Global Mocks
+### `setup.ts`
+Setzt Test-Environment-Variablen bevor `AppModule` lädt:
+- `JWT_SECRET` (64+ Zeichen Test-Wert)
+- `DATABASE_URL` (Default: lokale Test-DB)
+- `STORAGE_DRIVER=disk`, `LLM_PROVIDER=mock`, `JOBS_DRIVER=in-memory`
+- `NODE_ENV=test`
+- Hohe Rate-Limit Werte (effektiv deaktiviert)
 
-## 📊 Test Coverage
+## 📊 Test-Status
 
-Aktuelle Coverage:
-- **Auth**: 100% (3 Test-Dateien)
-- **Security**: 100% (6 Test-Dateien)
-- **Features**: 100% (4 Test-Dateien)
-- **Providers**: Partial (1 Test-Datei)
+Aktuelle Suite (Stand Mai 2026):
+- **Unit**: 4 Dateien — passing ✅
+- **Integration**: 1 Datei — failing (TemplatesService DI mismatch, pre-existing tech debt)
+- **E2E**: 21 Dateien — brauchen reale DB, in CI nicht ausgeführt
 
-**Gesamt**: 14 Test-Dateien
+> **Hinweis:** CI markiert die `unit-tests` Job aktuell als `continue-on-error: true`,
+> weil ein Teil der bestehenden Tests nicht zum Code-Stand passt. Siehe
+> [`.github/copilot-instructions.md`](../../.github/copilot-instructions.md#test-suite-status).
 
 ## 🎯 Neue Tests hinzufügen
 
-### E2E Test
+### Unit Test (neben dem Modul)
 ```bash
-# Erstelle in passender Kategorie
-touch test/e2e/features/new-feature.e2e-spec.ts
+mkdir -p apps/api/src/<module>/__tests__/unit
+touch apps/api/src/<module>/__tests__/unit/<feature>.unit.spec.ts
 ```
 
-### Unit Test
+### Integration Test
 ```bash
-# Erstelle in passender Kategorie
-touch test/unit/services/new-service.spec.ts
+mkdir -p apps/api/src/<module>/__tests__/integration
+touch apps/api/src/<module>/__tests__/integration/<feature>.integration.spec.ts
+```
+
+### E2E Test
+```bash
+touch apps/api/test/e2e/features/<new-feature>.e2e-spec.ts
 ```
 
 ### Test Fixture
 ```bash
-# Füge Test-Dateien hinzu
-cp sample.pdf test/fixtures/
+cp sample.pdf apps/api/test/fixtures/
 ```
 
 ## 🐛 Debugging
 
 ### Einzelnen Test debuggen
 ```bash
-node --inspect-brk node_modules/.bin/jest --config ./test/jest-e2e.json --runInBand e2e/auth/auth.e2e-spec.ts
+node --inspect-brk node_modules/.bin/vitest run --pool=forks --poolOptions.forks.singleFork=true <pattern>
 ```
 
+Oder direkt im VS Code: Vitest Extension installieren, Breakpoint setzen, Test
+über das Code-Lens "Debug Test" starten.
+
 ### Logs anzeigen
-Tests verwenden Winston Logger. Logs werden in Console ausgegeben wenn `LOG_LEVEL=debug` gesetzt ist.
+Tests verwenden Winston Logger. Logs erscheinen in der Console wenn
+`LOG_LEVEL=debug` gesetzt ist.
 
 ### Test-Datenbank
-E2E Tests verwenden eine separate Test-Datenbank (`DATABASE_URL` in `.env.test`).
+E2E Tests verwenden eine separate Test-Datenbank
+(`DATABASE_URL=postgresql://postgres:postgres@localhost:5432/smartapply_test`
+default in `setup.ts`).
 
 ---
 
-**Letzte Aktualisierung:** 23. November 2025  
+**Letzte Aktualisierung:** 16. Mai 2026 (Vitest-Migration, Phase 5)
 **Maintainer:** Smart Apply Team

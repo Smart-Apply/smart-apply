@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import type { Mock } from 'vitest';
 import { ApplicationsService } from '../../applications.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { JobsService } from '../../../jobs/jobs.service';
@@ -46,13 +47,13 @@ describe('ApplicationsService - Summary Translation Integration', () => {
           provide: PrismaService,
           useValue: {
             profile: {
-              findUnique: jest.fn().mockResolvedValue(mockProfile),
+              findUnique: vi.fn().mockResolvedValue(mockProfile),
             },
             jobPosting: {
-              findUnique: jest.fn().mockResolvedValue(mockJobPosting),
+              findUnique: vi.fn().mockResolvedValue(mockJobPosting),
             },
             application: {
-              create: jest.fn().mockImplementation((data) =>
+              create: vi.fn().mockImplementation((data) =>
                 Promise.resolve({
                   id: 'app-1',
                   ...data.data,
@@ -73,8 +74,8 @@ describe('ApplicationsService - Summary Translation Integration', () => {
         {
           provide: LLMService,
           useValue: {
-            translateSummary: jest.fn(),
-            categorizeSkills: jest.fn().mockResolvedValue([
+            translateSummary: vi.fn(),
+            categorizeSkills: vi.fn().mockResolvedValue([
               { type: 'Programming Languages', skills: ['TypeScript'] },
               { type: 'Frameworks', skills: ['React'] },
             ]),
@@ -83,7 +84,7 @@ describe('ApplicationsService - Summary Translation Integration', () => {
         {
           provide: TitleGeneratorService,
           useValue: {
-            generateTitle: jest.fn().mockResolvedValue('Application for Senior Developer'),
+            generateTitle: vi.fn().mockResolvedValue('Application for Senior Developer'),
           },
         },
         {
@@ -100,7 +101,7 @@ describe('ApplicationsService - Summary Translation Integration', () => {
   it('should translate German summary to English when job posting is in English', async () => {
     const translatedSummary =
       'Experienced Full-Stack Developer with 5+ years of experience in React and Node.js.';
-    (llmService.translateSummary as jest.Mock).mockResolvedValue(translatedSummary);
+    (llmService.translateSummary as Mock).mockResolvedValue(translatedSummary);
 
     // Access private method for testing
     const detectedLanguage = (service as any).detectLanguage(mockJobPosting.fullText);
@@ -126,7 +127,7 @@ describe('ApplicationsService - Summary Translation Integration', () => {
   });
 
   it('should handle translation errors gracefully', async () => {
-    (llmService.translateSummary as jest.Mock).mockRejectedValue(
+    (llmService.translateSummary as Mock).mockRejectedValue(
       new Error('Translation service unavailable'),
     );
 

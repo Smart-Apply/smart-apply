@@ -15,80 +15,80 @@ export class MockHelper {
   static createMockPrismaService() {
     return {
       user: {
-        findUnique: jest.fn(),
-        findMany: jest.fn(),
-        create: jest.fn(),
-        update: jest.fn(),
-        delete: jest.fn(),
+        findUnique: vi.fn(),
+        findMany: vi.fn(),
+        create: vi.fn(),
+        update: vi.fn(),
+        delete: vi.fn(),
       },
       profile: {
-        findUnique: jest.fn(),
-        findFirst: jest.fn(),
-        create: jest.fn(),
-        update: jest.fn(),
-        delete: jest.fn(),
+        findUnique: vi.fn(),
+        findFirst: vi.fn(),
+        create: vi.fn(),
+        update: vi.fn(),
+        delete: vi.fn(),
       },
       jobPosting: {
-        findUnique: jest.fn(),
-        findMany: jest.fn(),
-        create: jest.fn(),
-        update: jest.fn(),
-        delete: jest.fn(),
+        findUnique: vi.fn(),
+        findMany: vi.fn(),
+        create: vi.fn(),
+        update: vi.fn(),
+        delete: vi.fn(),
       },
       application: {
-        findUnique: jest.fn(),
-        findMany: jest.fn(),
-        create: jest.fn(),
-        update: jest.fn(),
-        delete: jest.fn(),
+        findUnique: vi.fn(),
+        findMany: vi.fn(),
+        create: vi.fn(),
+        update: vi.fn(),
+        delete: vi.fn(),
       },
       skill: {
-        deleteMany: jest.fn(),
-        createMany: jest.fn(),
+        deleteMany: vi.fn(),
+        createMany: vi.fn(),
       },
       experience: {
-        deleteMany: jest.fn(),
-        createMany: jest.fn(),
+        deleteMany: vi.fn(),
+        createMany: vi.fn(),
       },
       education: {
-        deleteMany: jest.fn(),
-        createMany: jest.fn(),
+        deleteMany: vi.fn(),
+        createMany: vi.fn(),
       },
       certificate: {
-        deleteMany: jest.fn(),
-        createMany: jest.fn(),
+        deleteMany: vi.fn(),
+        createMany: vi.fn(),
       },
       project: {
-        deleteMany: jest.fn(),
-        createMany: jest.fn(),
+        deleteMany: vi.fn(),
+        createMany: vi.fn(),
       },
       language: {
-        deleteMany: jest.fn(),
-        createMany: jest.fn(),
+        deleteMany: vi.fn(),
+        createMany: vi.fn(),
       },
       refreshToken: {
-        findUnique: jest.fn(),
-        findMany: jest.fn().mockResolvedValue([]),
-        create: jest.fn().mockResolvedValue({
+        findUnique: vi.fn(),
+        findMany: vi.fn().mockResolvedValue([]),
+        create: vi.fn().mockResolvedValue({
           id: 'refresh-token-id',
           token: 'refresh-token-hash',
           userId: 'user-id-123',
           expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
           createdAt: new Date(),
         }),
-        update: jest.fn(),
-        delete: jest.fn(),
-        deleteMany: jest.fn(),
+        update: vi.fn(),
+        delete: vi.fn(),
+        deleteMany: vi.fn(),
       },
       session: {
-        findUnique: jest.fn(),
-        findMany: jest.fn(),
-        create: jest.fn(),
-        update: jest.fn(),
-        delete: jest.fn(),
-        deleteMany: jest.fn(),
+        findUnique: vi.fn(),
+        findMany: vi.fn(),
+        create: vi.fn(),
+        update: vi.fn(),
+        delete: vi.fn(),
+        deleteMany: vi.fn(),
       },
-      $transaction: jest.fn((fn) => fn),
+      $transaction: vi.fn((fn) => fn),
     } as unknown as PrismaService;
   }
 
@@ -97,13 +97,13 @@ export class MockHelper {
    */
   static createMockLLMService() {
     return {
-      generate: jest.fn().mockResolvedValue('Generated content'),
-      generateCoverLetter: jest.fn().mockResolvedValue('Cover letter content'),
-      generateResume: jest.fn().mockResolvedValue('Resume content'),
-      translate: jest.fn().mockResolvedValue('Translated text'),
-      detectLanguage: jest.fn().mockReturnValue('en'),
-      categorizeSkills: jest.fn().mockResolvedValue({ technical: [], soft: [], other: [] }),
-      translateSummary: jest.fn().mockResolvedValue('Translated summary'),
+      generate: vi.fn().mockResolvedValue('Generated content'),
+      generateCoverLetter: vi.fn().mockResolvedValue('Cover letter content'),
+      generateResume: vi.fn().mockResolvedValue('Resume content'),
+      translate: vi.fn().mockResolvedValue('Translated text'),
+      detectLanguage: vi.fn().mockReturnValue('en'),
+      categorizeSkills: vi.fn().mockResolvedValue({ technical: [], soft: [], other: [] }),
+      translateSummary: vi.fn().mockResolvedValue('Translated summary'),
     } as unknown as LLMService;
   }
 
@@ -112,11 +112,11 @@ export class MockHelper {
    */
   static createMockStorageService() {
     return {
-      upload: jest.fn().mockResolvedValue('file-key-123'),
-      download: jest.fn().mockResolvedValue(Buffer.from('file content')),
-      delete: jest.fn().mockResolvedValue(undefined),
-      getSignedUrl: jest.fn().mockResolvedValue('https://blob.storage.azure.com/signed-url'),
-      exists: jest.fn().mockResolvedValue(true),
+      upload: vi.fn().mockResolvedValue('file-key-123'),
+      download: vi.fn().mockResolvedValue(Buffer.from('file content')),
+      delete: vi.fn().mockResolvedValue(undefined),
+      getSignedUrl: vi.fn().mockResolvedValue('https://blob.storage.azure.com/signed-url'),
+      exists: vi.fn().mockResolvedValue(true),
     } as unknown as StorageService;
   }
 
@@ -125,10 +125,10 @@ export class MockHelper {
    */
   static createMockJobsService() {
     return {
-      publishJob: jest.fn().mockResolvedValue('job-id-123'),
-      getJobStatus: jest.fn().mockResolvedValue({ status: 'COMPLETED' }),
-      subscribeToQueue: jest.fn().mockResolvedValue(undefined),
-      healthCheck: jest.fn().mockResolvedValue(true),
+      publishJob: vi.fn().mockResolvedValue('job-id-123'),
+      getJobStatus: vi.fn().mockResolvedValue({ status: 'COMPLETED' }),
+      subscribeToQueue: vi.fn().mockResolvedValue(undefined),
+      healthCheck: vi.fn().mockResolvedValue(true),
     } as unknown as JobsService;
   }
 
@@ -137,9 +137,9 @@ export class MockHelper {
    */
   static createMockPdfService() {
     return {
-      generateCoverLetterPDF: jest.fn().mockResolvedValue(Buffer.from('pdf content')),
-      generateResumePDF: jest.fn().mockResolvedValue(Buffer.from('pdf content')),
-      validateATS: jest.fn().mockResolvedValue({
+      generateCoverLetterPDF: vi.fn().mockResolvedValue(Buffer.from('pdf content')),
+      generateResumePDF: vi.fn().mockResolvedValue(Buffer.from('pdf content')),
+      validateATS: vi.fn().mockResolvedValue({
         score: 95,
         issues: [],
         passed: true,
@@ -152,7 +152,7 @@ export class MockHelper {
    */
   static createMockConfigService() {
     return {
-      get: jest.fn((key: string) => {
+      get: vi.fn((key: string) => {
         const config = {
           JWT_SECRET: 'test-secret-key-minimum-64-characters-for-security-requirements',
           JWT_EXPIRES_IN: '7d',
@@ -182,11 +182,11 @@ export class MockHelper {
    */
   static createMockLogger() {
     return {
-      log: jest.fn(),
-      error: jest.fn(),
-      warn: jest.fn(),
-      debug: jest.fn(),
-      verbose: jest.fn(),
+      log: vi.fn(),
+      error: vi.fn(),
+      warn: vi.fn(),
+      debug: vi.fn(),
+      verbose: vi.fn(),
     };
   }
 
@@ -205,8 +205,8 @@ export class MockHelper {
           ...request,
         }),
         getResponse: () => ({
-          status: jest.fn().mockReturnThis(),
-          json: jest.fn(),
+          status: vi.fn().mockReturnThis(),
+          json: vi.fn(),
         }),
       }),
       getHandler: () => ({}),
@@ -219,8 +219,8 @@ export class MockHelper {
    */
   static createMockCallHandler(data?: any) {
     return {
-      handle: jest.fn().mockReturnValue({
-        pipe: jest.fn().mockReturnValue(data),
+      handle: vi.fn().mockReturnValue({
+        pipe: vi.fn().mockReturnValue(data),
       }),
     } as any;
   }
@@ -230,7 +230,7 @@ export class MockHelper {
    */
   static createMockSessionService() {
     return {
-      createSession: jest.fn().mockResolvedValue({
+      createSession: vi.fn().mockResolvedValue({
         id: 'session-id-123',
         userId: 'user-id-123',
         refreshToken: 'refresh-token',
@@ -239,10 +239,10 @@ export class MockHelper {
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         createdAt: new Date(),
       }),
-      findSession: jest.fn().mockResolvedValue(null),
-      deleteSession: jest.fn().mockResolvedValue(undefined),
-      deleteAllUserSessions: jest.fn().mockResolvedValue({ count: 0 }),
-      getUserSessions: jest.fn().mockResolvedValue([]),
+      findSession: vi.fn().mockResolvedValue(null),
+      deleteSession: vi.fn().mockResolvedValue(undefined),
+      deleteAllUserSessions: vi.fn().mockResolvedValue({ count: 0 }),
+      getUserSessions: vi.fn().mockResolvedValue([]),
     };
   }
 }
