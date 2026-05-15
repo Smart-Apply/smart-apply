@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.1](https://github.com/Smart-Apply/smart-apply/compare/v3.0.0...v3.0.1) (2026-05-15)
+
+
+### Bug Fixes
+
+* **api:** bump sanitize-html to 2.17.4 to patch CVE-2026-44990 ([#438](https://github.com/Smart-Apply/smart-apply/issues/438)) ([f316746](https://github.com/Smart-Apply/smart-apply/commit/f3167461746f3e88684088c86d79fa5a2b69bb3c))
+
 ## [3.0.0](https://github.com/Smart-Apply/smart-apply/compare/v2.0.1...v3.0.0) (2026-05-14)
 
 
