@@ -2309,9 +2309,41 @@ Summary: ${resume.summary || 'Not provided'}
     const [applications, total] = await Promise.all([
       this.prisma.application.findMany({
         where: whereClause,
-        include: {
-          // Eagerly load job posting to prevent N+1 queries
-          jobPosting: includeJobPosting,
+        // Lean select for list view: skip the large generated text + JSON
+        // blobs (coverLetterText, resumeText, keywordsData, matchDetails,
+        // atsKeywords, tailoredProfile). Detail/edit pages re-fetch via
+        // GET /applications/:id which still returns the full row.
+        // Saves ~70–90% Neon egress per dashboard load.
+        select: {
+          id: true,
+          userId: true,
+          jobPostingId: true,
+          title: true,
+          targetJobTitle: true,
+          applicationStatus: true,
+          statusUpdatedAt: true,
+          statusSource: true,
+          status: true,
+          notes: true,
+          coverLetterFileKey: true,
+          resumeFileKey: true,
+          coverLetterTemplateId: true,
+          resumeTemplateId: true,
+          language: true,
+          errorMessage: true,
+          matchScore: true,
+          createdAt: true,
+          updatedAt: true,
+          jobPosting: includeJobPosting
+            ? {
+                select: {
+                  id: true,
+                  title: true,
+                  company: true,
+                  location: true,
+                },
+              }
+            : false,
         },
         orderBy: {
           createdAt: 'desc',

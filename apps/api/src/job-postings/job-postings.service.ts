@@ -213,6 +213,22 @@ export class JobPostingsService {
     const [jobPostings, total] = await Promise.all([
       this.prisma.jobPosting.findMany({
         where: whereClause,
+        // Lean select for list view: skip `fullText` (@db.Text, can be 5–20KB
+        // per row) and `rawText` (raw scrape, even larger). Detail page
+        // (GET /job-postings/:id) re-fetches the full row when needed.
+        // Saves ~80–95% Neon egress per dashboard load.
+        select: {
+          id: true,
+          userId: true,
+          title: true,
+          company: true,
+          location: true,
+          language: true,
+          sourceUrl: true,
+          fileId: true,
+          createdAt: true,
+          updatedAt: true,
+        },
         orderBy: { createdAt: 'desc' },
         take: limit,
         skip: (page - 1) * limit,
