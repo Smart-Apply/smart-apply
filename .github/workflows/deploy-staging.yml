@@ -150,6 +150,10 @@ jobs:
       - uses: pnpm/action-setup@v4
         with:
           version: 11.1.2
+          # standalone bundles a self-contained pnpm exec with its own Node.
+          # Required because pnpm 11 needs Node >=22.13 but the ubuntu-latest
+          # runner default is Node 20.x at the moment we invoke this action.
+          standalone: true
 
       - uses: actions/setup-node@v6
         with:
