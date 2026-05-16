@@ -216,10 +216,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          # Pinned to 20 because the Cloudflare Workers runtime + wrangler
-          # toolchain still target Node 20 LTS. Bump to 24 once @opennextjs
-          # publishes a Node-24-tested release.
-          node-version: '20'
+          # Node 24 to match the API workflow + satisfy pnpm 11's >=22.13
+          # requirement. The Cloudflare Workers RUNTIME version is set in
+          # apps/web/wrangler.jsonc via compatibility_date and is independent
+          # of the host Node used to build the bundle. wrangler 4 and
+          # @opennextjs/cloudflare 1.19 both run fine on Node 24.
+          node-version: '24'
           cache: 'pnpm'
 
       - name: Install dependencies (web + shared workspaces)
