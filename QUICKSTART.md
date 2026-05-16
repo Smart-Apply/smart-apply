@@ -4,16 +4,17 @@ Get Smart Apply running in 5 minutes.
 
 ## Prerequisites
 
-- **Node.js** 24+ (or 20.19+)
+- **Node.js** 24+ (or 20.19+) with [corepack](https://nodejs.org/api/corepack.html) enabled
 - **Docker Desktop** (running)
-- **npm** 11+
+- **pnpm** 9+ (installed below via corepack)
 
 ## Setup
 
-### 1. Install Dependencies
+### 1. Install pnpm + dependencies
 
 ```bash
-npm install
+corepack enable && corepack prepare pnpm@11.1.2 --activate
+pnpm install
 ```
 
 ### 2. Start Database
@@ -45,15 +46,15 @@ uncomment the credential block beneath it. See the comments in
 ### 4. Setup Database
 
 ```bash
-npm run prisma:migrate           # apply migrations
-npm run prisma:seed              # seed demo user + sample data
-npm run prisma:seed:templates    # seed PDF resume / cover-letter templates
+pnpm prisma:migrate           # apply migrations
+pnpm prisma:seed              # seed demo user + sample data
+pnpm prisma:seed:templates    # seed PDF resume / cover-letter templates
 ```
 
 ### 5. Start Development Servers
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 This starts both:
@@ -78,16 +79,16 @@ This starts both:
 
 ```bash
 # Start individual services
-npm run api:dev       # Backend only (Port 3000)
-npm run web:dev       # Frontend only (Port 3001)
+pnpm api:dev       # Backend only (Port 3000)
+pnpm web:dev       # Frontend only (Port 3001)
 
 # Database
-npm run prisma:studio # GUI for database
-npm run prisma:seed   # Re-seed demo data
+pnpm prisma:studio # GUI for database
+pnpm prisma:seed   # Re-seed demo data
 
 # Testing
-npm run test:unit     # Unit tests (fast, no DB)
-npm run test:e2e      # E2E tests (requires test DB)
+pnpm test:unit     # Unit tests (fast, no DB)
+pnpm test:e2e      # E2E tests (requires test DB)
 ```
 
 ## Troubleshooting
@@ -106,7 +107,7 @@ docker compose -f infra/docker-compose.yml logs db
 
 ```bash
 # Regenerate Prisma Client
-npm run prisma:generate
+pnpm prisma:generate
 
 # Reset database (Warning: deletes all data)
 npx prisma migrate reset --schema=apps/api/prisma/schema.prisma
@@ -125,7 +126,7 @@ lsof -ti:3001 | xargs kill -9
 ```bash
 # Clean install
 rm -rf node_modules apps/api/node_modules apps/web/node_modules
-npm install
+pnpm install
 ```
 
 ### Real LLM / R2 / QStash needed
@@ -133,7 +134,7 @@ npm install
 Each pluggable provider in `apps/api/.env.example` has a commented
 credential block beneath the driver setting. Flip the driver
 (e.g. `LLM_PROVIDER=azure-openai`), uncomment the block, paste your
-keys, and restart `npm run start:dev`. QStash additionally requires a
+keys, and restart `pnpm start:dev`. QStash additionally requires a
 public webhook URL — use `ngrok` or `cloudflared tunnel` locally.
 
 ## What's Included

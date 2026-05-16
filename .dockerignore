@@ -59,8 +59,13 @@ apps/api/logs
 logs
 **/logs
 
-# --- Web app (the API image doesn't need it) ---------------------------------
+# --- Web app (the API image doesn't need its source) ------------------------
+# pnpm `--frozen-lockfile` validates the lockfile against every workspace's
+# package.json, so we re-include just the manifest (not src/, .next/, etc.)
+# so the install step can verify @smart-apply/web's resolved tree without
+# bringing 100+ MB of Next.js source into the API image.
 apps/web
+!apps/web/package.json
 packages/shared/dist
 
 # --- Docs / scripts that aren't needed at build time -------------------------

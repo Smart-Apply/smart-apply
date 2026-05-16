@@ -71,7 +71,7 @@ Resulting flow: PR → merge to main → staging deploys + Release PR opens/upda
 - **NEVER** suggest `prisma migrate reset` for any environment other than your local dev DB.
 
 ### When you change `package.json`
-- Run `npm install --legacy-peer-deps` immediately after, and commit the resulting `package-lock.json` change in the same PR. The `lint-and-typecheck` CI job blocks on lockfile drift (only fails on real package/version changes, not cosmetic metadata).
+- Run `pnpm install` immediately after, and commit the resulting `pnpm-lock.yaml` change in the same PR. The `lint-and-typecheck` CI job blocks on lockfile drift (`pnpm install --lockfile-only` against the manifests must produce no diff against the committed lockfile).
 - For dependency upgrades: minor/patch bumps are handled by Dependabot's grouped weekly PRs. Major bumps for `next`, `react`, `react-dom`, `prisma`, `@prisma/*`, `@nestjs/*`, `puppeteer`, `playwright`, `tailwindcss`, `typescript`, `turbo`, `lucide-react`, `eslint`, `eslint-config-next`, `@types/node` are **explicitly ignored** in [`.github/dependabot.yml`](../.github/dependabot.yml) — those need a deliberate, hand-tested PR.
 
 ### When architecture changes
@@ -93,7 +93,7 @@ Resulting flow: PR → merge to main → staging deploys + Release PR opens/upda
 
 ### Lint policy
 - **New code MUST land with 0 ESLint errors AND 0 ESLint warnings.** CI's `lint-and-typecheck` job currently fails on errors only, but warnings accumulate into untracked tech debt — historically one reached 74 warnings before a single new error tipped the build red and blocked every PR. Treat warnings as errors for anything you author.
-- Before opening a PR that touches `apps/web` or `apps/api`, run `npm run lint` from the affected workspace and confirm a clean exit. If you add a file, lint that file.
+- Before opening a PR that touches `apps/web` or `apps/api`, run `pnpm lint` from the affected workspace and confirm a clean exit. If you add a file, lint that file.
 - Don't introduce unused imports, unused locals, or unused parameters. If a parameter is required by a signature you don't control (route handlers, callback shapes), prefix it with `_` — `eslint.config.mjs` ignores leading-underscore identifiers project-wide.
 - Don't suppress with `eslint-disable` unless the suppression is *behaviour-correct* (e.g. SSE effect that depends on `application?.status` not the whole `application` to avoid stream thrash). Always add a comment on the line above the disable explaining why the rule's auto-fix would break behaviour.
 - If you introduce a deliberately-unused identifier (e.g. a destructured prop kept for API compat), prefix with `_` rather than disabling the rule.
@@ -113,7 +113,7 @@ Resulting flow: PR → merge to main → staging deploys + Release PR opens/upda
 - Bypassing `@Sanitize()`, DTO whitelist, or JWT guards without explicit justification in the PR description
 - Catch-and-ignore error handling (`try { ... } catch {}`)
 - Lockfile changes without the matching `package.json` change in the same PR (or vice versa)
-- Adding to `node_modules/` directly, or hand-editing `package-lock.json`
+- Adding to `node_modules/` directly, or hand-editing `pnpm-lock.yaml`
 - Pasting real secrets in PR descriptions, issue comments, or chat
 - Shipping new code that introduces ESLint errors *or* warnings (see Lint policy)
 - `form.watch(...)` inside a component body — use `useWatch({ control, name })`
@@ -126,7 +126,7 @@ Resulting flow: PR → merge to main → staging deploys + Release PR opens/upda
 ## Tech Stack
 
 ### Monorepo
-- **npm workspaces** + **Turborepo 2.8** (`apps/api`, `apps/web`, `packages/shared`)
+- **pnpm workspaces** (`pnpm-workspace.yaml`) + **Turborepo 2.8** (`apps/api`, `apps/web`, `packages/shared`)
 - Node **24** (>= 20.19), TypeScript 5.9 strict
 
 ### Backend (`apps/api`, Port 3000)
@@ -704,8 +704,11 @@ NEXT_PUBLIC_SENTRY_DSN=<public DSN, leave empty locally>
 
 ### Initial Setup
 ```bash
+# 0. Install pnpm via corepack (one-time, ships with Node 16.13+)
+corepack enable && corepack prepare pnpm@11.1.2 --activate
+
 # 1. Install workspaces
-npm install --legacy-peer-deps
+pnpm install
 
 # 2. Local Postgres (or skip and use a Neon dev branch)
 docker compose -f infra/docker-compose.yml up -d db
@@ -717,40 +720,40 @@ cp apps/web/.env.example apps/web/.env
 # Defaults run fully offline (Docker Postgres, mock LLM, disk storage).
 
 # 4. Migrate + seed
-npm --workspace @smart-apply/api run prisma:migrate
-npm --workspace @smart-apply/api run prisma:seed
-npm --workspace @smart-apply/api run prisma:seed:templates
+pnpm --filter @smart-apply/api prisma:migrate
+pnpm --filter @smart-apply/api prisma:seed
+pnpm --filter @smart-apply/api prisma:seed:templates
 
 # 5. Run both apps in parallel (Turborepo)
-npm run dev
+pnpm dev
 ```
 
 ### Turborepo (root)
 ```bash
-npm run dev              # API + Web in parallel
-npm run build            # Build all workspaces
-npm run lint             # Lint all workspaces
-npm run test             # Test all workspaces
+pnpm dev                 # API + Web in parallel
+pnpm build               # Build all workspaces
+pnpm lint                # Lint all workspaces
+pnpm test                # Test all workspaces
 ```
 
 ### Backend (Terminal 1)
 ```bash
 cd apps/api
-npm run start:dev        # NestJS at http://localhost:3000
-npm run test:e2e         # E2E tests
-npm run prisma:studio    # Prisma Studio GUI
-npm run prisma:migrate   # Run migrations
+pnpm start:dev           # NestJS at http://localhost:3000
+pnpm test:e2e            # E2E tests
+pnpm prisma:studio       # Prisma Studio GUI
+pnpm prisma:migrate      # Run migrations
 ```
 
 ### Frontend (Terminal 2)
 ```bash
 cd apps/web
-npm run dev              # Next.js at http://localhost:3001
-npm run build            # Production build (validates TS)
-npm run lint             # ESLint check
-npm run cf:preview       # Local Cloudflare Workers preview (OpenNext)
-npm run cf:deploy        # Deploy to Cloudflare Workers
-npx shadcn@latest add <component>  # Add shadcn/ui component
+pnpm dev                 # Next.js at http://localhost:3001
+pnpm build               # Production build (validates TS)
+pnpm lint                # ESLint check
+pnpm cf:preview          # Local Cloudflare Workers preview (OpenNext)
+pnpm cf:deploy           # Deploy to Cloudflare Workers
+pnpm dlx shadcn@latest add <component>  # Add shadcn/ui component
 ```
 
 ### Access URLs
@@ -796,9 +799,9 @@ Four workflows, each with a single purpose. **Never propose adding a fifth that 
 ## Tests
 **Backend (apps/api)**
 - E2E: Auth (register, login, me), Profile CRUD, Application pipeline (mock LLM + in-memory providers)
-- Run: `cd apps/api && npm run test:e2e`
+- Run: `cd apps/api && pnpm test:e2e`
 
 **Frontend (apps/web)**
 - ESLint validation (TypeScript strict mode, no `any` types)
 - Production build test (validates all pages compile)
-- Run: `cd apps/web && npm run lint && npm run build`
+- Run: `cd apps/web && pnpm lint && pnpm build`

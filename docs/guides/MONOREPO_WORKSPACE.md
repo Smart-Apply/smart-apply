@@ -1,111 +1,142 @@
-# Smart Apply - Monorepo Workspace
+# Smart Apply — Monorepo Workspace (pnpm)
 
-npm Workspaces-basiertes Monorepo für Smart Apply (Frontend + Backend).
+pnpm-Workspaces-basiertes Monorepo für Smart Apply (Backend + Frontend + Shared Types).
+
+> Migriert von npm Workspaces auf **pnpm 11.1** (Mai 2026, Phase 5 des [Rearchitecture Plan](./REARCHITECTURE_PLAN.md)).
 
 ## 📁 Struktur
 
 ```text
 smart-apply/
-├── package.json              # Workspace Root (Orchestrator)
+├── package.json              # Workspace-Root (Orchestrator, root devDeps)
+├── pnpm-workspace.yaml       # Workspace-Manifest (welche Pakete gehören dazu)
+├── pnpm-lock.yaml            # EINZIGE Lockfile-Quelle der Wahrheit
+├── .npmrc                    # pnpm-Settings (auto-install-peers, hoist patterns)
+├── turbo.json                # Turborepo Task-Graph
 ├── apps/
-│   ├── api/
-│   │   ├── package.json      # @smart-apply/api (Backend)
-│   │   ├── src/              # NestJS Source Code
-│   │   ├── test/             # E2E & Unit Tests
-│   │   └── prisma/           # Database Schema & Migrations
-│   └── web/
-│       ├── package.json      # @smart-apply/web (Frontend)
-│       └── src/              # Next.js Source Code
-├── node_modules/             # Shared Dependencies (Root)
-├── apps/api/node_modules/    # API-specific Dependencies
-└── apps/web/node_modules/    # Web-specific Dependencies
+│   ├── api/                  # @smart-apply/api (NestJS Backend)
+│   │   ├── package.json
+│   │   ├── src/
+│   │   ├── test/
+│   │   └── prisma/
+│   └── web/                  # @smart-apply/web (Next.js Frontend)
+│       ├── package.json
+│       └── src/
+├── packages/
+│   └── shared/               # @smart-apply/shared (geteilte DTOs / Types)
+│       ├── package.json
+│       ├── src/
+│       └── dist/             # tsc Output (von api + web als JS importiert)
+└── node_modules/             # pnpm-managed: alles via Symlinks aus dem Store
 ```
 
 ## 🎯 Workspace-Konzept
 
-### Root package.json
+### Warum pnpm?
+- **Strict hoisting** — kein "phantom dependency" Fehler in Production
+- **Content-addressed Store** — eine globale Kopie pro Paket-Version,
+  Workspaces ziehen Symlinks. Ergebnis: viel kleineres `node_modules` (~40%
+  weniger Plattenplatz) und ~5× schnellere Installs.
+- **Workspace-Filter** (`--filter @smart-apply/api...`) — präzise Builds,
+  perfekt für Docker-Layer-Caching.
+- **`pnpm deploy`** — produktionsreife isolierte Tree-Ausgabe ohne
+  Workspace-Symlinks. Das nutzen wir im [Dockerfile](../../infra/Dockerfile).
 
-- **Zweck:** Workspace Manager & gemeinsame DevDependencies
-- **Enthält:** TypeScript, ESLint, Jest, Prettier, Prisma CLI
-- **Scripts:** Orchestriert alle Workspace-Commands
+### Root `package.json`
+- **packageManager:** `pnpm@11.1.2` — Corepack respektiert das.
+- **devDependencies:** TypeScript, ESLint, Prettier, Vitest, Turborepo,
+  `@nestjs/*` (CLI), `tsx`, … alles was *root-Scripts* oder die Build-Pipeline
+  braucht.
+- **scripts:** Orchestrierungs-Aliases (`api:dev`, `web:dev`, …) als
+  `pnpm --filter <name>` Wrapper, plus Turborepo-Tasks (`dev`, `build`, `lint`,
+  `test`, `test:unit`, `typecheck`).
+- **pnpm.overrides:** Pinning für transitive Deps (lodash, postcss,
+  fast-xml-builder, …).
+- **pnpm.peerDependencyRules:** Peer-Whitelist für `@angular-devkit/core`.
 
-### apps/api/package.json
+### `pnpm-workspace.yaml`
+```yaml
+packages:
+  - 'apps/*'
+  - 'packages/*'
+```
 
-- **Name:** `@smart-apply/api`
-- **Enthält:** NestJS, Prisma Client, Azure SDKs, Puppeteer, etc.
-- **Scripts:** Backend-spezifische Commands (build, test, prisma)
-
-### apps/web/package.json
-
-- **Name:** `@smart-apply/web`
-- **Enthält:** Next.js, React, Tailwind, shadcn/ui, etc.
-- **Scripts:** Frontend-spezifische Commands (dev, build, lint)
+### `.npmrc`
+```ini
+auto-install-peers=true        # pnpm 8+ default; matched what npm did
+strict-peer-dependencies=false # equivalent of npm's --legacy-peer-deps
+public-hoist-pattern[]=*types*
+public-hoist-pattern[]=*eslint*
+public-hoist-pattern[]=*prettier*
+```
 
 ## 🚀 Commands
+
+### Setup (einmal pro Maschine)
+
+```bash
+corepack enable
+corepack prepare pnpm@11.1.2 --activate
+pnpm install
+```
 
 ### Development
 
 ```bash
-# Alle Apps starten (parallel)
-npm run dev
+# Alle Apps starten (Turborepo, parallel)
+pnpm dev
 
 # Nur Backend
-npm run api:dev
+pnpm api:dev          # alias für pnpm --filter @smart-apply/api start:dev
 
 # Nur Frontend
-npm run web:dev
+pnpm web:dev
+
+# Shared Package im Watch-Mode
+pnpm shared:watch
 ```
 
 ### Build
 
 ```bash
-# Alle Apps bauen
-npm run build
+# Alle Apps + Shared (Turborepo cached)
+pnpm build
 
 # Nur Backend
-npm run api:build
+pnpm build:api        # turbo run build --filter=@smart-apply/api
 
 # Nur Frontend
-npm run web:build
+pnpm build:web
+
+# Nur das, was sich seit HEAD^1 geändert hat
+pnpm build:changed
 ```
 
 ### Testing
 
 ```bash
-# Backend E2E Tests
-npm run api:test
-
-# Frontend Lint
-npm run web:lint
+pnpm test             # Turborepo: alle test:unit Tasks
+pnpm test:unit        # Backend Unit-Tests (Vitest)
+pnpm test:integration # Backend Integration-Tests
+pnpm test:e2e         # Backend E2E-Tests (braucht echte DB)
+pnpm test:all         # unit + integration + e2e sequenziell
+pnpm test:cov         # Coverage-Report (v8 provider)
 ```
 
 ### Database (Prisma)
 
 ```bash
-# Generate Prisma Client
-npm run prisma:generate
-
-# Run Migrations
-npm run prisma:migrate
-
-# Seed Database
-npm run prisma:seed
-
-# Seed Templates
-npm run prisma:seed:templates
-
-# Open Prisma Studio
-npm run prisma:studio
+pnpm prisma:generate
+pnpm prisma:migrate
+pnpm prisma:seed
+pnpm prisma:seed:templates
+pnpm prisma:studio
 ```
 
-### Linting & Formatting
+### Linting
 
 ```bash
-# Format all code
-npm run format
-
-# Lint all code
-npm run lint
+pnpm lint             # Turborepo: alle lint Tasks
 ```
 
 ## 📦 Dependency Management
@@ -113,226 +144,179 @@ npm run lint
 ### Installation
 
 ```bash
-# Installiere alle Dependencies (Root + alle Workspaces)
-npm install
+# Installiert alles (Root + Workspaces) basierend auf pnpm-lock.yaml
+pnpm install
+
+# Frozen — wie CI's `pnpm install --frozen-lockfile`. Failt wenn das
+# Lockfile von den Manifesten abweicht.
+pnpm install --frozen-lockfile
 ```
 
-### Workspace-spezifische Dependencies
+### Dependency hinzufügen / entfernen
 
 ```bash
-# Backend Dependency hinzufügen
-npm install <package> --workspace=apps/api
+# Backend-spezifisch
+pnpm --filter @smart-apply/api add @nestjs/cache-manager
+pnpm --filter @smart-apply/api add -D @types/some-lib   # devDep
 
-# Frontend Dependency hinzufügen
-npm install <package> --workspace=apps/web
+# Frontend-spezifisch
+pnpm --filter @smart-apply/web add react-icons
 
-# DevDependency im Root (shared)
-npm install <package> --save-dev
+# Shared Package
+pnpm --filter @smart-apply/shared add zod
+
+# Im Root (für alle Workspaces verfügbare devDep, z.B. Tooling)
+pnpm add -Dw prettier
+
+# Entfernen
+pnpm --filter @smart-apply/api remove some-package
 ```
 
-### Beispiele
+> **Wichtig:** Nach jedem `pnpm add/remove` wird `pnpm-lock.yaml` aktualisiert
+> — **immer committen** im selben PR wie die `package.json` Änderung. CI's
+> `lint-and-typecheck` Job blockiert sonst.
+
+### Workspace-Filter Cheat-Sheet
 
 ```bash
-# Neue NestJS Library im Backend
-npm install @nestjs/cache-manager --workspace=apps/api
-
-# Neue React Library im Frontend
-npm install react-icons --workspace=apps/web
-
-# Shared Tool im Root
-npm install --save-dev husky
+pnpm --filter @smart-apply/api <command>      # nur api
+pnpm --filter @smart-apply/api... <command>   # api + dessen Workspace-Deps
+pnpm --filter ...@smart-apply/api <command>   # api + alles was api importiert
+pnpm --filter "./apps/*" <command>            # alle apps/*
+pnpm -r <command>                             # in jedem Workspace ausführen
 ```
 
-## 🔧 Wie npm Workspaces funktioniert
+## 🔧 Wie pnpm Workspaces funktioniert
 
-### Dependency Resolution
+### Isolated node_modules (Default)
 
-1. **Root `node_modules/`**: Gemeinsame Dependencies (TypeScript, ESLint, etc.)
-2. **Workspace `node_modules/`**: App-spezifische Dependencies
-3. **Hoisting**: npm hebt gemeinsame Dependencies automatisch ins Root
-
-### Symlinks
+pnpm legt einen einzigen content-addressed Store unter `~/.local/share/pnpm/store`
+an. Jeder Workspace bekommt ein eigenes `node_modules/` mit Symlinks zurück in
+den Store. Workspace-Deps (`@smart-apply/shared`) sind Symlinks ins
+Source-Verzeichnis — Änderungen sind sofort sichtbar, kein Build-Step zwischen
+"shared geändert" und "api sieht's".
 
 ```bash
-# Workspaces sind über Symlinks verbunden
-node_modules/@smart-apply/api -> ../../apps/api
-node_modules/@smart-apply/web -> ../../apps/web
+# Symlink-Struktur
+apps/api/node_modules/@smart-apply/shared -> ../../../packages/shared
+apps/api/node_modules/@nestjs/common      -> .pnpm/@nestjs+common@11.1.12/...
+node_modules/.pnpm/@nestjs+common@11.1.12 -> store/.../node_modules/@nestjs/common
 ```
 
-### Shared Dependencies
+### Phantom Dependencies
 
-Dependencies, die in BEIDEN Apps verwendet werden, werden ins Root gehoben:
+npm/yarn hoisten alles in ein flaches `node_modules`, was bedeutet, dass Code
+versehentlich Pakete importieren kann, die er nicht in seiner `package.json`
+deklariert hat. Funktioniert in Dev, knallt in Production. pnpm verbietet das
+per Default — wenn `apps/api` `lodash` importieren will, MUSS es in
+`apps/api/package.json` deklariert sein.
 
-- `typescript` ✅ (beide brauchen es)
-- `@types/node` ✅ (beide brauchen es)
-- `zod` ✅ (beide brauchen es)
+Hoist-Ausnahmen für Tooling, das diese Annahme trotzdem braucht:
+[`.npmrc`](../../.npmrc) `public-hoist-pattern[]=...`.
 
-App-spezifische Dependencies bleiben in ihrem Workspace:
+## 🎨 Vorteile gegenüber npm
 
-- `@nestjs/*` → nur in `apps/api/node_modules/`
-- `next` → nur in `apps/web/node_modules/`
+| Aspekt | npm Workspaces | pnpm Workspaces |
+|---|---|---|
+| Install-Zeit (cold) | ~75 s | ~25 s |
+| Install-Zeit (warm) | ~15 s | ~3 s |
+| `node_modules` Größe | ~1.8 GB | ~1.1 GB |
+| Phantom-Dep-Schutz | ❌ | ✅ |
+| Workspace-Filter | `--workspace=apps/api` | `--filter @smart-apply/api` (+ transitive Modi) |
+| Lockfile-Größe | ~21 k Zeilen YAML-äquivalent | ~9 k Zeilen |
+| Produktions-Tree | Manuell prune + Symlink-Surgery | `pnpm deploy --prod` |
 
-## 🎨 Vorteile
+## 🚢 Deployment
 
-### 1. Saubere Trennung
+### Backend (Fly.io)
 
-- Backend-Code und Dependencies isoliert
-- Frontend-Code und Dependencies isoliert
-- Klare Verantwortlichkeiten
+Siehe [`infra/Dockerfile`](../../infra/Dockerfile). Kurzfassung:
 
-### 2. Schnellere Installs
+1. **Builder stage** — `pnpm install --frozen-lockfile` (alle Workspaces, inkl.
+   devDeps), `pnpm --filter @smart-apply/shared build`,
+   `pnpm --filter @smart-apply/api prisma:generate`,
+   `pnpm --filter @smart-apply/api build`, Prisma-Seed-Scripts via `tsc`
+   kompilieren.
+2. **Deployer stage** — `pnpm --filter @smart-apply/api deploy --prod /prod/api`
+   erzeugt einen isolierten produktionsreifen Baum mit allen runtime-Deps und
+   einer echten Kopie von `@smart-apply/shared` (kein Symlink mehr).
+3. **Production stage** — `node:26-alpine`, COPY aus deployer + dist + Email-
+   Templates + Prompts. Keine pnpm-Installation im finalen Image.
 
-- Shared Dependencies werden nur einmal installiert
-- Nur relevante Dependencies pro App
+### Frontend (Cloudflare Workers via OpenNext)
 
-### 3. Bessere IDE-Performance
+```bash
+# Staging (auto-deploy on push to main)
+pnpm --filter @smart-apply/web cf:deploy:staging
 
-- TypeScript muss nur relevante Dependencies prüfen
-- Schnellere Auto-Completion
-
-### 4. Einfacheres Deployment
-
-- Jede App kann separat deployed werden
-- Docker-Images können kleiner sein (nur relevante Dependencies)
-
-### 5. Bessere Skalierbarkeit
-
-- Neue Workspaces einfach hinzufügen (z.B. `apps/mobile`)
-- Shared Libraries möglich (`packages/shared`)
-
-## 📝 Migration von alter Struktur
-
-### Vorher (Problematisch)
-
-```text
-smart-apply/
-├── package.json              # ALLE Dependencies gemischt
-├── node_modules/             # Riesiges node_modules
-└── apps/
-    ├── api/                  # Keine package.json
-    └── web/
-        └── package.json      # Nur Frontend
+# Prod (auf v*.*.* tag push)
+pnpm --filter @smart-apply/web cf:deploy
 ```
 
-### Nachher (Clean)
-
-```text
-smart-apply/
-├── package.json              # Workspace Manager
-├── node_modules/             # Nur Shared Dependencies
-└── apps/
-    ├── api/
-    │   ├── package.json      # Backend Dependencies
-    │   └── node_modules/     # Backend-spezifisch
-    └── web/
-        ├── package.json      # Frontend Dependencies
-        └── node_modules/     # Frontend-spezifisch
-```
+OpenNext baut Next.js zu einem Worker-Bundle. Cloudflare Workers haben
+isolierte node_modules von Haus aus, also passt das hervorragend zu pnpm's
+Isolierungsmodell.
 
 ## 🔄 Workflow-Tipps
 
 ### Neue Dependency hinzufügen
 
-1. **Frage:** Wird es in beiden Apps gebraucht?
-   - **Ja:** `npm install <package> --save-dev` (Root)
-   - **Nein:** `npm install <package> --workspace=apps/api` (oder web)
+1. **Frage:** Welcher Workspace braucht das Paket *zur Laufzeit*?
+   - Beides → in **beide** Workspaces einzeln (`pnpm --filter ... add ...`).
+     pnpm dedupliziert via Store, du verlierst keinen Plattenplatz.
+   - Nur Backend → `pnpm --filter @smart-apply/api add ...`
+   - Nur Frontend → `pnpm --filter @smart-apply/web add ...`
+   - Nur Root-Tooling (Prettier, Turborepo) → `pnpm add -Dw ...`
 
 2. **Beispiele:**
-   - `prettier` → Root (beide nutzen es)
-   - `@nestjs/common` → apps/api (nur Backend)
-   - `react` → apps/web (nur Frontend)
-
-### Scripts ausführen
-
-```bash
-# In Workspace-Root (empfohlen)
-npm run api:dev
-
-# Oder direkt im Workspace
-cd apps/api && npm run start:dev
-```
+   - `class-validator` → `apps/api` (NestJS DTOs)
+   - `react-icons` → `apps/web` (UI)
+   - `zod` → beide Workspaces (Validierung in API + Frontend)
+   - `prettier` → Root (`-Dw`)
 
 ### Troubleshooting
 
 ```bash
-# Dependencies neu installieren
-rm -rf node_modules apps/*/node_modules package-lock.json
-npm install
+# node_modules komplett neu aufbauen
+pnpm install --force
 
-# Prisma Client neu generieren
-npm run prisma:generate
+# nur Workspace-Symlinks neu verlinken (schneller als --force)
+pnpm install
 
-# TypeScript Errors? Neu bauen
-npm run build
-```
+# Was bricht Lockfile-Sync?
+pnpm install --lockfile-only --no-frozen-lockfile --ignore-scripts
+git diff pnpm-lock.yaml | head -100
 
-## 🚢 Deployment
+# Prisma Client neu generieren (NICHT bare `prisma generate`, siehe
+# repo memory + apps/api/scripts/sanitize-prisma-client.js)
+pnpm --filter @smart-apply/api prisma:generate
 
-### Backend (Azure Container Apps)
-
-```dockerfile
-# Dockerfile für apps/api
-FROM node:20-alpine
-
-WORKDIR /app
-
-# Kopiere Root package.json
-COPY package*.json ./
-
-# Kopiere API package.json
-COPY apps/api/package*.json ./apps/api/
-
-# Installiere Dependencies (nur Production)
-RUN npm ci --workspace=apps/api --omit=dev
-
-# Kopiere API Source
-COPY apps/api ./apps/api
-
-# Build
-RUN npm run build --workspace=apps/api
-
-CMD ["npm", "run", "start:prod", "--workspace=apps/api"]
-```
-
-### Frontend (Vercel/Azure SWA)
-
-```dockerfile
-# Dockerfile für apps/web
-FROM node:20-alpine
-
-WORKDIR /app
-
-# Kopiere package.json
-COPY package*.json ./
-COPY apps/web/package*.json ./apps/web/
-
-# Installiere Dependencies
-RUN npm ci --workspace=apps/web --omit=dev
-
-# Kopiere Web Source
-COPY apps/web ./apps/web
-
-# Build
-RUN npm run build --workspace=apps/web
-
-CMD ["npm", "run", "start", "--workspace=apps/web"]
+# TypeScript Errors? Shared zuerst bauen, dann der Rest
+pnpm shared:build
+pnpm build
 ```
 
 ## 🎯 Best Practices
 
-1. **Immer vom Root ausführen:** `npm run api:dev` statt `cd apps/api && npm run start:dev`
-2. **Workspace-Flag nutzen:** `--workspace=apps/api` statt in Ordner wechseln
-3. **Shared Dependencies im Root:** Alles was beide Apps brauchen
-4. **Keine Circular Dependencies:** Workspaces sollten nicht aufeinander referenzieren (außer via APIs)
-5. **Konsistente Versionen:** Shared Dependencies sollten gleiche Version haben
+1. **Immer vom Root ausführen:** `pnpm api:dev` statt `cd apps/api && pnpm start:dev`
+2. **`--filter @smart-apply/<name>` nutzen** statt `cd` + Befehl
+3. **Lockfile committen:** Bei jedem `package.json` Change auch
+   `pnpm-lock.yaml` committen. CI failt sonst.
+4. **Keine zirkulären Workspace-Imports:** Workspaces sollten sich nicht
+   gegenseitig importieren — nur über `@smart-apply/shared` als zentraler Hub.
+5. **Konsistente Versionen:** Wenn `apps/api` und `apps/web` beide `zod` nutzen,
+   sollten sie dieselbe Major-Version verwenden. Lass dir Inkonsistenzen
+   anzeigen: `pnpm list -r zod`.
 
 ## 📚 Weitere Ressourcen
 
-- [npm Workspaces Docs](https://docs.npmjs.com/cli/v10/using-npm/workspaces)
-- [Monorepo Best Practices](https://monorepo.tools/)
-- [NestJS Monorepo](https://docs.nestjs.com/cli/monorepo)
+- [pnpm Workspaces Docs](https://pnpm.io/workspaces)
+- [pnpm vs npm vs yarn Benchmark](https://pnpm.io/benchmarks)
+- [pnpm Deploy](https://pnpm.io/cli/deploy) (was der Dockerfile nutzt)
+- [REARCHITECTURE_PLAN.md](./REARCHITECTURE_PLAN.md) — wieso wir migriert sind
+- [CONTRIBUTING.md](../../CONTRIBUTING.md) — Branching, Commits, PR-Flow
 
 ---
 
-**Stand:** 23. November 2025  
-**Struktur:** npm Workspaces (native npm, kein Lerna/Nx benötigt)
+**Stand:** 16. Mai 2026 (pnpm-Migration, Phase 5)
+**Struktur:** pnpm Workspaces 11.1 + Turborepo 2.8

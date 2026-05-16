@@ -5,11 +5,11 @@
  * Creates a new template folder with boilerplate files.
  * 
  * Usage:
- *   npm run template:create <template-name>
+ *   pnpm template:create <template-name>
  *   npx ts-node scripts/create-template.ts <template-name>
  * 
  * Example:
- *   npm run template:create corporate-blue
+ *   pnpm template:create corporate-blue
  *   
  * This will create:
  *   templates/corporate-blue/
@@ -236,12 +236,12 @@ function main() {
 ===========================
 
 Usage:
-  npm run template:create <template-name>
+  pnpm template:create <template-name>
 
 Examples:
-  npm run template:create corporate-blue
-  npm run template:create minimalist-serif
-  npm run template:create tech-gradient
+  pnpm template:create corporate-blue
+  pnpm template:create minimalist-serif
+  pnpm template:create tech-gradient
 
 Options:
   --help    Show this help message
@@ -257,13 +257,13 @@ Options:
 This script creates a new template folder with boilerplate files.
 
 Usage:
-  npm run template:create <template-name>
+  pnpm template:create <template-name>
 
 Arguments:
   template-name    Name of the new template (kebab-case recommended)
 
 Example:
-  npm run template:create corporate-blue
+  pnpm template:create corporate-blue
 
 This creates:
   templates/corporate-blue/
@@ -274,7 +274,7 @@ After creation:
   1. Edit config.json with your template details
   2. Customize styles.css with your design
   3. Optionally add resume.hbs or cover-letter.hbs for custom layouts
-  4. Run: npm run prisma:seed:templates
+  4. Run: pnpm prisma:seed:templates
 `);
     process.exit(0);
   }
@@ -323,7 +323,7 @@ Next steps:
      - cover-letter.hbs for custom cover letter layout
   
   4. Seed the database:
-     cd apps/api && npm run prisma:seed:templates
+     pnpm --filter @smart-apply/api prisma:seed:templates
 
   5. Test your template in the application!
 `);

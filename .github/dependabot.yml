@@ -3,13 +3,17 @@
 # Docs: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 #
 # Why a SINGLE root npm block (and not one per workspace):
-#   npm workspaces keep a single `package-lock.json` at the repo root.
+#   pnpm workspaces keep a single `pnpm-lock.yaml` at the repo root.
 #   Dependabot only updates files BELOW its `directory:` setting, so a
 #   `directory: /apps/web` block would bump `apps/web/package.json` but
 #   leave the root lockfile untouched → CI fails with "lock file out of
-#   sync". The `directory: /` block discovers all workspaces via npm and
-#   produces atomic PRs that touch the right workspace package.json AND
-#   the root lockfile.
+#   sync". The `directory: /` block discovers all workspaces via the
+#   pnpm-workspace.yaml manifest and produces atomic PRs that touch the
+#   right workspace package.json AND the root lockfile.
+#
+#   Dependabot's `package-ecosystem: npm` does understand pnpm-lock.yaml
+#   (GitHub added native support in Sept 2024). The ecosystem name stays
+#   `npm` even when the lockfile is `pnpm-lock.yaml`.
 #
 # Strategy:
 #   • Group non-major bumps by ecosystem family so the review queue
@@ -22,9 +26,9 @@
 version: 2
 updates:
   # ───────────────────────────────────────────────────────────────────
-  # All npm workspaces (root + apps/api + apps/web + packages/shared).
-  # Discovered automatically because the root package.json declares
-  # `workspaces: ["apps/api", "apps/web", "packages/shared"]`.
+  # All pnpm workspaces (root + apps/api + apps/web + packages/shared).
+  # Discovered automatically because the root pnpm-workspace.yaml
+  # declares `packages: ['apps/*', 'packages/*']`.
   # ───────────────────────────────────────────────────────────────────
   - package-ecosystem: npm
     directory: /

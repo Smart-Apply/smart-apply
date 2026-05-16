@@ -75,20 +75,20 @@ const applications: Application[] = await fetchApplications();
 ### Build the package
 
 ```bash
-npm run shared:build
+pnpm shared:build
 ```
 
 ### Watch mode (auto-rebuild on changes)
 
 ```bash
-npm run shared:watch
+pnpm shared:watch
 ```
 
 ### After modifying types
 
 1. Edit `packages/shared/src/index.ts`
-2. Run `npm run shared:build`
-3. Types are automatically available in both apps (via npm workspaces)
+2. Run `pnpm shared:build`
+3. Types are automatically available in both apps (via pnpm workspaces)
 
 ## Architecture Notes
 

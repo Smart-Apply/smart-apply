@@ -30,7 +30,7 @@ AI-powered job application assistant — generate tailored, ATS-optimized cover 
 | **Storage**   | Cloudflare R2 (S3-compatible, EU jurisdiction) · local disk (pluggable)    |
 | **Queue**      | Upstash QStash · in-memory (pluggable)                                     |
 | **Cache**      | Upstash Redis · node-cache                                                  |
-| **Monorepo**   | npm workspaces · Turborepo                                                  |
+| **Monorepo**   | pnpm workspaces · Turborepo                                                 |
 | **Deployment** | Docker · **Fly.io** (API, region `fra`) · Cloudflare Workers / OpenNext (Web) · Cloudflare DNS+CDN |
 | **Monitoring** | Sentry · Winston (audit logs, daily rotation)                               |
 
@@ -38,7 +38,7 @@ AI-powered job application assistant — generate tailored, ATS-optimized cover 
 
 ### Prerequisites
 
-- Node.js **24+** (or 20.19+) and npm 10+
+- Node.js **24+** (or 20.19+) with [corepack](https://nodejs.org/api/corepack.html) enabled (ships with Node)
 - A Postgres database — either:
   - a **[Neon](https://neon.tech)** project (recommended; the EU/Frankfurt region keeps GDPR), or
   - **Docker Desktop** for a local Postgres container.
@@ -46,8 +46,11 @@ AI-powered job application assistant — generate tailored, ATS-optimized cover 
 ### Setup
 
 ```bash
+# 0. Install pnpm via corepack (one-time per machine)
+corepack enable && corepack prepare pnpm@11.1.2 --activate
+
 # 1. Install dependencies (workspaces)
-npm install
+pnpm install
 
 # 2. Provision Postgres
 #    Option A — Neon (recommended): create a project, then set both
@@ -72,7 +75,7 @@ npm --workspace @smart-apply/api run prisma:seed
 npm --workspace @smart-apply/api run prisma:seed:templates
 
 # 5. Run API + Web in parallel (Turborepo)
-npm run dev
+pnpm dev
 ```
 
 ### Access
@@ -132,30 +135,30 @@ smart-apply/
 
 ```bash
 # Development
-npm run dev               # API + Web (Turborepo)
-npm run api:dev           # API only
-npm run web:dev           # Web only
+pnpm dev               # API + Web (Turborepo)
+pnpm api:dev           # API only
+pnpm web:dev           # Web only
 
 # Build
-npm run build             # All workspaces (Turborepo cache)
-npm run build:api
-npm run build:web
+pnpm build             # All workspaces (Turborepo cache)
+pnpm build:api
+pnpm build:web
 
 # Database
-npm run prisma:migrate
-npm run prisma:studio
-npm run prisma:seed
-npm run prisma:seed:templates
+pnpm prisma:migrate
+pnpm prisma:studio
+pnpm prisma:seed
+pnpm prisma:seed:templates
 
 # Testing
-npm run test:unit
-npm run test:integration
-npm run test:e2e
-npm run test:all          # unit + integration + e2e
+pnpm test:unit
+pnpm test:integration
+pnpm test:e2e
+pnpm test:all          # unit + integration + e2e
 
 # Lint & typecheck
-npm run lint
-npm run typecheck
+pnpm lint
+pnpm typecheck
 ```
 
 ## 🔒 Security
@@ -194,10 +197,10 @@ flyctl deploy --config fly.prod.toml --app smart-apply-api --remote-only
 flyctl deploy --config fly.staging.toml --app smart-apply-api-staging --remote-only
 
 # Web (production)
-cd apps/web && npm run cf:deploy
+cd apps/web && pnpm cf:deploy
 
 # Web (staging)
-cd apps/web && npm run cf:deploy:staging
+cd apps/web && pnpm cf:deploy:staging
 ```
 
 **Custom domain (`smart-apply.io`):**

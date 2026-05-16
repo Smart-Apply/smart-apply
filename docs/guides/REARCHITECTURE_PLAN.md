@@ -40,7 +40,7 @@
 | 2 | Lock prod to real providers (`r2` / `qstash`) | 1 day | Low | Removes a footgun | **✅ Done (v3.0.0)** — boot fails when `NODE_ENV=production` and `STORAGE_DRIVER!='r2'` or `JOBS_DRIVER!='qstash'` (enforced via Zod `.superRefine()` in [`env.schema.ts`](../../apps/api/src/config/env.schema.ts)) |
 | 3 | passport stack → better-auth | 3–4 wk | High (logs users out) | -2000 LoC, +WebAuthn | **⛔ Skipped** — see [decision log 2026-05-14](#decision-log) |
 | 4 | Prisma → Drizzle | 2–3 wk | Medium (query semantics) | No codegen, faster cold start | **⛔ Skipped** — see [decision log 2026-05-14](#decision-log) |
-| 5 | npm → pnpm, **Jest → Vitest** ✅, OpenRouter | Opportunistic | Low | Quality of life | Vitest done (May 2026); pnpm + OpenRouter still opportunistic |
+| 5 | **npm → pnpm** ✅, **Jest → Vitest** ✅, OpenRouter | Opportunistic | Low | Quality of life | pnpm + Vitest done (May 2026); OpenRouter still opportunistic |
 
 **Status:** Phase 1 + 2 shipped. Phases 3 + 4 explicitly skipped. Phase 5 is purely opportunistic.
 
@@ -208,10 +208,13 @@
 
 No big PRs. Do these as you happen to touch the affected areas.
 
-### npm → pnpm
+### npm → pnpm (✅ Done — May 2026)
 - Strict hoisting kills phantom deps and the `--legacy-peer-deps` flag.
-- One-time cost: regenerate lockfile, update [ci.yml](../../.github/workflows/ci.yml), update [infra/Dockerfile](../../infra/Dockerfile).
-- Do during a quiet week. Single PR.
+- Migrated in [`chore/pnpm-migration`](https://github.com/Smart-Apply/smart-apply): added `pnpm-workspace.yaml` + `.npmrc`, switched root `packageManager` to `pnpm@11.1.2`, moved `overrides` to `pnpm.overrides`, regenerated lockfile (`package-lock.json` deleted, `pnpm-lock.yaml` committed).
+- All internal `npm run X` calls inside workspace package.json scripts → `pnpm run X` so the production Docker image no longer ships npm.
+- [`infra/Dockerfile`](../../infra/Dockerfile) rewritten around `pnpm deploy --prod` — produces an isolated, hoisted production tree with workspace deps (`@smart-apply/shared`) resolved into real copies.
+- All three GH workflows ([ci.yml](../../.github/workflows/ci.yml), [deploy-staging.yml](../../.github/workflows/deploy-staging.yml), [deploy-prod.yml](../../.github/workflows/deploy-prod.yml)) use `pnpm/action-setup@v4` + `cache: 'pnpm'` + `pnpm install --frozen-lockfile`. Lockfile drift check rewritten for `pnpm-lock.yaml`.
+- Docs synced: [CONTRIBUTING.md](../../CONTRIBUTING.md), [.github/copilot-instructions.md](../../.github/copilot-instructions.md), [README.md](../../README.md), [QUICKSTART.md](../../QUICKSTART.md), [ARCHITECTURE.md](../../ARCHITECTURE.md), [MONOREPO_WORKSPACE.md](./MONOREPO_WORKSPACE.md) (full rewrite).
 
 ### Jest → Vitest (✅ Done — May 2026)
 - ~5× faster, native ESM, same API surface (`describe`/`it`/`expect`).
@@ -253,6 +256,7 @@ Per [.github/copilot-instructions.md](../../.github/copilot-instructions.md) "Do
 | 2026-05-14 | **Skip Phase 4 (Drizzle) indefinitely** | Prisma works. `prisma generate` adds ~10s to CI, the cold-start gain is theoretical for an always-on Fly machine, and the Prisma engine binary is no longer a top-3 contributor to image size after Phase 1's puppeteer removal. Revisit only if we move read-heavy endpoints to Cloudflare Workers (where Prisma's edge story still bites). |
 | 2026-05-14 | Phase 5 stays opportunistic only | No dedicated sprint. pnpm / Vitest / OpenRouter only when someone happens to be in those areas. |
 | 2026-05-16 | Phase 5 partial: **Vitest done** | `apps/api` migrated from Jest 29 + ts-jest to Vitest 2.1 + unplugin-swc. Three Jest configs collapsed into one `vitest.config.mts`, `vite-tsconfig-paths` resolves `@/*`, `globals: true` keeps the legacy describe/it/expect API. Ran one branch (`chore/vitest-migration`) per [CONTRIBUTING.md](../../CONTRIBUTING.md) trunk-based rules. pnpm + OpenRouter still pending. |
+| 2026-05-16 | Phase 5 partial: **pnpm done** | Monorepo migrated from npm Workspaces + `--legacy-peer-deps` to pnpm 11.1. `pnpm-workspace.yaml` + `.npmrc` added, root `packageManager` switched, `overrides` moved to `pnpm.overrides`, `package-lock.json` deleted in favour of `pnpm-lock.yaml`. Dockerfile rewritten around `pnpm deploy --prod` for clean isolated prod trees. All three GH workflows + CONTRIBUTING + copilot-instructions + MONOREPO_WORKSPACE updated. OpenRouter still pending. |
 
 ---
 

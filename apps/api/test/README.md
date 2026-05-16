@@ -57,19 +57,19 @@ Unit Tests leben **neben dem Modul** in einem `__tests__/unit/` Unterordner. Int
 npm test                              # vitest run (alle Patterns)
 
 # Einzelne Suite (Vitest filtert per Substring auf den Pfad)
-npm run test:unit                     # vitest run unit.spec
-npm run test:integration              # vitest run integration.spec
-npm run test:e2e                      # vitest run e2e-spec
+pnpm test:unit                     # vitest run unit.spec
+pnpm test:integration              # vitest run integration.spec
+pnpm test:e2e                      # vitest run e2e-spec
 
 # Watch
-npm run test:unit:watch
-npm run test:integration:watch
-npm run test:e2e:watch
+pnpm test:unit:watch
+pnpm test:integration:watch
+pnpm test:e2e:watch
 
 # Coverage (v8 provider, HTML + lcov in coverage/)
-npm run test:cov
-npm run test:unit:cov
-npm run test:integration:cov
+pnpm test:cov
+pnpm test:unit:cov
+pnpm test:integration:cov
 
 # Einzelne Datei (positional Argument = Substring-Filter)
 npx vitest run pdf-download           # matcht src/.../pdf-download.unit.spec.ts

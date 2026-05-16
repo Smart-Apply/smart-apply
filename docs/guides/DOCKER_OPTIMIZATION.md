@@ -1,17 +1,21 @@
 # Docker Image Optimization Guide
 
-> **⚠️ Status (May 2026): Historical — superseded by Fly.io + Cloudflare Workers.**
+> **⚠️ Status (May 2026): Historical — superseded by Fly.io + Cloudflare Workers + pnpm.**
 >
 > This document was written when both API and Web were containerised and
-> deployed via `docker-compose` on an Azure VM. The current production
-> setup deploys:
+> deployed via `docker-compose` on an Azure VM, and when the repo used npm
+> Workspaces. The current production setup deploys:
 >
-> - **API** → Fly.io (single Dockerfile, `infra/Dockerfile`); image size is
->   handled by Fly's build cache and `npm prune --production`. The
->   `scripts/build-optimized.sh` helper and `infra/Dockerfile.web` referenced
->   below have been deleted.
+> - **API** → Fly.io. See [`infra/Dockerfile`](../../infra/Dockerfile) for
+>   the current multi-stage build using **pnpm 9 + `pnpm deploy --prod`**.
+>   Image size is now ~750 MB (Chromium dominates).
 > - **Web** → Cloudflare Workers via `@opennextjs/cloudflare` (no Docker
 >   image at all).
+>
+> Replace any `npm ci --workspace=… --legacy-peer-deps` snippets below with
+> `pnpm install --frozen-lockfile --filter @smart-apply/api...` when reading
+> for context. The npm commands are kept as-is for the historical narrative
+> only.
 >
 > Keep this doc only as reference for the multi-stage / cache-mount
 > patterns we still use in `infra/Dockerfile`.

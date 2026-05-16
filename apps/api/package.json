@@ -25,8 +25,8 @@
     "test:integration:cov": "NODE_ENV=test vitest run --coverage integration.spec",
     "test:e2e": "NODE_ENV=test vitest run e2e-spec",
     "test:e2e:watch": "NODE_ENV=test vitest e2e-spec",
-    "test:all": "npm run test:unit && npm run test:integration && npm run test:e2e",
-    "test:all:cov": "npm run test:unit:cov && npm run test:integration:cov && npm run test:e2e",
+    "test:all": "pnpm run test:unit && pnpm run test:integration && pnpm run test:e2e",
+    "test:all:cov": "pnpm run test:unit:cov && pnpm run test:integration:cov && pnpm run test:e2e",
     "test:setup": "../../scripts/setup-tests.sh",
     "test:cleanup": "../../scripts/cleanup-tests.sh",
     "prisma:generate": "prisma generate --schema=./prisma/schema.prisma && node scripts/sanitize-prisma-client.js",
@@ -39,7 +39,7 @@
     "template:create": "ts-node -r tsconfig-paths/register scripts/create-template.ts",
     "templates:generate-previews": "dotenv -e .env -- ts-node -r tsconfig-paths/register scripts/generate-template-previews.ts",
     "templates:regenerate-previews": "dotenv -e .env -- ts-node -r tsconfig-paths/register scripts/generate-template-previews.ts --force",
-    "templates:seed-with-previews": "npm run prisma:seed:templates && npm run templates:generate-previews",
+    "templates:seed-with-previews": "pnpm run prisma:seed:templates && pnpm run templates:generate-previews",
     "templates:cleanup": "ts-node -r tsconfig-paths/register scripts/cleanup-legacy-templates.ts",
     "create-agents": "ts-node -r tsconfig-paths/register scripts/create-agents.ts"
   },
@@ -49,6 +49,7 @@
     "@azure/ai-agents": "^1.0.0",
     "@azure/identity": "^4.0.0",
     "@azure/keyvault-secrets": "^4.8.0",
+    "@napi-rs/canvas": "^0.1.86",
     "@nestjs/axios": "^4.0.1",
     "@nestjs/common": "^11.1.12",
     "@nestjs/config": "^4.0.2",
@@ -64,10 +65,9 @@
     "@prisma/adapter-pg": "^7.3.0",
     "@prisma/client": "^6.19.2",
     "@react-pdf/renderer": "^4.5.1",
-    "@napi-rs/canvas": "^0.1.86",
     "@sentry/node": "^10.50.0",
     "@sentry/profiling-node": "^10.50.0",
-    "@smart-apply/shared": "1.0.0",
+    "@smart-apply/shared": "workspace:*",
     "@types/opossum": "^8.1.9",
     "@typescript-eslint/eslint-plugin": "8.59.2",
     "@typescript-eslint/parser": "8.59.2",
@@ -138,9 +138,12 @@
     "@types/react-dom": "^19.2.3",
     "@types/speakeasy": "^2.0.10",
     "@types/ua-parser-js": "^0.7.39",
+    "@types/uuid": "^11.0.0",
     "@types/validator": "^13.15.9",
     "baseline-browser-mapping": "^2.9.3",
-    "eslint": "^9.39.4"
+    "dotenv": "^17.4.2",
+    "eslint": "^9.39.4",
+    "uuid": "^14.0.0"
   },
   "prisma": {
     "seed": "node prisma/dist/seed-all.js"

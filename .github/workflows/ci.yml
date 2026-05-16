@@ -39,48 +39,43 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.1.2
+
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: pnpm install --frozen-lockfile
 
       - name: Verify lockfile is in sync with package.json files
-        # If a contributor edited package.json without running `npm install`,
-        # `npm ci` succeeds but the lockfile drifts. Catch that here so it
-        # doesn't break a downstream `fly deploy` that uses `npm ci` too.
+        # If a contributor edited package.json without running `pnpm install`,
+        # `pnpm install --frozen-lockfile` itself would fail — we check this
+        # explicitly to surface a clearer error message and to also catch
+        # `--no-frozen-lockfile` drift on local-only manifest tweaks.
         #
-        # Why we filter the diff: different npm versions (10.x vs 11.x) emit
-        # cosmetic differences in lockfile metadata flags (devOptional vs
-        # dev, hoisting tie-breaks, etc.) that don't reflect any real
-        # dependency change. We only fail when a `"version":` line actually
-        # moves — that's the bit that affects what gets installed.
+        # Strategy: re-resolve the lockfile from the manifests in-place and
+        # diff against the committed pnpm-lock.yaml. Any change at all means
+        # someone touched a manifest without re-running pnpm install.
         run: |
-          npm install --package-lock-only --legacy-peer-deps --no-audit --no-fund
-          if git diff --quiet package-lock.json; then
+          pnpm install --lockfile-only --no-frozen-lockfile --ignore-scripts
+          if git diff --quiet pnpm-lock.yaml; then
             echo "✅ Lockfile in sync"
             exit 0
           fi
 
-          # Filter the diff to only resolved-package lines (name + version).
-          MEANINGFUL=$(git diff package-lock.json | grep -E '^[-+]\s*"(name|version|resolved)":' || true)
-          if [ -z "$MEANINGFUL" ]; then
-            echo "ℹ️  Lockfile has cosmetic drift (npm metadata flags only). Ignoring."
-            exit 0
-          fi
-
-          echo "::error::package-lock.json is out of sync with package.json. Run 'npm install --legacy-peer-deps' locally, commit, and push."
-          echo "Meaningful changes (name/version/resolved):"
-          echo "$MEANINGFUL" | head -50
+          echo "::error::pnpm-lock.yaml is out of sync with package.json. Run 'pnpm install' locally, commit, and push."
+          git --no-pager diff pnpm-lock.yaml | head -80
           exit 1
 
       - name: Build shared package (required by api + web)
-        run: npm run shared:build
+        run: pnpm shared:build
 
       - name: Lint
-        run: npm run lint
+        run: pnpm lint
 
   # ─────────────────────────────────────────────────────────────────────
   # unit-tests — backend unit tests (no DB, no external services).
@@ -104,19 +99,23 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.1.2
+
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: pnpm install --frozen-lockfile
 
       - name: Build shared package
-        run: npm run shared:build
+        run: pnpm shared:build
 
       - name: Run unit tests
-        run: npm run test:unit
+        run: pnpm test:unit
 
   # ─────────────────────────────────────────────────────────────────────
   # migration-check — dry-run new Prisma migrations against an ephemeral
@@ -162,17 +161,21 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.1.2
+
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install dependencies
         # Only need the api workspace + shared for prisma to load.
-        run: npm ci --workspace=apps/api --workspace=packages/shared --include=dev --legacy-peer-deps
+        run: pnpm install --frozen-lockfile --filter @smart-apply/api... --filter @smart-apply/shared...
 
       - name: Build shared package
-        run: npm run shared:build
+        run: pnpm shared:build
 
       # Create an ephemeral Neon branch off `staging`. Branch name is
       # deterministic per PR (pr-1234) so re-runs reuse the same branch

@@ -1,0 +1,43 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+# pnpm 11 reads `overrides`, `packageExtensions`, and `peerDependencyRules`
+# from pnpm-workspace.yaml when the project is a workspace. The equivalent
+# `pnpm.overrides` block in root package.json is silently ignored.
+overrides:
+  lodash: ^4.18.1
+  postcss: ^8.5.10
+  fast-xml-builder: '>=1.1.7 <1.2.0'
+  # Pin away from 7.1.1 — that release added `react-hooks/set-state-in-effect`
+  # which surfaces 7 pre-existing violations across apps/web that we'd need a
+  # dedicated refactor PR to address. Main was on 7.0.1 via the old
+  # package-lock; matching exactly keeps the pnpm migration behaviour-neutral.
+  eslint-plugin-react-hooks: 7.0.1
+
+peerDependencyRules:
+  allowedVersions:
+    '@angular-devkit/core>ajv': ^8.18.0
+    '@angular-devkit/core>picomatch': ^4.0.4
+
+# pnpm 11 disables dependency build scripts by default for supply-chain safety.
+# Each package listed here is one whose postinstall we've reviewed and explicitly
+# trust to run on `pnpm install`. Adding a new native-binding dep? Set it to
+# `true` here in the same PR, or `pnpm install` will leave it un-built and the
+# runtime will throw `MODULE_NOT_FOUND` at the .node binary path.
+allowBuilds:
+  '@nestjs/core': true                       # optional metadata + DI helpers
+  '@napi-rs/canvas': true                    # PNG preview rasteriser (pdf-v2)
+  '@prisma/client': true                     # generates DB client at install
+  '@prisma/engines': true                    # native engine binaries
+  '@scarf/scarf': true                       # Sentry/Prisma usage telemetry
+  '@sentry-internal/node-cpu-profiler': true # native profiler addon
+  '@swc/core': true                          # Vitest TS transpiler
+  argon2: true                               # password hashing (native binding)
+  dtrace-provider: true                      # transitive (pino → dtrace), optional
+  esbuild: true                              # native binary for fast bundling
+  prisma: true                               # CLI native engine
+  sharp: true                                # Next.js image optimisation
+  unrs-resolver: true                        # OXC/swc resolver native binding
+  workerd: true                              # Cloudflare Workers runtime (web build)
+

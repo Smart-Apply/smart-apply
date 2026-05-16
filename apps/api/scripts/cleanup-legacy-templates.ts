@@ -9,12 +9,12 @@
  * 3. Optionally removes legacy seed scripts
  * 
  * PREREQUISITES:
- * - Run `npm run prisma:seed:templates` first to populate DB from new structure
+ * - Run `pnpm prisma:seed:templates` first to populate DB from new structure
  * - Test that application works correctly with new templates
  * 
  * Usage:
- *   npm run templates:cleanup           # Dry run (shows what would be deleted)
- *   npm run templates:cleanup -- --force   # Actually delete files
+ *   pnpm templates:cleanup           # Dry run (shows what would be deleted)
+ *   pnpm templates:cleanup -- --force   # Actually delete files
  */
 
 import * as fs from 'fs';
@@ -155,7 +155,7 @@ function main() {
   } else {
     console.log(`📋 Dry run complete. ${totalDeleted}/${totalFound} files would be deleted`);
     console.log(`\n   Run with --force to actually delete these files:`);
-    console.log(`   npm run templates:cleanup -- --force`);
+    console.log(`   pnpm templates:cleanup -- --force`);
   }
   console.log('='.repeat(60));
 }

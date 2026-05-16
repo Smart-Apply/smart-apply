@@ -48,7 +48,7 @@
 | `_acme-challenge.api.…`     | CNAME → `api.smart-apply.io.93ke51y.flydns.net` (DNS-only) | Required for Fly cert renewal behind CF proxy |
 | `_fly-ownership.api.…`      | TXT `app-93ke51y`                                     | Required when traffic is proxied via Cloudflare    |
 
-## 📦 Monorepo Structure (npm Workspaces + Turborepo)
+## 📦 Monorepo Structure (pnpm Workspaces + Turborepo)
 
 ```text
 smart-apply/
@@ -340,9 +340,9 @@ All routes are prefixed `/api/v1` and documented at <http://localhost:3000/docs>
 ### Development
 
 ```bash
-npm run dev          # API + Web in parallel (Turborepo)
-npm run api:dev      # NestJS on :3000
-npm run web:dev      # Next.js on :3001
+pnpm dev          # API + Web in parallel (Turborepo)
+pnpm api:dev      # NestJS on :3000
+pnpm web:dev      # Next.js on :3001
 ```
 
 ### Production

@@ -1,115 +1,109 @@
-# Multi-stage Dockerfile for Smart Apply API (Optimized)
-# Expected size reduction: ~3.5GB → ~800MB
+# Multi-stage Dockerfile for Smart Apply API (pnpm).
+#
+# Strategy:
+#   Stage 1 (builder)    — install full workspace (incl. dev deps) with pnpm,
+#                          build shared, generate Prisma client, build API,
+#                          compile Prisma seed scripts.
+#   Stage 2 (deployer)   — `pnpm deploy --prod` produces an isolated, hoisted
+#                          production node_modules tree for apps/api with the
+#                          workspace-shared package resolved into a real copy.
+#   Stage 3 (production) — Alpine runtime; copies the deployed tree + the
+#                          compiled dist + runtime assets. No pnpm in this
+#                          image (no installs at boot).
+#
+# Expected final image: ~750 MB (Chromium for Playwright is the biggest chunk).
 
-# Stage 1: Build dependencies
-FROM node:26-alpine AS deps
+ARG NODE_VERSION=26
+ARG PNPM_VERSION=11.1.2
 
-WORKDIR /app
-
-# Install build dependencies
-RUN apk add --no-cache openssl python3 make g++
-
-# Copy root package files first (needed for workspace)
-COPY package.json package-lock.json ./
-
-# Create apps directory structure
-RUN mkdir -p apps/api packages/shared
-
-# Copy API package.json
-COPY apps/api/package.json ./apps/api/
-
-# Copy packages/shared (required dependency)
-COPY packages/shared/package.json ./packages/shared/
-COPY packages/shared/tsconfig.json ./packages/shared/
-COPY packages/shared/src ./packages/shared/src
-
-# Copy Prisma config and schema (needed for Prisma 7 generation)
-COPY apps/api/prisma.config.ts ./apps/api/
-COPY apps/api/prisma ./apps/api/prisma
-
-# Install ONLY API production dependencies (no dev deps, no web packages)
-# Prisma client will be generated via postinstall hook to src/generated/prisma
-ENV NODE_OPTIONS="--max-old-space-size=6144"
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --workspace=apps/api --workspace=packages/shared --omit=dev --legacy-peer-deps
-
-# Stage 2: Build application
-FROM node:26-alpine AS builder
+# ---------------------------------------------------------------------------
+# Stage 1: builder — install + compile
+# ---------------------------------------------------------------------------
+FROM node:${NODE_VERSION}-alpine AS builder
 
 WORKDIR /app
 
-# Install build dependencies
+# Build deps for argon2, prisma engines, etc.
 RUN apk add --no-cache openssl python3 make g++
 
-# Copy root package files (needed for workspace)
-COPY package.json package-lock.json ./
+# Install pnpm. node:26-alpine doesn't ship corepack in PATH, so we install
+# pnpm directly via npm. The version must match package.json#packageManager
+# to avoid pnpm's runDepsStatusCheck failing on every command.
+ARG PNPM_VERSION
+RUN npm install -g pnpm@${PNPM_VERSION}
 
-# Create apps directory structure
-RUN mkdir -p apps/api packages/shared
+# Set higher memory limit for pnpm install / Nest build.
+ENV NODE_OPTIONS="--max-old-space-size=6144"
 
-# Copy API package.json
+# Copy ALL workspace package.json + lockfile + workspace config first so that
+# `pnpm install` can be cached as long as no manifest changed.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY apps/api/package.json ./apps/api/
-
-# Copy packages/shared (required dependency)
+COPY apps/web/package.json ./apps/web/
 COPY packages/shared/package.json ./packages/shared/
-COPY packages/shared/tsconfig.json ./packages/shared/
-COPY packages/shared/src ./packages/shared/src
 
-# Copy Prisma config and schema BEFORE npm install (required for Prisma 7)
+# Prisma config + schema must exist BEFORE install — apps/api's postinstall
+# hook runs `prisma generate` which reads them.
 COPY apps/api/prisma.config.ts ./apps/api/
 COPY apps/api/prisma ./apps/api/prisma
-
-# Install only API workspace dependencies to save memory in CI/CD
-# Note: This installs API deps + shared root deps (like @nestjs/cli)
-ENV NODE_OPTIONS="--max-old-space-size=6144"
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --workspace=apps/api --workspace=packages/shared --include-workspace-root --legacy-peer-deps
-
-# Copy API source code and config
-COPY apps/api/src ./apps/api/src
-COPY apps/api/test ./apps/api/test
-COPY apps/api/tsconfig*.json ./apps/api/
-COPY apps/api/nest-cli.json ./apps/api/
 COPY apps/api/scripts ./apps/api/scripts
 
-# Copy prompts directory (needed at runtime)
+# Install full workspace (dev deps included — needed for nest build, tsc, swc).
+# `--filter @smart-apply/api...` would skip the web workspace, but we need
+# turbo to be able to build packages/shared too, so install the full graph.
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile
+
+# Copy source AFTER install so manifest changes don't bust the source layer.
+COPY packages/shared/tsconfig.json ./packages/shared/
+COPY packages/shared/src ./packages/shared/src
+COPY apps/api/tsconfig*.json ./apps/api/
+COPY apps/api/nest-cli.json ./apps/api/
+COPY apps/api/src ./apps/api/src
+COPY apps/api/test ./apps/api/test
 COPY apps/api/prompts ./apps/api/prompts
+COPY turbo.json ./
 
-# Build shared package first (required by API)
-RUN npm run shared:build
+# Build shared first (api imports its compiled output).
+RUN pnpm --filter @smart-apply/shared build
 
-# Re-generate Prisma client AFTER scripts/ is copied so the post-generate
-# sanitizer can run. The earlier postinstall during `npm ci` runs before
-# scripts/ exists in the image, so its sanitizer step is silently skipped
-# (swallowed by `|| true`). Without this, the build compiles the unsanitized
-# client (which contains either `import.meta.url` or `.ts` extensions in
-# requires depending on Prisma version skew) and the container crashes on
-# boot under Node 24. See apps/api/scripts/sanitize-prisma-client.js.
-RUN cd apps/api && npm run prisma:generate
+# Re-run prisma generate so the post-generate sanitizer picks up the now-present
+# scripts/sanitize-prisma-client.js. Needed because the postinstall during
+# `pnpm install` ran before scripts/ was copied (the `|| true` swallows the
+# missing-file error there). See apps/api/scripts/sanitize-prisma-client.js
+# and the repo memory note about Node 24 + Prisma client ESM compatibility.
+RUN pnpm --filter @smart-apply/api prisma:generate
 
-# Build application
-RUN npm run api:build
+# Build the Nest app — outputs to workspace-root dist/apps/api/ per
+# apps/api/tsconfig.json#outDir.
+RUN pnpm --filter @smart-apply/api build
 
-# Compile Prisma seed scripts to JavaScript (production-ready)
-# Write tsconfig and compile seeds (all relative to /app)
+# Compile Prisma seed scripts to JavaScript so the runtime image doesn't need
+# ts-node. Output goes to apps/api/prisma/dist/.
 RUN echo '{"extends":"./tsconfig.json","compilerOptions":{"module":"commonjs","target":"ES2021","outDir":"./prisma/dist","moduleResolution":"node","esModuleInterop":true,"skipLibCheck":true,"resolveJsonModule":true,"allowSyntheticDefaultImports":true,"baseUrl":"."},"include":["prisma/seed.ts","prisma/seed-all.ts","prisma/seed-multilingual-templates.ts","prisma/seed-templates-autodiscover.ts"]}' > apps/api/tsconfig.seed.json && \
-    cd apps/api && npx tsc --project tsconfig.seed.json
+    cd apps/api && pnpm exec tsc --project tsconfig.seed.json
 
-# Remove development dependencies and Web packages after build
-RUN npm prune --production && \
-    rm -rf apps/web && \
-    rm -rf node_modules/@types && \
-    rm -rf node_modules/typescript && \
-    rm -rf node_modules/eslint* && \
-    rm -rf node_modules/jest* && \
-    rm -rf node_modules/@nestjs/testing && \
-    rm -rf node_modules/webpack* && \
-    rm -rf node_modules/.cache
+# ---------------------------------------------------------------------------
+# Stage 2: deployer — `pnpm deploy --prod` for a clean isolated tree
+# ---------------------------------------------------------------------------
+# `pnpm deploy` resolves @smart-apply/shared (a workspace dep) into a real
+# copy inside node_modules so the production stage doesn't need a symlink
+# back into packages/shared.
+FROM builder AS deployer
 
-# Stage 3: Production runtime
-FROM node:26-alpine AS production
+WORKDIR /app
 
-# Install only runtime dependencies (minimal set)
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+    pnpm --filter @smart-apply/api deploy --prod --legacy /prod/api
+
+# ---------------------------------------------------------------------------
+# Stage 3: production runtime
+# ---------------------------------------------------------------------------
+FROM node:${NODE_VERSION}-alpine AS production
+
+# Runtime-only deps. Chromium is for Playwright (apps/api/src/agents/url
+# parser uses headless browse). dumb-init handles signals correctly under
+# Fly's process supervisor.
 RUN apk add --no-cache \
     chromium \
     nss \
@@ -122,66 +116,61 @@ RUN apk add --no-cache \
     rm -rf /var/cache/apk/*
 
 ENV NODE_ENV=production \
-    NPM_CONFIG_LOGLEVEL=error
+    NPM_CONFIG_LOGLEVEL=error \
+    PLAYWRIGHT_BROWSERS_PATH=0 \
+    PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 
 WORKDIR /app
 
-# Copy ONLY production dependencies from deps stage (no dev deps)
-COPY --from=deps /app/node_modules ./node_modules
-
-# Copy the workspace-local node_modules for apps/api. npm-workspaces install
-# (`npm ci --workspace=apps/api --omit=dev`) hoists shared deps to /app/node_modules
-# but leaves workspace-specific packages under /app/apps/api/node_modules — most
-# notably the `prisma` CLI binary (6.19.2) and `tsx` runtime, both required at
-# release-command time to run `prisma migrate deploy` against Neon.
-# Without this COPY, the release_command in fly.toml fails with
-# `MODULE_NOT_FOUND` on /app/apps/api/node_modules/prisma/build/index.js.
-COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
-
-# Copy Prisma client from builder stage (Prisma 7 generates to src/generated/prisma)
-COPY --from=builder /app/apps/api/src/generated ./apps/api/src/generated
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-
-# Playwright will use system Chromium (already installed above)
-# Set environment variable for Playwright to use system browser
-ENV PLAYWRIGHT_BROWSERS_PATH=0 \
-    PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
-
-# Remove symlink and create real directory for shared package
-RUN rm -rf ./node_modules/@smart-apply/shared && \
-    mkdir -p ./node_modules/@smart-apply/shared
-
-# Copy built shared package from builder to node_modules (required at runtime)
-COPY --from=builder /app/packages/shared/dist ./node_modules/@smart-apply/shared/dist
-COPY --from=builder /app/packages/shared/package.json ./node_modules/@smart-apply/shared/package.json
-
-# Copy built application (compiled JS only)
-COPY --from=builder /app/dist ./dist
-
-# Copy necessary runtime files
-COPY --from=builder /app/apps/api/prisma.config.ts ./apps/api/prisma.config.ts
-COPY --from=builder /app/apps/api/prisma/schema.prisma ./apps/api/prisma/schema.prisma
-COPY --from=builder /app/apps/api/prisma/migrations ./apps/api/prisma/migrations
-COPY --from=builder /app/apps/api/prisma/dist ./apps/api/prisma/dist
-COPY --from=builder /app/apps/api/prompts ./prompts
-# Email templates (Handlebars .hbs files) — EmailService loads them via
-# path.join(__dirname, 'templates') at runtime, where __dirname resolves
-# to /app/dist/apps/api/email/, so they must land there.
-COPY --from=builder /app/apps/api/src/email/templates ./dist/apps/api/email/templates
-COPY --from=builder /app/package.json ./package.json
-
-# Clean up any remaining unnecessary files
-RUN rm -rf /tmp/* /root/.npm /root/.cache
-
-# Create storage directory with correct permissions
-RUN mkdir -p /app/storage && \
-    addgroup -g 1001 -S nodejs && \
+# Create non-root user + storage dir BEFORE any COPY so we can use
+# `COPY --chown=...` and avoid a `chown -R /app` at the end. The latter
+# is a notorious Docker pitfall: changing ownership on every file produces
+# a new layer that duplicates every byte of node_modules (~600 MB extra
+# image size). Setting ownership per-COPY keeps each layer at its real size.
+RUN addgroup -g 1001 -S nodejs && \
     adduser -S nestjs -u 1001 && \
+    mkdir -p /app/storage && \
     chown -R nestjs:nodejs /app
+
+# Bring the entire deployed tree (node_modules + apps/api/package.json +
+# prisma config + prompts + prisma migrations). pnpm deploy copies anything
+# inside the package boundary, so files outside apps/api/ (notably the
+# compiled dist at /app/dist/apps/api/) need separate COPY steps below.
+COPY --chown=nestjs:nodejs --from=deployer /prod/api ./apps/api
+
+# The Nest build outputs to workspace-root dist/apps/api/ — outside the
+# apps/api package boundary, so `pnpm deploy` doesn't include it.
+COPY --chown=nestjs:nodejs --from=builder /app/dist ./dist
+
+# Email templates (Handlebars .hbs partials) are loaded at runtime by
+# EmailService via path.join(__dirname, 'templates'), where __dirname is
+# /app/dist/apps/api/email/.
+COPY --chown=nestjs:nodejs --from=builder /app/apps/api/src/email/templates ./dist/apps/api/email/templates
+
+# Prompt templates loaded by ApplicationsService at runtime. The path
+# resolution in code expects /app/prompts.
+COPY --chown=nestjs:nodejs --from=builder /app/apps/api/prompts ./prompts
+
+# Root package.json so that `node` reports the right version on `--version`
+# checks and so that scripts (e.g. `node dist/apps/api/main`) inherit any
+# top-level config.
+COPY --chown=nestjs:nodejs --from=builder /app/package.json ./package.json
+
+# Symlink node_modules so the compiled dist at /app/dist/apps/api/main.js
+# can resolve @nestjs/core, @prisma/client, etc. The Nest build outputs to
+# /app/dist/apps/api/ (per apps/api/tsconfig.json#outDir), and Node walks up
+# from there looking for node_modules. Without this symlink it stops at /app
+# and throws MODULE_NOT_FOUND, because pnpm deploy put all deps inside
+# /app/apps/api/node_modules/ (workspace-local layout) rather than hoisting
+# them to /app/node_modules/.
+RUN ln -s apps/api/node_modules /app/node_modules && \
+    chown -h nestjs:nodejs /app/node_modules
+
+# Clean transient files (no pnpm store, no apk cache).
+RUN rm -rf /tmp/* /root/.cache
 
 USER nestjs
 
 EXPOSE 3000
 
-# Use dumb-init for proper signal handling
 CMD ["dumb-init", "node", "dist/apps/api/main"]

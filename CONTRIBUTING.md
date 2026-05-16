@@ -33,14 +33,15 @@ gh pr create --fill
 See [QUICKSTART.md](QUICKSTART.md) for the full walkthrough. The condensed version:
 
 ```bash
-npm install
-docker compose -f infra/docker-compose.yml up -d   # local Postgres
-cp apps/api/.env.example apps/api/.env             # then fill real values
+corepack enable && corepack prepare pnpm@11.1.2 --activate  # one-time, installs pnpm
+pnpm install
+docker compose -f infra/docker-compose.yml up -d            # local Postgres
+cp apps/api/.env.example apps/api/.env                      # then fill real values
 cp apps/web/.env.example apps/web/.env
-npm run prisma:migrate
-npm run prisma:seed
-npm run prisma:seed:templates
-npm run dev                                         # API :3000, Web :3001
+pnpm prisma:migrate
+pnpm prisma:seed
+pnpm prisma:seed:templates
+pnpm dev                                                    # API :3000, Web :3001
 ```
 
 The default `apps/api/.env` runs **mostly mocked** (Docker Postgres, disk
@@ -197,8 +198,8 @@ gh pr create --fill
 
 | Check               | What it verifies                              |
 | ------------------- | --------------------------------------------- |
-| `lint-and-typecheck`| `npm run lint` passes; `package-lock.json` is in sync with `package.json`s |
-| `unit-tests`        | `npm run test:unit` passes                    |
+| `lint-and-typecheck`| `pnpm lint` passes; `pnpm-lock.yaml` is in sync with `package.json`s |
+| `unit-tests`        | `pnpm test:unit` passes                       |
 
 Both must be green before merge. (Currently advisory — once they're set up as required status checks in branch protection, the merge button stays grey until they pass.)
 
@@ -341,7 +342,7 @@ Email the maintainer directly. Do not open a public issue for security findings.
 
 - **`git push --force` to main.** Ever.
 - **Direct push to main without a PR.** Self-discipline rule for solo work; would be enforced via branch protection if we move to a paid GitHub plan.
-- **Lockfile out of sync** — CI now blocks this. After editing any `package.json`, run `npm install --legacy-peer-deps` and commit the resulting `package-lock.json` change in the same PR.
+- **Lockfile out of sync** — CI now blocks this. After editing any `package.json`, run `pnpm install` and commit the resulting `pnpm-lock.yaml` change in the same PR.
 - **Bypassing CI** with `--no-verify` or skipping required checks.
 - **Disabling validation** (`@Sanitize()`, DTO whitelist, JWT guards) without an explicit justification in the PR description.
 - **DROP COLUMN in the same release** as the code that stopped using it (see expand/migrate/contract above).
@@ -353,17 +354,17 @@ Email the maintainer directly. Do not open a public issue for security findings.
 
 ```bash
 # Run lint + tests (same as CI)
-npm run lint
-npm run test:unit
+pnpm lint
+pnpm test:unit
 
 # Verify lockfile is in sync (same as CI)
-npm install --package-lock-only --legacy-peer-deps && git diff --exit-code package-lock.json
+pnpm install --lockfile-only --no-frozen-lockfile --ignore-scripts && git diff --exit-code pnpm-lock.yaml
 
 # Open Prisma Studio (DB GUI)
-npm run prisma:studio
+pnpm prisma:studio
 
 # Reset local DB (WARNING: deletes everything)
-cd apps/api && npx prisma migrate reset
+cd apps/api && pnpm exec prisma migrate reset
 
 # Manually deploy current main to staging (bypassing CI, for quick smoke tests)
 flyctl deploy --config fly.staging.toml --app smart-apply-api-staging --remote-only

@@ -8,10 +8,10 @@
  *   - StorageService (for uploading preview images)
  *
  * Usage:
- *   npm run templates:generate-previews
+ *   pnpm templates:generate-previews
  *
  * Run this after seeding templates:
- *   npm run prisma:seed:templates && npm run templates:generate-previews
+ *   pnpm prisma:seed:templates && pnpm templates:generate-previews
  */
 
 import { NestFactory } from '@nestjs/core';
