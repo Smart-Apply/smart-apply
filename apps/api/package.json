@@ -86,7 +86,7 @@
     "helmet": "^7.1.0",
     "mammoth": "^1.6.0",
     "markdown-it": "^14.1.0",
-    "marked": "^17.0.1",
+    "marked": "^18.0.3",
     "nestjs-pino": "^4.5.0",
     "node-cache": "^5.1.2",
     "opossum": "^9.0.0",

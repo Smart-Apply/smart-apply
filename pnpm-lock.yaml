@@ -244,8 +244,8 @@ importers:
         specifier: ^14.1.0
         version: 14.1.1
       marked:
-        specifier: ^17.0.1
-        version: 17.0.6
+        specifier: ^18.0.3
+        version: 18.0.3
       nestjs-pino:
         specifier: ^4.5.0
         version: 4.6.1(@nestjs/common@11.1.21(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(pino-http@11.0.0)(pino@8.21.0)(rxjs@7.8.2)
@@ -6694,11 +6694,6 @@ packages:
 
   markdown-it@14.1.1:
     resolution: {integrity: sha512-BuU2qnTti9YKgK5N+IeMubp14ZUKUUw7yeJbkjtosvHiP0AZ5c8IAgEMk79D0eC8F23r4Ac/q8cAIFdm2FtyoA==}
-    hasBin: true
-
-  marked@17.0.6:
-    resolution: {integrity: sha512-gB0gkNafnonOw0obSTEGZTT86IuhILt2Wfx0mWH/1Au83kybTayroZ/V6nS25mN7u8ASy+5fMhgB3XPNrOZdmA==}
-    engines: {node: '>= 20'}
     hasBin: true
 
   marked@18.0.3:
@@ -15708,8 +15703,6 @@ snapshots:
       mdurl: 2.0.0
       punycode.js: 2.3.1
       uc.micro: 2.1.0
-
-  marked@17.0.6: {}
 
   marked@18.0.3: {}
 
