@@ -42,12 +42,11 @@ export default defineConfig({
     // Most e2e + integration suites assume serialised DB access. The unit
     // suite would tolerate parallelism, but the (small) speed win isn't
     // worth maintaining a second config.
+    //
+    // Vitest 4 promoted `poolOptions.<pool>` settings to top-level — the old
+    // nested form was removed. See https://vitest.dev/guide/migration#pool-rework
     pool: 'forks',
-    poolOptions: {
-      forks: {
-        singleFork: true,
-      },
-    },
+    singleFork: true,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
