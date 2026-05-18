@@ -70,7 +70,7 @@
     "turbo": "^2.8.1",
     "typescript": "^5.9.3",
     "unplugin-swc": "^1.5.1",
-    "vite": "^6.4.2",
+    "vite": "^8.0.13",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.1.6"
   },
