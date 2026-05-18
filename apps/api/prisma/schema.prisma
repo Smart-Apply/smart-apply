@@ -623,9 +623,9 @@ model BackgroundJob {
 // =====================================
 
 // Subscription tier levels (3-tier pricing model)
-// FREE (€0) - Basic features with limits
-// PRO (€7.99/month) - 50 applications/month + Pro features
-// PREMIUM (€14.99/month) - All features + automation
+// FREE (€0)            - Risk-free entry: try Smart Apply with 3 applications/month
+// PRO (€9.99/month)    - Optimise every application with AI (templates, ATS, analytics, job search)
+// PREMIUM (€19.99/month) - Automate the job search (Auto-Apply, email tracking, interview coach)
 enum SubscriptionTier {
   FREE
   PRO

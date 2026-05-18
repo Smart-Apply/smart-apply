@@ -237,86 +237,108 @@ export default function Home() {
           </div>
 
           <div className="container relative z-10 px-4 md:px-8">
+            {/* Section header — value-oriented framing */}
+            <div className="mx-auto mb-12 max-w-3xl text-center">
+              <h2 className="font-poppins font-semibold text-3xl md:text-4xl text-[#1B2A49] mb-3">
+                Wähle deinen Weg zum nächsten Job
+              </h2>
+              <p className="font-poppins text-base md:text-lg text-[#1B2A49]/80">
+                Vom risikofreien Einstieg bis zur vollautomatisierten Jobsuche —
+                transparent, monatlich kündbar, ohne versteckte Kosten.
+              </p>
+            </div>
+
             <div className="flex flex-col lg:flex-row gap-8 justify-center items-stretch">
-              {/* FREE Plan */}
-              <div 
+              {/* FREE Plan — risikofreier Einstieg */}
+              <div
                 onClick={() => setSelectedPlan('free')}
                 className={`relative rounded-3xl p-8 w-full max-w-[420px] mx-auto lg:mx-0 flex flex-col min-h-[680px] cursor-pointer transition-all duration-300 ${
                   selectedPlan === 'free' ? 'bg-[#1B2A49]' : 'bg-[#E5EEFD] shadow-[5px_10px_4px_rgba(27,42,73,0.25)]'
                 }`}
               >
                 <div className="text-center mb-8">
-                  <h3 className={`font-poppins font-semibold text-3xl md:text-4xl mb-2 transition-colors duration-300 ${
+                  <h3 className={`font-poppins font-semibold text-3xl md:text-4xl mb-1 transition-colors duration-300 ${
                     selectedPlan === 'free' ? 'text-[#E5EEFD]' : 'text-[#1B2A49]'
-                  }`}>FREE</h3>
-                  <p className={`font-poppins font-medium text-lg md:text-xl transition-colors duration-300 ${
-                    selectedPlan === 'free' ? 'text-white' : 'text-black'
-                  }`}>(0 € / Monat)</p>
+                  }`}>Free</h3>
+                  <p className={`font-poppins text-sm md:text-base mb-4 transition-colors duration-300 ${
+                    selectedPlan === 'free' ? 'text-white/80' : 'text-[#1B2A49]/70'
+                  }`}>
+                    Smart Apply risikofrei testen
+                  </p>
+                  <div className="flex items-baseline justify-center gap-1">
+                    <span className={`font-poppins font-bold text-4xl md:text-5xl transition-colors duration-300 ${
+                      selectedPlan === 'free' ? 'text-white' : 'text-[#1B2A49]'
+                    }`}>0 €</span>
+                    <span className={`font-poppins text-base transition-colors duration-300 ${
+                      selectedPlan === 'free' ? 'text-white/70' : 'text-[#1B2A49]/60'
+                    }`}>/Monat</span>
+                  </div>
                 </div>
                 <ul className={`flex-1 space-y-4 font-poppins text-base md:text-lg transition-colors duration-300 ${
                   selectedPlan === 'free' ? 'text-white' : 'text-[#1B2A49]'
                 }`}>
                   <li className="flex items-start gap-3">
                     <span className={`mt-1 ${selectedPlan === 'free' ? 'text-green-400' : 'text-green-600'}`}>✓</span>
-                    <span>3 KI-Anschreiben pro Monat</span>
+                    <span>3 Bewerbungen pro Monat</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className={`mt-1 ${selectedPlan === 'free' ? 'text-green-400' : 'text-green-600'}`}>✓</span>
-                    <span>3 KI-Lebensläufe pro Monat</span>
+                    <span>ATS-Score für jede Bewerbung</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className={`mt-1 ${selectedPlan === 'free' ? 'text-green-400' : 'text-green-600'}`}>✓</span>
-                    <span>Standard-Template</span>
+                    <span>Übersichtliches Bewerbungstracking</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className={`mt-1 ${selectedPlan === 'free' ? 'text-green-400' : 'text-green-600'}`}>✓</span>
-                    <span>Manuelles Bewerbungstracking</span>
+                    <span>Keine Kreditkarte erforderlich</span>
                   </li>
                 </ul>
                 <div className="mt-8 flex justify-center">
-                  <Button 
+                  <Button
                     onClick={(e) => { e.stopPropagation(); router.push('/register'); }}
                     className={`font-poppins font-semibold text-lg md:text-xl px-12 py-6 rounded-xl shadow-[0px_4px_4px_rgba(0,0,0,0.25)] transition-colors ${
-                      selectedPlan === 'free' 
-                        ? 'bg-white text-[#1B2A49] hover:bg-gray-100' 
+                      selectedPlan === 'free'
+                        ? 'bg-white text-[#1B2A49] hover:bg-gray-100'
                         : 'bg-[#1B2A49] text-white hover:bg-[#2a3d66]'
                     }`}
                   >
-                    Jetzt starten
+                    Kostenlos starten
                   </Button>
                 </div>
               </div>
 
-              {/* PRO Plan */}
-              <div 
+              {/* PRO Plan — bessere Bewerbungen schreiben */}
+              <div
                 onClick={() => setSelectedPlan('pro')}
                 className={`relative rounded-3xl p-8 w-full max-w-[420px] mx-auto lg:mx-0 flex flex-col min-h-[685px] cursor-pointer transition-all duration-300 ${
                   selectedPlan === 'pro' ? 'bg-[#1B2A49]' : 'bg-[#E5EEFD] shadow-[5px_10px_4px_rgba(27,42,73,0.25)]'
                 }`}
               >
-                {/* Most Popular Badge - always visible on PRO */}
-                <div className="absolute top-0 right-0 overflow-hidden w-[140px] h-[140px]">
-                  <div className={`absolute top-[32px] right-[-38px] font-poppins font-bold text-xs py-1.5 px-[52px] transform rotate-45 shadow-md whitespace-nowrap transition-colors duration-300 ${
-                    selectedPlan === 'pro' ? 'bg-[#E5EEFD] text-black' : 'bg-[#1B2A49] text-[#E5EEFD]'
-                  }`}>
-                    Most Popular
-                  </div>
-                </div>
-                
                 <div className="text-center mb-8">
-                  <h3 className={`font-poppins font-semibold text-3xl md:text-4xl mb-2 transition-colors duration-300 ${
+                  <h3 className={`font-poppins font-semibold text-3xl md:text-4xl mb-1 transition-colors duration-300 ${
                     selectedPlan === 'pro' ? 'text-[#E5EEFD]' : 'text-[#1B2A49]'
-                  }`}>PRO</h3>
-                  <p className={`font-poppins font-medium text-lg md:text-xl transition-colors duration-300 ${
-                    selectedPlan === 'pro' ? 'text-white' : 'text-black'
-                  }`}>(7,99 € / Monat)</p>
+                  }`}>Pro</h3>
+                  <p className={`font-poppins text-sm md:text-base mb-4 transition-colors duration-300 ${
+                    selectedPlan === 'pro' ? 'text-white/80' : 'text-[#1B2A49]/70'
+                  }`}>
+                    Bessere Bewerbungen, mehr Interviews
+                  </p>
+                  <div className="flex items-baseline justify-center gap-1">
+                    <span className={`font-poppins font-bold text-4xl md:text-5xl transition-colors duration-300 ${
+                      selectedPlan === 'pro' ? 'text-white' : 'text-[#1B2A49]'
+                    }`}>9,99 €</span>
+                    <span className={`font-poppins text-base transition-colors duration-300 ${
+                      selectedPlan === 'pro' ? 'text-white/70' : 'text-[#1B2A49]/60'
+                    }`}>/Monat</span>
+                  </div>
                 </div>
                 <ul className={`flex-1 space-y-4 font-poppins text-base md:text-lg transition-colors duration-300 ${
                   selectedPlan === 'pro' ? 'text-white' : 'text-[#1B2A49]'
                 }`}>
                   <li className="flex items-start gap-3">
                     <span className={`mt-1 ${selectedPlan === 'pro' ? 'text-green-400' : 'text-green-600'}`}>✓</span>
-                    <span>50 Bewerbungen pro Monat</span>
+                    <span>KI-generierte Lebensläufe & Anschreiben</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className={`mt-1 ${selectedPlan === 'pro' ? 'text-green-400' : 'text-green-600'}`}>✓</span>
@@ -328,87 +350,127 @@ export default function Home() {
                   </li>
                   <li className="flex items-start gap-3">
                     <span className={`mt-1 ${selectedPlan === 'pro' ? 'text-green-400' : 'text-green-600'}`}>✓</span>
-                    <span>Halbautomatisches Bewerbungstracking</span>
+                    <span>Bewerbungstracking mit Statusverlauf</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className={`mt-1 ${selectedPlan === 'pro' ? 'text-green-400' : 'text-green-600'}`}>✓</span>
-                    <span>Analytics (Keyword Score, ATS Score)</span>
+                    <span>Analytics: ATS-Score, Keyword-Score, Match-Insights</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className={`mt-1 ${selectedPlan === 'pro' ? 'text-green-400' : 'text-green-600'}`}>✓</span>
+                    <span>Zugang zur integrierten Jobsuche</span>
                   </li>
                 </ul>
                 <div className="mt-8 flex justify-center">
-                  <Button 
+                  <Button
                     onClick={(e) => { e.stopPropagation(); router.push('/register'); }}
                     className={`font-poppins font-semibold text-lg md:text-xl px-12 py-6 rounded-xl shadow-[0px_4px_4px_rgba(0,0,0,0.25)] transition-colors ${
-                      selectedPlan === 'pro' 
-                        ? 'bg-white text-[#1B2A49] hover:bg-gray-100' 
+                      selectedPlan === 'pro'
+                        ? 'bg-white text-[#1B2A49] hover:bg-gray-100'
                         : 'bg-[#1B2A49] text-white hover:bg-[#2a3d66]'
                     }`}
                   >
-                    Upgraden
+                    Upgrade auf Pro
                   </Button>
                 </div>
               </div>
 
-              {/* PREMIUM Plan */}
-              <div 
+              {/* PREMIUM Plan — Jobsuche automatisieren (recommended) */}
+              <div
                 onClick={() => setSelectedPlan('premium')}
-                className={`relative rounded-3xl p-8 w-full max-w-[420px] mx-auto lg:mx-0 flex flex-col min-h-[685px] cursor-pointer transition-all duration-300 ${
-                  selectedPlan === 'premium' ? 'bg-[#1B2A49]' : 'bg-[#E5EEFD] shadow-[5px_10px_4px_rgba(27,42,73,0.25)]'
+                className={`relative rounded-3xl p-8 w-full max-w-[420px] mx-auto lg:mx-0 flex flex-col min-h-[685px] cursor-pointer transition-all duration-300 ring-2 ring-offset-2 ring-offset-transparent ${
+                  selectedPlan === 'premium'
+                    ? 'bg-[#1B2A49] ring-[#1B2A49]'
+                    : 'bg-[#E5EEFD] shadow-[5px_10px_4px_rgba(27,42,73,0.25)] ring-[#1B2A49]/40'
                 }`}
               >
+                {/* Recommended ribbon — restrained, value-focused */}
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
+                  <span className={`inline-block font-poppins font-semibold text-xs md:text-sm uppercase tracking-wide px-4 py-1.5 rounded-full shadow-md whitespace-nowrap transition-colors duration-300 ${
+                    selectedPlan === 'premium' ? 'bg-[#E5EEFD] text-[#1B2A49]' : 'bg-[#1B2A49] text-[#E5EEFD]'
+                  }`}>
+                    Beste Wahl für aktive Jobsuche
+                  </span>
+                </div>
+
                 <div className="text-center mb-8">
-                  <h3 className={`font-poppins font-semibold text-3xl md:text-4xl mb-2 transition-colors duration-300 ${
+                  <h3 className={`font-poppins font-semibold text-3xl md:text-4xl mb-1 transition-colors duration-300 ${
                     selectedPlan === 'premium' ? 'text-[#E5EEFD]' : 'text-[#1B2A49]'
-                  }`}>PREMIUM</h3>
-                  <p className={`font-poppins font-medium text-lg md:text-xl transition-colors duration-300 ${
-                    selectedPlan === 'premium' ? 'text-white' : 'text-black'
-                  }`}>(14,99 € / Monat)</p>
+                  }`}>Premium</h3>
+                  <p className={`font-poppins text-sm md:text-base mb-4 transition-colors duration-300 ${
+                    selectedPlan === 'premium' ? 'text-white/80' : 'text-[#1B2A49]/70'
+                  }`}>
+                    Deine Jobsuche läuft auf Autopilot
+                  </p>
+                  <div className="flex items-baseline justify-center gap-1">
+                    <span className={`font-poppins font-bold text-4xl md:text-5xl transition-colors duration-300 ${
+                      selectedPlan === 'premium' ? 'text-white' : 'text-[#1B2A49]'
+                    }`}>19,99 €</span>
+                    <span className={`font-poppins text-base transition-colors duration-300 ${
+                      selectedPlan === 'premium' ? 'text-white/70' : 'text-[#1B2A49]/60'
+                    }`}>/Monat</span>
+                  </div>
                 </div>
                 <ul className={`flex-1 space-y-4 font-poppins text-base md:text-lg transition-colors duration-300 ${
                   selectedPlan === 'premium' ? 'text-white' : 'text-[#1B2A49]'
                 }`}>
                   <li className="flex items-start gap-3">
                     <span className={`mt-1 ${selectedPlan === 'premium' ? 'text-green-400' : 'text-green-600'}`}>✓</span>
-                    <span>Alles aus PRO</span>
+                    <span>Alles aus Pro</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className={`mt-1 ${selectedPlan === 'premium' ? 'text-green-400' : 'text-green-600'}`}>✓</span>
-                    <span>KI Interview-Coach</span>
+                    <span><span className="font-semibold">Auto-Apply Agent</span> — bewirbt sich für dich</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className={`mt-1 ${selectedPlan === 'premium' ? 'text-green-400' : 'text-green-600'}`}>✓</span>
-                    <span>Auto-Apply Bewerbungsagent</span>
+                    <span>Automatisches Tracking per E-Mail-Erkennung</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className={`mt-1 ${selectedPlan === 'premium' ? 'text-green-400' : 'text-green-600'}`}>✓</span>
-                    <span>Automatisches Bewerbungstracking (E-Mail)</span>
+                    <span>KI Interview-Coach für die Vorbereitung</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className={`mt-1 ${selectedPlan === 'premium' ? 'text-green-400' : 'text-green-600'}`}>✓</span>
-                    <span>Advanced Analytics & Trends</span>
+                    <span>Erweiterte Analytics & Trends</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className={`mt-1 ${selectedPlan === 'premium' ? 'text-green-400' : 'text-green-600'}`}>✓</span>
-                    <span>Queue-Priorisierung & Premium Support</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className={`mt-1 ${selectedPlan === 'premium' ? 'text-green-400' : 'text-green-600'}`}>✓</span>
-                    <span>Job Suche</span>
+                    <span>Priorisierte Generierung & Premium-Support</span>
                   </li>
                 </ul>
                 <div className="mt-8 flex justify-center">
-                  <Button 
+                  <Button
                     onClick={(e) => { e.stopPropagation(); router.push('/register'); }}
                     className={`font-poppins font-semibold text-lg md:text-xl px-12 py-6 rounded-xl shadow-[0px_4px_4px_rgba(0,0,0,0.25)] transition-colors ${
-                      selectedPlan === 'premium' 
-                        ? 'bg-white text-[#1B2A49] hover:bg-gray-100' 
+                      selectedPlan === 'premium'
+                        ? 'bg-white text-[#1B2A49] hover:bg-gray-100'
                         : 'bg-[#1B2A49] text-white hover:bg-[#2a3d66]'
                     }`}
                   >
-                    Upgraden
+                    Premium freischalten
                   </Button>
                 </div>
               </div>
+            </div>
+
+            {/* Trust microcopy — under the cards */}
+            <div className="mt-12 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 font-poppins text-sm md:text-base text-[#1B2A49]/80">
+              <span className="inline-flex items-center gap-2">
+                <span className="text-green-600">✓</span> Transparente Monatspreise
+              </span>
+              <span className="hidden md:inline text-[#1B2A49]/30">·</span>
+              <span className="inline-flex items-center gap-2">
+                <span className="text-green-600">✓</span> Jederzeit kündbar
+              </span>
+              <span className="hidden md:inline text-[#1B2A49]/30">·</span>
+              <span className="inline-flex items-center gap-2">
+                <span className="text-green-600">✓</span> Keine versteckten Kosten
+              </span>
+              <span className="hidden md:inline text-[#1B2A49]/30">·</span>
+              <span className="inline-flex items-center gap-2">
+                <span className="text-green-600">✓</span> Für echte Jobsuchende gemacht
+              </span>
             </div>
           </div>
         </section>

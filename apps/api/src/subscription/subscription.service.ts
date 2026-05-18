@@ -7,10 +7,15 @@ import type { SubscriptionUsage } from '../generated/prisma/client';
  * Tier limits configuration
  * Defines the resource limits for each subscription tier
  *
- * Pricing Model:
- * - FREE (€0): Basic features with strict limits
- * - PRO (€7.99/month): 50 applications/month for active job seekers
- * - PREMIUM (€14.99/month): Maximum automation & advanced features
+ * Pricing Model (value-positioned, not feature-count-positioned):
+ * - FREE (€0):            Risk-free entry. 3 applications/month so users can try Smart Apply.
+ * - PRO (€9.99/month):    Optimise every application with AI. Templates, ATS-Optimisation,
+ *                        keyword matching, analytics, integrated job search.
+ * - PREMIUM (€19.99/month): Automate the job search. Auto-Apply agent, automatic email-based
+ *                        tracking, interview coach, advanced analytics, priority queue.
+ *
+ * Note: the numeric per-month caps below are cost-protection ceilings and intentionally
+ * not part of the marketing copy. Users see value-oriented benefits, not application counts.
  */
 export interface TierLimits {
   // Generation limits

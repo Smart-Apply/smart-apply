@@ -473,8 +473,9 @@ function UpgradePrompt() {
             Auto-Apply Agent
           </CardTitle>
           <CardDescription className="text-amber-800/80 dark:text-amber-300/80 max-w-md mx-auto">
-            Lass den Agent täglich passende Stellen finden — du entscheidest mit einem Klick,
-            welche du bewirbst. Bis zu 50 Bewerbungen pro Monat. Exklusiv für Premium.
+            Lass den Agent täglich passende Stellen finden — du entscheidest mit
+            einem Klick, welche du bewirbst. Spare Stunden pro Woche und behalte
+            die Kontrolle. Exklusiv für Premium.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col sm:flex-row gap-3 justify-center pb-12">
